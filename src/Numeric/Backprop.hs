@@ -11,6 +11,10 @@ module Numeric.Backprop
   ( BP
   , BPNode
   , newBPRef, newBPRef'
+  , newBPRef0
+  , newBPRef1, newBPRef1'
+  , newBPRef2, newBPRef2'
+  , newBPRef3, newBPRef3'
   , backprop, backprop'
   , inpRef, inpRefs, withInps
   , Op(..)
@@ -36,12 +40,13 @@ import           Type.Class.Higher
 import           Type.Class.Known
 
 newBPRef
-    :: forall s as a bs. Num a
+    :: forall s as a bs. ()
     => Prod (BPRef s bs) as
     -> Op as a
     -> Prod (Scaler a) as
+    -> Summer a
     -> BP s bs (BPRef s bs a)
-newBPRef i o s = do
+newBPRef i o sc sm = do
     r <- liftBase $ newSTRef bp
     ifor1_ i $ \ix bpr' -> do
       let bpir = BPIR ix r
@@ -56,21 +61,84 @@ newBPRef i o s = do
              , _bpnOp        = o
              , _bpnResCache  = Nothing
              , _bpnGradCache = Nothing
-             , _bpnSummer    = Summer sum
-             , _bpnScaler    = s
+             , _bpnSummer    = sm
+             , _bpnScaler    = sc
              }
 
 newBPRef'
-    :: (Known (Prod (Scaler a)) as, Num a)
+    :: Num a
     => Prod (BPRef s bs) as
     -> Op as a
+    -> Prod (Scaler a) as
     -> BP s bs (BPRef s bs a)
-newBPRef' i o = newBPRef i o known
+newBPRef' i o s = newBPRef i o s (Summer sum)
 
--- newBPRef0
---     :: Op '[] a
---     -> BP s bs (BPRef s bs a)
+newBPRef0
+    :: Op '[] a
+    -> Summer a
+    -> BP s as (BPRef s as a)
+newBPRef0 o = newBPRef Ø o Ø
 
+newBPRef1
+    :: BPRef s as a
+    -> Op '[a] b
+    -> Scaler b a
+    -> Summer b
+    -> BP s as (BPRef s as b)
+newBPRef1 r o s = newBPRef (r :< Ø) o (s :< Ø)
+
+newBPRef1'
+    :: Num b
+    => BPRef s as a
+    -> Op '[a] b
+    -> Scaler b a
+    -> BP s as (BPRef s as b)
+newBPRef1' r o s = newBPRef1 r o s known
+
+newBPRef2
+    :: BPRef s bs a
+    -> BPRef s bs b
+    -> Op '[a,b] c
+    -> Scaler c a
+    -> Scaler c b
+    -> Summer c
+    -> BP s bs (BPRef s bs c)
+newBPRef2 rx ry o sx sy = newBPRef (rx :< ry :< Ø) o (sx :< sy :< Ø)
+
+newBPRef2'
+    :: Num c
+    => BPRef s bs a
+    -> BPRef s bs b
+    -> Op '[a,b] c
+    -> Scaler c a
+    -> Scaler c b
+    -> BP s bs (BPRef s bs c)
+newBPRef2' rx ry o sx sy = newBPRef2 rx ry o sx sy known
+
+newBPRef3
+    :: BPRef s bs a
+    -> BPRef s bs b
+    -> BPRef s bs c
+    -> Op '[a,b,c] d
+    -> Scaler d a
+    -> Scaler d b
+    -> Scaler d c
+    -> Summer d
+    -> BP s bs (BPRef s bs d)
+newBPRef3 rx ry rz o sx sy sz =
+    newBPRef (rx :< ry :< rz :< Ø) o (sx :< sy :< sz :< Ø)
+
+newBPRef3'
+    :: Num d
+    => BPRef s bs a
+    -> BPRef s bs b
+    -> BPRef s bs c
+    -> Op '[a,b,c] d
+    -> Scaler d a
+    -> Scaler d b
+    -> Scaler d c
+    -> BP s bs (BPRef s bs d)
+newBPRef3' rx ry rz o sx sy sz = newBPRef3 rx ry rz o sx sy sz known
 
 forwardPass
     :: Tuple bs
@@ -133,6 +201,20 @@ withInps
     => (Prod (BPRef s as) as -> BP s as a)
     -> BP s as a
 withInps f = f (map1 BPRInp indices)
+
+-- addEnv
+--     :: forall s a as b. ()
+--     => BP s as b
+--     -> BP s (a ': as) b
+-- addEnv (BP (StateT f)) = BP . StateT $ \(BPS (i :< is)) -> do
+--     (x, BPS is') <- f (BPS (map1 (over (comp . traverse) g) is))
+--     return (x, BPS (i :< map1 (over (comp . traverse) h) is'))
+--   where
+--     g :: forall c. BPInpRef s (a ': as) c -> BPInpRef s as c
+--     g = \case
+--       BPIR ix r -> BPIR (IS ix) (_ r)
+--     h :: forall c. BPInpRef s as c -> BPInpRef s (a ': as) c
+--     h = undefined
 
 
 

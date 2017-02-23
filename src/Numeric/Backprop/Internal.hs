@@ -54,8 +54,6 @@ data BPState :: Type -> [Type] -> Type where
 newtype BP s as b = BP { bpST :: StateT (BPState s as) (ST s) b }
       deriving (Functor, Applicative, Monad, MonadState (BPState s as), MonadBase (ST s))
 
--- instance MonadBase (ST s) (BP s as) where
-
 data BPRef :: Type -> [Type] -> Type -> Type where
     BPRNode :: STRef s (BPNode s as bs a)
             -> BPRef s as a
