@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RankNTypes          #-}
@@ -9,8 +10,12 @@
 module Numeric.Backprop
   ( BP
   , BPNode
-  , newBPRef
-  , backprop
+  , newBPRef, newBPRef'
+  , backprop, backprop'
+  , inpRef, inpRefs, withInps
+  , Op(..)
+  , Summer(..)
+  , Scaler(..)
   ) where
 
 import           Control.Applicative
@@ -22,11 +27,13 @@ import           Data.STRef
 import           Data.Traversable
 import           Data.Type.Combinator
 import           Data.Type.Index
+import           Data.Type.Length
 import           Data.Type.Product
 import           Lens.Micro hiding         (ix)
 import           Lens.Micro.Mtl
 import           Numeric.Backprop.Internal
 import           Type.Class.Higher
+import           Type.Class.Known
 
 newBPRef
     :: forall s as a bs. Num a
@@ -52,6 +59,18 @@ newBPRef i o s = do
              , _bpnSummer    = Summer sum
              , _bpnScaler    = s
              }
+
+newBPRef'
+    :: (Known (Prod (Scaler a)) as, Num a)
+    => Prod (BPRef s bs) as
+    -> Op as a
+    -> BP s bs (BPRef s bs a)
+newBPRef' i o = newBPRef i o known
+
+-- newBPRef0
+--     :: Op '[] a
+--     -> BP s bs (BPRef s bs a)
+
 
 forwardPass
     :: Tuple bs
@@ -91,6 +110,36 @@ backprop bp ss env = runST $ do
         getI . index ix <$> backwardPass r'
     let grad = zipWithP (\s xs -> I (runSummer s xs)) ss gradLists
     return (res, grad)
+
+backprop'
+    :: Known (Prod Summer) as
+    => (forall s. BP s as (BPRef s as a))
+    -> Tuple as
+    -> (a, Tuple as)
+backprop' bp = backprop bp known
+
+inpRef
+    :: Index as a
+    -> BPRef s as a
+inpRef = BPRInp
+
+inpRefs
+    :: Known Length as
+    => Prod (BPRef s as) as
+inpRefs = map1 BPRInp indices
+
+withInps
+    :: Known Length as
+    => (Prod (BPRef s as) as -> BP s as a)
+    -> BP s as a
+withInps f = f (map1 BPRInp indices)
+
+
+
+
+
+
+
 
 
 -- | Apply a function to the contents of an STRef, and cache the results
