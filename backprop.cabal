@@ -15,8 +15,12 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Numeric.BackProp
+  exposed-modules:     Numeric.Backprop
+                       Numeric.Backprop.Op
+                       -- Data.Type.Uniform
   build-depends:       base >= 4.7 && < 5
+                     , ad
+                     , reflection
                      , transformers
                      , type-combinators
   default-language:    Haskell2010

@@ -10,10 +10,8 @@
 {-# LANGUAGE TypeInType                 #-}
 {-# LANGUAGE TypeOperators              #-}
 
-module Numeric.BackProp where
+module Numeric.Backprop where
 
--- import           Data.Proxy
--- import           Data.Type.Sum hiding   (index)
 import           Control.Applicative
 import           Control.Monad.ST
 import           Control.Monad.Trans.Class
@@ -25,19 +23,17 @@ import           Data.Traversable
 import           Data.Type.Combinator
 import           Data.Type.Index
 import           Data.Type.Product
+import           Numeric.Backprop.Op
 import           Type.Class.Higher
 
-data BPState :: Type -> [Type] -> Type -> Type where
+data BPState :: Type -> [Type] -> Type where
     BPS :: { bpsSources :: !(Prod ([] :.: BPInpRef s as) as)
-           , bpsOutput  :: !(BPRef s as a)
+           -- , bpsOutput  :: !(Maybe (BPRef s as a))
            }
-        -> BPState s as a
+        -> BPState s as
 
-newtype BP s as a b = BP { bpST :: StateT (BPState s as a) (ST s) b }
+newtype BP s as b = BP { bpST :: StateT (BPState s as) (ST s) b }
       deriving (Functor, Applicative, Monad)
-
-newtype Op as a = Op { runOp :: Tuple as -> (a, Tuple as) }
-newtype Scaler a b = Scaler { runScaler :: a -> b -> b }
 
 data BPRef :: Type -> [Type] -> Type -> Type where
     BPRNode :: STRef s (BPNode s as bs a)
@@ -53,11 +49,11 @@ data BPInpRef :: Type -> [Type] -> Type -> Type where
 
 data BPNode :: Type -> [Type] -> [Type] -> Type -> Type where
     BPN :: { bpInp       :: !(Prod (BPRef s bs) as)
-           , bpOut       :: !([BPInpRef s bs a])
+           , bpOut       :: ![BPInpRef s bs a]
            , bpOp        :: !(Op as a)
            , bpResCache  :: !(Maybe (a, Tuple as))
            , bpGradCache :: !(Maybe (a, Tuple as))
-           , bpSummer    :: !([a] -> a)
+           , bpSummer    :: !(Summer a)
            , bpScaler    :: !(Prod (Scaler a) as)
            }
         -> BPNode s bs as a
@@ -80,15 +76,15 @@ _bpGradCache f bpn = (\rc -> bpn { bpGradCache = rc }) <$> f (bpGradCache bpn)
 
 stBP
     :: ST s b
-    -> BP s as a b
+    -> BP s as b
 stBP s = BP (lift s)
 
 newBPRef
-    :: forall s as a b bs. Num a
+    :: forall s as a bs. Num a
     => Prod (BPRef s bs) as
     -> Op as a
     -> Prod (Scaler a) as
-    -> BP s bs b (BPRef s bs a)
+    -> BP s bs (BPRef s bs a)
 newBPRef i o s = do
     r <- stBP (newSTRef bp)
     ifor1_ i $ \ix bpr' -> do
@@ -109,7 +105,7 @@ newBPRef i o s = do
              , bpOp        = o
              , bpResCache  = Nothing
              , bpGradCache = Nothing
-             , bpSummer    = sum
+             , bpSummer    = Summer sum
              , bpScaler    = s
              }
 
@@ -130,14 +126,27 @@ backwardPass r = fmap snd . caching _bpGradCache r $ \BPN{..} -> do
     outs :: [a]  <- for bpOut $ \bpir -> do
       BPIR (ix :: Index cs a) (r' :: STRef s (BPNode s bs cs c)) <- return bpir
       getI . index ix <$> backwardPass r'
-    let totderv  = bpSummer outs
+    let totderv  = runSummer bpSummer outs
     case snd <$> bpResCache of
       Just gs  -> do
         let gradProd = zipWithP (\s g -> runScaler s totderv <$> g) bpScaler gs
         return (totderv, gradProd)
       Nothing -> error "backwards pass before forwards pass"
 
-
+backprop
+    :: (forall s. BP s as (BPRef s as a))
+    -> Prod Summer as
+    -> Tuple as
+    -> (a, Tuple as)
+backprop bp ss env = runST $ do
+    (r, BPS{..}) <- runStateT (bpST bp) $ BPS (map1 (\_ -> Comp []) env)
+    res  <- forwardPass env r
+    gradLists <- for1 bpsSources $ \(Comp rs) ->
+      for rs $ \bpir -> do
+        BPIR (ix :: Index cs a) (r' :: STRef s (BPNode s bs cs c)) <- return bpir
+        getI . index ix <$> backwardPass r'
+    let grad = zipWithP (\s xs -> I (runSummer s xs)) ss gradLists
+    return (res, grad)
 
 
 -- | Apply a function to the contents of an STRef, and cache the results
@@ -159,12 +168,12 @@ caching l r f = do
         modifySTRef r (getI . l (I . const (Just z)))
         return z
 
--- for1
---     :: (Applicative h, Traversable1 t)
---     => t f b
---     -> (forall a. f a -> h (g a))
---     -> h (t g b)
--- for1 x f = traverse1 f x
+for1
+    :: (Applicative h, Traversable1 t)
+    => t f b
+    -> (forall a. f a -> h (g a))
+    -> h (t g b)
+for1 x f = traverse1 f x
 
 ifor1
     :: (Applicative h, IxTraversable1 i t)
