@@ -39,7 +39,7 @@ newtype Summer a   = Summer { runSummer :: [a] -> a }
 
 instance Num a => Known (Scaler a) a where
     type KnownC (Scaler a) a = Num a
-    known = Scaler (+)
+    known = Scaler (*)
 
 instance Num a => Known Summer a where
     type KnownC Summer a = Num a
@@ -47,7 +47,7 @@ instance Num a => Known Summer a where
 
 
 data BPState :: Type -> [Type] -> Type where
-    BPS :: { _bpsSources :: !(Prod ([] :.: BPInpRef s as) as)
+    BPS :: { _bpsSources :: !(Prod (Maybe :.: [] :.: BPInpRef s as) as)
            }
         -> BPState s as
 
@@ -68,10 +68,10 @@ data BPInpRef :: Type -> [Type] -> Type -> Type where
 
 data BPNode :: Type -> [Type] -> [Type] -> Type -> Type where
     BPN :: { _bpnInp       :: !(Prod (BPRef s bs) as)
-           , _bpnOut       :: ![BPInpRef s bs a]
+           , _bpnOut       :: !(Maybe [BPInpRef s bs a])    -- nothing: is the "final output"
            , _bpnOp        :: !(Op as a)
            , _bpnResCache  :: !(Maybe (a, Tuple as))
-           , _bpnGradCache :: !(Maybe (a, Tuple as))
+           , _bpnGradCache :: !(Maybe (Maybe a, Tuple as))  -- nothing if is the "final output"
            , _bpnSummer    :: !(Summer a)
            , _bpnScaler    :: !(Prod (Scaler a) as)
            }
@@ -79,4 +79,3 @@ data BPNode :: Type -> [Type] -> [Type] -> Type -> Type where
 
 makeLenses ''BPState
 makeLenses ''BPNode
-

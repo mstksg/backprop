@@ -6,6 +6,7 @@
 
 module Numeric.Backprop.Op
   ( Op(..)
+  , runOp, gradOp
   , Scaler(..)
   , Summer(..)
   , op0
@@ -21,6 +22,12 @@ import           Numeric.AD
 import           Numeric.AD.Internal.Reverse    (Reverse, Tape)
 import           Numeric.AD.Mode.Forward hiding (grad')
 import           Numeric.Backprop.Internal
+
+runOp :: Op as a -> Tuple as -> a
+runOp o = fst . runOp' o
+
+gradOp :: Op as a -> Tuple as -> Tuple as
+gradOp o = snd . runOp' o
 
 op0 :: a -> Op '[] a
 op0 x = Op $ \case

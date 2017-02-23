@@ -33,6 +33,7 @@ import           Data.Type.Combinator
 import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Product
+import           Debug.Trace
 import           Lens.Micro hiding         (ix)
 import           Lens.Micro.Mtl
 import           Numeric.Backprop.Internal
@@ -51,13 +52,13 @@ newBPRef i o sc sm = do
     ifor1_ i $ \ix bpr' -> do
       let bpir = BPIR ix r
       case bpr' of
-        BPRNode r' -> liftBase $ modifySTRef r' (over bpnOut (bpir:))
-        BPRInp ix' -> modifying (bpsSources . indexP ix' . comp) (bpir :)
+        BPRNode r' -> liftBase $ modifySTRef r' (over (bpnOut . _Just) (bpir:))
+        BPRInp ix' -> modifying (bpsSources . indexP ix' . comp . comp . traverse) (bpir :)
     return (BPRNode r)
   where
     bp :: BPNode s bs as a
     bp = BPN { _bpnInp       = i
-             , _bpnOut       = []
+             , _bpnOut       = Just []
              , _bpnOp        = o
              , _bpnResCache  = Nothing
              , _bpnGradCache = Nothing
@@ -154,29 +155,43 @@ backwardPass
     => STRef s (BPNode s bs as a)
     -> ST s (Tuple as)
 backwardPass r = fmap snd . caching bpnGradCache r $ \BPN{..} -> do
-    outs :: [a]  <- for _bpnOut $ \bpir -> do
-      BPIR (ix :: Index cs a) (r' :: STRef s (BPNode s bs cs c)) <- return bpir
-      getI . index ix <$> backwardPass r'
-    let totderv  = runSummer _bpnSummer outs
+    totderv <- for _bpnOut $ \outrefs -> do
+      outs <- for outrefs $ \bpir -> do
+        BPIR (ix :: Index cs a) (r' :: STRef s (BPNode s bs cs c)) <- return bpir
+        getI . index ix <$> backwardPass r'
+      return (runSummer _bpnSummer outs)
     case snd <$> _bpnResCache of
       Just gs  -> do
-        let gradProd = zipWithP (\s g -> runScaler s totderv <$> g) _bpnScaler gs
+        let gradProd = case totderv of
+              Just td -> zipWithP (\s g -> runScaler s td <$> g) _bpnScaler gs
+              Nothing -> gs
         return (totderv, gradProd)
       Nothing -> error "backwards pass before forwards pass"
+      -- can we just do the filling in here and so not require a separate
+      -- forward pass at all?
 
+-- TODO: restrict output refs to not being one of the inputs lol
 backprop
     :: (forall s. BP s as (BPRef s as a))
     -> Prod Summer as
     -> Tuple as
-    -> (a, Tuple as)
+    -> (a, Prod Maybe as)
 backprop bp ss env = runST $ do
-    (r, BPS{..}) <- runStateT (bpST bp) $ BPS (map1 (\_ -> Comp []) env)
+    (r, bps0) <- runStateT (bpST bp) $ BPS (map1 (\_ -> Comp (Comp (Just []))) env)
     res  <- forwardPass env r
-    gradLists <- for1 _bpsSources $ \(Comp rs) ->
-      for rs $ \bpir -> do
-        BPIR (ix :: Index cs a) (r' :: STRef s (BPNode s bs cs c)) <- return bpir
-        getI . index ix <$> backwardPass r'
-    let grad = zipWithP (\s xs -> I (runSummer s xs)) ss gradLists
+    -- set "out" lists to Nothing if is the output
+    BPS{..} <- liftBase $ case r of
+      BPRNode sr -> bps0 <$ modifySTRef sr (set bpnOut Nothing)
+      BPRInp  ix -> return $ set (bpsSources . indexP ix . comp . comp) Nothing bps0
+    gradLists <- for1 _bpsSources $ \(Comp (Comp (rs))) ->
+      fmap Comp . for rs $ \rs' ->
+        for rs' $ \bpir -> do
+          BPIR (ix :: Index cs a) (r' :: STRef s (BPNode s bs cs c)) <- return bpir
+          getI . index ix <$> backwardPass r'
+    let grad = zipWithP (\s (Comp xs) -> case xs of
+                                           Nothing  -> I undefined
+                                           Just xs' -> I (runSummer s xs')
+                        ) ss gradLists
     return (res, grad)
 
 backprop'
@@ -202,19 +217,6 @@ withInps
     -> BP s as a
 withInps f = f (map1 BPRInp indices)
 
--- addEnv
---     :: forall s a as b. ()
---     => BP s as b
---     -> BP s (a ': as) b
--- addEnv (BP (StateT f)) = BP . StateT $ \(BPS (i :< is)) -> do
---     (x, BPS is') <- f (BPS (map1 (over (comp . traverse) g) is))
---     return (x, BPS (i :< map1 (over (comp . traverse) h) is'))
---   where
---     g :: forall c. BPInpRef s (a ': as) c -> BPInpRef s as c
---     g = \case
---       BPIR ix r -> BPIR (IS ix) (_ r)
---     h :: forall c. BPInpRef s as c -> BPInpRef s (a ': as) c
---     h = undefined
 
 
 
