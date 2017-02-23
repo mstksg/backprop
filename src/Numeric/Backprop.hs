@@ -1,83 +1,32 @@
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE DeriveFunctor              #-}
-{-# LANGUAGE GADTs                      #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE KindSignatures             #-}
-{-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE TypeInType                 #-}
-{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeInType          #-}
+{-# LANGUAGE TypeOperators       #-}
 
-module Numeric.Backprop where
+module Numeric.Backprop
+  ( BP
+  , BPNode
+  , newBPRef
+  , backprop
+  ) where
 
 import           Control.Applicative
+import           Control.Monad.Base
 import           Control.Monad.ST
-import           Control.Monad.Trans.Class
-import           Control.Monad.Trans.State
-import           Data.Kind
+import           Control.Monad.State
 import           Data.Monoid
 import           Data.STRef
 import           Data.Traversable
 import           Data.Type.Combinator
 import           Data.Type.Index
 import           Data.Type.Product
-import           Numeric.Backprop.Op
+import           Lens.Micro hiding         (ix)
+import           Lens.Micro.Mtl
+import           Numeric.Backprop.Internal
 import           Type.Class.Higher
-
-data BPState :: Type -> [Type] -> Type where
-    BPS :: { bpsSources :: !(Prod ([] :.: BPInpRef s as) as)
-           -- , bpsOutput  :: !(Maybe (BPRef s as a))
-           }
-        -> BPState s as
-
-newtype BP s as b = BP { bpST :: StateT (BPState s as) (ST s) b }
-      deriving (Functor, Applicative, Monad)
-
-data BPRef :: Type -> [Type] -> Type -> Type where
-    BPRNode :: STRef s (BPNode s as bs a)
-            -> BPRef s as a
-    BPRInp  :: Index as a
-            -> BPRef s as a
-
-data BPInpRef :: Type -> [Type] -> Type -> Type where
-    BPIR :: { bpirIndex :: Index bs a
-            , bpirRef   :: STRef s (BPNode s as bs b)
-            }
-         -> BPInpRef s as a
-
-data BPNode :: Type -> [Type] -> [Type] -> Type -> Type where
-    BPN :: { bpInp       :: !(Prod (BPRef s bs) as)
-           , bpOut       :: ![BPInpRef s bs a]
-           , bpOp        :: !(Op as a)
-           , bpResCache  :: !(Maybe (a, Tuple as))
-           , bpGradCache :: !(Maybe (a, Tuple as))
-           , bpSummer    :: !(Summer a)
-           , bpScaler    :: !(Prod (Scaler a) as)
-           }
-        -> BPNode s bs as a
-
--- | bpResCache lens
-_bpResCache
-    :: Functor f
-    => (Maybe (a, Tuple as) -> f (Maybe (a, Tuple as)))
-    -> BPNode s bs as a
-    -> f (BPNode s bs as a)
-_bpResCache f bpn = (\rc -> bpn { bpResCache = rc }) <$> f (bpResCache bpn)
-
--- | bpGradCache lens
-_bpGradCache
-    :: Functor f
-    => (Maybe (a, Tuple as) -> f (Maybe (a, Tuple as)))
-    -> BPNode s bs as a
-    -> f (BPNode s bs as a)
-_bpGradCache f bpn = (\rc -> bpn { bpGradCache = rc }) <$> f (bpGradCache bpn)
-
-stBP
-    :: ST s b
-    -> BP s as b
-stBP s = BP (lift s)
 
 newBPRef
     :: forall s as a bs. Num a
@@ -86,27 +35,22 @@ newBPRef
     -> Prod (Scaler a) as
     -> BP s bs (BPRef s bs a)
 newBPRef i o s = do
-    r <- stBP (newSTRef bp)
+    r <- liftBase $ newSTRef bp
     ifor1_ i $ \ix bpr' -> do
       let bpir = BPIR ix r
       case bpr' of
-        BPRNode r' -> stBP . modifySTRef r' $ \bpn ->
-          bpn { bpOut = bpir : bpOut bpn }
-        BPRInp ix' -> BP . modify $ \bps ->
-          bps { bpsSources = overP (Comp . (bpir :) . getComp)
-                               ix'
-                               (bpsSources bps)
-              }
+        BPRNode r' -> liftBase $ modifySTRef r' (over bpnOut (bpir:))
+        BPRInp ix' -> modifying (bpsSources . indexP ix' . comp) (bpir :)
     return (BPRNode r)
   where
     bp :: BPNode s bs as a
-    bp = BPN { bpInp       = i
-             , bpOut       = []
-             , bpOp        = o
-             , bpResCache  = Nothing
-             , bpGradCache = Nothing
-             , bpSummer    = Summer sum
-             , bpScaler    = s
+    bp = BPN { _bpnInp       = i
+             , _bpnOut       = []
+             , _bpnOp        = o
+             , _bpnResCache  = Nothing
+             , _bpnGradCache = Nothing
+             , _bpnSummer    = Summer sum
+             , _bpnScaler    = s
              }
 
 forwardPass
@@ -114,22 +58,22 @@ forwardPass
     -> BPRef s bs a
     -> ST s a
 forwardPass env = \case
-    BPRNode r -> fmap fst . caching _bpResCache r $ \BPN{..} ->
-      runOp bpOp <$> traverse1 (fmap I . forwardPass env) bpInp
+    BPRNode r -> fmap fst . caching bpnResCache r $ \BPN{..} ->
+      runOp' _bpnOp <$> traverse1 (fmap I . forwardPass env) _bpnInp
     BPRInp ix -> return . getI $ index ix env
 
 backwardPass
     :: forall s as a bs. ()
     => STRef s (BPNode s bs as a)
     -> ST s (Tuple as)
-backwardPass r = fmap snd . caching _bpGradCache r $ \BPN{..} -> do
-    outs :: [a]  <- for bpOut $ \bpir -> do
+backwardPass r = fmap snd . caching bpnGradCache r $ \BPN{..} -> do
+    outs :: [a]  <- for _bpnOut $ \bpir -> do
       BPIR (ix :: Index cs a) (r' :: STRef s (BPNode s bs cs c)) <- return bpir
       getI . index ix <$> backwardPass r'
-    let totderv  = runSummer bpSummer outs
-    case snd <$> bpResCache of
+    let totderv  = runSummer _bpnSummer outs
+    case snd <$> _bpnResCache of
       Just gs  -> do
-        let gradProd = zipWithP (\s g -> runScaler s totderv <$> g) bpScaler gs
+        let gradProd = zipWithP (\s g -> runScaler s totderv <$> g) _bpnScaler gs
         return (totderv, gradProd)
       Nothing -> error "backwards pass before forwards pass"
 
@@ -141,7 +85,7 @@ backprop
 backprop bp ss env = runST $ do
     (r, BPS{..}) <- runStateT (bpST bp) $ BPS (map1 (\_ -> Comp []) env)
     res  <- forwardPass env r
-    gradLists <- for1 bpsSources $ \(Comp rs) ->
+    gradLists <- for1 _bpsSources $ \(Comp rs) ->
       for rs $ \bpir -> do
         BPIR (ix :: Index cs a) (r' :: STRef s (BPNode s bs cs c)) <- return bpir
         getI . index ix <$> backwardPass r'
@@ -159,13 +103,13 @@ caching
     -> ST s b
 caching l r f = do
     x <- readSTRef r
-    let y = getC . l C $ x
+    let y = view l x
     case y of
       Just z ->
         return z
       Nothing -> do
         z <- f x
-        modifySTRef r (getI . l (I . const (Just z)))
+        modifySTRef r (set l (Just z))
         return z
 
 for1
@@ -174,13 +118,6 @@ for1
     -> (forall a. f a -> h (g a))
     -> h (t g b)
 for1 x f = traverse1 f x
-
-ifor1
-    :: (Applicative h, IxTraversable1 i t)
-    => t f b
-    -> (forall a. i b a -> f a -> h (g a))
-    -> h (t g b)
-ifor1 x f = itraverse1 f x
 
 ifor1_
     :: (Applicative h, IxTraversable1 i t)
@@ -205,14 +142,21 @@ zipWithP f = \case
       y :< ys ->
         f x y :< zipWithP f xs ys
 
-overP
-    :: (f a -> f a)
-    -> Index as a
-    -> Prod f as
-    -> Prod f as
-overP f = \case
-    IZ -> \case
-      x :< xs -> f x :< xs
-    IS i -> \case
-      x :< xs ->
-        x :< overP f i xs
+indexP
+    :: Functor f
+    => Index as a
+    -> (g a -> f (g a))
+    -> Prod g as
+    -> f (Prod g as)
+indexP = \case
+    IZ   -> \f -> \case
+      x :< xs -> (:< xs) <$> f x
+    IS i -> \f -> \case
+      x :< xs -> (x :<) <$> indexP i f xs
+
+comp
+    :: Functor f
+    => (g (h a) -> f (g' (h' b)))
+    -> (g :.: h) a
+    -> f ((g' :.: h') b)
+comp f (Comp x) = Comp <$> f x

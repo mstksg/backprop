@@ -17,11 +17,15 @@ library
   hs-source-dirs:      src
   exposed-modules:     Numeric.Backprop
                        Numeric.Backprop.Op
-                       -- Data.Type.Uniform
+  other-modules:       Numeric.Backprop.Internal
   build-depends:       base >= 4.7 && < 5
                      , ad
+                     , microlens
+                     , microlens-mtl
+                     , microlens-th
+                     , mtl
                      , reflection
-                     , transformers
+                     , transformers-base
                      , type-combinators
   default-language:    Haskell2010
   ghc-options:         -Wall

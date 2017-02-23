@@ -1,48 +1,26 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveFunctor         #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE LambdaCase            #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs            #-}
+{-# LANGUAGE LambdaCase       #-}
+{-# LANGUAGE RankNTypes       #-}
 
-module Numeric.Backprop.Op where
+module Numeric.Backprop.Op
+  ( Op(..)
+  , Scaler(..)
+  , Summer(..)
+  , op0
+  , op1, op1'
+  , op2, op2'
+  , op3, op3'
+  ) where
 
 import           Data.Reflection                (Reifies)
 import           Data.Type.Combinator
-import           Data.Type.Index
-import           Data.Type.Length
 import           Data.Type.Product
 import           Numeric.AD
 import           Numeric.AD.Internal.Reverse    (Reverse, Tape)
 import           Numeric.AD.Mode.Forward hiding (grad')
-import           Type.Class.Known
-
-newtype Op as a = Op { runOp :: Tuple as -> (a, Tuple as) }
-    deriving (Functor)
-
-newtype Scaler a b = Scaler { runScaler :: a -> b -> b }
-newtype Summer a   = Summer { runSummer :: [a] -> a }
-
-instance Num a => Known (Scaler a) a where
-    type KnownC (Scaler a) a = Num a
-    known = Scaler (+)
-
-instance Num a => Known Summer a where
-    type KnownC Summer a = Num a
-    known = Summer sum
-
-summers
-    :: (Known Length as, Every (Known Summer) as)
-    => Prod Summer as
-summers = known
-
-scalers
-    :: (Known Length as, Every (Known (Scaler a)) as)
-    => Prod (Scaler a) as
-scalers = known
+import           Numeric.Backprop.Internal
 
 op0 :: a -> Op '[] a
 op0 x = Op $ \case
