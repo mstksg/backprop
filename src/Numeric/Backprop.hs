@@ -19,7 +19,6 @@ module Numeric.Backprop
   , inpRef, inpRefs, withInps
   , Op(..)
   , Summer(..)
-  , Scaler(..)
   ) where
 
 import           Control.Applicative
@@ -43,10 +42,9 @@ newBPRef
     :: forall s as a bs. ()
     => Prod (BPRef s bs) as
     -> Op as a
-    -> Prod (Scaler a) as
     -> Summer a
     -> BP s bs (BPRef s bs a)
-newBPRef i o sc sm = do
+newBPRef i o sm = do
     r <- liftBase $ newSTRef bp
     ifor1_ i $ \ix bpr' -> do
       let bpir = BPIR ix r
@@ -62,71 +60,59 @@ newBPRef i o sc sm = do
              , _bpnResCache  = Nothing
              , _bpnGradCache = Nothing
              , _bpnSummer    = sm
-             , _bpnScaler    = sc
              }
 
 newBPRef'
     :: Num a
     => Prod (BPRef s bs) as
     -> Op as a
-    -> Prod (Scaler a) as
     -> BP s bs (BPRef s bs a)
-newBPRef' i o s = newBPRef i o s (Summer sum)
+newBPRef' i o = newBPRef i o (Summer sum)
 
 newBPRef0
     :: Op '[] a
     -> Summer a
     -> BP s as (BPRef s as a)
-newBPRef0 o = newBPRef Ø o Ø
+newBPRef0 = newBPRef Ø
 
 newBPRef1
     :: BPRef s as a
     -> Op '[a] b
-    -> Scaler b a
     -> Summer b
     -> BP s as (BPRef s as b)
-newBPRef1 r o s = newBPRef (r :< Ø) o (s :< Ø)
+newBPRef1 r = newBPRef (r :< Ø)
 
 newBPRef1'
     :: Num b
     => BPRef s as a
     -> Op '[a] b
-    -> Scaler b a
     -> BP s as (BPRef s as b)
-newBPRef1' r o s = newBPRef1 r o s known
+newBPRef1' r o = newBPRef1 r o known
 
 newBPRef2
     :: BPRef s bs a
     -> BPRef s bs b
     -> Op '[a,b] c
-    -> Scaler c a
-    -> Scaler c b
     -> Summer c
     -> BP s bs (BPRef s bs c)
-newBPRef2 rx ry o sx sy = newBPRef (rx :< ry :< Ø) o (sx :< sy :< Ø)
+newBPRef2 rx ry = newBPRef (rx :< ry :< Ø)
 
 newBPRef2'
     :: Num c
     => BPRef s bs a
     -> BPRef s bs b
     -> Op '[a,b] c
-    -> Scaler c a
-    -> Scaler c b
     -> BP s bs (BPRef s bs c)
-newBPRef2' rx ry o sx sy = newBPRef2 rx ry o sx sy known
+newBPRef2' rx ry o = newBPRef2 rx ry o known
 
 newBPRef3
     :: BPRef s bs a
     -> BPRef s bs b
     -> BPRef s bs c
     -> Op '[a,b,c] d
-    -> Scaler d a
-    -> Scaler d b
-    -> Scaler d c
     -> Summer d
     -> BP s bs (BPRef s bs d)
-newBPRef3 rx ry rz o sx sy sz =
-    newBPRef (rx :< ry :< rz :< Ø) o (sx :< sy :< sz :< Ø)
+newBPRef3 rx ry rz = newBPRef (rx :< ry :< rz :< Ø)
 
 newBPRef3'
     :: Num d
@@ -134,11 +120,8 @@ newBPRef3'
     -> BPRef s bs b
     -> BPRef s bs c
     -> Op '[a,b,c] d
-    -> Scaler d a
-    -> Scaler d b
-    -> Scaler d c
     -> BP s bs (BPRef s bs d)
-newBPRef3' rx ry rz o sx sy sz = newBPRef3 rx ry rz o sx sy sz known
+newBPRef3' rx ry rz o = newBPRef3 rx ry rz o known
 
 forwardPass
     :: Tuple bs
@@ -159,12 +142,8 @@ backwardPass r = fmap snd . caching bpnGradCache r $ \BPN{..} -> do
         BPIR (ix :: Index cs a) (r' :: STRef s (BPNode s bs cs c)) <- return bpir
         getI . index ix <$> backwardPass r'
       return (runSummer _bpnSummer outs)
-    case snd <$> _bpnResCache of
-      Just gs  -> do
-        let gradProd = case totderv of
-              Just td -> zipWithP (\s g -> runScaler s td <$> g) _bpnScaler gs
-              Nothing -> gs
-        return (totderv, gradProd)
+    return $ case snd <$> _bpnResCache of
+      Just gs -> (totderv, gs totderv)
       Nothing -> error "backwards pass before forwards pass"
       -- can we just do the filling in here and so not require a separate
       -- forward pass at all?

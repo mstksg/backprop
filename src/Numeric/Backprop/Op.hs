@@ -7,7 +7,6 @@
 module Numeric.Backprop.Op
   ( Op(..)
   , runOp, gradOp
-  , Scaler(..)
   , Summer(..)
   , op0
   , op1, op1'
@@ -26,36 +25,41 @@ import           Numeric.Backprop.Internal
 runOp :: Op as a -> Tuple as -> a
 runOp o = fst . runOp' o
 
+gradOpWith :: Op as a -> Tuple as -> Maybe a -> Tuple as
+gradOpWith o = snd . runOp' o
+
 gradOp :: Op as a -> Tuple as -> Tuple as
-gradOp o = snd . runOp' o
+gradOp o i = gradOpWith o i Nothing
 
 op0 :: a -> Op '[] a
 op0 x = Op $ \case
-    Ø -> (x, Ø)
+    Ø -> (x, const Ø)
 
-op1 :: (a -> (b, a)) -> Op '[a] b
+op1 :: (a -> (b, Maybe b -> a)) -> Op '[a] b
 op1 f = Op $ \case
     I x :< Ø ->
       let (y, dx) = f x
-      in  (y, I dx :< Ø)
+      in  (y, only_ . dx)
 
-op2 :: (a -> b -> (c, (a, b))) -> Op '[a,b] c
+op2 :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a,b] c
 op2 f = Op $ \case
     I x :< I y :< Ø ->
-      let (z, (dx, dy)) = f x y
-      in  (z, I dx :< I dy :< Ø)
+      let (z, dxdy) = f x y
+      in  (z, (\(dx,dy) -> dx ::< dy ::< Ø) . dxdy)
 
-op3 :: (a -> b -> c -> (d, (a, b, c))) -> Op '[a,b,c] d
+op3 :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a,b,c] d
 op3 f = Op $ \case
     I x :< I y :< I z :< Ø ->
-      let (q, (dx, dy, dz)) = f x y z
-      in  (q, I dx :< I dy :< I dz :< Ø)
+      let (q, dxdydz) = f x y z
+      in  (q, (\(dx, dy, dz) -> dx ::< dy ::< dz ::< Ø) . dxdydz)
 
 op1'
     :: Num a
     => (forall s. AD s (Forward a) -> AD s (Forward a))
     -> Op '[a] a
-op1' f = op1 $ diff' f
+op1' f = op1 $ \x ->
+    let (z, dx) = diff' f x
+    in  (z, maybe dx (* dx))
 
 op2'
     :: Num a
@@ -63,7 +67,7 @@ op2'
     -> Op '[a,a] a
 op2' f = op2 $ \x y ->
     let (z, [dx, dy]) = grad' (\[x',y'] -> f x' y') [x,y]
-    in  (z, (dx, dy))
+    in  (z, maybe (dx, dy) (\dz -> (dz * dx, dz * dy)))
 
 op3'
     :: Num a
@@ -71,4 +75,4 @@ op3'
     -> Op '[a,a,a] a
 op3' f = op3 $ \x y z ->
     let (q, [dx, dy, dz]) = grad' (\[x',y',z'] -> f x' y' z') [x,y,z]
-    in  (q, (dx, dy, dz))
+    in  (q, maybe (dx, dy, dz) (\dq -> (dq * dx, dq * dy, dq * dz)))
