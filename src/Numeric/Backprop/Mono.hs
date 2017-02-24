@@ -1,6 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes    #-}
 {-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE DeriveFunctor          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE KindSignatures         #-}
@@ -8,11 +7,9 @@
 {-# LANGUAGE PolyKinds              #-}
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE StandaloneDeriving     #-}
 {-# LANGUAGE TypeApplications       #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
-{-# LANGUAGE TypeInType             #-}
 {-# LANGUAGE TypeOperators          #-}
 
 
@@ -25,22 +22,23 @@ module Numeric.Backprop.Mono
   , newBPRef2
   , newBPRef3
   , backprop
-  -- , inpRef, inpRefs, withInps
-  , Op(..)
+  , inpRef, inpRefs, withInps
+  , Op
+  , BP.runOp', BP.runOp, BP.gradOp
   ) where
 
-import           Data.Kind
-import           Data.Type.Combinator
-import           Data.Type.Equality
+import           Data.Type.Fin
+import           Data.Type.Index
 import           Data.Type.Nat
 import           Data.Type.Product
 import           Data.Type.Vector
-import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Family.Nat
-import qualified Numeric.Backprop     as BP
+import qualified Numeric.Backprop          as BP
+import qualified Numeric.Backprop.Internal as BP
+import qualified Numeric.Backprop.Op       as BP
 
-type family Rep (n :: N) (a :: k) :: [k] where
+type family Rep (n :: N) (a :: k) = (as :: [k]) | as -> n where
     Rep 'Z     a = '[]
     Rep ('S n) a = a ': Rep n a
 
@@ -94,21 +92,21 @@ backprop bp i = (x, prodAlong i g)
   where
     (x, g) = BP.backprop bp (toSummers i) (toUnities i) (vecToProd i)
 
--- inpRef
---     :: Index as a
---     -> BPRef s as a
--- inpRef = BPRInp
+inpRef
+    :: Fin n
+    -> BPRef s n a a
+inpRef = BP.BPRInp . finIndex
 
--- inpRefs
---     :: Known Length as
---     => Prod (BPRef s as) as
--- inpRefs = map1 BPRInp indices
+inpRefs
+    :: Known Nat n
+    => VecT n (BPRef s n a) a
+inpRefs = vgen_ inpRef
 
--- withInps
---     :: Known Length as
---     => (Prod (BPRef s as) as -> BP s as a)
---     -> BP s as a
--- withInps f = f (map1 BPRInp indices)
+withInps
+    :: Known Nat n
+    => (VecT n (BPRef s n a) a -> BP s n a b)
+    -> BP s n a b
+withInps f = f inpRefs
 
 
 
@@ -148,76 +146,9 @@ vecToProd = \case
     ØV      -> Ø
     x :* xs -> x :< vecToProd xs
 
-
--- data Replicate :: N -> k -> [k] -> Type where
---     RZ :: Replicate 'Z a '[]
---     RS :: Replicate n a as -> Replicate ('S n) a (a ': as)
-
--- replicate
---     :: Nat n
---     -> Replicate n a (Rep n a)
--- replicate = \case
---     Z_   -> RZ
---     S_ n -> RS (replicate n)
-
--- eqReplicate
---     :: Replicate n a bs
---     -> Replicate n a cs
---     -> (bs :~: cs)
--- eqReplicate = \case
---     RZ -> \case
---       RZ -> Refl
---     RS r1 -> \case
---       RS r2 -> case eqReplicate r1 r2 of
---                  Refl -> Refl
-
--- data BP :: Type -> N -> Type -> Type -> Type where
---     BP :: { bpRep :: Replicate n a as
---           , bpBP  :: BP.BP s as b
---           }
---        -> BP s n a b
-
--- deriving instance Functor (BP s n a)
-
--- instance Known Nat n => Applicative (BP s n a) where
---     pure x = BP (replicate known) (pure x)
---     (<*>) = \case
---         BP rf bf -> \case
---           BP rx bx -> case eqReplicate rf rx of
---                         Refl -> BP rf (bf <*> bx)
-
--- instance Known Nat n => Monad (BP s n a) where
---     return x = BP (replicate known) (pure x)
---     (>>=) = \case
---       BP r1 x -> \f -> BP r1 $ do
---         x' <- x
---         case f x' of
---           BP r2 y -> case eqReplicate r1 r2 of
---                        Refl -> y
-
--- data BPRef :: Type -> N -> Type -> Type where
---     BPR :: { bprRep   :: Replicate n a as
---            , bprBPRef :: BP.BPRef s as a
---            }
---         -> BPRef s n a
-
--- data BPRef :: Type -> N -> Type -> Type -> Type where
---     BPR :: { bprBPRef :: BP.BPRef s (Rep n a) b
---            }
---         -> BPRef s n a b
-
--- data Op :: N -> Type -> Type where
---     Op :: { opRep :: Replicate n a as
---           , opOp  :: BP.Op as a
---           }
---        -> Op n a
-
-                   -- = BP.BP s (Replicate n a)
--- type BPRef s n a    = BP.BPRef s (Replicate n a) a
--- type Op n a         = BP.Op (Replicate n a) a
-
--- type family Replicate (n :: N) (a :: k) = (as :: [k]) | as -> n where
---     Replicate 'Z a     = '[]
---     Replicate ('S n) a = a ': Replicate n a
-
--- type BPRef s n a    = BP.BPRef s (Replicate n a)
+finIndex
+    :: Fin n
+    -> Index (Rep n a) a
+finIndex = \case
+    FZ   -> IZ
+    FS f -> IS (finIndex f)

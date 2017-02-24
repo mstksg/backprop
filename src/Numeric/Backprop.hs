@@ -192,13 +192,13 @@ inpRef = BPRInp
 inpRefs
     :: Known Length as
     => Prod (BPRef s as) as
-inpRefs = map1 BPRInp indices
+inpRefs = map1 inpRef indices
 
 withInps
     :: Known Length as
     => (Prod (BPRef s as) as -> BP s as a)
     -> BP s as a
-withInps f = f (map1 BPRInp indices)
+withInps f = f inpRefs
 
 
 
