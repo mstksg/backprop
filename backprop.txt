@@ -12,9 +12,6 @@ Op :: (Tuple as -> (a, Maybe a -> Tuple as)) -> Op as a
 runOp :: Op as a -> Tuple as -> a
 gradOp :: Op as a -> Tuple as -> Tuple as
 gradOpWith :: Op as a -> Tuple as -> a -> Tuple as
-newtype Summer a
-Summer :: ([a] -> a) -> Summer a
-[runSummer] :: Summer a -> [a] -> a
 op0 :: a -> Op '[] a
 op1 :: (a -> (b, Maybe b -> a)) -> Op '[a] b
 op1' :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
