@@ -62,7 +62,7 @@ unities
 unities = map1 ((// known) . every @_ @Num) indices
 
 
-data ForwardRefs s as a = FRInternal [BPInpRef s as a]
+data ForwardRefs s as a = FRInternal ![BPInpRef s as a]
                         | FRTerminal
 
 data BPState :: Type -> [Type] -> Type where
@@ -74,14 +74,14 @@ newtype BP s as b = BP { bpST :: StateT (BPState s as) (ST s) b }
       deriving (Functor, Applicative, Monad, MonadState (BPState s as), MonadBase (ST s))
 
 data BPRef :: Type -> [Type] -> Type -> Type where
-    BPRNode :: STRef s (BPNode s as bs a)
+    BPRNode :: !(STRef s (BPNode s as bs a))
             -> BPRef s as a
-    BPRInp  :: Index as a
+    BPRInp  :: !(Index as a)
             -> BPRef s as a
 
 data BPInpRef :: Type -> [Type] -> Type -> Type where
-    BPIR :: { _bpirIndex :: Index bs a
-            , _bpirRef   :: STRef s (BPNode s as bs b)
+    BPIR :: { _bpirIndex :: !(Index bs a)
+            , _bpirRef   :: !(STRef s (BPNode s as bs b))
             }
          -> BPInpRef s as a
 

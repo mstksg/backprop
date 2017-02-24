@@ -6,7 +6,7 @@
 
 module Numeric.Backprop.Op
   ( Op(..)
-  , runOp, gradOp
+  , runOp, gradOp, gradOpWith
   , Summer(..)
   , op0
   , op1, op1'
@@ -25,11 +25,14 @@ import           Numeric.Backprop.Internal
 runOp :: Op as a -> Tuple as -> a
 runOp o = fst . runOp' o
 
-gradOpWith :: Op as a -> Tuple as -> Maybe a -> Tuple as
-gradOpWith o = snd . runOp' o
+gradOpWith' :: Op as a -> Tuple as -> Maybe a -> Tuple as
+gradOpWith' o = snd . runOp' o
+
+gradOpWith :: Op as a -> Tuple as -> a -> Tuple as
+gradOpWith o i = gradOpWith' o i . Just
 
 gradOp :: Op as a -> Tuple as -> Tuple as
-gradOp o i = gradOpWith o i Nothing
+gradOp o i = gradOpWith' o i Nothing
 
 op0 :: a -> Op '[] a
 op0 x = Op $ \case
