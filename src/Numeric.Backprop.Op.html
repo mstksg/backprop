@@ -1,0 +1,79 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DataKinds        #-}</span><span>
+</span><a name="line-2"></a><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
+</span><a name="line-3"></a><span class="hs-pragma">{-# LANGUAGE GADTs            #-}</span><span>
+</span><a name="line-4"></a><span class="hs-pragma">{-# LANGUAGE LambdaCase       #-}</span><span>
+</span><a name="line-5"></a><span class="hs-pragma">{-# LANGUAGE RankNTypes       #-}</span><span>
+</span><a name="line-6"></a><span>
+</span><a name="line-7"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">Backprop</span><span class="hs-operator">.</span><span class="hs-identifier">Op</span><span>
+</span><a name="line-8"></a><span>  </span><span class="hs-special">(</span><span> </span><a href="Numeric.Backprop.Internal.html#Op"><span class="hs-identifier hs-type">Op</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><a name="line-9"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#runOp"><span class="hs-identifier hs-var">runOp</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#gradOp"><span class="hs-identifier hs-var">gradOp</span></a><span>
+</span><a name="line-10"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Internal.html#Summer"><span class="hs-identifier hs-type">Summer</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><a name="line-11"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#op0"><span class="hs-identifier hs-var">op0</span></a><span>
+</span><a name="line-12"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#op1"><span class="hs-identifier hs-var">op1</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#op1%27"><span class="hs-identifier hs-var">op1'</span></a><span>
+</span><a name="line-13"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#op2"><span class="hs-identifier hs-var">op2</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#op2%27"><span class="hs-identifier hs-var">op2'</span></a><span>
+</span><a name="line-14"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#op3"><span class="hs-identifier hs-var">op3</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#op3%27"><span class="hs-identifier hs-var">op3'</span></a><span>
+</span><a name="line-15"></a><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-16"></a><span>
+</span><a name="line-17"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Reflection</span><span>                </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Reifies</span><span class="hs-special">)</span><span>
+</span><a name="line-18"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Combinator</span><span>
+</span><a name="line-19"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Product</span><span>
+</span><a name="line-20"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">AD</span><span>
+</span><a name="line-21"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">AD</span><span class="hs-operator">.</span><span class="hs-identifier">Internal</span><span class="hs-operator">.</span><span class="hs-identifier">Reverse</span><span>    </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Reverse</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Tape</span><span class="hs-special">)</span><span>
+</span><a name="line-22"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">AD</span><span class="hs-operator">.</span><span class="hs-identifier">Mode</span><span class="hs-operator">.</span><span class="hs-identifier">Forward</span><span> </span><span class="hs-keyword">hiding</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">grad'</span><span class="hs-special">)</span><span>
+</span><a name="line-23"></a><span class="hs-keyword">import</span><span>           </span><a href="Numeric.Backprop.Internal.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">Backprop</span><span class="hs-operator">.</span><span class="hs-identifier">Internal</span></a><span>
+</span><a name="line-24"></a><span>
+</span><a name="line-25"></a><span class="hs-identifier">runOp</span><span> </span><span class="hs-glyph">::</span><span> </span><a href="Numeric.Backprop.Internal.html#Op"><span class="hs-identifier hs-type">Op</span></a><span> </span><span class="hs-keyword">as</span><span> </span><a href="#local-6989586621679089843"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Tuple</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679089843"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-26"></a><a name="runOp"><a href="Numeric.Backprop.Op.html#runOp"><span class="hs-identifier">runOp</span></a></a><span> </span><a name="local-6989586621679089844"><a href="#local-6989586621679089844"><span class="hs-identifier">o</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">fst</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier">runOp'</span><span> </span><a href="#local-6989586621679089844"><span class="hs-identifier hs-var">o</span></a><span>
+</span><a name="line-27"></a><span>
+</span><a name="line-28"></a><span class="hs-identifier">gradOpWith</span><span> </span><span class="hs-glyph">::</span><span> </span><a href="Numeric.Backprop.Internal.html#Op"><span class="hs-identifier hs-type">Op</span></a><span> </span><span class="hs-keyword">as</span><span> </span><a href="#local-6989586621679089841"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Tuple</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Maybe</span><span> </span><a href="#local-6989586621679089841"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Tuple</span><span> </span><span class="hs-keyword">as</span><span>
+</span><a name="line-29"></a><a name="gradOpWith"><a href="Numeric.Backprop.Op.html#gradOpWith"><span class="hs-identifier">gradOpWith</span></a></a><span> </span><a name="local-6989586621679089856"><a href="#local-6989586621679089856"><span class="hs-identifier">o</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">snd</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier">runOp'</span><span> </span><a href="#local-6989586621679089856"><span class="hs-identifier hs-var">o</span></a><span>
+</span><a name="line-30"></a><span>
+</span><a name="line-31"></a><span class="hs-identifier">gradOp</span><span> </span><span class="hs-glyph">::</span><span> </span><a href="Numeric.Backprop.Internal.html#Op"><span class="hs-identifier hs-type">Op</span></a><span> </span><span class="hs-keyword">as</span><span> </span><a href="#local-6989586621679089839"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Tuple</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Tuple</span><span> </span><span class="hs-keyword">as</span><span>
+</span><a name="line-32"></a><a name="gradOp"><a href="Numeric.Backprop.Op.html#gradOp"><span class="hs-identifier">gradOp</span></a></a><span> </span><a name="local-6989586621679089857"><a href="#local-6989586621679089857"><span class="hs-identifier">o</span></a></a><span> </span><a name="local-6989586621679089858"><a href="#local-6989586621679089858"><span class="hs-identifier">i</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Op.html#gradOpWith"><span class="hs-identifier hs-var">gradOpWith</span></a><span> </span><a href="#local-6989586621679089857"><span class="hs-identifier hs-var">o</span></a><span> </span><a href="#local-6989586621679089858"><span class="hs-identifier hs-var">i</span></a><span> </span><span class="hs-identifier hs-var">Nothing</span><span>
+</span><a name="line-33"></a><span>
+</span><a name="line-34"></a><span class="hs-identifier">op0</span><span> </span><span class="hs-glyph">::</span><span> </span><a href="#local-6989586621679089837"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#Op"><span class="hs-identifier hs-type">Op</span></a><span> </span><span class="hs-char">'[] a
+op0 x = Op $ \case
+    &#216; -&gt; (x, const &#216;)
+
+op1 :: (a -&gt; (b, Maybe b -&gt; a)) -&gt; Op '[a] b
+op1 f = Op $ \case
+    I x :&lt; &#216; -&gt;
+      let (y, dx) = f x
+      in  (y, only_ . dx)
+
+op2 :: (a -&gt; b -&gt; (c, Maybe c -&gt; (a, b))) -&gt; Op '[a,b] c
+op2 f = Op $ \case
+    I x :&lt; I y :&lt; &#216; -&gt;
+      let (z, dxdy) = f x y
+      in  (z, (\(dx,dy) -&gt; dx ::&lt; dy ::&lt; &#216;) . dxdy)
+
+op3 :: (a -&gt; b -&gt; c -&gt; (d, Maybe d -&gt; (a, b, c))) -&gt; Op '[a,b,c] d
+op3 f = Op $ \case
+    I x :&lt; I y :&lt; I z :&lt; &#216; -&gt;
+      let (q, dxdydz) = f x y z
+      in  (q, (\(dx, dy, dz) -&gt; dx ::&lt; dy ::&lt; dz ::&lt; &#216;) . dxdydz)
+
+op1'
+    :: Num a
+    =&gt; (forall s. AD s (Forward a) -&gt; AD s (Forward a))
+    -&gt; Op '[a] a
+op1' f = op1 $ \x -&gt;
+    let (z, dx) = diff' f x
+    in  (z, maybe dx (* dx))
+
+op2'
+    :: Num a
+    =&gt; (forall s. Reifies s Tape =&gt; Reverse s a -&gt; Reverse s a -&gt; Reverse s a)
+    -&gt; Op '[a,a] a
+op2' f = op2 $ \x y -&gt;
+    let (z, [dx, dy]) = grad' (\[x',y'] -&gt; f x' y') [x,y]
+    in  (z, maybe (dx, dy) (\dz -&gt; (dz * dx, dz * dy)))
+
+op3'
+    :: Num a
+    =&gt; (forall s. Reifies s Tape =&gt; Reverse s a -&gt; Reverse s a -&gt; Reverse s a -&gt; Reverse s a)
+    -&gt; Op '[a,a,a] a
+op3' f = op3 $ \x y z -&gt;
+    let (q, [dx, dy, dz]) = grad' (\[x',y',z'] -&gt; f x' y' z') [x,y,z]
+    in  (q, maybe (dx, dy, dz) (\dq -&gt; (dq * dx, dq * dy, dq * dz)))
+</span></pre></body></html>
