@@ -142,8 +142,7 @@ backwardPass
     -> ST s (Tuple as)
 backwardPass r = fmap snd . caching bpnGradCache r $ \BPN{..} -> do
     totderv <- for (view frMaybe _bpnOut) $ \outrefs -> do
-      outs <- for outrefs $ \bpir -> do
-        BPIR (ix :: Index cs a) (r' :: STRef s (BPNode s bs cs c)) <- return bpir
+      outs <- for outrefs $ \(BPIR ix r') ->
         getI . index ix <$> backwardPass r'
       return (runSummer _bpnSummer outs)
     return $ case snd <$> _bpnResCache of
@@ -168,8 +167,7 @@ backprop bp ss us env = runST $ do
       BPRInp  ix -> return $ set (bpsSources . indexP ix) FRTerminal bps0
     gradLists <- for1 _bpsSources $ \rs ->
       fmap Comp . for (view frMaybe rs) $ \rs' ->
-        for rs' $ \bpir -> do
-          BPIR (ix :: Index cs a) (r' :: STRef s (BPNode s bs cs c)) <- return bpir
+        for rs' $ \(BPIR ix r') ->
           getI . index ix <$> backwardPass r'
     let sug  = ss `zipP` us `zipP` gradLists
         grad = map1 (\((s :&: u) :&: Comp xs) -> I $
