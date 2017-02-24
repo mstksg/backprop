@@ -4,6 +4,7 @@
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeInType          #-}
 {-# LANGUAGE TypeOperators       #-}
 
@@ -39,6 +40,7 @@ import           Lens.Micro.Mtl
 import           Numeric.Backprop.Internal
 import           Type.Class.Higher
 import           Type.Class.Known
+import           Type.Class.Witness
 
 newBPRef
     :: forall s as a bs. ()
@@ -178,11 +180,13 @@ backprop bp ss us env = runST $ do
     return (res, grad)
 
 backprop'
-    :: (Known (Prod Summer) as, Known (Prod Unity) as)
+    :: forall as a. Every Num as
     => (forall s. BP s as (BPRef s as a))
     -> Tuple as
     -> (a, Tuple as)
-backprop' bp = backprop bp known known
+backprop' bp xs = backprop bp (imap1 (\i _ -> known \\ every @_ @Num i) xs)
+                              (imap1 (\i _ -> known \\ every @_ @Num i) xs)
+                              xs
 
 inpRef
     :: Index as a

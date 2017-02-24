@@ -42,9 +42,9 @@ type family Rep (n :: N) (a :: k) = (as :: [k]) | as -> n where
     Rep 'Z     a = '[]
     Rep ('S n) a = a ': Rep n a
 
-type BP s n a       = BP.BP s (Rep n a)
-type BPRef s n a    = BP.BPRef s (Rep n a)
-type Op n a         = BP.Op (Rep n a)
+type BP s n a    = BP.BP s (Rep n a)
+type BPRef s n a = BP.BPRef s (Rep n a)
+type Op n a      = BP.Op (Rep n a)
 
 newBPRef
     :: forall s m n a b. Num b
