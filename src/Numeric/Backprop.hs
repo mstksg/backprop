@@ -33,7 +33,6 @@ import           Data.Type.Combinator
 import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Product
-import           Debug.Trace
 import           Lens.Micro hiding         (ix)
 import           Lens.Micro.Mtl
 import           Numeric.Backprop.Internal
@@ -52,13 +51,13 @@ newBPRef i o sc sm = do
     ifor1_ i $ \ix bpr' -> do
       let bpir = BPIR ix r
       case bpr' of
-        BPRNode r' -> liftBase $ modifySTRef r' (over (bpnOut . _Just) (bpir:))
-        BPRInp ix' -> modifying (bpsSources . indexP ix' . comp . comp . traverse) (bpir :)
+        BPRNode r' -> liftBase $ modifySTRef r' (over (bpnOut . _FRInternal) (bpir:))
+        BPRInp ix' -> modifying (bpsSources . indexP ix' . _FRInternal) (bpir :)
     return (BPRNode r)
   where
     bp :: BPNode s bs as a
     bp = BPN { _bpnInp       = i
-             , _bpnOut       = Just []
+             , _bpnOut       = FRInternal []
              , _bpnOp        = o
              , _bpnResCache  = Nothing
              , _bpnGradCache = Nothing
@@ -155,7 +154,7 @@ backwardPass
     => STRef s (BPNode s bs as a)
     -> ST s (Tuple as)
 backwardPass r = fmap snd . caching bpnGradCache r $ \BPN{..} -> do
-    totderv <- for _bpnOut $ \outrefs -> do
+    totderv <- for (view frMaybe _bpnOut) $ \outrefs -> do
       outs <- for outrefs $ \bpir -> do
         BPIR (ix :: Index cs a) (r' :: STRef s (BPNode s bs cs c)) <- return bpir
         getI . index ix <$> backwardPass r'
@@ -175,22 +174,23 @@ backprop
     :: (forall s. BP s as (BPRef s as a))
     -> Prod Summer as
     -> Tuple as
-    -> (a, Prod Maybe as)
+    -> (a, Tuple as)
 backprop bp ss env = runST $ do
-    (r, bps0) <- runStateT (bpST bp) $ BPS (map1 (\_ -> Comp (Comp (Just []))) env)
+    (r, bps0) <- runStateT (bpST bp) $ BPS (map1 (\_ -> FRInternal []) env)
     res  <- forwardPass env r
     -- set "out" lists to Nothing if is the output
     BPS{..} <- liftBase $ case r of
-      BPRNode sr -> bps0 <$ modifySTRef sr (set bpnOut Nothing)
-      BPRInp  ix -> return $ set (bpsSources . indexP ix . comp . comp) Nothing bps0
-    gradLists <- for1 _bpsSources $ \(Comp (Comp (rs))) ->
-      fmap Comp . for rs $ \rs' ->
+      BPRNode sr -> bps0 <$ modifySTRef sr (set bpnOut FRTerminal)
+      BPRInp  ix -> return $ set (bpsSources . indexP ix) FRTerminal bps0
+    gradLists <- for1 _bpsSources $ \rs ->
+      fmap Comp . for (view frMaybe rs) $ \rs' ->
         for rs' $ \bpir -> do
           BPIR (ix :: Index cs a) (r' :: STRef s (BPNode s bs cs c)) <- return bpir
           getI . index ix <$> backwardPass r'
-    let grad = zipWithP (\s (Comp xs) -> case xs of
-                                           Nothing  -> I undefined
-                                           Just xs' -> I (runSummer s xs')
+    let grad = zipWithP (\s (Comp xs) ->
+                            case xs of
+                              Nothing  -> I undefined
+                              Just xs' -> I (runSummer s xs')
                         ) ss gradLists
     return (res, grad)
 
@@ -230,7 +230,7 @@ withInps f = f (map1 BPRInp indices)
 -- using the given lens.  If already calculated, simply returned the cached
 -- result.
 caching
-    :: (forall f. Functor f => (Maybe b -> f (Maybe b)) -> a -> f a)    -- ^ lens
+    :: Lens' a (Maybe b)
     -> STRef s a
     -> (a -> ST s b)
     -> ST s b
@@ -275,21 +275,9 @@ zipWithP f = \case
       y :< ys ->
         f x y :< zipWithP f xs ys
 
-indexP
-    :: Functor f
-    => Index as a
-    -> (g a -> f (g a))
-    -> Prod g as
-    -> f (Prod g as)
+indexP :: Index as a -> Lens' (Prod g as) (g a)
 indexP = \case
     IZ   -> \f -> \case
       x :< xs -> (:< xs) <$> f x
     IS i -> \f -> \case
       x :< xs -> (x :<) <$> indexP i f xs
-
-comp
-    :: Functor f
-    => (g (h a) -> f (g' (h' b)))
-    -> (g :.: h) a
-    -> f ((g' :.: h') b)
-comp f (Comp x) = Comp <$> f x

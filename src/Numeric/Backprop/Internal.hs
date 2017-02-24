@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
@@ -17,16 +18,17 @@ module Numeric.Backprop.Internal
  , BPInpRef(..)
  , BPNode(..), bpnInp, bpnOut, bpnOp, bpnResCache, bpnGradCache, bpnScaler, bpnSummer
  , BPRef(..)
+ , ForwardRefs(..), _FRInternal, frMaybe
  ) where
 
+import           Control.Monad.Base
 import           Control.Monad.ST
 import           Control.Monad.State
-import           Control.Monad.Base
 import           Data.Kind
 import           Data.STRef
-import           Data.Type.Combinator
 import           Data.Type.Index
 import           Data.Type.Product
+import           Lens.Micro
 import           Lens.Micro.TH
 import           Type.Class.Known
 
@@ -45,9 +47,11 @@ instance Num a => Known Summer a where
     type KnownC Summer a = Num a
     known = Summer sum
 
+data ForwardRefs s as a = FRInternal [BPInpRef s as a]
+                        | FRTerminal
 
 data BPState :: Type -> [Type] -> Type where
-    BPS :: { _bpsSources :: !(Prod (Maybe :.: [] :.: BPInpRef s as) as)
+    BPS :: { _bpsSources :: !(Prod (ForwardRefs s as) as)
            }
         -> BPState s as
 
@@ -68,7 +72,7 @@ data BPInpRef :: Type -> [Type] -> Type -> Type where
 
 data BPNode :: Type -> [Type] -> [Type] -> Type -> Type where
     BPN :: { _bpnInp       :: !(Prod (BPRef s bs) as)
-           , _bpnOut       :: !(Maybe [BPInpRef s bs a])    -- nothing: is the "final output"
+           , _bpnOut       :: !(ForwardRefs s bs a)
            , _bpnOp        :: !(Op as a)
            , _bpnResCache  :: !(Maybe (a, Tuple as))
            , _bpnGradCache :: !(Maybe (Maybe a, Tuple as))  -- nothing if is the "final output"
@@ -79,3 +83,22 @@ data BPNode :: Type -> [Type] -> [Type] -> Type -> Type where
 
 makeLenses ''BPState
 makeLenses ''BPNode
+
+_FRInternal
+    :: Traversal (ForwardRefs s as a) (ForwardRefs t bs b)
+                 [BPInpRef s as a]    [BPInpRef t bs b]
+_FRInternal f = \case
+    FRInternal xs -> FRInternal <$> f xs
+    FRTerminal    -> pure FRTerminal
+
+frMaybe
+    :: Lens (ForwardRefs s as a) (ForwardRefs t bs b)
+            (Maybe [BPInpRef s as a]) (Maybe [BPInpRef t bs b])
+frMaybe f = \case
+    FRInternal xs -> maybeFr <$> f (Just xs)
+    FRTerminal    -> maybeFr <$> f Nothing
+  where
+    maybeFr (Just xs) = FRInternal xs
+    maybeFr Nothing   = FRTerminal
+
+
