@@ -1,18 +1,20 @@
 {-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeInType                 #-}
 {-# LANGUAGE TypeOperators              #-}
 
 module Numeric.Backprop.Internal
  ( Op(..)
- , Summer(..)
- , Unity(..)
+ , Summer(..), summers
+ , Unity(..), unities
  , BPState(..), bpsSources
  , BP(..)
  , BPInpRef(..)
@@ -27,10 +29,13 @@ import           Control.Monad.State
 import           Data.Kind
 import           Data.STRef
 import           Data.Type.Index
+import           Data.Type.Length
 import           Data.Type.Product
 import           Lens.Micro
 import           Lens.Micro.TH
+import           Type.Class.Higher
 import           Type.Class.Known
+import           Type.Class.Witness
 
 
 newtype Op as a = Op { runOp' :: Tuple as -> (a, Maybe a -> Tuple as) }
@@ -45,6 +50,17 @@ instance Num a => Known Summer a where
 instance Num a => Known Unity a where
     type KnownC Unity a = Num a
     known = Unity 1
+
+summers
+    :: (Every Num as, Known Length as)
+    => Prod Summer as
+summers = map1 ((// known) . every @_ @Num) indices
+
+unities
+    :: (Every Num as, Known Length as)
+    => Prod Unity as
+unities = map1 ((// known) . every @_ @Num) indices
+
 
 data ForwardRefs s as a = FRInternal [BPInpRef s as a]
                         | FRTerminal
