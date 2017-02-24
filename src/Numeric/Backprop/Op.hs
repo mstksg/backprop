@@ -6,7 +6,7 @@
 
 module Numeric.Backprop.Op
   ( Op(..)
-  , runOp, gradOp, gradOpWith
+  , runOp, gradOp, gradOpWith, gradOpWith'
   , op0
   , op1, op1'
   , op2, op2'
