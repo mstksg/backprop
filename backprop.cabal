@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Numeric.Backprop
                        Numeric.Backprop.Op
+                       Numeric.Backprop.Mono
   other-modules:       Numeric.Backprop.Internal
   build-depends:       base >= 4.7 && < 5
                      , ad

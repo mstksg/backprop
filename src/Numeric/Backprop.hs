@@ -9,7 +9,7 @@
 
 module Numeric.Backprop
   ( BP
-  , BPNode
+  , BPRef
   , newBPRef, newBPRef'
   , newBPRef0
   , newBPRef1, newBPRef1'
@@ -19,6 +19,7 @@ module Numeric.Backprop
   , inpRef, inpRefs, withInps
   , Op(..)
   , Summer(..)
+  , Unity(..)
   ) where
 
 import           Control.Applicative
@@ -29,6 +30,7 @@ import           Data.Monoid
 import           Data.STRef
 import           Data.Traversable
 import           Data.Type.Combinator
+import           Data.Type.Conjunction
 import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Product
@@ -152,9 +154,10 @@ backwardPass r = fmap snd . caching bpnGradCache r $ \BPN{..} -> do
 backprop
     :: (forall s. BP s as (BPRef s as a))
     -> Prod Summer as
+    -> Prod Unity as
     -> Tuple as
     -> (a, Tuple as)
-backprop bp ss env = runST $ do
+backprop bp ss us env = runST $ do
     (r, bps0) <- runStateT (bpST bp) $ BPS (map1 (\_ -> FRInternal []) env)
     res  <- forwardPass env r
     -- set "out" lists to Nothing if is the output
@@ -166,19 +169,20 @@ backprop bp ss env = runST $ do
         for rs' $ \bpir -> do
           BPIR (ix :: Index cs a) (r' :: STRef s (BPNode s bs cs c)) <- return bpir
           getI . index ix <$> backwardPass r'
-    let grad = zipWithP (\s (Comp xs) ->
-                            case xs of
-                              Nothing  -> I undefined
-                              Just xs' -> I (runSummer s xs')
-                        ) ss gradLists
+    let sug  = ss `zipP` us `zipP` gradLists
+        grad = map1 (\((s :&: u) :&: Comp xs) -> I $
+                        case xs of
+                          Nothing  -> getUnity u
+                          Just xs' -> runSummer s xs'
+                    ) sug
     return (res, grad)
 
 backprop'
-    :: Known (Prod Summer) as
+    :: (Known (Prod Summer) as, Known (Prod Unity) as)
     => (forall s. BP s as (BPRef s as a))
     -> Tuple as
     -> (a, Tuple as)
-backprop' bp = backprop bp known
+backprop' bp = backprop bp known known
 
 inpRef
     :: Index as a
@@ -242,17 +246,15 @@ ifor1_ x f = ($ pure ())
            . ifoldMap1 (\i y -> Const (Endo (f i y *>)))
            $ x
 
-zipWithP
-    :: (forall a. f a -> g a -> h a)
-    -> Prod f as
+zipP
+    :: Prod f as
     -> Prod g as
-    -> Prod h as
-zipWithP f = \case
+    -> Prod (f :&: g) as
+zipP = \case
     Ø -> \case
-      Ø -> Ø
+      Ø       -> Ø
     x :< xs -> \case
-      y :< ys ->
-        f x y :< zipWithP f xs ys
+      y :< ys -> x :&: y :< zipP xs ys
 
 indexP :: Index as a -> Lens' (Prod g as) (g a)
 indexP = \case

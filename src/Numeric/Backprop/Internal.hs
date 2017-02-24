@@ -12,6 +12,7 @@
 module Numeric.Backprop.Internal
  ( Op(..)
  , Summer(..)
+ , Unity(..)
  , BPState(..), bpsSources
  , BP(..)
  , BPInpRef(..)
@@ -35,10 +36,15 @@ import           Type.Class.Known
 newtype Op as a = Op { runOp' :: Tuple as -> (a, Maybe a -> Tuple as) }
 
 newtype Summer a   = Summer { runSummer :: [a] -> a }
+newtype Unity  a   = Unity  { getUnity  :: a }
 
 instance Num a => Known Summer a where
     type KnownC Summer a = Num a
     known = Summer sum
+
+instance Num a => Known Unity a where
+    type KnownC Unity a = Num a
+    known = Unity 1
 
 data ForwardRefs s as a = FRInternal [BPInpRef s as a]
                         | FRTerminal
