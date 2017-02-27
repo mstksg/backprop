@@ -63,7 +63,7 @@ newBPRef i o sm = do
     ifor1_ i $ \ix bpr' -> do
       let bpir = BPIR ix r
       case bpr' of
-        BPRNode r' -> liftBase $ modifySTRef r' (over (bpnOut . _FRInternal) (bpir:))
+        BPRNode r' -> liftBase . modifySTRef r' $ over (bpnOut . _FRInternal) (bpir:)
         BPRInp ix' -> modifying (bpsSources . indexP ix' . _FRInternal) (bpir :)
     return (BPRNode r)
 
@@ -141,10 +141,13 @@ backwardPass
     => STRef s (BPNode s rs as a)
     -> ST s (Tuple as)
 backwardPass r = fmap snd . caching bpnGradCache r $ \BPN{..} -> do
-    totderv <- for (view frMaybe _bpnOut) $ \outrefs -> do
-      outs <- for outrefs $ \(BPIR ix r') ->
-        getI . index ix <$> backwardPass r'
-      return (runSummer _bpnSummer outs)
+    totderv <- case _bpnOut of
+      FRInternal rs -> do
+        outs <- for rs $ \(BPIR ix r') ->
+          getI . index ix <$> backwardPass r'
+        return (Just $ runSummer _bpnSummer outs)
+      FRExternal gE -> return (Just gE)
+      FRTerminal    -> return Nothing
     g <- _bpnGradFunc totderv
     return (totderv, g)
 
@@ -185,16 +188,15 @@ backpropWith bp ss us env = do
           BPS{..} <- case r of
             BPRNode sr -> bps0 <$ modifySTRef sr (set bpnOut fr)
             BPRInp  ix -> return $ set (bpsSources . indexP ix) fr bps0
-          gradLists <- for1 _bpsSources $ \rs ->
-            fmap Comp . for (view frMaybe rs) $ \rs' ->
-              for rs' $ \(BPIR ix r') ->
-                getI . index ix <$> backwardPass r'
-          let sug  = ss `zipP` us `zipP` gradLists
-          return $ map1 (\((s :&: u) :&: Comp xs) -> I $
-                             case xs of
-                               Nothing  -> getUnity u
-                               Just xs' -> runSummer s xs'
-                         ) sug
+          for1 (ss `zipP` us `zipP` _bpsSources) $ \((s :&: u) :&: rs) -> do
+            case rs of
+              FRInternal rs' ->
+                fmap (I . runSummer s) . for rs' $ \(BPIR ix r') ->
+                  getI . index ix <$> backwardPass r'
+              FRExternal gE  ->
+                return $ I gE
+              FRTerminal     ->
+                return $ I (getUnity u)
     return (res, gradFunc)
 
 inpRef

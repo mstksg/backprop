@@ -20,7 +20,7 @@ module Numeric.Backprop.Internal
  , BPInpRef(..)
  , BPNode(..), bpnInp, bpnOut, bpnRes, bpnGradFunc, bpnGradCache, bpnSummer
  , BPRef(..)
- , ForwardRefs(..), _FRInternal, frMaybe
+ , ForwardRefs(..), _FRInternal
  ) where
 
 import           Control.Monad.Base
@@ -107,20 +107,10 @@ makeLenses ''BPState
 makeLenses ''BPNode
 
 _FRInternal
-    :: Traversal (ForwardRefs s as a) (ForwardRefs t bs b)
-                 [BPInpRef s as a]    [BPInpRef t bs b]
+    :: Traversal (ForwardRefs s as a) (ForwardRefs t bs a)
+                 [BPInpRef s as a]    [BPInpRef t bs a]
 _FRInternal f = \case
     FRInternal xs -> FRInternal <$> f xs
+    FRExternal x  -> pure (FRExternal x)
     FRTerminal    -> pure FRTerminal
-
-frMaybe
-    :: Lens (ForwardRefs s as a) (ForwardRefs t bs b)
-            (Maybe [BPInpRef s as a]) (Maybe [BPInpRef t bs b])
-frMaybe f = \case
-    FRInternal xs -> maybeFr <$> f (Just xs)
-    FRTerminal    -> maybeFr <$> f Nothing
-  where
-    maybeFr (Just xs) = FRInternal xs
-    maybeFr Nothing   = FRTerminal
-
 
