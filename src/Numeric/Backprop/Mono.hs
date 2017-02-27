@@ -51,7 +51,7 @@ newBPRef
     => VecT m (BPRef s n a) a
     -> Op m a b
     -> BP s n a (BPRef s n a b)
-newBPRef i o = BP.newBPRef (vecToProd i) o (BP.Summer sum)
+newBPRef i o = BP.newBPRef (vecToProd i) o
 
 newBPRef0
     :: forall s n a b. Num b
@@ -90,7 +90,7 @@ backprop
     -> (b, Vec n a)
 backprop bp i = (x, prodAlong i g)
   where
-    (x, g) = BP.backprop bp (toSummers i) (toUnities i) (vecToProd i)
+    (x, g) = BP.backprop' bp (toSummers i) (toUnities i) (vecToProd i)
 
 inpRef
     :: Fin n

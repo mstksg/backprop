@@ -37,44 +37,44 @@ op0 :: a -> Op '[] a
 op0 x = Op $ \case
     Ø -> (x, const Ø)
 
-op1 :: (a -> (b, Maybe b -> a)) -> Op '[a] b
-op1 f = Op $ \case
+op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
+op1' f = Op $ \case
     I x :< Ø ->
       let (y, dx) = f x
       in  (y, only_ . dx)
 
-op2 :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a,b] c
-op2 f = Op $ \case
+op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a,b] c
+op2' f = Op $ \case
     I x :< I y :< Ø ->
       let (z, dxdy) = f x y
       in  (z, (\(dx,dy) -> dx ::< dy ::< Ø) . dxdy)
 
-op3 :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a,b,c] d
-op3 f = Op $ \case
+op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a,b,c] d
+op3' f = Op $ \case
     I x :< I y :< I z :< Ø ->
       let (q, dxdydz) = f x y z
       in  (q, (\(dx, dy, dz) -> dx ::< dy ::< dz ::< Ø) . dxdydz)
 
-op1'
+op1
     :: Num a
     => (forall s. AD s (Forward a) -> AD s (Forward a))
     -> Op '[a] a
-op1' f = op1 $ \x ->
+op1 f = op1' $ \x ->
     let (z, dx) = diff' f x
     in  (z, maybe dx (* dx))
 
-op2'
+op2
     :: Num a
     => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a)
     -> Op '[a,a] a
-op2' f = op2 $ \x y ->
+op2 f = op2' $ \x y ->
     let (z, [dx, dy]) = grad' (\[x',y'] -> f x' y') [x,y]
     in  (z, maybe (dx, dy) (\dz -> (dz * dx, dz * dy)))
 
-op3'
+op3
     :: Num a
     => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a)
     -> Op '[a,a,a] a
-op3' f = op3 $ \x y z ->
+op3 f = op3' $ \x y z ->
     let (q, [dx, dy, dz]) = grad' (\[x',y',z'] -> f x' y' z') [x,y,z]
     in  (q, maybe (dx, dy, dz) (\dq -> (dq * dx, dq * dy, dq * dz)))
