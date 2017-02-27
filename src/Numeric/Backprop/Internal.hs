@@ -62,38 +62,38 @@ unities
 unities = map1 ((// known) . every @_ @Num) indices
 
 
-data ForwardRefs s as a = FRInternal ![BPInpRef s as a]
+data ForwardRefs s rs a = FRInternal ![BPInpRef s rs a]
                         | FRTerminal
 
 data BPState :: Type -> [Type] -> Type where
-    BPS :: { _bpsSources :: !(Prod (ForwardRefs s as) as)
+    BPS :: { _bpsSources :: !(Prod (ForwardRefs s rs) rs)
            }
-        -> BPState s as
+        -> BPState s rs
 
-newtype BP s as b = BP { bpST :: StateT (BPState s as) (ST s) b }
-      deriving (Functor, Applicative, Monad, MonadState (BPState s as), MonadBase (ST s))
+newtype BP s rs b = BP { bpST :: StateT (BPState s rs) (ST s) b }
+      deriving (Functor, Applicative, Monad, MonadState (BPState s rs), MonadBase (ST s))
 
 data BPRef :: Type -> [Type] -> Type -> Type where
-    BPRNode :: !(STRef s (BPNode s as bs a))
-            -> BPRef s as a
-    BPRInp  :: !(Index as a)
-            -> BPRef s as a
+    BPRNode :: !(STRef s (BPNode s rs as a))
+            -> BPRef s rs a
+    BPRInp  :: !(Index rs a)
+            -> BPRef s rs a
 
 data BPInpRef :: Type -> [Type] -> Type -> Type where
     BPIR :: { _bpirIndex :: !(Index bs a)
-            , _bpirRef   :: !(STRef s (BPNode s as bs b))
+            , _bpirRef   :: !(STRef s (BPNode s rs bs b))
             }
-         -> BPInpRef s as a
+         -> BPInpRef s rs a
 
 data BPNode :: Type -> [Type] -> [Type] -> Type -> Type where
-    BPN :: { _bpnInp       :: !(Prod (BPRef s bs) as)
-           , _bpnOut       :: !(ForwardRefs s bs a)
+    BPN :: { _bpnInp       :: !(Prod (BPRef s rs) as)
+           , _bpnOut       :: !(ForwardRefs s rs a)
            , _bpnOp        :: !(Op as a)
            , _bpnResCache  :: !(Maybe (a, Maybe a -> Tuple as))
            , _bpnGradCache :: !(Maybe (Maybe a, Tuple as))  -- nothing if is the "final output"
            , _bpnSummer    :: !(Summer a)
            }
-        -> BPNode s bs as a
+        -> BPNode s rs as a
 
 makeLenses ''BPState
 makeLenses ''BPNode
