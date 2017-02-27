@@ -8,11 +8,12 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeFamilyDependencies     #-}
 {-# LANGUAGE TypeInType                 #-}
 {-# LANGUAGE TypeOperators              #-}
 
 module Numeric.Backprop.Internal
- ( Op(..)
+ ( Op(..), Replicate
  , Summer(..), summers
  , Unity(..), unities
  , BPState(..), bpsSources
@@ -37,7 +38,11 @@ import           Lens.Micro.TH
 import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness
+import           Type.Family.Nat
 
+type family Replicate (n :: N) (a :: k) = (as :: [k]) | as -> n where
+    Replicate 'Z     a = '[]
+    Replicate ('S n) a = a ': Replicate n a
 
 newtype Op as a = Op { runOp' :: Tuple as -> (a, Maybe a -> Tuple as) }
 

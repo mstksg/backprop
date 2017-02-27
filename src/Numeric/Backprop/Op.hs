@@ -11,15 +11,20 @@ module Numeric.Backprop.Op
   , op1, op1'
   , op2, op2'
   , op3, op3'
+  , op, Replicate
   ) where
 
+import           Data.Bifunctor
 import           Data.Reflection                (Reifies)
 import           Data.Type.Combinator
+import           Data.Type.Nat
 import           Data.Type.Product
+import           Data.Type.Vector
 import           Numeric.AD
 import           Numeric.AD.Internal.Reverse    (Reverse, Tape)
 import           Numeric.AD.Mode.Forward hiding (grad')
 import           Numeric.Backprop.Internal
+import           Type.Class.Known
 
 runOp :: Op as a -> Tuple as -> a
 runOp o = fst . runOp' o
@@ -78,3 +83,29 @@ op3
 op3 f = op3' $ \x y z ->
     let (q, [dx, dy, dz]) = grad' (\[x',y',z'] -> f x' y' z') [x,y,z]
     in  (q, maybe (dx, dy, dz) (\dq -> (dq * dx, dq * dy, dq * dz)))
+
+op  :: (Num a, Known Nat n)
+    => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a)
+    -> Op (Replicate n a) a
+op f = Op $ second (\g -> \case Nothing -> vecToProd g
+                                Just g' -> vecToProd $ fmap (* g') g
+                   )
+          . grad' f
+          . prodToVec' known
+
+vecToProd
+    :: VecT n f a
+    -> Prod f (Replicate n a)
+vecToProd = \case
+    ØV      -> Ø
+    x :* xs -> x :< vecToProd xs
+
+prodToVec'
+    :: Nat n
+    -> Prod f (Replicate n a)
+    -> VecT n f a
+prodToVec' = \case
+    Z_   -> \case
+      Ø       -> ØV
+    S_ n -> \case
+      x :< xs -> x :* prodToVec' n xs

@@ -14,7 +14,7 @@
 
 
 module Numeric.Backprop.Mono
-  ( BP
+  ( BP, Replicate
   , BPRef
   , newBPRef
   , newBPRef0
@@ -32,19 +32,19 @@ import           Data.Type.Index
 import           Data.Type.Nat
 import           Data.Type.Product
 import           Data.Type.Vector
+import           Numeric.Backprop.Internal (Replicate)
 import           Type.Class.Known
 import           Type.Family.Nat
 import qualified Numeric.Backprop          as BP
 import qualified Numeric.Backprop.Internal as BP
 import qualified Numeric.Backprop.Op       as BP
 
-type family Rep (n :: N) (a :: k) = (as :: [k]) | as -> n where
-    Rep 'Z     a = '[]
-    Rep ('S n) a = a ': Rep n a
+type BP s n a    = BP.BP s (Replicate n a)
+type BPRef s n a = BP.BPRef s (Replicate n a)
+type Op n a      = BP.Op (Replicate n a)
 
-type BP s n a    = BP.BP s (Rep n a)
-type BPRef s n a = BP.BPRef s (Rep n a)
-type Op n a      = BP.Op (Rep n a)
+-- op :: ()
+-- newtype Op as a = Op { runOp' :: Tuple as -> (a, Maybe a -> Tuple as) }
 
 newBPRef
     :: forall s m n a b. Num b
@@ -115,7 +115,7 @@ withInps f = f inpRefs
 
 prodAlong
     :: VecT n f b
-    -> Prod f (Rep n a)
+    -> Prod f (Replicate n a)
     -> VecT n f a
 prodAlong = \case
     ØV -> \case
@@ -126,7 +126,7 @@ prodAlong = \case
 toSummers
     :: Num a
     => Vec n a
-    -> Prod BP.Summer (Rep n a)
+    -> Prod BP.Summer (Replicate n a)
 toSummers = \case
     ØV      -> Ø
     _ :* xs -> BP.Summer sum :< toSummers xs
@@ -134,21 +134,21 @@ toSummers = \case
 toUnities
     :: Num a
     => Vec n a
-    -> Prod BP.Unity (Rep n a)
+    -> Prod BP.Unity (Replicate n a)
 toUnities = \case
     ØV      -> Ø
     _ :* xs -> BP.Unity 1 :< toUnities xs
 
 vecToProd
     :: VecT n f a
-    -> Prod f (Rep n a)
+    -> Prod f (Replicate n a)
 vecToProd = \case
     ØV      -> Ø
     x :* xs -> x :< vecToProd xs
 
 finIndex
     :: Fin n
-    -> Index (Rep n a) a
+    -> Index (Replicate n a) a
 finIndex = \case
     FZ   -> IZ
     FS f -> IS (finIndex f)
