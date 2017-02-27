@@ -1,0 +1,95 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DataKinds              #-}</span><span>
+</span><a name="line-2"></a><span class="hs-pragma">{-# LANGUAGE KindSignatures         #-}</span><span>
+</span><a name="line-3"></a><span class="hs-pragma">{-# LANGUAGE LambdaCase             #-}</span><span>
+</span><a name="line-4"></a><span class="hs-pragma">{-# LANGUAGE PolyKinds              #-}</span><span>
+</span><a name="line-5"></a><span class="hs-pragma">{-# LANGUAGE RankNTypes             #-}</span><span>
+</span><a name="line-6"></a><span class="hs-pragma">{-# LANGUAGE TypeFamilies           #-}</span><span>
+</span><a name="line-7"></a><span class="hs-pragma">{-# LANGUAGE TypeFamilyDependencies #-}</span><span>
+</span><a name="line-8"></a><span class="hs-pragma">{-# LANGUAGE TypeOperators          #-}</span><span>
+</span><a name="line-9"></a><span>
+</span><a name="line-10"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Util</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-11"></a><span>
+</span><a name="line-12"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control</span><span class="hs-operator">.</span><span class="hs-identifier">Applicative</span><span>
+</span><a name="line-13"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Monoid</span><span>
+</span><a name="line-14"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Conjunction</span><span>
+</span><a name="line-15"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Fin</span><span>
+</span><a name="line-16"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Index</span><span>
+</span><a name="line-17"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Nat</span><span>
+</span><a name="line-18"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Product</span><span>
+</span><a name="line-19"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Vector</span><span>
+</span><a name="line-20"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Lens</span><span class="hs-operator">.</span><span class="hs-identifier">Micro</span><span>
+</span><a name="line-21"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Class</span><span class="hs-operator">.</span><span class="hs-identifier">Higher</span><span>
+</span><a name="line-22"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Family</span><span class="hs-operator">.</span><span class="hs-identifier">Nat</span><span>
+</span><a name="line-23"></a><span>
+</span><a name="line-24"></a><span class="hs-keyword">type</span><span> </span><span class="hs-keyword">family</span><span> </span><a name="Replicate"><a href="Data.Type.Util.html#Replicate"><span class="hs-identifier">Replicate</span></a></a><span> </span><span class="hs-special">(</span><a name="local-6989586621679074360"><a href="#local-6989586621679074360"><span class="hs-identifier">n</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">N</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><a name="local-6989586621679074362"><a href="#local-6989586621679074362"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><a href="#local-6989586621679074361"><span class="hs-identifier hs-type">k</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="hs-keyword">as</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><a href="#local-6989586621679074361"><span class="hs-identifier hs-type">k</span></a><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier">n</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-25"></a><span>    </span><span class="hs-identifier">Replicate</span><span> </span><span class="hs-char">'Z     a = '[]
+    Replicate ('S n) a = a ': Replicate n a
+
+vecToProd
+    :: VecT n f a
+    -&gt; Prod f (Replicate n a)
+vecToProd = \case
+    &#216;V      -&gt; &#216;
+    x :* xs -&gt; x :&lt; vecToProd xs
+
+prodToVec'
+    :: Nat n
+    -&gt; Prod f (Replicate n a)
+    -&gt; VecT n f a
+prodToVec' = \case
+    Z_   -&gt; \case
+      &#216;       -&gt; &#216;V
+    S_ n -&gt; \case
+      x :&lt; xs -&gt; x :* prodToVec' n xs
+
+prodAlong
+    :: VecT n f b
+    -&gt; Prod f (Replicate n a)
+    -&gt; VecT n f a
+prodAlong = \case
+    &#216;V -&gt; \case
+      &#216;       -&gt; &#216;V
+    _ :* v -&gt; \case
+      x :&lt; xs -&gt; x :* prodAlong v xs
+
+finIndex
+    :: Fin n
+    -&gt; Index (Replicate n a) a
+finIndex = \case
+    FZ   -&gt; IZ
+    FS f -&gt; IS (finIndex f)
+
+itraverse1_
+    :: (Applicative h, IxTraversable1 i t)
+    =&gt; (forall a. i b a -&gt; f a -&gt; h ())
+    -&gt; t f b
+    -&gt; h ()
+itraverse1_ f = ($ pure ())
+              . appEndo
+              . getConst
+              . ifoldMap1 (\i y -&gt; Const (Endo (f i y *&gt;)))
+
+for1
+    :: (Applicative h, Traversable1 t)
+    =&gt; t f b
+    -&gt; (forall a. f a -&gt; h (g a))
+    -&gt; h (t g b)
+for1 x f = traverse1 f x
+
+zipP
+    :: Prod f as
+    -&gt; Prod g as
+    -&gt; Prod (f :&amp;: g) as
+zipP = \case
+    &#216; -&gt; \case
+      &#216;       -&gt; &#216;
+    x :&lt; xs -&gt; \case
+      y :&lt; ys -&gt; x :&amp;: y :&lt; zipP xs ys
+
+indexP :: Index as a -&gt; Lens' (Prod g as) (g a)
+indexP = \case
+    IZ   -&gt; \f -&gt; \case
+      x :&lt; xs -&gt; (:&lt; xs) &lt;$&gt; f x
+    IS i -&gt; \f -&gt; \case
+      x :&lt; xs -&gt; (x :&lt;) &lt;$&gt; indexP i f xs
+</span></pre></body></html>

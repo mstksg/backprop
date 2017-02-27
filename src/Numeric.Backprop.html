@@ -17,189 +17,246 @@
 </span><a name="line-17"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#newBPRef2"><span class="hs-identifier hs-var">newBPRef2</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#newBPRef2%27"><span class="hs-identifier hs-var">newBPRef2'</span></a><span>
 </span><a name="line-18"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#newBPRef3"><span class="hs-identifier hs-var">newBPRef3</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#newBPRef3%27"><span class="hs-identifier hs-var">newBPRef3'</span></a><span>
 </span><a name="line-19"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#backprop"><span class="hs-identifier hs-var">backprop</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#backprop%27"><span class="hs-identifier hs-var">backprop'</span></a><span>
-</span><a name="line-20"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#inpRef"><span class="hs-identifier hs-var">inpRef</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#inpRefs"><span class="hs-identifier hs-var">inpRefs</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#withInps"><span class="hs-identifier hs-var">withInps</span></a><span>
-</span><a name="line-21"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Internal.html#Op"><span class="hs-identifier hs-type">Op</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
-</span><a name="line-22"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Internal.html#Summer"><span class="hs-identifier hs-type">Summer</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
-</span><a name="line-23"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Internal.html#Unity"><span class="hs-identifier hs-type">Unity</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
-</span><a name="line-24"></a><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
-</span><a name="line-25"></a><span>
-</span><a name="line-26"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control</span><span class="hs-operator">.</span><span class="hs-identifier">Applicative</span><span>
-</span><a name="line-27"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control</span><span class="hs-operator">.</span><span class="hs-identifier">Monad</span><span class="hs-operator">.</span><span class="hs-identifier">Base</span><span>
-</span><a name="line-28"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control</span><span class="hs-operator">.</span><span class="hs-identifier">Monad</span><span class="hs-operator">.</span><span class="hs-identifier">ST</span><span>
-</span><a name="line-29"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control</span><span class="hs-operator">.</span><span class="hs-identifier">Monad</span><span class="hs-operator">.</span><span class="hs-identifier">State</span><span>
-</span><a name="line-30"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Monoid</span><span>
-</span><a name="line-31"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">STRef</span><span>
-</span><a name="line-32"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Traversable</span><span>
-</span><a name="line-33"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Combinator</span><span>
-</span><a name="line-34"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Conjunction</span><span>
-</span><a name="line-35"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Index</span><span>
-</span><a name="line-36"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Length</span><span>
-</span><a name="line-37"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Product</span><span>
-</span><a name="line-38"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Lens</span><span class="hs-operator">.</span><span class="hs-identifier">Micro</span><span> </span><span class="hs-keyword">hiding</span><span>         </span><span class="hs-special">(</span><span class="hs-identifier hs-var">ix</span><span class="hs-special">)</span><span>
-</span><a name="line-39"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Lens</span><span class="hs-operator">.</span><span class="hs-identifier">Micro</span><span class="hs-operator">.</span><span class="hs-identifier">Mtl</span><span>
-</span><a name="line-40"></a><span class="hs-keyword">import</span><span>           </span><a href="Numeric.Backprop.Internal.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">Backprop</span><span class="hs-operator">.</span><span class="hs-identifier">Internal</span></a><span>
-</span><a name="line-41"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Class</span><span class="hs-operator">.</span><span class="hs-identifier">Higher</span><span>
-</span><a name="line-42"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Class</span><span class="hs-operator">.</span><span class="hs-identifier">Known</span><span>
-</span><a name="line-43"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Class</span><span class="hs-operator">.</span><span class="hs-identifier">Witness</span><span>
-</span><a name="line-44"></a><span>
-</span><a name="line-45"></a><span class="hs-identifier">newBPRef</span><span>
-</span><a name="line-46"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679105539"><a href="#local-6989586621679105539"><span class="hs-identifier">s</span></a></a><span> </span><span class="hs-keyword">as</span><span> </span><a name="local-6989586621679105541"><a href="#local-6989586621679105541"><span class="hs-identifier">a</span></a></a><span> </span><a name="local-6989586621679105542"><a href="#local-6989586621679105542"><span class="hs-identifier">bs</span></a></a><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
-</span><a name="line-47"></a><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-identifier hs-type">Prod</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BPRef"><span class="hs-identifier hs-type">BPRef</span></a><span> </span><a href="#local-6989586621679105539"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679105542"><span class="hs-identifier hs-type">bs</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">as</span><span>
-</span><a name="line-48"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#Op"><span class="hs-identifier hs-type">Op</span></a><span> </span><span class="hs-keyword">as</span><span> </span><a href="#local-6989586621679105541"><span class="hs-identifier hs-type">a</span></a><span>
-</span><a name="line-49"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#Summer"><span class="hs-identifier hs-type">Summer</span></a><span> </span><a href="#local-6989586621679105541"><span class="hs-identifier hs-type">a</span></a><span>
-</span><a name="line-50"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BP"><span class="hs-identifier hs-type">BP</span></a><span> </span><a href="#local-6989586621679105539"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679105542"><span class="hs-identifier hs-type">bs</span></a><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BPRef"><span class="hs-identifier hs-type">BPRef</span></a><span> </span><a href="#local-6989586621679105539"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679105542"><span class="hs-identifier hs-type">bs</span></a><span> </span><a href="#local-6989586621679105541"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
-</span><a name="line-51"></a><a name="newBPRef"><a href="Numeric.Backprop.html#newBPRef"><span class="hs-identifier">newBPRef</span></a></a><span> </span><a name="local-6989586621679105543"><a href="#local-6989586621679105543"><span class="hs-identifier">i</span></a></a><span> </span><a name="local-6989586621679105544"><a href="#local-6989586621679105544"><span class="hs-identifier">o</span></a></a><span> </span><a name="local-6989586621679105545"><a href="#local-6989586621679105545"><span class="hs-identifier">sm</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><a name="line-52"></a><span>    </span><a name="local-6989586621679105547"><a href="#local-6989586621679105547"><span class="hs-identifier">r</span></a></a><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-identifier hs-var">liftBase</span><span> </span><span class="hs-operator hs-var">$</span><span> </span><span class="hs-identifier hs-var">newSTRef</span><span> </span><a href="#local-6989586621679105546"><span class="hs-identifier hs-var">bp</span></a><span>
-</span><a name="line-53"></a><span>    </span><a href="Numeric.Backprop.html#ifor1_"><span class="hs-identifier hs-var">ifor1_</span></a><span> </span><a href="#local-6989586621679105543"><span class="hs-identifier hs-var">i</span></a><span> </span><span class="hs-operator hs-var">$</span><span> </span><span class="hs-glyph">\</span><a name="local-6989586621679105548"><a href="#local-6989586621679105548"><span class="hs-identifier">ix</span></a></a><span> </span><a name="local-6989586621679105549"><a href="#local-6989586621679105549"><span class="hs-identifier">bpr'</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
-</span><a name="line-54"></a><span>      </span><span class="hs-keyword">let</span><span> </span><a name="local-6989586621679105550"><a href="#local-6989586621679105550"><span class="hs-identifier">bpir</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Internal.html#BPIR"><span class="hs-identifier hs-var">BPIR</span></a><span> </span><a href="#local-6989586621679105548"><span class="hs-identifier hs-var">ix</span></a><span> </span><a href="#local-6989586621679105547"><span class="hs-identifier hs-var">r</span></a><span>
-</span><a name="line-55"></a><span>      </span><span class="hs-keyword">case</span><span> </span><a href="#local-6989586621679105549"><span class="hs-identifier hs-var">bpr'</span></a><span> </span><span class="hs-keyword">of</span><span>
-</span><a name="line-56"></a><span>        </span><a href="Numeric.Backprop.Internal.html#BPRNode"><span class="hs-identifier hs-var">BPRNode</span></a><span> </span><a name="local-6989586621679105551"><a href="#local-6989586621679105551"><span class="hs-identifier">r'</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-var">liftBase</span><span> </span><span class="hs-operator hs-var">$</span><span> </span><span class="hs-identifier hs-var">modifySTRef</span><span> </span><a href="#local-6989586621679105551"><span class="hs-identifier hs-var">r'</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">over</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#bpnOut"><span class="hs-identifier hs-var">bpnOut</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Numeric.Backprop.Internal.html#_FRInternal"><span class="hs-identifier hs-var">_FRInternal</span></a><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><a href="#local-6989586621679105550"><span class="hs-identifier hs-var">bpir</span></a><span class="hs-glyph">:</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><a name="line-57"></a><span>        </span><a href="Numeric.Backprop.Internal.html#BPRInp"><span class="hs-identifier hs-var">BPRInp</span></a><span> </span><a name="local-6989586621679105552"><a href="#local-6989586621679105552"><span class="hs-identifier">ix'</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-var">modifying</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#bpsSources"><span class="hs-identifier hs-var">bpsSources</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Numeric.Backprop.html#indexP"><span class="hs-identifier hs-var">indexP</span></a><span> </span><a href="#local-6989586621679105552"><span class="hs-identifier hs-var">ix'</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Numeric.Backprop.Internal.html#_FRInternal"><span class="hs-identifier hs-var">_FRInternal</span></a><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><a href="#local-6989586621679105550"><span class="hs-identifier hs-var">bpir</span></a><span> </span><span class="hs-glyph">:</span><span class="hs-special">)</span><span>
-</span><a name="line-58"></a><span>    </span><span class="hs-identifier hs-var">return</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BPRNode"><span class="hs-identifier hs-var">BPRNode</span></a><span> </span><a href="#local-6989586621679105547"><span class="hs-identifier hs-var">r</span></a><span class="hs-special">)</span><span>
-</span><a name="line-59"></a><span>  </span><span class="hs-keyword">where</span><span>
-</span><a name="line-60"></a><span>    </span><span class="hs-identifier">bp</span><span> </span><span class="hs-glyph">::</span><span> </span><a href="Numeric.Backprop.Internal.html#BPNode"><span class="hs-identifier hs-type">BPNode</span></a><span> </span><a href="#local-6989586621679105539"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679105542"><span class="hs-identifier hs-type">bs</span></a><span> </span><span class="hs-keyword">as</span><span> </span><a href="#local-6989586621679105541"><span class="hs-identifier hs-type">a</span></a><span>
-</span><a name="line-61"></a><span>    </span><a name="local-6989586621679105546"><a href="#local-6989586621679105546"><span class="hs-identifier">bp</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Internal.html#BPN"><span class="hs-identifier hs-var">BPN</span></a><span> </span><span class="hs-special">{</span><span> </span><span class="hs-identifier">_bpnInp</span><span>       </span><span class="hs-glyph">=</span><span> </span><a href="#local-6989586621679105543"><span class="hs-identifier hs-var">i</span></a><span>
-</span><a name="line-62"></a><span>             </span><span class="hs-special">,</span><span> </span><span class="hs-identifier">_bpnOut</span><span>       </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Internal.html#FRInternal"><span class="hs-identifier hs-var">FRInternal</span></a><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><a name="line-63"></a><span>             </span><span class="hs-special">,</span><span> </span><span class="hs-identifier">_bpnOp</span><span>        </span><span class="hs-glyph">=</span><span> </span><a href="#local-6989586621679105544"><span class="hs-identifier hs-var">o</span></a><span>
-</span><a name="line-64"></a><span>             </span><span class="hs-special">,</span><span> </span><span class="hs-identifier">_bpnResCache</span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">Nothing</span><span>
-</span><a name="line-65"></a><span>             </span><span class="hs-special">,</span><span> </span><span class="hs-identifier">_bpnGradCache</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">Nothing</span><span>
-</span><a name="line-66"></a><span>             </span><span class="hs-special">,</span><span> </span><span class="hs-identifier">_bpnSummer</span><span>    </span><span class="hs-glyph">=</span><span> </span><a href="#local-6989586621679105545"><span class="hs-identifier hs-var">sm</span></a><span>
-</span><a name="line-67"></a><span>             </span><span class="hs-special">}</span><span>
-</span><a name="line-68"></a><span>
-</span><a name="line-69"></a><span class="hs-identifier">newBPRef'</span><span>
-</span><a name="line-70"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Num</span><span> </span><a href="#local-6989586621679105535"><span class="hs-identifier hs-type">a</span></a><span>
-</span><a name="line-71"></a><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-identifier hs-type">Prod</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BPRef"><span class="hs-identifier hs-type">BPRef</span></a><span> </span><a href="#local-6989586621679105536"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679105537"><span class="hs-identifier hs-type">bs</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">as</span><span>
-</span><a name="line-72"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#Op"><span class="hs-identifier hs-type">Op</span></a><span> </span><span class="hs-keyword">as</span><span> </span><a href="#local-6989586621679105535"><span class="hs-identifier hs-type">a</span></a><span>
-</span><a name="line-73"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BP"><span class="hs-identifier hs-type">BP</span></a><span> </span><a href="#local-6989586621679105536"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679105537"><span class="hs-identifier hs-type">bs</span></a><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BPRef"><span class="hs-identifier hs-type">BPRef</span></a><span> </span><a href="#local-6989586621679105536"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679105537"><span class="hs-identifier hs-type">bs</span></a><span> </span><a href="#local-6989586621679105535"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
-</span><a name="line-74"></a><a name="newBPRef%27"><a href="Numeric.Backprop.html#newBPRef%27"><span class="hs-identifier">newBPRef'</span></a></a><span> </span><a name="local-6989586621679105553"><a href="#local-6989586621679105553"><span class="hs-identifier">i</span></a></a><span> </span><a name="local-6989586621679105554"><a href="#local-6989586621679105554"><span class="hs-identifier">o</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.html#newBPRef"><span class="hs-identifier hs-var">newBPRef</span></a><span> </span><a href="#local-6989586621679105553"><span class="hs-identifier hs-var">i</span></a><span> </span><a href="#local-6989586621679105554"><span class="hs-identifier hs-var">o</span></a><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#Summer"><span class="hs-identifier hs-var">Summer</span></a><span> </span><span class="hs-identifier hs-var">sum</span><span class="hs-special">)</span><span>
-</span><a name="line-75"></a><span>
-</span><a name="line-76"></a><span class="hs-identifier">newBPRef0</span><span>
-</span><a name="line-77"></a><span>    </span><span class="hs-glyph">::</span><span> </span><a href="Numeric.Backprop.Internal.html#Op"><span class="hs-identifier hs-type">Op</span></a><span> </span><span class="hs-char">'[] a
+</span><a name="line-20"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#plugBP"><span class="hs-identifier hs-var">plugBP</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#plugBP%27"><span class="hs-identifier hs-var">plugBP'</span></a><span>
+</span><a name="line-21"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#inpRef"><span class="hs-identifier hs-var">inpRef</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#inpRefs"><span class="hs-identifier hs-var">inpRefs</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#withInps"><span class="hs-identifier hs-var">withInps</span></a><span>
+</span><a name="line-22"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Internal.html#Op"><span class="hs-identifier hs-type">Op</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><a name="line-23"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Internal.html#Summer"><span class="hs-identifier hs-type">Summer</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><a name="line-24"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Internal.html#Unity"><span class="hs-identifier hs-type">Unity</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><a name="line-25"></a><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-26"></a><span>
+</span><a name="line-27"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control</span><span class="hs-operator">.</span><span class="hs-identifier">Applicative</span><span>
+</span><a name="line-28"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control</span><span class="hs-operator">.</span><span class="hs-identifier">Monad</span><span class="hs-operator">.</span><span class="hs-identifier">Base</span><span>
+</span><a name="line-29"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control</span><span class="hs-operator">.</span><span class="hs-identifier">Monad</span><span class="hs-operator">.</span><span class="hs-identifier">Reader</span><span>
+</span><a name="line-30"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control</span><span class="hs-operator">.</span><span class="hs-identifier">Monad</span><span class="hs-operator">.</span><span class="hs-identifier">ST</span><span>
+</span><a name="line-31"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control</span><span class="hs-operator">.</span><span class="hs-identifier">Monad</span><span class="hs-operator">.</span><span class="hs-identifier">State</span><span>
+</span><a name="line-32"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Monoid</span><span>
+</span><a name="line-33"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">STRef</span><span>
+</span><a name="line-34"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Traversable</span><span>
+</span><a name="line-35"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Combinator</span><span>
+</span><a name="line-36"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Conjunction</span><span>
+</span><a name="line-37"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Index</span><span>
+</span><a name="line-38"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Length</span><span>
+</span><a name="line-39"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Product</span><span>
+</span><a name="line-40"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.Type.Util.html"><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Util</span></a><span>
+</span><a name="line-41"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Lens</span><span class="hs-operator">.</span><span class="hs-identifier">Micro</span><span> </span><span class="hs-keyword">hiding</span><span>         </span><span class="hs-special">(</span><span class="hs-identifier hs-var">ix</span><span class="hs-special">)</span><span>
+</span><a name="line-42"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Lens</span><span class="hs-operator">.</span><span class="hs-identifier">Micro</span><span class="hs-operator">.</span><span class="hs-identifier">Mtl</span><span>
+</span><a name="line-43"></a><span class="hs-keyword">import</span><span>           </span><a href="Numeric.Backprop.Internal.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">Backprop</span><span class="hs-operator">.</span><span class="hs-identifier">Internal</span></a><span>
+</span><a name="line-44"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Class</span><span class="hs-operator">.</span><span class="hs-identifier">Higher</span><span>
+</span><a name="line-45"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Class</span><span class="hs-operator">.</span><span class="hs-identifier">Known</span><span>
+</span><a name="line-46"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Class</span><span class="hs-operator">.</span><span class="hs-identifier">Witness</span><span>
+</span><a name="line-47"></a><span>
+</span><a name="line-48"></a><span class="hs-identifier">newBPRef'</span><span>
+</span><a name="line-49"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679080853"><a href="#local-6989586621679080853"><span class="hs-identifier">s</span></a></a><span> </span><a name="local-6989586621679080854"><a href="#local-6989586621679080854"><span class="hs-identifier">rs</span></a></a><span> </span><span class="hs-keyword">as</span><span> </span><a name="local-6989586621679080856"><a href="#local-6989586621679080856"><span class="hs-identifier">a</span></a></a><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-50"></a><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-identifier hs-type">Prod</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BPRef"><span class="hs-identifier hs-type">BPRef</span></a><span> </span><a href="#local-6989586621679080853"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679080854"><span class="hs-identifier hs-type">rs</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">as</span><span>
+</span><a name="line-51"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#Op"><span class="hs-identifier hs-type">Op</span></a><span> </span><span class="hs-keyword">as</span><span> </span><a href="#local-6989586621679080856"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-52"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#Summer"><span class="hs-identifier hs-type">Summer</span></a><span> </span><a href="#local-6989586621679080856"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-53"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BP"><span class="hs-identifier hs-type">BP</span></a><span> </span><a href="#local-6989586621679080853"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679080854"><span class="hs-identifier hs-type">rs</span></a><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BPRef"><span class="hs-identifier hs-type">BPRef</span></a><span> </span><a href="#local-6989586621679080853"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679080854"><span class="hs-identifier hs-type">rs</span></a><span> </span><a href="#local-6989586621679080856"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
+</span><a name="line-54"></a><a name="newBPRef%27"><a href="Numeric.Backprop.html#newBPRef%27"><span class="hs-identifier">newBPRef'</span></a></a><span> </span><a name="local-6989586621679080857"><a href="#local-6989586621679080857"><span class="hs-identifier">i</span></a></a><span> </span><a name="local-6989586621679080858"><a href="#local-6989586621679080858"><span class="hs-identifier">o</span></a></a><span> </span><a name="local-6989586621679080859"><a href="#local-6989586621679080859"><span class="hs-identifier">sm</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><a name="line-55"></a><span>    </span><a name="local-6989586621679080860"><a href="#local-6989586621679080860"><span class="hs-identifier">xs</span></a></a><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-identifier hs-var">traverse1</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">fmap</span><span> </span><span class="hs-identifier hs-var">I</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Numeric.Backprop.html#resolveRef"><span class="hs-identifier hs-var">resolveRef</span></a><span class="hs-special">)</span><span> </span><a href="#local-6989586621679080857"><span class="hs-identifier hs-var">i</span></a><span>
+</span><a name="line-56"></a><span>    </span><span class="hs-keyword">let</span><span> </span><span class="hs-special">(</span><a name="local-6989586621679080861"><a href="#local-6989586621679080861"><span class="hs-identifier">res</span></a></a><span class="hs-special">,</span><span> </span><a name="local-6989586621679080862"><a href="#local-6989586621679080862"><span class="hs-identifier">gf</span></a></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier">runOp'</span><span> </span><a href="#local-6989586621679080858"><span class="hs-identifier hs-var">o</span></a><span> </span><a href="#local-6989586621679080860"><span class="hs-identifier hs-var">xs</span></a><span>
+</span><a name="line-57"></a><span>        </span><a name="local-6989586621679080863"><a href="#local-6989586621679080863"><span class="hs-identifier">bp</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Internal.html#BPN"><span class="hs-identifier hs-var">BPN</span></a><span> </span><span class="hs-special">{</span><span> </span><span class="hs-identifier">_bpnOut</span><span>       </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Internal.html#FRInternal"><span class="hs-identifier hs-var">FRInternal</span></a><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><a name="line-58"></a><span>                 </span><span class="hs-special">,</span><span> </span><span class="hs-identifier">_bpnRes</span><span>       </span><span class="hs-glyph">=</span><span> </span><a href="#local-6989586621679080861"><span class="hs-identifier hs-var">res</span></a><span>
+</span><a name="line-59"></a><span>                 </span><span class="hs-special">,</span><span> </span><span class="hs-identifier">_bpnGradFunc</span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">return</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="#local-6989586621679080862"><span class="hs-identifier hs-var">gf</span></a><span>
+</span><a name="line-60"></a><span>                 </span><span class="hs-special">,</span><span> </span><span class="hs-identifier">_bpnGradCache</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">Nothing</span><span>
+</span><a name="line-61"></a><span>                 </span><span class="hs-special">,</span><span> </span><span class="hs-identifier">_bpnSummer</span><span>    </span><span class="hs-glyph">=</span><span> </span><a href="#local-6989586621679080859"><span class="hs-identifier hs-var">sm</span></a><span>
+</span><a name="line-62"></a><span>                 </span><span class="hs-special">}</span><span>
+</span><a name="line-63"></a><span>    </span><a name="local-6989586621679080864"><a href="#local-6989586621679080864"><span class="hs-identifier">r</span></a></a><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-identifier hs-var">liftBase</span><span> </span><span class="hs-operator hs-var">$</span><span> </span><span class="hs-identifier hs-var">newSTRef</span><span> </span><a href="#local-6989586621679080863"><span class="hs-identifier hs-var">bp</span></a><span>
+</span><a name="line-64"></a><span>    </span><a href="Data.Type.Util.html#itraverse1_"><span class="hs-identifier hs-var">itraverse1_</span></a><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.html#registerRef"><span class="hs-identifier hs-var">registerRef</span></a><span> </span><a href="#local-6989586621679080864"><span class="hs-identifier hs-var">r</span></a><span class="hs-special">)</span><span> </span><a href="#local-6989586621679080857"><span class="hs-identifier hs-var">i</span></a><span>
+</span><a name="line-65"></a><span>    </span><span class="hs-identifier hs-var">return</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BPRNode"><span class="hs-identifier hs-var">BPRNode</span></a><span> </span><a href="#local-6989586621679080864"><span class="hs-identifier hs-var">r</span></a><span class="hs-special">)</span><span>
+</span><a name="line-66"></a><span>
+</span><a name="line-67"></a><span class="hs-identifier">resolveRef</span><span>
+</span><a name="line-68"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">MonadReader</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Tuple</span><span> </span><a href="#local-6989586621679080849"><span class="hs-identifier hs-type">rs</span></a><span class="hs-special">)</span><span> </span><a href="#local-6989586621679080850"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">MonadBase</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">ST</span><span> </span><a href="#local-6989586621679080851"><span class="hs-identifier hs-type">s</span></a><span class="hs-special">)</span><span> </span><a href="#local-6989586621679080850"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">)</span><span>
+</span><a name="line-69"></a><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BPRef"><span class="hs-identifier hs-type">BPRef</span></a><span> </span><a href="#local-6989586621679080851"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679080849"><span class="hs-identifier hs-type">rs</span></a><span> </span><a href="#local-6989586621679080852"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-70"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679080850"><span class="hs-identifier hs-type">m</span></a><span> </span><a href="#local-6989586621679080852"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-71"></a><a name="resolveRef"><a href="Numeric.Backprop.html#resolveRef"><span class="hs-identifier">resolveRef</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-keyword">case</span><span>
+</span><a name="line-72"></a><span>    </span><a href="Numeric.Backprop.Internal.html#BPRNode"><span class="hs-identifier hs-var">BPRNode</span></a><span> </span><a name="local-6989586621679080865"><a href="#local-6989586621679080865"><span class="hs-identifier">r</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier">_bpnRes</span><span> </span><span class="hs-operator hs-var">&lt;$&gt;</span><span> </span><span class="hs-identifier hs-var">liftBase</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">readSTRef</span><span> </span><a href="#local-6989586621679080865"><span class="hs-identifier hs-var">r</span></a><span class="hs-special">)</span><span>
+</span><a name="line-73"></a><span>    </span><a href="Numeric.Backprop.Internal.html#BPRInp"><span class="hs-identifier hs-var">BPRInp</span></a><span> </span><a name="local-6989586621679080866"><a href="#local-6989586621679080866"><span class="hs-identifier">ix</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier">getI</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier hs-var">index</span><span> </span><a href="#local-6989586621679080866"><span class="hs-identifier hs-var">ix</span></a><span> </span><span class="hs-operator hs-var">&lt;$&gt;</span><span> </span><span class="hs-identifier hs-var">ask</span><span>
+</span><a name="line-74"></a><span>
+</span><a name="line-75"></a><span class="hs-identifier">registerRef</span><span>
+</span><a name="line-76"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">STRef</span><span> </span><a href="#local-6989586621679080844"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BPNode"><span class="hs-identifier hs-type">BPNode</span></a><span> </span><a href="#local-6989586621679080844"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679080845"><span class="hs-identifier hs-type">rs</span></a><span> </span><span class="hs-keyword">as</span><span> </span><a href="#local-6989586621679080847"><span class="hs-identifier hs-type">b</span></a><span class="hs-special">)</span><span>
+</span><a name="line-77"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Index</span><span> </span><span class="hs-keyword">as</span><span> </span><a href="#local-6989586621679080848"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-78"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BPRef"><span class="hs-identifier hs-type">BPRef</span></a><span> </span><a href="#local-6989586621679080844"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679080845"><span class="hs-identifier hs-type">rs</span></a><span> </span><a href="#local-6989586621679080848"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-79"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BP"><span class="hs-identifier hs-type">BP</span></a><span> </span><a href="#local-6989586621679080844"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679080845"><span class="hs-identifier hs-type">rs</span></a><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-80"></a><a name="registerRef"><a href="Numeric.Backprop.html#registerRef"><span class="hs-identifier">registerRef</span></a></a><span> </span><a name="local-6989586621679080867"><a href="#local-6989586621679080867"><span class="hs-identifier">r</span></a></a><span> </span><a name="local-6989586621679080868"><a href="#local-6989586621679080868"><span class="hs-identifier">ix</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-keyword">case</span><span>
+</span><a name="line-81"></a><span>    </span><a href="Numeric.Backprop.Internal.html#BPRNode"><span class="hs-identifier hs-var">BPRNode</span></a><span> </span><a name="local-6989586621679080870"><a href="#local-6989586621679080870"><span class="hs-identifier">r'</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-var">liftBase</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier hs-var">modifySTRef</span><span> </span><a href="#local-6989586621679080870"><span class="hs-identifier hs-var">r'</span></a><span> </span><span class="hs-operator hs-var">$</span><span> </span><span class="hs-identifier hs-var">over</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#bpnOut"><span class="hs-identifier hs-var">bpnOut</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Numeric.Backprop.Internal.html#_FRInternal"><span class="hs-identifier hs-var">_FRInternal</span></a><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><a href="#local-6989586621679080869"><span class="hs-identifier hs-var">bpir</span></a><span> </span><span class="hs-glyph">:</span><span class="hs-special">)</span><span>
+</span><a name="line-82"></a><span>    </span><a href="Numeric.Backprop.Internal.html#BPRInp"><span class="hs-identifier hs-var">BPRInp</span></a><span> </span><a name="local-6989586621679080871"><a href="#local-6989586621679080871"><span class="hs-identifier">ix'</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-var">modifying</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#bpsSources"><span class="hs-identifier hs-var">bpsSources</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Data.Type.Util.html#indexP"><span class="hs-identifier hs-var">indexP</span></a><span> </span><a href="#local-6989586621679080871"><span class="hs-identifier hs-var">ix'</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Numeric.Backprop.Internal.html#_FRInternal"><span class="hs-identifier hs-var">_FRInternal</span></a><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><a href="#local-6989586621679080869"><span class="hs-identifier hs-var">bpir</span></a><span> </span><span class="hs-glyph">:</span><span class="hs-special">)</span><span>
+</span><a name="line-83"></a><span>  </span><span class="hs-keyword">where</span><span>
+</span><a name="line-84"></a><span>    </span><a name="local-6989586621679080869"><a href="#local-6989586621679080869"><span class="hs-identifier">bpir</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Internal.html#BPIR"><span class="hs-identifier hs-var">BPIR</span></a><span> </span><a href="#local-6989586621679080868"><span class="hs-identifier hs-var">ix</span></a><span> </span><a href="#local-6989586621679080867"><span class="hs-identifier hs-var">r</span></a><span>
+</span><a name="line-85"></a><span>
+</span><a name="line-86"></a><span class="hs-identifier">newBPRef</span><span>
+</span><a name="line-87"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Num</span><span> </span><a href="#local-6989586621679080840"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-88"></a><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-identifier hs-type">Prod</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BPRef"><span class="hs-identifier hs-type">BPRef</span></a><span> </span><a href="#local-6989586621679080841"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679080842"><span class="hs-identifier hs-type">rs</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">as</span><span>
+</span><a name="line-89"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#Op"><span class="hs-identifier hs-type">Op</span></a><span> </span><span class="hs-keyword">as</span><span> </span><a href="#local-6989586621679080840"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-90"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BP"><span class="hs-identifier hs-type">BP</span></a><span> </span><a href="#local-6989586621679080841"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679080842"><span class="hs-identifier hs-type">rs</span></a><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BPRef"><span class="hs-identifier hs-type">BPRef</span></a><span> </span><a href="#local-6989586621679080841"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679080842"><span class="hs-identifier hs-type">rs</span></a><span> </span><a href="#local-6989586621679080840"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
+</span><a name="line-91"></a><a name="newBPRef"><a href="Numeric.Backprop.html#newBPRef"><span class="hs-identifier">newBPRef</span></a></a><span> </span><a name="local-6989586621679080872"><a href="#local-6989586621679080872"><span class="hs-identifier">i</span></a></a><span> </span><a name="local-6989586621679080873"><a href="#local-6989586621679080873"><span class="hs-identifier">o</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.html#newBPRef%27"><span class="hs-identifier hs-var">newBPRef'</span></a><span> </span><a href="#local-6989586621679080872"><span class="hs-identifier hs-var">i</span></a><span> </span><a href="#local-6989586621679080873"><span class="hs-identifier hs-var">o</span></a><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#Summer"><span class="hs-identifier hs-var">Summer</span></a><span> </span><span class="hs-identifier hs-var">sum</span><span class="hs-special">)</span><span>
+</span><a name="line-92"></a><span>
+</span><a name="line-93"></a><span class="hs-identifier">newBPRef0'</span><span>
+</span><a name="line-94"></a><span>    </span><span class="hs-glyph">::</span><span> </span><a href="Numeric.Backprop.Internal.html#Op"><span class="hs-identifier hs-type">Op</span></a><span> </span><span class="hs-char">'[] a
     -&gt; Summer a
-    -&gt; BP s as (BPRef s as a)
+    -&gt; BP s rs (BPRef s rs a)
+newBPRef0' = newBPRef' &#216;
+
+newBPRef0
+    :: Num a
+    =&gt; Op '[] a
+    -&gt; BP s rs (BPRef s rs a)
 newBPRef0 = newBPRef &#216;
 
-newBPRef1
-    :: BPRef s as a
+newBPRef1'
+    :: BPRef s rs a
     -&gt; Op '[a] b
     -&gt; Summer b
-    -&gt; BP s as (BPRef s as b)
-newBPRef1 r = newBPRef (r :&lt; &#216;)
+    -&gt; BP s rs (BPRef s rs b)
+newBPRef1' r = newBPRef' (r :&lt; &#216;)
 
-newBPRef1'
+newBPRef1
     :: Num b
-    =&gt; BPRef s as a
+    =&gt; BPRef s rs a
     -&gt; Op '[a] b
-    -&gt; BP s as (BPRef s as b)
-newBPRef1' r o = newBPRef1 r o known
-
-newBPRef2
-    :: BPRef s bs a
-    -&gt; BPRef s bs b
-    -&gt; Op '[a,b] c
-    -&gt; Summer c
-    -&gt; BP s bs (BPRef s bs c)
-newBPRef2 rx ry = newBPRef (rx :&lt; ry :&lt; &#216;)
+    -&gt; BP s rs (BPRef s rs b)
+newBPRef1 r o = newBPRef1' r o known
 
 newBPRef2'
-    :: Num c
-    =&gt; BPRef s bs a
-    -&gt; BPRef s bs b
+    :: BPRef s rs a
+    -&gt; BPRef s rs b
     -&gt; Op '[a,b] c
-    -&gt; BP s bs (BPRef s bs c)
-newBPRef2' rx ry o = newBPRef2 rx ry o known
+    -&gt; Summer c
+    -&gt; BP s rs (BPRef s rs c)
+newBPRef2' rx ry = newBPRef' (rx :&lt; ry :&lt; &#216;)
 
-newBPRef3
-    :: BPRef s bs a
-    -&gt; BPRef s bs b
-    -&gt; BPRef s bs c
-    -&gt; Op '[a,b,c] d
-    -&gt; Summer d
-    -&gt; BP s bs (BPRef s bs d)
-newBPRef3 rx ry rz = newBPRef (rx :&lt; ry :&lt; rz :&lt; &#216;)
+newBPRef2
+    :: Num c
+    =&gt; BPRef s rs a
+    -&gt; BPRef s rs b
+    -&gt; Op '[a,b] c
+    -&gt; BP s rs (BPRef s rs c)
+newBPRef2 rx ry o = newBPRef2' rx ry o known
 
 newBPRef3'
-    :: Num d
-    =&gt; BPRef s bs a
-    -&gt; BPRef s bs b
-    -&gt; BPRef s bs c
+    :: BPRef s rs a
+    -&gt; BPRef s rs b
+    -&gt; BPRef s rs c
     -&gt; Op '[a,b,c] d
-    -&gt; BP s bs (BPRef s bs d)
-newBPRef3' rx ry rz o = newBPRef3 rx ry rz o known
+    -&gt; Summer d
+    -&gt; BP s rs (BPRef s rs d)
+newBPRef3' rx ry rz = newBPRef' (rx :&lt; ry :&lt; rz :&lt; &#216;)
 
-forwardPass
-    :: Tuple bs
-    -&gt; BPRef s bs a
-    -&gt; ST s a
-forwardPass env = \case
-    BPRNode r -&gt; fmap fst . caching bpnResCache r $ \BPN{..} -&gt;
-      runOp' _bpnOp &lt;$&gt; traverse1 (fmap I . forwardPass env) _bpnInp
-    BPRInp ix -&gt; return . getI $ index ix env
+newBPRef3
+    :: Num d
+    =&gt; BPRef s rs a
+    -&gt; BPRef s rs b
+    -&gt; BPRef s rs c
+    -&gt; Op '[a,b,c] d
+    -&gt; BP s rs (BPRef s rs d)
+newBPRef3 rx ry rz o = newBPRef3' rx ry rz o known
 
 backwardPass
-    :: forall s as a bs. ()
-    =&gt; STRef s (BPNode s bs as a)
+    :: forall s rs as a. ()
+    =&gt; STRef s (BPNode s rs as a)
     -&gt; ST s (Tuple as)
 backwardPass r = fmap snd . caching bpnGradCache r $ \BPN{..} -&gt; do
-    totderv &lt;- for (view frMaybe _bpnOut) $ \outrefs -&gt; do
-      outs &lt;- for outrefs $ \(BPIR ix r') -&gt;
-        getI . index ix &lt;$&gt; backwardPass r'
-      return (runSummer _bpnSummer outs)
-    return $ case snd &lt;$&gt; _bpnResCache of
-      Just gs -&gt; (totderv, gs totderv)
-      Nothing -&gt; error &quot;backwards pass before forwards pass&quot;
-      -- can we just do the filling in here and so not require a separate
-      -- forward pass at all?
-
--- TODO: restrict output refs to not being one of the inputs lol
-backprop
-    :: (forall s. BP s as (BPRef s as a))
-    -&gt; Prod Summer as
-    -&gt; Prod Unity as
-    -&gt; Tuple as
-    -&gt; (a, Tuple as)
-backprop bp ss us env = runST $ do
-    (r, bps0) &lt;- runStateT (bpST bp) $ BPS (map1 (\_ -&gt; FRInternal []) env)
-    res  &lt;- forwardPass env r
-    -- set &quot;out&quot; lists to Nothing if is the output
-    BPS{..} &lt;- liftBase $ case r of
-      BPRNode sr -&gt; bps0 &lt;$ modifySTRef sr (set bpnOut FRTerminal)
-      BPRInp  ix -&gt; return $ set (bpsSources . indexP ix) FRTerminal bps0
-    gradLists &lt;- for1 _bpsSources $ \rs -&gt;
-      fmap Comp . for (view frMaybe rs) $ \rs' -&gt;
-        for rs' $ \(BPIR ix r') -&gt;
+    totderv &lt;- case _bpnOut of
+      FRInternal rs -&gt; do
+        outs &lt;- for rs $ \(BPIR ix r') -&gt;
           getI . index ix &lt;$&gt; backwardPass r'
-    let sug  = ss `zipP` us `zipP` gradLists
-        grad = map1 (\((s :&amp;: u) :&amp;: Comp xs) -&gt; I $
-                        case xs of
-                          Nothing  -&gt; getUnity u
-                          Just xs' -&gt; runSummer s xs'
-                    ) sug
-    return (res, grad)
+        return (Just $ runSummer _bpnSummer outs)
+      FRExternal gE -&gt; return (Just gE)
+      FRTerminal    -&gt; return Nothing
+    g &lt;- _bpnGradFunc totderv
+    return (totderv, g)
 
 backprop'
-    :: forall as a. Every Num as
-    =&gt; (forall s. BP s as (BPRef s as a))
-    -&gt; Tuple as
-    -&gt; (a, Tuple as)
-backprop' bp xs = backprop bp (imap1 (\i _ -&gt; known \\ every @_ @Num i) xs)
+    :: (forall s. BP s rs (BPRef s rs a))
+    -&gt; Prod Summer rs
+    -&gt; Prod Unity rs
+    -&gt; Tuple rs
+    -&gt; (a, Tuple rs)
+backprop' bp ss us env = runST $ do
+    (res, gFunc) &lt;- backpropWith bp ss us env
+    grad &lt;- gFunc Nothing
+    return (res, grad)
+
+backprop
+    :: forall rs a. Every Num rs
+    =&gt; (forall s. BP s rs (BPRef s rs a))
+    -&gt; Tuple rs
+    -&gt; (a, Tuple rs)
+backprop bp xs = backprop' bp (imap1 (\i _ -&gt; known \\ every @_ @Num i) xs)
                               (imap1 (\i _ -&gt; known \\ every @_ @Num i) xs)
                               xs
 
+backpropWith
+    :: BP s rs (BPRef s rs a)
+    -&gt; Prod Summer rs
+    -&gt; Prod Unity rs
+    -&gt; Tuple rs
+    -&gt; ST s (a, Maybe a -&gt; ST s (Tuple rs))
+backpropWith bp ss us env = do
+    (r, bps0) &lt;- runStateT (runReaderT (bpST bp) env)
+                           (BPS (map1 (\_ -&gt; FRInternal []) env))
+    res &lt;- runReaderT (resolveRef r) env
+    let gradFunc gradOut = do
+          let fr = case gradOut of
+                     Just g  -&gt; FRExternal g
+                     Nothing -&gt; FRTerminal
+          BPS{..} &lt;- case r of
+            BPRNode sr -&gt; bps0 &lt;$ modifySTRef sr (set bpnOut fr)
+            BPRInp  ix -&gt; return $ set (bpsSources . indexP ix) fr bps0
+          for1 (ss `zipP` us `zipP` _bpsSources) $ \((s :&amp;: u) :&amp;: rs) -&gt; do
+            case rs of
+              FRInternal rs' -&gt;
+                fmap (I . runSummer s) . for rs' $ \(BPIR ix r') -&gt;
+                  getI . index ix &lt;$&gt; backwardPass r'
+              FRExternal gE  -&gt;
+                return $ I gE
+              FRTerminal     -&gt;
+                return $ I (getUnity u)
+    return (res, gradFunc)
+
+plugBP'
+    :: Prod (BPRef s rs) as
+    -&gt; BP s as (BPRef s as a)
+    -&gt; Prod Summer as
+    -&gt; Prod Unity as
+    -&gt; Summer a
+    -&gt; BP s rs (BPRef s rs a)
+plugBP' i bp ss us sa = do
+    env &lt;- traverse1 (fmap I . resolveRef) i
+    (res, gFunc) &lt;- liftBase $ backpropWith bp ss us env
+    let bpn = BPN { _bpnOut       = FRInternal []
+                  , _bpnRes       = res
+                  , _bpnGradFunc  = gFunc
+                  , _bpnGradCache = Nothing
+                  , _bpnSummer    = sa
+                  }
+    r &lt;- liftBase $ newSTRef bpn
+    itraverse1_ (registerRef r) i
+    return (BPRNode r)
+
+plugBP
+    :: (Every Num as, Num a)
+    =&gt; Prod (BPRef s rs) as
+    -&gt; BP s as (BPRef s as a)
+    -&gt; BP s rs (BPRef s rs a)
+plugBP i bp = plugBP' i bp (imap1 (\j _ -&gt; known \\ every @_ @Num j) i)
+                           (imap1 (\j _ -&gt; known \\ every @_ @Num j) i)
+                           (Summer sum)
+
+
 inpRef
-    :: Index as a
-    -&gt; BPRef s as a
+    :: Index rs a
+    -&gt; BPRef s rs a
 inpRef = BPRInp
 
 inpRefs
-    :: Known Length as
-    =&gt; Prod (BPRef s as) as
+    :: Known Length rs
+    =&gt; Prod (BPRef s rs) rs
 inpRefs = map1 inpRef indices
 
 withInps
-    :: Known Length as
-    =&gt; (Prod (BPRef s as) as -&gt; BP s as a)
-    -&gt; BP s as a
+    :: Known Length rs
+    =&gt; (Prod (BPRef s rs) rs -&gt; BP s rs a)
+    -&gt; BP s rs a
 withInps f = f inpRefs
 
 
@@ -230,38 +287,4 @@ caching l r f = do
         modifySTRef r (set l (Just z))
         return z
 
-for1
-    :: (Applicative h, Traversable1 t)
-    =&gt; t f b
-    -&gt; (forall a. f a -&gt; h (g a))
-    -&gt; h (t g b)
-for1 x f = traverse1 f x
-
-ifor1_
-    :: (Applicative h, IxTraversable1 i t)
-    =&gt; t f b
-    -&gt; (forall a. i b a -&gt; f a -&gt; h ())
-    -&gt; h ()
-ifor1_ x f = ($ pure ())
-           . appEndo
-           . getConst
-           . ifoldMap1 (\i y -&gt; Const (Endo (f i y *&gt;)))
-           $ x
-
-zipP
-    :: Prod f as
-    -&gt; Prod g as
-    -&gt; Prod (f :&amp;: g) as
-zipP = \case
-    &#216; -&gt; \case
-      &#216;       -&gt; &#216;
-    x :&lt; xs -&gt; \case
-      y :&lt; ys -&gt; x :&amp;: y :&lt; zipP xs ys
-
-indexP :: Index as a -&gt; Lens' (Prod g as) (g a)
-indexP = \case
-    IZ   -&gt; \f -&gt; \case
-      x :&lt; xs -&gt; (:&lt; xs) &lt;$&gt; f x
-    IS i -&gt; \f -&gt; \case
-      x :&lt; xs -&gt; (x :&lt;) &lt;$&gt; indexP i f xs
 </span></pre></body></html>
