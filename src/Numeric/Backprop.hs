@@ -51,10 +51,12 @@ newBPRef
     -> BP s rs (BPRef s rs a)
 newBPRef i o sm = do
     xs <- traverse1 (fmap I . resolveRef) i
-    let bp = BPN { _bpnInp       = i
+    let (rs, gf) = runOp' o xs
+        bp = BPN { _bpnInp       = i
                  , _bpnOut       = FRInternal []
                  , _bpnOp        = o
-                 , _bpnRes       = runOp' o xs
+                 , _bpnRes       = rs
+                 , _bpnGradFunc  = gf
                  , _bpnGradCache = Nothing
                  , _bpnSummer    = sm
                  }
@@ -71,7 +73,7 @@ resolveRef
     => BPRef s rs a
     -> m a
 resolveRef = \case
-    BPRNode r -> fst . _bpnRes <$> liftBase (readSTRef r)
+    BPRNode r -> _bpnRes <$> liftBase (readSTRef r)
     BPRInp ix -> getI . index ix <$> ask
 
 newBPRef'
@@ -135,15 +137,6 @@ newBPRef3'
     -> BP s rs (BPRef s rs d)
 newBPRef3' rx ry rz o = newBPRef3 rx ry rz o known
 
--- forwardPass
---     :: Tuple rs
---     -> BPRef s rs a
---     -> ST s a
--- forwardPass env = \case
---     BPRNode r -> fmap fst . caching bpnResCache r $ \BPN{..} ->
---       runOp' _bpnOp <$> traverse1 (fmap I . forwardPass env) _bpnInp
---     BPRInp ix -> return . getI $ index ix env
-
 backwardPass
     :: forall s rs as a. ()
     => STRef s (BPNode s rs as a)
@@ -153,12 +146,7 @@ backwardPass r = fmap snd . caching bpnGradCache r $ \BPN{..} -> do
       outs <- for outrefs $ \(BPIR ix r') ->
         getI . index ix <$> backwardPass r'
       return (runSummer _bpnSummer outs)
-    return (totderv, snd _bpnRes totderv)
-    -- $ case snd <$> _bpnRes of
-    --   Just gs -> (totderv, gs totderv)
-    --   Nothing -> error "backwards pass before forwards pass"
-    --   -- can we just do the filling in here and so not require a separate
-    --   -- forward pass at all?
+    return (totderv, _bpnGradFunc totderv)
 
 backprop
     :: (forall s. BP s rs (BPRef s rs a))
@@ -169,7 +157,6 @@ backprop
 backprop bp ss us env = runST $ do
     (r, bps0) <- runStateT (runReaderT (bpST bp) env)
                            (BPS (map1 (\_ -> FRInternal []) env))
-    -- res  <-  liftBase $ case r of
     res <- runReaderT (resolveRef r) env
     -- set "out" lists to Nothing if is the output
     BPS{..} <- case r of

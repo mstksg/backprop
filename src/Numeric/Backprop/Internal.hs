@@ -18,7 +18,7 @@ module Numeric.Backprop.Internal
  , BPState(..), bpsSources
  , BP(..)
  , BPInpRef(..)
- , BPNode(..), bpnInp, bpnOut, bpnOp, bpnRes, bpnGradCache, bpnSummer
+ , BPNode(..), bpnInp, bpnOut, bpnOp, bpnRes, bpnGradFunc, bpnGradCache, bpnSummer
  , BPRef(..)
  , ForwardRefs(..), _FRInternal, frMaybe
  ) where
@@ -96,7 +96,8 @@ data BPNode :: Type -> [Type] -> [Type] -> Type -> Type where
     BPN :: { _bpnInp       :: !(Prod (BPRef s rs) as)
            , _bpnOut       :: !(ForwardRefs s rs a)
            , _bpnOp        :: !(Op as a)
-           , _bpnRes       :: !(a, Maybe a -> Tuple as)
+           , _bpnRes       :: !a
+           , _bpnGradFunc  :: !(Maybe a -> Tuple as)
            , _bpnGradCache :: !(Maybe (Maybe a, Tuple as))  -- nothing if is the "final output"
            , _bpnSummer    :: !(Summer a)
            }
