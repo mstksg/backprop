@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE PatternSynonyms     #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -28,6 +29,8 @@ module Numeric.Backprop
   , Op(..)
   , Summer(..)
   , Unity(..)
+  , Prod(..), pattern (:>), only
+  , Tuple, pattern (::<), pattern (:>), only_
   ) where
 
 import           Control.Applicative

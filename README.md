@@ -13,17 +13,20 @@ descent and other optimization techniques.
 Simple (monomorphic) usage:
 
 ~~~haskell
-import Numeric.Backprop
-import Numeric.Backprop.Op
+{-# LANGUAGE GADTs #-}
 
-test :: BP s '[Int, Int, Int] (BPRef s '[Int,Int,Int] Int)
-test = withInp $ \(x :< y :< z :< Ø) -> do
-    xy  <- newBPRef2' x  y $ op2' (*)
-    xyy <- newBPRef2' xy y $ op2' (+)
-    newBPRef2' xyy z $ op2' (*)
+import           Data.Type.Vector
+import           Numeric.Backprop.Mono
+import           Type.Family.Nat
+
+test :: BP s N3 Double (BPRef s N3 Double Double)
+test = withInps $ \(x :* y :* z :* ØV) -> do
+    xy  <- newBPRef2 x y  $ op2 (*)
+    xyy <- newBPRef2 xy y $ op2 (+)
+    newBPRef2 xyy z       $ op2 (*)
 
 main :: IO ()
-main = print $ backprop' test (2 ::< 3 ::< 4 ::< Ø)
+main = print $ backprop test (2 :+ 3 :+ 4 :+ ØV)
 ~~~
 
 The above builds an explicit graph of the function `f x y z = ((x * y) + y) * z`

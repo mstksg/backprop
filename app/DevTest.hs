@@ -1,8 +1,6 @@
 {-# LANGUAGE GADTs #-}
 
-import           Data.Type.Vector
 import           Numeric.Backprop.Mono
-import           Type.Family.Nat
 
 test :: BP s N3 Double (BPRef s N3 Double Double)
 test = withInps $ \(x :* y :* z :* ØV) -> do
