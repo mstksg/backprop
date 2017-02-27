@@ -37,6 +37,7 @@ import           Data.Type.Conjunction
 import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Product
+import           Data.Type.Util
 import           Lens.Micro hiding         (ix)
 import           Lens.Micro.Mtl
 import           Numeric.Backprop.Internal
@@ -286,36 +287,3 @@ caching l r f = do
         modifySTRef r (set l (Just z))
         return z
 
-itraverse1_
-    :: (Applicative h, IxTraversable1 i t)
-    => (forall a. i b a -> f a -> h ())
-    -> t f b
-    -> h ()
-itraverse1_ f = ($ pure ())
-              . appEndo
-              . getConst
-              . ifoldMap1 (\i y -> Const (Endo (f i y *>)))
-
-for1
-    :: (Applicative h, Traversable1 t)
-    => t f b
-    -> (forall a. f a -> h (g a))
-    -> h (t g b)
-for1 x f = traverse1 f x
-
-zipP
-    :: Prod f as
-    -> Prod g as
-    -> Prod (f :&: g) as
-zipP = \case
-    Ø -> \case
-      Ø       -> Ø
-    x :< xs -> \case
-      y :< ys -> x :&: y :< zipP xs ys
-
-indexP :: Index as a -> Lens' (Prod g as) (g a)
-indexP = \case
-    IZ   -> \f -> \case
-      x :< xs -> (:< xs) <$> f x
-    IS i -> \f -> \case
-      x :< xs -> (x :<) <$> indexP i f xs

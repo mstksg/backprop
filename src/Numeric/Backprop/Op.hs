@@ -11,7 +11,7 @@ module Numeric.Backprop.Op
   , op1, op1'
   , op2, op2'
   , op3, op3'
-  , op, Replicate
+  , opN, Replicate
   ) where
 
 import           Data.Bifunctor
@@ -19,6 +19,7 @@ import           Data.Reflection                (Reifies)
 import           Data.Type.Combinator
 import           Data.Type.Nat
 import           Data.Type.Product
+import           Data.Type.Util
 import           Data.Type.Vector
 import           Numeric.AD
 import           Numeric.AD.Internal.Reverse    (Reverse, Tape)
@@ -60,52 +61,32 @@ op3' f = Op $ \case
       let (q, dxdydz) = f x y z
       in  (q, (\(dx, dy, dz) -> dx ::< dy ::< dz ::< Ø) . dxdydz)
 
-op1
-    :: Num a
+op1 :: Num a
     => (forall s. AD s (Forward a) -> AD s (Forward a))
     -> Op '[a] a
 op1 f = op1' $ \x ->
     let (z, dx) = diff' f x
     in  (z, maybe dx (* dx))
 
-op2
-    :: Num a
+op2 :: Num a
     => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a)
     -> Op '[a,a] a
 op2 f = op2' $ \x y ->
     let (z, [dx, dy]) = grad' (\[x',y'] -> f x' y') [x,y]
     in  (z, maybe (dx, dy) (\dz -> (dz * dx, dz * dy)))
 
-op3
-    :: Num a
+op3 :: Num a
     => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a)
     -> Op '[a,a,a] a
 op3 f = op3' $ \x y z ->
     let (q, [dx, dy, dz]) = grad' (\[x',y',z'] -> f x' y' z') [x,y,z]
     in  (q, maybe (dx, dy, dz) (\dq -> (dq * dx, dq * dy, dq * dz)))
 
-op  :: (Num a, Known Nat n)
+opN :: (Num a, Known Nat n)
     => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a)
     -> Op (Replicate n a) a
-op f = Op $ second (\g -> \case Nothing -> vecToProd g
-                                Just g' -> vecToProd $ fmap (* g') g
-                   )
-          . grad' f
-          . prodToVec' known
-
-vecToProd
-    :: VecT n f a
-    -> Prod f (Replicate n a)
-vecToProd = \case
-    ØV      -> Ø
-    x :* xs -> x :< vecToProd xs
-
-prodToVec'
-    :: Nat n
-    -> Prod f (Replicate n a)
-    -> VecT n f a
-prodToVec' = \case
-    Z_   -> \case
-      Ø       -> ØV
-    S_ n -> \case
-      x :< xs -> x :* prodToVec' n xs
+opN f = Op $ second (\g -> \case Nothing -> vecToProd g
+                                 Just g' -> vecToProd $ fmap (* g') g
+                    )
+           . grad' f
+           . prodToVec' known
