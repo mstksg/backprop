@@ -8,10 +8,9 @@ module Numeric.Backprop.Op
   ( Op(..)
   , runOp, gradOp, gradOpWith, gradOpWith'
   , op0
-  , op1, op1'
-  , op2, op2'
-  , op3, op3'
-  , opN, Replicate
+  , op1, op2, op3, opN
+  , op1', op2', op3', opN'
+  , Replicate
   ) where
 
 import           Data.Bifunctor
@@ -61,6 +60,11 @@ op3' f = Op $ \case
       let (q, dxdydz) = f x y z
       in  (q, (\(dx, dy, dz) -> dx ::< dy ::< dz ::< Ø) . dxdydz)
 
+opN' :: (Num a, Known Nat n)
+     => (Vec n a -> (b, Maybe b -> Vec n a))
+     -> Op (Replicate n a) b
+opN' f = Op $ (second . fmap) vecToProd . f . prodToVec' known
+
 op1 :: Num a
     => (forall s. AD s (Forward a) -> AD s (Forward a))
     -> Op '[a] a
@@ -71,22 +75,16 @@ op1 f = op1' $ \x ->
 op2 :: Num a
     => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a)
     -> Op '[a,a] a
-op2 f = op2' $ \x y ->
-    let (z, [dx, dy]) = grad' (\[x',y'] -> f x' y') [x,y]
-    in  (z, maybe (dx, dy) (\dz -> (dz * dx, dz * dy)))
+op2 f = opN $ \case I x :* I y :* ØV -> f x y
 
 op3 :: Num a
     => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a)
     -> Op '[a,a,a] a
-op3 f = op3' $ \x y z ->
-    let (q, [dx, dy, dz]) = grad' (\[x',y',z'] -> f x' y' z') [x,y,z]
-    in  (q, maybe (dx, dy, dz) (\dq -> (dq * dx, dq * dy, dq * dz)))
+op3 f = opN $ \case I x :* I y :* I z :* ØV -> f x y z
 
 opN :: (Num a, Known Nat n)
     => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a)
     -> Op (Replicate n a) a
-opN f = Op $ second (\g -> \case Nothing -> vecToProd g
-                                 Just g' -> vecToProd $ fmap (* g') g
-                    )
-           . grad' f
-           . prodToVec' known
+opN f = opN' $ \xs ->
+    let (y, dxs) = grad' f xs
+    in  (y, maybe dxs (\q -> (q *) <$> dxs))

@@ -11,13 +11,19 @@
 module Numeric.Backprop
   ( BP
   , BPRef
-  , newBPRef, newBPRef'
+  , newBPRef
   , newBPRef0
-  , newBPRef1, newBPRef1'
-  , newBPRef2, newBPRef2'
-  , newBPRef3, newBPRef3'
-  , backprop, backprop'
-  , plugBP, plugBP'
+  , newBPRef1
+  , newBPRef2
+  , newBPRef3
+  , backprop
+  , plugBP
+  , newBPRef'
+  , newBPRef1'
+  , newBPRef2'
+  , newBPRef3'
+  , backprop'
+  , plugBP'
   , inpRef, inpRefs, withInps
   , Op(..)
   , Summer(..)
