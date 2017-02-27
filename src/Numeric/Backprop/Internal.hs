@@ -18,12 +18,13 @@ module Numeric.Backprop.Internal
  , BPState(..), bpsSources
  , BP(..)
  , BPInpRef(..)
- , BPNode(..), bpnInp, bpnOut, bpnOp, bpnResCache, bpnGradCache, bpnSummer
+ , BPNode(..), bpnInp, bpnOut, bpnOp, bpnRes, bpnGradCache, bpnSummer
  , BPRef(..)
  , ForwardRefs(..), _FRInternal, frMaybe
  ) where
 
 import           Control.Monad.Base
+import           Control.Monad.Reader
 import           Control.Monad.ST
 import           Control.Monad.State
 import           Data.Kind
@@ -70,8 +71,14 @@ data BPState :: Type -> [Type] -> Type where
            }
         -> BPState s rs
 
-newtype BP s rs b = BP { bpST :: StateT (BPState s rs) (ST s) b }
-      deriving (Functor, Applicative, Monad, MonadState (BPState s rs), MonadBase (ST s))
+newtype BP s rs b = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s)) b }
+      deriving ( Functor
+               , Applicative
+               , Monad
+               , MonadReader (Tuple rs)
+               , MonadState (BPState s rs)
+               , MonadBase (ST s)
+               )
 
 data BPRef :: Type -> [Type] -> Type -> Type where
     BPRNode :: !(STRef s (BPNode s rs as a))
@@ -89,7 +96,7 @@ data BPNode :: Type -> [Type] -> [Type] -> Type -> Type where
     BPN :: { _bpnInp       :: !(Prod (BPRef s rs) as)
            , _bpnOut       :: !(ForwardRefs s rs a)
            , _bpnOp        :: !(Op as a)
-           , _bpnResCache  :: !(Maybe (a, Maybe a -> Tuple as))
+           , _bpnRes       :: !(a, Maybe a -> Tuple as)
            , _bpnGradCache :: !(Maybe (Maybe a, Tuple as))  -- nothing if is the "final output"
            , _bpnSummer    :: !(Summer a)
            }
