@@ -17,6 +17,7 @@ module Numeric.Backprop
   , newBPRef2, newBPRef2'
   , newBPRef3, newBPRef3'
   , backprop, backprop'
+  , plugBP, plugBP'
   , inpRef, inpRefs, withInps
   , Op(..)
   , Summer(..)
@@ -51,20 +52,15 @@ newBPRef
     -> BP s rs (BPRef s rs a)
 newBPRef i o sm = do
     xs <- traverse1 (fmap I . resolveRef) i
-    let (rs, gf) = runOp' o xs
-        bp = BPN { _bpnInp       = i
-                 , _bpnOut       = FRInternal []
-                 , _bpnRes       = rs
+    let (res, gf) = runOp' o xs
+        bp = BPN { _bpnOut       = FRInternal []
+                 , _bpnRes       = res
                  , _bpnGradFunc  = return . gf
                  , _bpnGradCache = Nothing
                  , _bpnSummer    = sm
                  }
     r <- liftBase $ newSTRef bp
-    ifor1_ i $ \ix bpr' -> do
-      let bpir = BPIR ix r
-      case bpr' of
-        BPRNode r' -> liftBase . modifySTRef r' $ over (bpnOut . _FRInternal) (bpir:)
-        BPRInp ix' -> modifying (bpsSources . indexP ix' . _FRInternal) (bpir :)
+    itraverse1_ (registerRef r) i
     return (BPRNode r)
 
 resolveRef
@@ -74,6 +70,17 @@ resolveRef
 resolveRef = \case
     BPRNode r -> _bpnRes <$> liftBase (readSTRef r)
     BPRInp ix -> getI . index ix <$> ask
+
+registerRef
+    :: STRef s (BPNode s rs as b)
+    -> Index as a
+    -> BPRef s rs a
+    -> BP s rs ()
+registerRef r ix = \case
+    BPRNode r' -> liftBase . modifySTRef r' $ over (bpnOut . _FRInternal) (bpir :)
+    BPRInp ix' -> modifying (bpsSources . indexP ix' . _FRInternal) (bpir :)
+  where
+    bpir = BPIR ix r
 
 newBPRef'
     :: Num a
@@ -199,6 +206,35 @@ backpropWith bp ss us env = do
                 return $ I (getUnity u)
     return (res, gradFunc)
 
+plugBP
+    :: Prod (BPRef s rs) as
+    -> BP s as (BPRef s as a)
+    -> Prod Summer as
+    -> Prod Unity as
+    -> Summer a
+    -> BP s rs (BPRef s rs a)
+plugBP i bp ss us sa = do
+    env <- traverse1 (fmap I . resolveRef) i
+    (res, gFunc) <- liftBase $ backpropWith bp ss us env
+    let bpn = BPN { _bpnOut       = FRInternal []
+                  , _bpnRes       = res
+                  , _bpnGradFunc  = gFunc
+                  , _bpnGradCache = Nothing
+                  , _bpnSummer    = sa
+                  }
+    r <- liftBase $ newSTRef bpn
+    itraverse1_ (registerRef r) i
+    return (BPRNode r)
+
+plugBP'
+    :: (Every Num as, Num a)
+    => Prod (BPRef s rs) as
+    -> BP s as (BPRef s as a)
+    -> BP s rs (BPRef s rs a)
+plugBP' i bp = plugBP i bp (imap1 (\j _ -> known \\ every @_ @Num j) i)
+                           (imap1 (\j _ -> known \\ every @_ @Num j) i)
+                           (Summer sum)
+
 inpRef
     :: Index rs a
     -> BPRef s rs a
@@ -243,23 +279,22 @@ caching l r f = do
         modifySTRef r (set l (Just z))
         return z
 
+itraverse1_
+    :: (Applicative h, IxTraversable1 i t)
+    => (forall a. i b a -> f a -> h ())
+    -> t f b
+    -> h ()
+itraverse1_ f = ($ pure ())
+              . appEndo
+              . getConst
+              . ifoldMap1 (\i y -> Const (Endo (f i y *>)))
+
 for1
     :: (Applicative h, Traversable1 t)
     => t f b
     -> (forall a. f a -> h (g a))
     -> h (t g b)
 for1 x f = traverse1 f x
-
-ifor1_
-    :: (Applicative h, IxTraversable1 i t)
-    => t f b
-    -> (forall a. i b a -> f a -> h ())
-    -> h ()
-ifor1_ x f = ($ pure ())
-           . appEndo
-           . getConst
-           . ifoldMap1 (\i y -> Const (Endo (f i y *>)))
-           $ x
 
 zipP
     :: Prod f as
