@@ -54,9 +54,8 @@ newBPRef i o sm = do
     let (rs, gf) = runOp' o xs
         bp = BPN { _bpnInp       = i
                  , _bpnOut       = FRInternal []
-                 , _bpnOp        = o
                  , _bpnRes       = rs
-                 , _bpnGradFunc  = gf
+                 , _bpnGradFunc  = return . gf
                  , _bpnGradCache = Nothing
                  , _bpnSummer    = sm
                  }
@@ -146,7 +145,8 @@ backwardPass r = fmap snd . caching bpnGradCache r $ \BPN{..} -> do
       outs <- for outrefs $ \(BPIR ix r') ->
         getI . index ix <$> backwardPass r'
       return (runSummer _bpnSummer outs)
-    return (totderv, _bpnGradFunc totderv)
+    g <- _bpnGradFunc totderv
+    return (totderv, g)
 
 backprop
     :: (forall s. BP s rs (BPRef s rs a))
@@ -155,23 +155,8 @@ backprop
     -> Tuple rs
     -> (a, Tuple rs)
 backprop bp ss us env = runST $ do
-    (r, bps0) <- runStateT (runReaderT (bpST bp) env)
-                           (BPS (map1 (\_ -> FRInternal []) env))
-    res <- runReaderT (resolveRef r) env
-    -- set "out" lists to Nothing if is the output
-    BPS{..} <- case r of
-      BPRNode sr -> bps0 <$ modifySTRef sr (set bpnOut FRTerminal)
-      BPRInp  ix -> return $ set (bpsSources . indexP ix) FRTerminal bps0
-    gradLists <- for1 _bpsSources $ \rs ->
-      fmap Comp . for (view frMaybe rs) $ \rs' ->
-        for rs' $ \(BPIR ix r') ->
-          getI . index ix <$> backwardPass r'
-    let sug  = ss `zipP` us `zipP` gradLists
-        grad = map1 (\((s :&: u) :&: Comp xs) -> I $
-                        case xs of
-                          Nothing  -> getUnity u
-                          Just xs' -> runSummer s xs'
-                    ) sug
+    (res, gFunc) <- backpropWith bp ss us env
+    grad <- gFunc Nothing
     return (res, grad)
 
 backprop'
@@ -182,6 +167,35 @@ backprop'
 backprop' bp xs = backprop bp (imap1 (\i _ -> known \\ every @_ @Num i) xs)
                               (imap1 (\i _ -> known \\ every @_ @Num i) xs)
                               xs
+
+backpropWith
+    :: BP s rs (BPRef s rs a)
+    -> Prod Summer rs
+    -> Prod Unity rs
+    -> Tuple rs
+    -> ST s (a, Maybe a -> ST s (Tuple rs))
+backpropWith bp ss us env = do
+    (r, bps0) <- runStateT (runReaderT (bpST bp) env)
+                           (BPS (map1 (\_ -> FRInternal []) env))
+    res <- runReaderT (resolveRef r) env
+    let gradFunc gradOut = do
+          let fr = case gradOut of
+                     Just g  -> FRExternal g
+                     Nothing -> FRTerminal
+          BPS{..} <- case r of
+            BPRNode sr -> bps0 <$ modifySTRef sr (set bpnOut fr)
+            BPRInp  ix -> return $ set (bpsSources . indexP ix) fr bps0
+          gradLists <- for1 _bpsSources $ \rs ->
+            fmap Comp . for (view frMaybe rs) $ \rs' ->
+              for rs' $ \(BPIR ix r') ->
+                getI . index ix <$> backwardPass r'
+          let sug  = ss `zipP` us `zipP` gradLists
+          return $ map1 (\((s :&: u) :&: Comp xs) -> I $
+                             case xs of
+                               Nothing  -> getUnity u
+                               Just xs' -> runSummer s xs'
+                         ) sug
+    return (res, gradFunc)
 
 inpRef
     :: Index rs a
