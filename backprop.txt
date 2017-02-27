@@ -9,17 +9,17 @@ module Numeric.Backprop
 data BP s rs b
 data BPRef :: Type -> [Type] -> Type -> Type
 newBPRef :: Num a => Prod (BPRef s rs) as -> Op as a -> BP s rs (BPRef s rs a)
-newBPRef' :: forall s rs as a. Prod (BPRef s rs) as -> Op as a -> Summer a -> BP s rs (BPRef s rs a)
 newBPRef0 :: Num a => Op '[] a -> BP s rs (BPRef s rs a)
 newBPRef1 :: Num b => BPRef s rs a -> Op '[a] b -> BP s rs (BPRef s rs b)
-newBPRef1' :: BPRef s rs a -> Op '[a] b -> Summer b -> BP s rs (BPRef s rs b)
 newBPRef2 :: Num c => BPRef s rs a -> BPRef s rs b -> Op '[a, b] c -> BP s rs (BPRef s rs c)
-newBPRef2' :: BPRef s rs a -> BPRef s rs b -> Op '[a, b] c -> Summer c -> BP s rs (BPRef s rs c)
 newBPRef3 :: Num d => BPRef s rs a -> BPRef s rs b -> BPRef s rs c -> Op '[a, b, c] d -> BP s rs (BPRef s rs d)
-newBPRef3' :: BPRef s rs a -> BPRef s rs b -> BPRef s rs c -> Op '[a, b, c] d -> Summer d -> BP s rs (BPRef s rs d)
 backprop :: forall rs a. Every Num rs => (forall s. BP s rs (BPRef s rs a)) -> Tuple rs -> (a, Tuple rs)
-backprop' :: (forall s. BP s rs (BPRef s rs a)) -> Prod Summer rs -> Prod Unity rs -> Tuple rs -> (a, Tuple rs)
 plugBP :: (Every Num as, Num a) => Prod (BPRef s rs) as -> BP s as (BPRef s as a) -> BP s rs (BPRef s rs a)
+newBPRef' :: forall s rs as a. Prod (BPRef s rs) as -> Op as a -> Summer a -> BP s rs (BPRef s rs a)
+newBPRef1' :: BPRef s rs a -> Op '[a] b -> Summer b -> BP s rs (BPRef s rs b)
+newBPRef2' :: BPRef s rs a -> BPRef s rs b -> Op '[a, b] c -> Summer c -> BP s rs (BPRef s rs c)
+newBPRef3' :: BPRef s rs a -> BPRef s rs b -> BPRef s rs c -> Op '[a, b, c] d -> Summer d -> BP s rs (BPRef s rs d)
+backprop' :: (forall s. BP s rs (BPRef s rs a)) -> Prod Summer rs -> Prod Unity rs -> Tuple rs -> (a, Tuple rs)
 plugBP' :: Prod (BPRef s rs) as -> BP s as (BPRef s as a) -> Prod Summer as -> Prod Unity as -> Summer a -> BP s rs (BPRef s rs a)
 inpRef :: Index rs a -> BPRef s rs a
 inpRefs :: Known Length rs => Prod (BPRef s rs) rs
@@ -33,6 +33,49 @@ Summer :: ([a] -> a) -> Summer a
 newtype Unity a
 Unity :: a -> Unity a
 [getUnity] :: Unity a -> a
+data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
+[Ø] :: Prod k f ([] k)
+[:<] :: Prod k f ((:) k a1 as)
+
+-- | Construct a two element Prod. Since the precedence of (:&gt;) is
+--   higher than (:&lt;), we can conveniently write lists like:
+--   
+--   <pre>
+--   &gt;&gt;&gt; a :&lt; b :&gt; c
+--   </pre>
+--   
+--   Which is identical to:
+--   
+--   <pre>
+--   &gt;&gt;&gt; a :&lt; b :&lt; c :&lt; Ø
+--   </pre>
+infix 6 :>
+
+-- | Build a singleton Prod.
+only :: f a -> Prod k f ((:) k a ([] k))
+
+-- | A Prod of simple Haskell types.
+type Tuple = Prod * I
+
+-- | Cons onto a Tuple.
+infixr 5 ::<
+
+-- | Construct a two element Prod. Since the precedence of (:&gt;) is
+--   higher than (:&lt;), we can conveniently write lists like:
+--   
+--   <pre>
+--   &gt;&gt;&gt; a :&lt; b :&gt; c
+--   </pre>
+--   
+--   Which is identical to:
+--   
+--   <pre>
+--   &gt;&gt;&gt; a :&lt; b :&lt; c :&lt; Ø
+--   </pre>
+infix 6 :>
+
+-- | Singleton Tuple.
+only_ :: a -> Tuple ((:) * a ([] *))
 
 module Numeric.Backprop.Op
 newtype Op as a
@@ -44,12 +87,13 @@ gradOpWith :: Op as a -> Tuple as -> a -> Tuple as
 gradOpWith' :: Op as a -> Tuple as -> Maybe a -> Tuple as
 op0 :: a -> Op '[] a
 op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
-op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
 op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
-op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a, b] c
 op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
-op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a, b, c] d
 opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
+op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
+op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a, b] c
+op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a, b, c] d
+opN' :: (Num a, Known Nat n) => (Vec n a -> (b, Maybe b -> Vec n a)) -> Op (Replicate n a) b
 
 module Numeric.Backprop.Mono
 type BP s n a = BP s (Replicate n a)
@@ -74,3 +118,25 @@ runOp :: Op n a b -> Vec n a -> b
 gradOp :: Op n a b -> Vec n a -> Vec n a
 gradOpWith :: Op n a b -> Vec n a -> b -> Vec n a
 gradOpWith' :: Op n a b -> Vec n a -> Maybe b -> Vec n a
+
+-- | Convenient aliases for low-value Peano numbers.
+type N0 = Z
+type N1 = S N0
+type N2 = S N1
+type N3 = S N2
+type N4 = S N3
+type N5 = S N4
+type N6 = S N5
+type N7 = S N6
+type N8 = S N7
+type N9 = S N8
+type N10 = S N9
+data VecT k (n :: N) (f :: k -> *) (a :: k) :: forall k. N -> (k -> *) -> k -> *
+[ØV] :: VecT k Z f a
+[:*] :: VecT k (S n1) f a
+type Vec (n :: N) = VecT * n I
+infixr 4 :+
+(*:) :: f a -> f a -> VecT k (S (S Z)) f a
+infix 5 *:
+(+:) :: a -> a -> Vec (S (S Z)) a
+infix 5 +:
