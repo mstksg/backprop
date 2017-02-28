@@ -5,11 +5,13 @@
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE TypeInType             #-}
 {-# LANGUAGE TypeOperators          #-}
 
 module Data.Type.Util where
 
 import           Control.Applicative
+import           Data.Kind
 import           Data.Monoid
 import           Data.Type.Conjunction
 import           Data.Type.Fin
@@ -19,6 +21,7 @@ import           Data.Type.Product
 import           Data.Type.Vector
 import           Lens.Micro
 import           Type.Class.Higher
+import           Type.Family.List
 import           Type.Family.Nat
 
 type family Replicate (n :: N) (a :: k) = (as :: [k]) | as -> n where
@@ -92,3 +95,10 @@ indexP = \case
       x :< xs -> (:< xs) <$> f x
     IS i -> \f -> \case
       x :< xs -> (x :<) <$> indexP i f xs
+
+reIndex
+    :: forall k (f :: k -> Type) (as :: [k]) (a :: k). ()
+    => Index as a
+    -> Index (f <$> as) (f a)
+reIndex = undefined
+

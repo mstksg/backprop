@@ -26,65 +26,74 @@ import           Numeric.AD.Mode.Forward hiding (grad')
 import           Numeric.Backprop.Internal
 import           Type.Class.Known
 
-runOp :: Op as a -> Tuple as -> a
+runOp :: Op f as a -> Prod f as -> f a
 runOp o = fst . runOp' o
 
-gradOpWith' :: Op as a -> Tuple as -> Maybe a -> Tuple as
+gradOpWith' :: Op f as a -> Prod f as -> Maybe (f a) -> Prod f as
 gradOpWith' o = snd . runOp' o
 
-gradOpWith :: Op as a -> Tuple as -> a -> Tuple as
+gradOpWith :: Op f as a -> Prod f as -> f a -> Prod f as
 gradOpWith o i = gradOpWith' o i . Just
 
-gradOp :: Op as a -> Tuple as -> Tuple as
+gradOp :: Op f as a -> Prod f as -> Prod f as
 gradOp o i = gradOpWith' o i Nothing
 
-op0 :: a -> Op '[] a
+op0 :: f a -> Op f '[] a
 op0 x = Op $ \case
     Ø -> (x, const Ø)
 
-op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
+op1'
+    :: (f a -> (f b, Maybe (f b) -> f a))
+    -> Op f '[a] b
 op1' f = Op $ \case
-    I x :< Ø ->
+    x :< Ø ->
       let (y, dx) = f x
-      in  (y, only_ . dx)
+      in  (y, only . dx)
 
-op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a,b] c
+op2'
+    :: (f a -> f b -> (f c, Maybe (f c) -> (f a, f b)))
+    -> Op f '[a,b] c
 op2' f = Op $ \case
-    I x :< I y :< Ø ->
+    x :< y :< Ø ->
       let (z, dxdy) = f x y
-      in  (z, (\(dx,dy) -> dx ::< dy ::< Ø) . dxdy)
+      in  (z, (\(dx,dy) -> dx :< dy :< Ø) . dxdy)
 
-op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a,b,c] d
+op3'
+    :: (f a -> f b -> f c -> (f d, Maybe (f d) -> (f a, f b, f c)))
+    -> Op f '[a,b,c] d
 op3' f = Op $ \case
-    I x :< I y :< I z :< Ø ->
+    x :< y :< z :< Ø ->
       let (q, dxdydz) = f x y z
-      in  (q, (\(dx, dy, dz) -> dx ::< dy ::< dz ::< Ø) . dxdydz)
+      in  (q, (\(dx, dy, dz) -> dx :< dy :< dz :< Ø) . dxdydz)
 
-opN' :: (Num a, Known Nat n)
-     => (Vec n a -> (b, Maybe b -> Vec n a))
-     -> Op (Replicate n a) b
-opN' f = Op $ (second . fmap) vecToProd . f . prodToVec' known
+opN' :: (Num (f a), Known Nat n)
+     => (Vec n (f a) -> (f b, Maybe (f b) -> Vec n (f a)))
+     -> Op f (Replicate n a) b
+opN' f = Op $ (second . fmap) (vecToProd . vmap getI)
+            . f
+            . vmap I
+            . prodToVec' known
 
-op1 :: Num a
-    => (forall s. AD s (Forward a) -> AD s (Forward a))
-    -> Op '[a] a
+op1 :: Num (f a)
+    => (forall s. AD s (Forward (f a)) -> AD s (Forward (f a)))
+    -> Op f '[a] a
 op1 f = op1' $ \x ->
     let (z, dx) = diff' f x
     in  (z, maybe dx (* dx))
 
-op2 :: Num a
-    => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a)
-    -> Op '[a,a] a
+op2 :: Num (f a)
+    => (forall s. Reifies s Tape => Reverse s (f a) -> Reverse s (f a) -> Reverse s (f a))
+    -> Op f '[a,a] a
 op2 f = opN $ \case I x :* I y :* ØV -> f x y
 
-op3 :: Num a
-    => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a)
-    -> Op '[a,a,a] a
+op3 :: Num (f a)
+    => (forall s. Reifies s Tape => Reverse s (f a) -> Reverse s (f a) -> Reverse s (f a) -> Reverse s (f a))
+    -> Op f '[a,a,a] a
 op3 f = opN $ \case I x :* I y :* I z :* ØV -> f x y z
 
-opN :: (Num a, Known Nat n)
-    => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a)
-    -> Op (Replicate n a) a
+opN :: (Num (f a), Known Nat n)
+    => (forall s. Reifies s Tape => Vec n (Reverse s (f a)) -> Reverse s (f a))
+    -> Op f (Replicate n a) a
 opN f = opN' $ \xs ->
     let (y, dxs) = grad' f xs
     in  (y, maybe dxs (\q -> (q *) <$> dxs))

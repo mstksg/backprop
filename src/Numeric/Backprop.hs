@@ -40,7 +40,6 @@ import           Control.Monad.ST
 import           Control.Monad.State
 import           Data.STRef
 import           Data.Traversable
-import           Data.Type.Combinator
 import           Data.Type.Conjunction
 import           Data.Type.Index
 import           Data.Type.Length
@@ -52,15 +51,16 @@ import           Numeric.Backprop.Internal
 import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness
+import           Type.Family.List
 
 newBPRef'
-    :: forall s rs as a. ()
-    => Prod (BPRef s rs) as
-    -> Op as a
-    -> Summer a
-    -> BP s rs (BPRef s rs a)
+    :: forall s f rs as a. ()
+    => Prod (BPRef s f rs) as
+    -> Op f as a
+    -> Summer f a
+    -> BP s f rs (BPRef s f rs a)
 newBPRef' i o sm = do
-    xs <- traverse1 (fmap I . resolveRef) i
+    xs <- traverse1 resolveRef i
     let (res, gf) = runOp' o xs
         bp = BPN { _bpnOut       = FRInternal []
                  , _bpnRes       = res
@@ -73,18 +73,18 @@ newBPRef' i o sm = do
     return (BPRNode r)
 
 resolveRef
-    :: (MonadReader (Tuple rs) m, MonadBase (ST s) m)
-    => BPRef s rs a
-    -> m a
+    :: (MonadReader (Prod f rs) m, MonadBase (ST s) m)
+    => BPRef s f rs a
+    -> m (f a)
 resolveRef = \case
     BPRNode r -> _bpnRes <$> liftBase (readSTRef r)
-    BPRInp ix -> getI . index ix <$> ask
+    BPRInp ix -> index ix <$> ask
 
 registerRef
-    :: STRef s (BPNode s rs as b)
+    :: STRef s (BPNode s f rs as b)
     -> Index as a
-    -> BPRef s rs a
-    -> BP s rs ()
+    -> BPRef s f rs a
+    -> BP s f rs ()
 registerRef r ix = \case
     BPRNode r' -> liftBase . modifySTRef r' $ over (bpnOut . _FRInternal) (bpir :)
     BPRInp ix' -> modifying (bpsSources . indexP ix' . _FRInternal) (bpir :)
@@ -92,81 +92,81 @@ registerRef r ix = \case
     bpir = BPIR ix r
 
 newBPRef
-    :: Num a
-    => Prod (BPRef s rs) as
-    -> Op as a
-    -> BP s rs (BPRef s rs a)
+    :: Num (f a)
+    => Prod (BPRef s f rs) as
+    -> Op f as a
+    -> BP s f rs (BPRef s f rs a)
 newBPRef i o = newBPRef' i o known
 
 newBPRef0'
-    :: Op '[] a
-    -> Summer a
-    -> BP s rs (BPRef s rs a)
+    :: Op f '[] a
+    -> Summer f a
+    -> BP s f rs (BPRef s f rs a)
 newBPRef0' = newBPRef' Ø
 
 newBPRef0
-    :: Num a
-    => Op '[] a
-    -> BP s rs (BPRef s rs a)
+    :: Num (f a)
+    => Op f '[] a
+    -> BP s f rs (BPRef s f rs a)
 newBPRef0 = newBPRef Ø
 
 newBPRef1'
-    :: BPRef s rs a
-    -> Op '[a] b
-    -> Summer b
-    -> BP s rs (BPRef s rs b)
+    :: BPRef s f rs a
+    -> Op f '[a] b
+    -> Summer f b
+    -> BP s f rs (BPRef s f rs b)
 newBPRef1' r = newBPRef' (r :< Ø)
 
 newBPRef1
-    :: Num b
-    => BPRef s rs a
-    -> Op '[a] b
-    -> BP s rs (BPRef s rs b)
+    :: Num (f b)
+    => BPRef s f rs a
+    -> Op f '[a] b
+    -> BP s f rs (BPRef s f rs b)
 newBPRef1 r o = newBPRef1' r o known
 
 newBPRef2'
-    :: BPRef s rs a
-    -> BPRef s rs b
-    -> Op '[a,b] c
-    -> Summer c
-    -> BP s rs (BPRef s rs c)
+    :: BPRef s f rs a
+    -> BPRef s f rs b
+    -> Op f '[a,b] c
+    -> Summer f c
+    -> BP s f rs (BPRef s f rs c)
 newBPRef2' rx ry = newBPRef' (rx :< ry :< Ø)
 
 newBPRef2
-    :: Num c
-    => BPRef s rs a
-    -> BPRef s rs b
-    -> Op '[a,b] c
-    -> BP s rs (BPRef s rs c)
+    :: Num (f c)
+    => BPRef s f rs a
+    -> BPRef s f rs b
+    -> Op f '[a,b] c
+    -> BP s f rs (BPRef s f rs c)
 newBPRef2 rx ry o = newBPRef2' rx ry o known
 
 newBPRef3'
-    :: BPRef s rs a
-    -> BPRef s rs b
-    -> BPRef s rs c
-    -> Op '[a,b,c] d
-    -> Summer d
-    -> BP s rs (BPRef s rs d)
+    :: BPRef s f rs a
+    -> BPRef s f rs b
+    -> BPRef s f rs c
+    -> Op f '[a,b,c] d
+    -> Summer f d
+    -> BP s f rs (BPRef s f rs d)
 newBPRef3' rx ry rz = newBPRef' (rx :< ry :< rz :< Ø)
 
 newBPRef3
-    :: Num d
-    => BPRef s rs a
-    -> BPRef s rs b
-    -> BPRef s rs c
-    -> Op '[a,b,c] d
-    -> BP s rs (BPRef s rs d)
+    :: Num (f d)
+    => BPRef s f rs a
+    -> BPRef s f rs b
+    -> BPRef s f rs c
+    -> Op f '[a,b,c] d
+    -> BP s f rs (BPRef s f rs d)
 newBPRef3 rx ry rz o = newBPRef3' rx ry rz o known
 
 backwardPass
-    :: forall s rs as a. ()
-    => STRef s (BPNode s rs as a)
-    -> ST s (Tuple as)
+    :: forall s f rs as a. ()
+    => STRef s (BPNode s f rs as a)
+    -> ST s (Prod f as)
 backwardPass r = fmap snd . caching bpnGradCache r $ \BPN{..} -> do
     totderv <- case _bpnOut of
       FRInternal rs -> do
         outs <- for rs $ \(BPIR ix r') ->
-          getI . index ix <$> backwardPass r'
+          index ix <$> backwardPass r'
         return (Just $ runSummer _bpnSummer outs)
       FRExternal gE -> return (Just gE)
       FRTerminal    -> return Nothing
@@ -174,31 +174,31 @@ backwardPass r = fmap snd . caching bpnGradCache r $ \BPN{..} -> do
     return (totderv, g)
 
 backprop'
-    :: (forall s. BP s rs (BPRef s rs a))
-    -> Prod Summer rs
-    -> Prod Unity rs
-    -> Tuple rs
-    -> (a, Tuple rs)
+    :: (forall s. BP s f rs (BPRef s f rs a))
+    -> Prod (Summer f) rs
+    -> Prod (Unity f) rs
+    -> Prod f rs
+    -> (f a, Prod f rs)
 backprop' bp ss us env = runST $ do
     (res, gFunc) <- backpropWith bp ss us env
     grad <- gFunc Nothing
     return (res, grad)
 
 backprop
-    :: forall rs a. Every Num rs
-    => (forall s. BP s rs (BPRef s rs a))
-    -> Tuple rs
-    -> (a, Tuple rs)
-backprop bp xs = backprop' bp (imap1 (\i _ -> known \\ every @_ @Num i) xs)
-                              (imap1 (\i _ -> known \\ every @_ @Num i) xs)
+    :: forall f rs a. Every Num (f <$> rs)
+    => (forall s. BP s f rs (BPRef s f rs a))
+    -> Prod f rs
+    -> (f a, Prod f rs)
+backprop bp xs = backprop' bp (imap1 (\i _ -> known \\ every @_ @Num (reIndex @_ @f i)) xs)
+                              (imap1 (\i _ -> known \\ every @_ @Num (reIndex @_ @f i)) xs)
                               xs
 
 backpropWith
-    :: BP s rs (BPRef s rs a)
-    -> Prod Summer rs
-    -> Prod Unity rs
-    -> Tuple rs
-    -> ST s (a, Maybe a -> ST s (Tuple rs))
+    :: BP s f rs (BPRef s f rs a)
+    -> Prod (Summer f) rs
+    -> Prod (Unity f) rs
+    -> Prod f rs
+    -> ST s (f a, Maybe (f a) -> ST s (Prod f rs))
 backpropWith bp ss us env = do
     (r, bps0) <- runStateT (runReaderT (bpST bp) env)
                            (BPS (map1 (\_ -> FRInternal []) env))
@@ -213,23 +213,23 @@ backpropWith bp ss us env = do
           for1 (ss `zipP` us `zipP` _bpsSources) $ \((s :&: u) :&: rs) -> do
             case rs of
               FRInternal rs' ->
-                fmap (I . runSummer s) . for rs' $ \(BPIR ix r') ->
-                  getI . index ix <$> backwardPass r'
+                fmap (runSummer s) . for rs' $ \(BPIR ix r') ->
+                  index ix <$> backwardPass r'
               FRExternal gE  ->
-                return $ I gE
+                return $ gE
               FRTerminal     ->
-                return $ I (getUnity u)
+                return $ getUnity u
     return (res, gradFunc)
 
 plugBP'
-    :: Prod (BPRef s rs) as
-    -> BP s as (BPRef s as a)
-    -> Prod Summer as
-    -> Prod Unity as
-    -> Summer a
-    -> BP s rs (BPRef s rs a)
+    :: Prod (BPRef s f rs) as
+    -> BP s f as (BPRef s f as a)
+    -> Prod (Summer f) as
+    -> Prod (Unity f) as
+    -> Summer f a
+    -> BP s f rs (BPRef s f rs a)
 plugBP' i bp ss us sa = do
-    env <- traverse1 (fmap I . resolveRef) i
+    env <- traverse1 resolveRef i
     (res, gFunc) <- liftBase $ backpropWith bp ss us env
     let bpn = BPN { _bpnOut       = FRInternal []
                   , _bpnRes       = res
@@ -242,29 +242,29 @@ plugBP' i bp ss us sa = do
     return (BPRNode r)
 
 plugBP
-    :: (Every Num as, Num a)
-    => Prod (BPRef s rs) as
-    -> BP s as (BPRef s as a)
-    -> BP s rs (BPRef s rs a)
-plugBP i bp = plugBP' i bp (imap1 (\j _ -> known \\ every @_ @Num j) i)
-                           (imap1 (\j _ -> known \\ every @_ @Num j) i)
+    :: forall s f rs as a. (Every Num (f <$> as), Num (f a))
+    => Prod (BPRef s f rs) as
+    -> BP s f as (BPRef s f as a)
+    -> BP s f rs (BPRef s f rs a)
+plugBP i bp = plugBP' i bp (imap1 (\j _ -> known \\ every @_ @Num (reIndex @_ @f j)) i)
+                           (imap1 (\j _ -> known \\ every @_ @Num (reIndex @_ @f j)) i)
                            known
 
 
 inpRef
     :: Index rs a
-    -> BPRef s rs a
+    -> BPRef s f rs a
 inpRef = BPRInp
 
 inpRefs
     :: Known Length rs
-    => Prod (BPRef s rs) rs
+    => Prod (BPRef s f rs) rs
 inpRefs = map1 inpRef indices
 
 withInps
     :: Known Length rs
-    => (Prod (BPRef s rs) rs -> BP s rs a)
-    -> BP s rs a
+    => (Prod (BPRef s f rs) rs -> BP s f rs a)
+    -> BP s f rs a
 withInps f = f inpRefs
 
 
