@@ -2,7 +2,7 @@
 
 import           Numeric.Backprop.Mono
 
-test :: BP s N3 Double (BPRef s N3 Double Double)
+test :: BPOp s N3 Double Double
 test = withInps $ \(x :* y :* z :* ØV) -> do
     xy  <- newBPRef2 x y  $ op2 (*)
     xyy <- newBPRef2 xy y $ op2 (+)
