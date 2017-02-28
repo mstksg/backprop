@@ -20,6 +20,7 @@ module Numeric.Backprop
   , backprop
   , plugBP
   , newBPRef'
+  , newBPRef0'
   , newBPRef1'
   , newBPRef2'
   , newBPRef3'
@@ -30,15 +31,13 @@ module Numeric.Backprop
   , Summer(..)
   , Unity(..)
   , Prod(..), pattern (:>), only
-  , Tuple, pattern (::<), pattern (:>), only_
+  , Tuple, pattern (::<), only_
   ) where
 
-import           Control.Applicative
 import           Control.Monad.Base
 import           Control.Monad.Reader
 import           Control.Monad.ST
 import           Control.Monad.State
-import           Data.Monoid
 import           Data.STRef
 import           Data.Traversable
 import           Data.Type.Combinator
@@ -97,7 +96,7 @@ newBPRef
     => Prod (BPRef s rs) as
     -> Op as a
     -> BP s rs (BPRef s rs a)
-newBPRef i o = newBPRef' i o (Summer sum)
+newBPRef i o = newBPRef' i o known
 
 newBPRef0'
     :: Op '[] a
@@ -249,7 +248,7 @@ plugBP
     -> BP s rs (BPRef s rs a)
 plugBP i bp = plugBP' i bp (imap1 (\j _ -> known \\ every @_ @Num j) i)
                            (imap1 (\j _ -> known \\ every @_ @Num j) i)
-                           (Summer sum)
+                           known
 
 
 inpRef
