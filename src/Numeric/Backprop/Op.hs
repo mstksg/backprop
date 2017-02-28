@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs            #-}
 {-# LANGUAGE LambdaCase       #-}
+{-# LANGUAGE PolyKinds        #-}
 {-# LANGUAGE RankNTypes       #-}
 
 module Numeric.Backprop.Op

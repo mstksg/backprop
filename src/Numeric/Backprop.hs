@@ -10,7 +10,7 @@
 {-# LANGUAGE TypeOperators       #-}
 
 module Numeric.Backprop
-  ( BP
+  ( BP, BPOp
   , BPRef
   , newBPRef
   , newBPRef0
@@ -52,6 +52,8 @@ import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness
 import           Type.Family.List
+
+type BPOp s f rs a = BP s f rs (BPRef s f rs a)
 
 newBPRef'
     :: forall s f rs as a. ()
@@ -174,7 +176,7 @@ backwardPass r = fmap snd . caching bpnGradCache r $ \BPN{..} -> do
     return (totderv, g)
 
 backprop'
-    :: (forall s. BP s f rs (BPRef s f rs a))
+    :: (forall s. BPOp s f rs a)
     -> Prod (Summer f) rs
     -> Prod (Unity f) rs
     -> Prod f rs
@@ -186,7 +188,7 @@ backprop' bp ss us env = runST $ do
 
 backprop
     :: forall f rs a. Every Num (f <$> rs)
-    => (forall s. BP s f rs (BPRef s f rs a))
+    => (forall s. BPOp s f rs a)
     -> Prod f rs
     -> (f a, Prod f rs)
 backprop bp xs = backprop' bp (imap1 (\i _ -> known \\ every @_ @Num (reIndex @_ @f i)) xs)
@@ -194,7 +196,7 @@ backprop bp xs = backprop' bp (imap1 (\i _ -> known \\ every @_ @Num (reIndex @_
                               xs
 
 backpropWith
-    :: BP s f rs (BPRef s f rs a)
+    :: BPOp s f rs a
     -> Prod (Summer f) rs
     -> Prod (Unity f) rs
     -> Prod f rs
@@ -223,11 +225,11 @@ backpropWith bp ss us env = do
 
 plugBP'
     :: Prod (BPRef s f rs) as
-    -> BP s f as (BPRef s f as a)
+    -> BPOp s f as a
     -> Prod (Summer f) as
     -> Prod (Unity f) as
     -> Summer f a
-    -> BP s f rs (BPRef s f rs a)
+    -> BPOp s f rs a
 plugBP' i bp ss us sa = do
     env <- traverse1 resolveRef i
     (res, gFunc) <- liftBase $ backpropWith bp ss us env
@@ -244,8 +246,8 @@ plugBP' i bp ss us sa = do
 plugBP
     :: forall s f rs as a. (Every Num (f <$> as), Num (f a))
     => Prod (BPRef s f rs) as
-    -> BP s f as (BPRef s f as a)
-    -> BP s f rs (BPRef s f rs a)
+    -> BPOp s f as a
+    -> BPOp s f rs a
 plugBP i bp = plugBP' i bp (imap1 (\j _ -> known \\ every @_ @Num (reIndex @_ @f j)) i)
                            (imap1 (\j _ -> known \\ every @_ @Num (reIndex @_ @f j)) i)
                            known

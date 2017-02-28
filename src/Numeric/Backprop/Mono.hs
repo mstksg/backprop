@@ -15,7 +15,7 @@
 
 
 module Numeric.Backprop.Mono
-  ( BP, Replicate
+  ( BP, BPOp, Replicate
   , BPRef
   , newBPRef
   , newBPRef0
@@ -49,9 +49,10 @@ import qualified Numeric.Backprop            as BP
 import qualified Numeric.Backprop.Internal   as BP
 import qualified Numeric.Backprop.Op         as BP
 
-type BP s n a    = BP.BP s I (Replicate n a)
-type BPRef s n a = BP.BPRef s I (Replicate n a)
-type Op n a      = BP.Op I (Replicate n a)
+type BP s n a     = BP.BP s I (Replicate n a)
+type BPRef s n a  = BP.BPRef s I (Replicate n a)
+type BPOp s n a b = BP s n a (BPRef s n a b)
+type Op n a       = BP.Op I (Replicate n a)
 
 op0 :: a -> Op N0 r a
 op0 = BP.op0 . I
@@ -133,7 +134,7 @@ newBPRef3 x y z o = newBPRef @_ @_ @n (x :* y :* z :* ØV) o
 
 backprop
     :: forall n a b. Num a
-    => (forall s. BP s n a (BPRef s n a b))
+    => (forall s. BPOp s n a b)
     -> Vec n a
     -> (b, Vec n a)
 backprop bp i = (getI x, prodAlong i g)
@@ -143,8 +144,8 @@ backprop bp i = (getI x, prodAlong i g)
 plugBP
     :: (Num b, Num c)
     => VecT m (BPRef s n a) b
-    -> BP s m b (BPRef s m b c)
-    -> BP s n a (BPRef s n a c)
+    -> BPOp s m b c
+    -> BPOp s n a c
 plugBP i bp =
     BP.plugBP' (vecToProd i) bp (toSummers i) (toUnities i) (BP.Summer sum)
 
