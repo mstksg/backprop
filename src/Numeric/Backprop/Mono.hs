@@ -23,6 +23,7 @@ module Numeric.Backprop.Mono
   , newBPRef2
   , newBPRef3
   , backprop
+  , runBPOp
   , plugBP
   , inpRef, inpRefs, withInps
   , Op
@@ -140,6 +141,14 @@ backprop
 backprop bp i = (getI x, prodAlong i g)
   where
     (x, g) = BP.backprop' bp (toSummers i) (toUnities i) (vecToProd i)
+
+runBPOp
+    :: forall n a b. Num a
+    => (forall s. BPOp s n a b)
+    -> Vec n a
+    -> b
+runBPOp bp = fst . backprop bp
+
 
 plugBP
     :: (Num b, Num c)

@@ -18,6 +18,7 @@ module Numeric.Backprop
   , newBPRef2
   , newBPRef3
   , backprop
+  , runBPOp
   , plugBP
   , newBPRef'
   , newBPRef0'
@@ -25,6 +26,7 @@ module Numeric.Backprop
   , newBPRef2'
   , newBPRef3'
   , backprop'
+  , runBPOp'
   , plugBP'
   , inpRef, inpRefs, withInps
   , Op(..)
@@ -194,6 +196,22 @@ backprop
 backprop bp xs = backprop' bp (imap1 (\i _ -> known \\ every @_ @Num (reIndex @_ @f i)) xs)
                               (imap1 (\i _ -> known \\ every @_ @Num (reIndex @_ @f i)) xs)
                               xs
+
+runBPOp'
+    :: (forall s. BPOp s f rs a)
+    -> Prod (Summer f) rs
+    -> Prod (Unity f) rs
+    -> Prod f rs
+    -> f a
+runBPOp' bp ss us = fst . backprop' bp ss us
+
+runBPOp
+    :: Every Num (f <$> rs)
+    => (forall s. BPOp s f rs a)
+    -> Prod f rs
+    -> f a
+runBPOp bp = fst . backprop bp
+
 
 backpropWith
     :: BPOp s f rs a
