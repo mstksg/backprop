@@ -32,9 +32,9 @@ library
   default-language:    Haskell2010
   ghc-options:         -Wall
 
-executable backprop-devtest
+executable backprop-monotest
   hs-source-dirs:      app
-  main-is:             DevTest.hs
+  main-is:             MonoTest.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -O2
   build-depends:       base
                      , backprop
