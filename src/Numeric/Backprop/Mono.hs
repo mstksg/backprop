@@ -23,6 +23,7 @@ module Numeric.Backprop.Mono
   , newBPRef2
   , newBPRef3
   , backprop
+  , plugBP
   , inpRef, inpRefs, withInps
   , Op
   , op0, op1, op2, op3, opN
@@ -139,6 +140,14 @@ backprop bp i = (getI x, prodAlong i g)
   where
     (x, g) = BP.backprop' bp (toSummers i) (toUnities i) (vecToProd i)
 
+plugBP
+    :: (Num b, Num c)
+    => VecT m (BPRef s n a) b
+    -> BP s m b (BPRef s m b c)
+    -> BP s n a (BPRef s n a c)
+plugBP i bp =
+    BP.plugBP' (vecToProd i) bp (toSummers i) (toUnities i) (BP.Summer sum)
+
 inpRef
     :: Fin n
     -> BPRef s n a a
@@ -162,7 +171,7 @@ withInps f = f inpRefs
 
 toSummers
     :: Num a
-    => Vec n a
+    => VecT n f a
     -> Prod (BP.Summer I) (Replicate n a)
 toSummers = \case
     ØV      -> Ø
@@ -170,7 +179,7 @@ toSummers = \case
 
 toUnities
     :: Num a
-    => Vec n a
+    => VecT n f a
     -> Prod (BP.Unity I) (Replicate n a)
 toUnities = \case
     ØV      -> Ø
