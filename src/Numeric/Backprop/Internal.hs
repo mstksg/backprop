@@ -44,6 +44,7 @@ newtype Op as a = Op { runOp' :: Tuple as -> (a, Maybe a -> Tuple as) }
 
 newtype Summer a = Summer { runSummer :: [a] -> a }
 newtype Unity  a = Unity  { getUnity  :: a        }
+    deriving (Functor, Show, Ord, Eq, Num, Fractional, Floating, Integral, Real, Enum, RealFloat, RealFrac)
 
 instance Num a => Known Summer a where
     type KnownC Summer a = Num a

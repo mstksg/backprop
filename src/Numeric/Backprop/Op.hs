@@ -9,12 +9,13 @@ module Numeric.Backprop.Op
   ( Op(..)
   , runOp, gradOp, gradOpWith, gradOpWith'
   , op0
-  , op1, op2, op3, opN
-  , op1', op2', op3', opN'
+  , op1, op2, op3, opN, opCoerce
+  , op1', op2', op3', opN', opCoerce'
   , Replicate
   ) where
 
 import           Data.Bifunctor
+import           Data.Coerce
 import           Data.Reflection                (Reifies)
 import           Data.Type.Combinator
 import           Data.Type.Nat
@@ -38,6 +39,15 @@ gradOpWith o i = gradOpWith' o i . Just
 
 gradOp :: Op as a -> Tuple as -> Tuple as
 gradOp o i = gradOpWith' o i Nothing
+
+opCoerce' :: Coercible a b => Unity a -> Op '[a] b
+opCoerce' u = op1' $ \x -> ( coerce x
+                           , \case Nothing -> getUnity u
+                                   Just g  -> coerce g
+                           )
+
+opCoerce :: (Coercible a b, Num a) => Op '[a] b
+opCoerce = opCoerce' known
 
 op0 :: a -> Op '[] a
 op0 x = Op $ \case
