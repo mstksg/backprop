@@ -34,84 +34,80 @@ import           Data.STRef
 import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Product
-import           Data.Type.Util
 import           Lens.Micro
 import           Lens.Micro.TH
 import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness
-import           Type.Family.List
 
-newtype Op f as a = Op { runOp' :: Prod f as -> (f a, Maybe (f a) -> Prod f as) }
+newtype Op as a = Op { runOp' :: Tuple as -> (a, Maybe a -> Tuple as) }
 
-newtype Summer :: (k -> Type) -> k -> Type where
-    Summer :: { runSummer :: [f a] -> f a } -> Summer f a
-newtype Unity :: (k -> Type) -> k -> Type where
-    Unity  :: { getUnity  :: f a          } -> Unity f a
+newtype Summer a = Summer { runSummer :: [a] -> a }
+newtype Unity  a = Unity  { getUnity  :: a        }
 
-instance Num (f a) => Known (Summer f) a where
-    type KnownC (Summer f) a = Num (f a)
+instance Num a => Known Summer a where
+    type KnownC Summer a = Num a
     known = Summer sum
 
-instance Num (f a) => Known (Unity f) a where
-    type KnownC (Unity f) a = Num (f a)
+instance Num a => Known Unity a where
+    type KnownC Unity a = Num a
     known = Unity 1
 
 summers
-    :: forall k (f :: k -> Type) (as :: [k]). (Every Num (f <$> as), Known Length as)
-    => Prod (Summer f) as
-summers = map1 ((// known) . every @_ @Num . reIndex @_ @f) indices
+    :: (Every Num as, Known Length as)
+    => Prod Summer as
+summers = map1 ((// known) . every @_ @Num) indices
 
 unities
-    :: forall k (f :: k -> Type) (as :: [k]). (Every Num (f <$> as), Known Length as)
-    => Prod (Unity f) as
-unities = map1 ((// known) . every @_ @Num . reIndex @_ @f) indices
+    :: (Every Num as, Known Length as)
+    => Prod Unity as
+unities = map1 ((// known) . every @_ @Num) indices
 
-data ForwardRefs s f rs a = FRInternal ![BPInpRef s f rs a]
-                          | FRExternal (f a)
-                          | FRTerminal
+data ForwardRefs s rs a = FRInternal ![BPInpRef s rs a]
+                        | FRExternal a
+                        | FRTerminal
 
-data BPState :: Type -> (k -> Type) -> [k] -> Type where
-    BPS :: { _bpsSources :: !(Prod (ForwardRefs s f rs) rs)
+data BPState :: Type -> [Type] -> Type where
+    BPS :: { _bpsSources :: !(Prod (ForwardRefs s rs) rs)
            }
-        -> BPState s f rs
+        -> BPState s rs
 
-newtype BP s f rs b = BP { bpST :: ReaderT (Prod f rs) (StateT (BPState s f rs) (ST s)) b }
+newtype BP s rs b = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s)) b }
       deriving ( Functor
                , Applicative
                , Monad
-               , MonadReader (Prod f rs)
-               , MonadState (BPState s f rs)
+               , MonadReader (Tuple rs)
+               , MonadState (BPState s rs)
                , MonadBase (ST s)
                )
 
-data BPRef :: Type -> (k -> Type) -> [k] -> k -> Type where
-    BPRNode :: !(STRef s (BPNode s f rs as a))
-            -> BPRef s f rs a
+data BPRef :: Type -> [Type] -> Type -> Type where
+    BPRNode :: !(STRef s (BPNode s rs as a))
+            -> BPRef s rs a
     BPRInp  :: !(Index rs a)
-            -> BPRef s f rs a
+            -> BPRef s rs a
 
-data BPInpRef :: Type -> (k -> Type) -> [k] -> k -> Type where
+data BPInpRef :: Type -> [Type] -> Type -> Type where
     BPIR :: { _bpirIndex :: !(Index bs a)
-            , _bpirRef   :: !(STRef s (BPNode s f rs bs b))
+            , _bpirRef   :: !(STRef s (BPNode s rs bs b))
             }
-         -> BPInpRef s f rs a
+         -> BPInpRef s rs a
 
-data BPNode :: Type -> (k -> Type) -> [k] -> [k] -> k -> Type where
-    BPN :: { _bpnOut       :: !(ForwardRefs s f rs a)
-           , _bpnRes       :: !(f a)
-           , _bpnGradFunc  :: !(Maybe (f a) -> ST s (Prod f as))
-           , _bpnGradCache :: !(Maybe (Maybe (f a), Prod f as))  -- nothing if is the "final output"
-           , _bpnSummer    :: !(Summer f a)
+data BPNode :: Type -> [Type] -> [Type] -> Type -> Type where
+    BPN :: { _bpnOut       :: !(ForwardRefs s rs a)
+           , _bpnRes       :: !a
+           , _bpnGradFunc  :: !(Maybe a -> ST s (Tuple as))
+           , _bpnGradCache :: !(Maybe (Maybe a, Tuple as))  -- nothing if is the "final output"
+           , _bpnSummer    :: !(Summer a)
            }
-        -> BPNode s f rs as a
+        -> BPNode s rs as a
 
 makeLenses ''BPState
 makeLenses ''BPNode
 
 _FRInternal
-    :: Traversal (ForwardRefs s f as a) (ForwardRefs t f bs a)
-                 [BPInpRef s f as a]    [BPInpRef t f bs a]
+    :: Traversal (ForwardRefs s as a) (ForwardRefs t bs a)
+                 [BPInpRef s as a]    [BPInpRef t bs a]
 _FRInternal f = \case
     FRInternal xs -> FRInternal <$> f xs
     FRExternal x  -> pure (FRExternal x)
