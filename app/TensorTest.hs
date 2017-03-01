@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE EmptyCase            #-}
+{-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
 {-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE PolyKinds            #-}
@@ -58,31 +59,49 @@ dot = op2' $ \case
 logistic :: Floating a => a -> a
 logistic x = 1 / (1 + exp (-x))
 
--- -- data Network :: Type -> Nat -> Nat -> Type where
--- --     N :: { _nsPs    :: !(Sing ps)
--- --          , _nOp     :: !(BPOp s Tensor ('[i] ': ps) '[o])
--- --          , _nParams :: !(Prod Tensor ps)
--- --          } -> Network s i o
+data Layer :: (Nat, Nat) -> Type where
+    Layer :: { _lWeights :: Tensor '[m, n]
+             , _lBiases  :: Tensor '[m]
+             }
+          -> Layer '(n, m)
 
--- -- data Layer :: (Nat, Nat) -> Type where
--- --     Layer :: { _lWeights :: Tensor '[m, n]
--- --              , _lBiases  :: Tensor '[m]
--- --              }
--- --           -> Layer ( '(,) n m )
+instance (KnownNat m, KnownNat n) => Num (Layer '(n, m)) where
+    Layer w1 b1 + Layer w2 b2 = Layer (w1 + w2) (b1 + b2)
+    Layer w1 b1 - Layer w2 b2 = Layer (w1 - w2) (b1 - b2)
+    Layer w1 b1 * Layer w2 b2 = Layer (w1 * w2) (b1 * b2)
+    abs    (Layer w b) = Layer (abs w) (abs b)
+    signum (Layer w b) = Layer (signum w) (signum b)
+    negate (Layer w b) = Layer (negate w) (negate b)
+    fromInteger x = Layer (fromInteger x) (fromInteger x)
 
+unLayer
+    :: Layer '(n, m)
+    -> (Tensor '[m, n], Tensor '[m])
+unLayer (Layer w b) = (w, b)
 
+data Network :: Type -> Nat -> Nat -> Type where
+    N :: { _nsPs    :: !(Sing ls)
+         , _nOp     :: !(Tensor '[i] -> BPOp s (Layer <$> ls) (Tensor '[o]))
+         , _nParams :: !(Prod Layer ls)
+         }
+      -> Network s i o
 
--- -- ffLayer
--- --     :: forall s n m. (KnownNat m, KnownNat n)
--- --     => Network s n m
--- -- ffLayer = N sing ffLayer' (0 :< 0 :< Ø)
--- --   where
--- --     ffLayer'
--- --         :: BPOp s Tensor '[ '[n], '[m, n], '[m] ] '[m]
--- --     ffLayer' = withInps $ \(x :< w :< b :< Ø) -> do
--- --         y <- newBPRef2 w x $ matVec
--- --         z <- newBPRef2 y b $ op2 (+)
--- --         newBPRef1 z        $ op1 logistic
+-- ffLayer
+--     :: forall s n m. (KnownNat m, KnownNat n)
+--     => Network s n m
+-- ffLayer = N sing ffLayer' (0 :< Ø)
+--   where
+--     ffLayer'
+--         :: Tensor '[n]
+--         -> BPOp s '[ Layer '(n, m) ] (Tensor '[o])
+--     ffLayer' x = withInps $ \( rl :< Ø ) -> do
+--         _
+--     -- ffLayer'
+--     --     :: BPOp s Tensor '[ '[n], '[m, n], '[m] ] '[m]
+--     -- ffLayer' = withInps $ \(x :< w :< b :< Ø) -> do
+--     --     y <- newBPRef2 w x $ matVec
+--     --     z <- newBPRef2 y b $ op2 (+)
+--     --     newBPRef1 z        $ op1 logistic
 
 -- -- (~*~)
 -- --     :: Network s a b
@@ -195,5 +214,5 @@ instance SingI ns => Floating (Tensor ns) where
     asinh = liftT1 asinh
     acosh = liftT1 acosh
     atanh = liftT1 atanh
-    
+
 
