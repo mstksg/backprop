@@ -76,25 +76,28 @@ newBPRef' i o sm = do
     itraverse1_ (registerRef r) i
     return (BPRNode r)
 
--- splitBPRef
---     :: BPRef s rs (Tuple as)
---     -> BP s rs (Prod (BPRef s rs) as)
--- splitBPRef r = do
---     n <- resolveRef r
---     rs <- ifor1 n $ \ix (I (x :: a)) -> do
---         let bp :: BPNode s rs '[Tuple as] a
---             bp = BPN { _bpnOut       = FRInternal []
---                      , _bpnRes       = x
---                      , _bpnGradFunc  = set (indexP ix) _ zeroes
---                      , _bpnGradCache = Nothing
---                      , _bpnSummer    = undefined
---                      }
---         r' <- liftBase $ newSTRef bp
---         registerRef r' IZ r
---         return (BPRNode r')
---     return rs
---   where
---       zeroes = 
+splitBPRef
+    :: Prod Summer as
+    -> Prod Unity as
+    -> BPRef s rs (Tuple as)
+    -> BP s rs (Prod (BPRef s rs) as)
+splitBPRef ss us r = do
+    n <- resolveRef r
+    rs <- ifor1 (us `zipP` n) $ \ix (u :&: I x) -> do
+        let bp = BPN { _bpnOut       = FRInternal []
+                     , _bpnRes       = x
+                     , _bpnGradFunc  = return . only_ <$> \case
+                          Nothing -> set (indexP ix) (I (getUnity u)) zeroes
+                          Just g  -> set (indexP ix) (I g           ) zeroes
+                     , _bpnGradCache = Nothing
+                     , _bpnSummer    = undefined
+                     }
+        r' <- liftBase $ newSTRef bp
+        registerRef r' IZ r
+        return (BPRNode r')
+    return rs
+  where
+    zeroes = map1 (\s -> I (runSummer s [])) ss
     
 -- TODO: pull summers too
 
