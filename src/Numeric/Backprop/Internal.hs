@@ -40,6 +40,8 @@ import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness
 
+-- instead of Tuple as, Prod Diff as, where Diff can be a value, or zero,
+-- or one?
 newtype Op as a = Op { runOp' :: Tuple as -> (a, Maybe a -> Tuple as) }
 
 newtype Summer a = Summer { runSummer :: [a] -> a }

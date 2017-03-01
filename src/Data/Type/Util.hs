@@ -79,6 +79,13 @@ for1
     -> h (t g b)
 for1 x f = traverse1 f x
 
+ifor1
+    :: (Applicative h, IxTraversable1 i t)
+    => t f b
+    -> (forall a. i b a -> f a -> h (g a))
+    -> h (t g b)
+ifor1 x f = itraverse1 f x
+
 zipP
     :: Prod f as
     -> Prod g as
