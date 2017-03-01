@@ -17,6 +17,7 @@ import           Data.Singletons
 import           Data.Singletons.Prelude
 import           Data.Singletons.TypeLits
 import           Data.Type.Combinator
+import           Data.Type.Product
 import           Data.Type.Vector
 import           GHC.TypeLits
 import           Numeric.AD
@@ -32,10 +33,6 @@ data Tensor :: [Nat] -> Type where
     TM :: { unTM :: L m n  } -> Tensor '[m,n]
 
 deriving instance ListC (KnownNat <$> ns) => Show (Tensor ns)
-
-
-
-
 
 matVec
     :: (KnownNat m, KnownNat n)
@@ -61,23 +58,52 @@ dot = op2' $ \case
 logistic :: Floating a => a -> a
 logistic x = 1 / (1 + exp (-x))
 
-ffLayer
-    :: (KnownNat n, KnownNat m)
-    => BPOp s Tensor '[ '[n], '[m, n], '[m] ] '[m]
-ffLayer = withInps $ \(x :< w :< b :< Ø) -> do
-    y <- newBPRef2 w x $ matVec
-    z <- newBPRef2 y b $ op2 (+)
-    newBPRef1 z        $ op1 logistic
+-- data Network :: Type -> Nat -> Nat -> Type where
+--     N :: { _nsPs    :: !(Sing ps)
+--          , _nOp     :: !(BPOp s Tensor ('[i] ': ps) '[o])
+--          , _nParams :: !(Prod Tensor ps)
+--          } -> Network s i o
 
-err
-    :: KnownNat m
-    => Tensor '[m]
-    -> BPRef s Tensor rs '[m]
-    -> BPOp s Tensor rs '[]
-err targ r = do
-    t <- newBPRef0     $ op0 targ
-    d <- newBPRef2 r t $ op2 (-)
-    newBPRef2 d d      $ dot
+-- data Layer :: (Nat, Nat) -> Type where
+--     Layer :: { _lWeights :: Tensor '[m, n]
+--              , _lBiases  :: Tensor '[m]
+--              }
+--           -> Layer ( '(,) n m )
+
+
+
+-- ffLayer
+--     :: forall s n m. (KnownNat m, KnownNat n)
+--     => Network s n m
+-- ffLayer = N sing ffLayer' (0 :< 0 :< Ø)
+--   where
+--     ffLayer'
+--         :: BPOp s Tensor '[ '[n], '[m, n], '[m] ] '[m]
+--     ffLayer' = withInps $ \(x :< w :< b :< Ø) -> do
+--         y <- newBPRef2 w x $ matVec
+--         z <- newBPRef2 y b $ op2 (+)
+--         newBPRef1 z        $ op1 logistic
+
+-- (~*~)
+--     :: Network s a b
+--     -> Network s b c
+--     -> Network s a c
+-- N sPs1 o1 p1 ~*~ N sPs2 o2 p2 =
+--     N (sPs1 %:++ sPs2) _ (p1 `append'` p2)
+--         \\ singLength sPs1
+-- infixr 4 ~*~
+-- {-# INLINE (~*~) #-}
+
+
+-- err
+--     :: KnownNat m
+--     => Tensor '[m]
+--     -> BPRef s Tensor rs '[m]
+--     -> BPOp s Tensor rs '[]
+-- err targ r = do
+--     t <- newBPRef0     $ op0 targ
+--     d <- newBPRef2 r t $ op2 (-)
+--     newBPRef2 d d      $ dot
 
 main :: IO ()
 main = putStrLn "hey"
