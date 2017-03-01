@@ -4,20 +4,24 @@
 {-# LANGUAGE LambdaCase       #-}
 {-# LANGUAGE PolyKinds        #-}
 {-# LANGUAGE RankNTypes       #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Numeric.Backprop.Op
   ( Op(..)
   , runOp, gradOp, gradOpWith, gradOpWith'
   , op0
-  , op1, op2, op3, opN, opCoerce
-  , op1', op2', op3', opN', opCoerce'
+  , op1, op2, op3, opN, opCoerce, opTup, opIso
+  , op1', op2', op3', opN', opCoerce', opTup', opIso'
   , Replicate
   ) where
 
 import           Data.Bifunctor
 import           Data.Coerce
+import           Data.Maybe
 import           Data.Reflection                (Reifies)
 import           Data.Type.Combinator
+import           Data.Type.Index
+import           Data.Type.Length
 import           Data.Type.Nat
 import           Data.Type.Product
 import           Data.Type.Util
@@ -26,7 +30,9 @@ import           Numeric.AD
 import           Numeric.AD.Internal.Reverse    (Reverse, Tape)
 import           Numeric.AD.Mode.Forward hiding (grad')
 import           Numeric.Backprop.Internal
+import           Type.Class.Higher
 import           Type.Class.Known
+import           Type.Class.Witness
 
 runOp :: Op as a -> Tuple as -> a
 runOp o = fst . runOp' o
@@ -41,13 +47,34 @@ gradOp :: Op as a -> Tuple as -> Tuple as
 gradOp o i = gradOpWith' o i Nothing
 
 opCoerce' :: Coercible a b => Unity a -> Op '[a] b
-opCoerce' u = op1' $ \x -> ( coerce x
-                           , \case Nothing -> getUnity u
-                                   Just g  -> coerce g
-                           )
+opCoerce' u = opIso' u coerce coerce
 
 opCoerce :: (Coercible a b, Num a) => Op '[a] b
-opCoerce = opCoerce' known
+opCoerce = opIso coerce coerce
+
+opTup'
+    :: Prod Unity as
+    -> Op as (Tuple as)
+opTup' u = Op $ \xs -> (xs, fromMaybe (map1 (I . getUnity) u))
+
+opTup
+    :: (Every Num as, Known Length as)
+    => Op as (Tuple as)
+opTup = opTup' (map1 ((// known) . every @_ @Num) indices)
+
+opIso'
+    :: Unity a
+    -> (a -> b)
+    -> (b -> a)
+    -> Op '[ a ] b
+opIso' u f g = op1' $ \x -> (f x, maybe (getUnity u) g)
+
+opIso
+    :: Num a
+    => (a -> b)
+    -> (b -> a)
+    -> Op '[ a ] b
+opIso = opIso' known
 
 op0 :: a -> Op '[] a
 op0 x = Op $ \case
