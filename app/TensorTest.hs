@@ -34,29 +34,29 @@ data Tensor :: [Nat] -> Type where
 
 deriving instance ListC (KnownNat <$> ns) => Show (Tensor ns)
 
--- matVec
---     :: (KnownNat m, KnownNat n)
---     => Op Tensor '[ '[m,n] , '[n] ] '[m]
--- matVec = op2' $ \case
---     TM m -> \case
---       TV v -> ( TV (m #> v)
---               , \(maybe 1 unTV -> g) ->
---                    (TM (g `outer` v), TV (tr m #> g))
---               )
+matVec
+    :: (KnownNat m, KnownNat n)
+    => Op '[ Tensor '[m,n] , Tensor '[n] ] (Tensor '[m])
+matVec = op2' $ \case
+    TM m -> \case
+      TV v -> ( TV (m #> v)
+              , \(maybe 1 unTV -> g) ->
+                   (TM (g `outer` v), TV (tr m #> g))
+              )
 
--- dot :: KnownNat n
---     => Op Tensor '[ '[n] , '[n] ] '[]
--- dot = op2' $ \case
---     TV x -> \case
---       TV y -> ( TS (x <.> y)
---               , \case Nothing      ->
---                         (TV y            , TV x            )
---                       Just (TS g)  ->
---                         (TV (konst g * y), TV (x * konst g))
---               )
+dot :: KnownNat n
+    => Op '[ Tensor '[n] , Tensor '[n] ] (Tensor '[])
+dot = op2' $ \case
+    TV x -> \case
+      TV y -> ( TS (x <.> y)
+              , \case Nothing      ->
+                        (TV y            , TV x            )
+                      Just (TS g)  ->
+                        (TV (konst g * y), TV (x * konst g))
+              )
 
--- logistic :: Floating a => a -> a
--- logistic x = 1 / (1 + exp (-x))
+logistic :: Floating a => a -> a
+logistic x = 1 / (1 + exp (-x))
 
 -- -- data Network :: Type -> Nat -> Nat -> Type where
 -- --     N :: { _nsPs    :: !(Sing ps)
@@ -117,83 +117,83 @@ main = putStrLn "hey"
 
 
 
--- liftT0
---     :: SingI ns
---     => (forall a. Floating a => a)
---     -> Tensor ns
--- liftT0 f = go sing
---   where
---     go :: forall ms. Sing ms -> Tensor ms
---     go = \case
---       SNil -> TS f
---       SNat `SCons` SNil -> TV f
---       SNat `SCons` (SNat `SCons` SNil) -> TM f
---       _ `SCons` (_ `SCons` (_ `SCons` _)) -> error "not implemented"
+liftT0
+    :: SingI ns
+    => (forall a. Floating a => a)
+    -> Tensor ns
+liftT0 f = go sing
+  where
+    go :: forall ms. Sing ms -> Tensor ms
+    go = \case
+      SNil -> TS f
+      SNat `SCons` SNil -> TV f
+      SNat `SCons` (SNat `SCons` SNil) -> TM f
+      _ `SCons` (_ `SCons` (_ `SCons` _)) -> error "not implemented"
 
--- liftT1
---     :: SingI ns
---     => (forall a. Floating a => a -> a)
---     -> Tensor ns
---     -> Tensor ns
--- liftT1 f = go sing
---   where
---     go :: forall ms. Sing ms -> Tensor ms -> Tensor ms
---     go = \case
---       SNil                             -> \case TS x -> TS (f x)
---       SNat `SCons` SNil                -> \case TV x -> TV (f x)
---       SNat `SCons` (SNat `SCons` SNil) -> \case TM x -> TM (f x)
---       _ `SCons` (_ `SCons` (_ `SCons` _)) -> \case
+liftT1
+    :: SingI ns
+    => (forall a. Floating a => a -> a)
+    -> Tensor ns
+    -> Tensor ns
+liftT1 f = go sing
+  where
+    go :: forall ms. Sing ms -> Tensor ms -> Tensor ms
+    go = \case
+      SNil                             -> \case TS x -> TS (f x)
+      SNat `SCons` SNil                -> \case TV x -> TV (f x)
+      SNat `SCons` (SNat `SCons` SNil) -> \case TM x -> TM (f x)
+      _ `SCons` (_ `SCons` (_ `SCons` _)) -> \case
 
--- liftT2
---     :: SingI ns
---     => (forall a. Floating a => a -> a -> a)
---     -> Tensor ns
---     -> Tensor ns
---     -> Tensor ns
--- liftT2 f = go sing
---   where
---     go :: forall ms. Sing ms -> Tensor ms -> Tensor ms -> Tensor ms
---     go = \case
---       SNil -> \case
---         TS x -> \case TS y -> TS (f x y)
---       SNat `SCons` SNil -> \case
---         TV x -> \case TV y -> TV (f x y)
---       SNat `SCons` (SNat `SCons` SNil) -> \case
---         TM x -> \case TM y -> TM (f x y)
---       _ `SCons` (_ `SCons` (_ `SCons` _)) -> \case
+liftT2
+    :: SingI ns
+    => (forall a. Floating a => a -> a -> a)
+    -> Tensor ns
+    -> Tensor ns
+    -> Tensor ns
+liftT2 f = go sing
+  where
+    go :: forall ms. Sing ms -> Tensor ms -> Tensor ms -> Tensor ms
+    go = \case
+      SNil -> \case
+        TS x -> \case TS y -> TS (f x y)
+      SNat `SCons` SNil -> \case
+        TV x -> \case TV y -> TV (f x y)
+      SNat `SCons` (SNat `SCons` SNil) -> \case
+        TM x -> \case TM y -> TM (f x y)
+      _ `SCons` (_ `SCons` (_ `SCons` _)) -> \case
 
--- instance SingI ns => Num (Tensor ns) where
---     (+) = liftT2 (+)
---     (-) = liftT2 (-)
---     (*) = liftT2 (*)
---     negate = liftT1 negate
---     signum = liftT1 signum
---     abs    = liftT1 abs
---     fromInteger x = liftT0 (fromInteger x)
+instance SingI ns => Num (Tensor ns) where
+    (+) = liftT2 (+)
+    (-) = liftT2 (-)
+    (*) = liftT2 (*)
+    negate = liftT1 negate
+    signum = liftT1 signum
+    abs    = liftT1 abs
+    fromInteger x = liftT0 (fromInteger x)
 
--- instance SingI ns => Fractional (Tensor ns) where
---     (/) = liftT2 (/)
---     recip = liftT1 recip
---     fromRational x = liftT0 (fromRational x)
+instance SingI ns => Fractional (Tensor ns) where
+    (/) = liftT2 (/)
+    recip = liftT1 recip
+    fromRational x = liftT0 (fromRational x)
 
--- instance SingI ns => Floating (Tensor ns) where
---     pi = liftT0 pi
---     exp = liftT1 exp
---     log = liftT1 log
---     sqrt = liftT1 sqrt
---     (**) = liftT2 (**)
---     logBase = liftT2 logBase
---     sin = liftT1 sin
---     cos = liftT1 cos
---     tan = liftT1 tan
---     asin = liftT1 asin
---     acos = liftT1 acos
---     atan = liftT1 atan
---     sinh = liftT1 sinh
---     cosh = liftT1 cosh
---     tanh = liftT1 tanh
---     asinh = liftT1 asinh
---     acosh = liftT1 acosh
---     atanh = liftT1 atanh
+instance SingI ns => Floating (Tensor ns) where
+    pi = liftT0 pi
+    exp = liftT1 exp
+    log = liftT1 log
+    sqrt = liftT1 sqrt
+    (**) = liftT2 (**)
+    logBase = liftT2 logBase
+    sin = liftT1 sin
+    cos = liftT1 cos
+    tan = liftT1 tan
+    asin = liftT1 asin
+    acos = liftT1 acos
+    atan = liftT1 atan
+    sinh = liftT1 sinh
+    cosh = liftT1 cosh
+    tanh = liftT1 tanh
+    asinh = liftT1 asinh
+    acosh = liftT1 acosh
+    atanh = liftT1 atanh
     
 
