@@ -131,19 +131,19 @@ netOp sbs = go sbs
         -> BPOp s '[ Tensor '[d], Network d es c ] (Tensor '[c])
     go = \case
       ses@SNil -> withInps $ \(x :< n :< Ø) -> do
-        l :< Ø       <- partsRef netExternal n
+        l :< Ø       <- netExternal #<~ n
         layerOp ~$ x :< l :< Ø
       se@SNat `SCons` ses -> withInps $ \(x :< n :< Ø) -> singWit ses // do
-        l :< n' :< Ø <- partsRef netInternal n
+        l :< n' :< Ø <- netInternal #<~ n
         z <- layerOp ~$ x :< l :< Ø
         go ses       ~$ z :< n' :< Ø
     layerOp
         :: forall d e. (KnownNat d, KnownNat e)
         => BPOp s '[ Tensor '[d], Layer d e ] (Tensor '[e])
     layerOp = withInps $ \(x :< l :< Ø) -> do
-        w :< b  :< Ø <- splitGeneric l
-        y            <- opRef2 w x matVec
-        y'           <- opRef2 y b (op2 (+))
+        w :< b :< Ø <- gTuple #<~ l
+        y           <- opRef2 w x matVec
+        y'          <- opRef2 y b (op2 (+))
         opRef1 y' (op1 logistic)
 
 singWit

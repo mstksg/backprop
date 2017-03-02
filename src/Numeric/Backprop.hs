@@ -19,8 +19,8 @@ module Numeric.Backprop
   , opRef3
   , backprop
   , runBPOp
-  , partsRef
-  , splitGeneric
+  , partsRef, (#<~)
+  , gSplit
   , splitRefs
   , internally
   , generically
@@ -35,7 +35,7 @@ module Numeric.Backprop
   , backprop'
   , runBPOp'
   , partsRef'
-  , splitGeneric'
+  , gSplit'
   , splitRefs'
   , internally'
   , generically'
@@ -138,20 +138,28 @@ partsRef
 partsRef = partsRef' (map1 ((// known) . every @_ @Num) indices)
                      (map1 ((// known) . every @_ @Num) indices)
 
-splitGeneric'
+infixr 1 #<~
+(#<~)
+    :: forall s rs bs b. (Every Num bs, Known Length bs)
+    => Iso' b (Tuple bs)
+    -> BPRef s rs b
+    -> BP s rs (Prod (BPRef s rs) bs)
+(#<~) = partsRef
+
+gSplit'
     :: (SOP.Generic b, SOP.Code b ~ '[bs])
     => Prod Summer bs
     -> Prod Unity bs
     -> BPRef s rs b
     -> BP s rs (Prod (BPRef s rs) bs)
-splitGeneric' ss us = partsRef' ss us genProd
+gSplit' ss us = partsRef' ss us gTuple
 
-splitGeneric
+gSplit
     :: (Every Num bs, Known Length bs, SOP.Generic b, SOP.Code b ~ '[bs])
     => BPRef s rs b
     -> BP s rs (Prod (BPRef s rs) bs)
-splitGeneric = splitGeneric' (map1 ((// known) . every @_ @Num) indices)
-                             (map1 ((// known) . every @_ @Num) indices)
+gSplit = gSplit' (map1 ((// known) . every @_ @Num) indices)
+                 (map1 ((// known) . every @_ @Num) indices)
 
 internally'
     :: forall s rs bs b a. ()
@@ -194,14 +202,14 @@ generically'
     -> BPRef s rs b
     -> BP s bs (BPRef s bs a)
     -> BP s rs (BPRef s rs a)
-generically' ss us sa = internally' ss us sa genProd
+generically' ss us sa = internally' ss us sa gTuple
 
 generically
     :: forall s rs bs b a. (Num a, Every Num bs, Known Length bs, SOP.Generic b, SOP.Code b ~ '[bs])
     => BPRef s rs b
     -> BP s bs (BPRef s bs a)
     -> BP s rs (BPRef s rs a)
-generically = internally genProd
+generically = internally gTuple
 
 -- TODO: pull summers too
 resolveRef

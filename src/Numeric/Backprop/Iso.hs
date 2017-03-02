@@ -9,7 +9,7 @@ module Numeric.Backprop.Iso
   ( Iso, Iso'
   , iso
   , review
-  , genProd
+  , gTuple
   ) where
 
 import           Data.Functor.Identity
@@ -31,11 +31,11 @@ iso to from = dimap to (fmap from)
 review :: Iso s t a b -> b -> t
 review i = runIdentity #. unTagged #. i .# Tagged .# Identity
 
-genProd :: (SOP.Generic a, SOP.Code a ~ '[as]) => Iso' a (Tuple as)
-genProd = sop
-        . sopTC
-        . iso (map1 (map1 (I . SOP.unI))) (map1 (map1 (SOP.I . getI)))
-        . sum1
+gTuple :: (SOP.Generic a, SOP.Code a ~ '[as]) => Iso' a (Tuple as)
+gTuple = sop
+       . sopTC
+       . iso (map1 (map1 (I . SOP.unI))) (map1 (map1 (SOP.I . getI)))
+       . sum1
 
 sum1 :: Iso' (Sum f '[a]) (f a)
 sum1 = iso (\case InL x -> x
