@@ -19,6 +19,8 @@ module Numeric.Backprop
   , newBPRef3
   , backprop
   , runBPOp
+  , splitRefs
+  , internally
   , plugBP
   , newBPRef'
   , newBPRef0'
@@ -27,6 +29,8 @@ module Numeric.Backprop
   , newBPRef3'
   , backprop'
   , runBPOp'
+  , splitRefs'
+  , internally'
   , plugBP'
   , inpRef, inpRefs, withInps
   , Op(..)
@@ -79,13 +83,13 @@ newBPRef' i o sm = do
     itraverse1_ (registerRef r) i
     return (BPRNode r)
 
-splitBPRef
+splitRefs'
     :: forall s rs as. ()
     => Prod Summer as
     -> Prod Unity as
     -> BPRef s rs (Tuple as)
     -> BP s rs (Prod (BPRef s rs) as)
-splitBPRef ss us r = do
+splitRefs' ss us r = do
     xs <- resolveRef r
     let noths = map1 (const Nothing) xs
         empts = map1 (const []) xs
@@ -109,7 +113,7 @@ splitBPRef ss us r = do
                             map1 (\(s :&: g') -> I $ runSummer s (maybeToList g'))
                                  (ss `zipP` g)
                      , _bpnGradCache = Nothing
-                     , _bpnSummer    = Summer $ map1 (\(s :&: xs) -> Just $ runSummer s xs)
+                     , _bpnSummer    = Summer $ map1 (\(s :&: ys) -> Just $ runSummer s ys)
                                               . zipP ss
                                               . foldl' folder empts
                                               . map (map1 maybeToList)
@@ -121,7 +125,14 @@ splitBPRef ss us r = do
     folder :: Prod [] as -> Prod [] as -> Prod [] as
     folder xs = map1 (uncurryFan (++)) . zipP xs
 
-internally
+splitRefs
+    :: forall s rs as. (Every Num as, Known Length as)
+    => BPRef s rs (Tuple as)
+    -> BP s rs (Prod (BPRef s rs) as)
+splitRefs = splitRefs' (map1 ((// known) . every @_ @Num) indices)
+                       (map1 ((// known) . every @_ @Num) indices)
+
+internally'
     :: forall s rs bs b a. ()
     => Prod Summer bs
     -> Prod Unity bs
@@ -131,7 +142,7 @@ internally
     -> BPRef s rs b
     -> BP s bs (BPRef s bs a)
     -> BP s rs (BPRef s rs a)
-internally ss us sa f g r bp = do
+internally' ss us sa f g r bp = do
     xs <- f <$> resolveRef r
     (res, gFunc) <- liftBase $ backpropWith bp ss us xs
     let bpn :: BPNode s rs '[ b ] a
@@ -144,6 +155,17 @@ internally ss us sa f g r bp = do
     r' <- liftBase $ newSTRef bpn
     registerRef r' IZ r
     return (BPRNode r')
+
+internally
+    :: forall s rs bs b a. (Every Num bs, Known Length bs, Num a)
+    => (b -> Tuple bs)
+    -> (Tuple bs -> b)
+    -> BPRef s rs b
+    -> BP s bs (BPRef s bs a)
+    -> BP s rs (BPRef s rs a)
+internally = internally' (map1 ((// known) . every @_ @Num) indices)
+                         (map1 ((// known) . every @_ @Num) indices)
+                         known
 
 -- TODO: pull summers too
 resolveRef
