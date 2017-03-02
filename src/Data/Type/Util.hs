@@ -16,6 +16,7 @@ import           Data.Monoid
 import           Data.Type.Conjunction
 import           Data.Type.Fin
 import           Data.Type.Index
+import           Data.Type.Length
 import           Data.Type.Nat
 import           Data.Type.Product
 import           Data.Type.Vector
@@ -109,3 +110,9 @@ reIndex
     -> Index (f <$> as) (f a)
 reIndex = undefined
 
+prodLength
+    :: Prod f as
+    -> Length as
+prodLength = \case
+    Ø       -> LZ
+    _ :< xs -> LS (prodLength xs)

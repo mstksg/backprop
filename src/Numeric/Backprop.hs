@@ -24,7 +24,7 @@ module Numeric.Backprop
   , splitRefs
   , internally
   , generically
-  , plugBP, (~$)
+  , plugBP, (~$), ($~)
   , inpRef
   , inpRefs
   , withInps
@@ -400,6 +400,15 @@ infixr 1 ~$
     -> Prod (BPRef s rs) as
     -> BPOp s rs a
 (~$) = flip plugBP
+
+infixr 1 $~
+($~)
+    :: (Every Num as, Num a)
+    => Prod (BPRef s rs) as
+    -> (Prod (BPRef s as) as -> BPOp s as a)
+    -> BPOp s rs a
+x $~ f = plugBP x (withInps' (prodLength x) f)
+
 
 inpRef
     :: Index rs a
