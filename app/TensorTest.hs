@@ -144,6 +144,9 @@ data LayerOp :: Nat -> Nat -> Type where
           }
         -> LayerOp n m
 
+net0 :: Network n n
+net0 = N SNil Ø (return $ inpRef IZ)
+
 (~*)
     :: forall n m o. (KnownNat n, KnownNat m, KnownNat o)
     => LayerOp n m
@@ -183,9 +186,23 @@ train r x t = \case
             )
             oN
 
+genNet
+    :: forall i o (ls :: [Nat]) m. (KnownNat i, KnownNat o, PrimMonad m)
+    => Sing ls
+    -> Gen (PrimState m)
+    -> m (Network i o)
+genNet = \case
+    SNil            -> fmap (~* net0) . ffLayer
+    (SNat :: Sing h) `SCons` ss -> \g -> do
+      l <- ffLayer @i @h g
+      n <- genNet ss g
+      return $ l ~* n
+
 main :: IO ()
-main = withSystemRandom $ \g ->
-    print =<< uniform @(Layer '(3,2)) g
+main = withSystemRandom $ \g -> do
+    n <- genNet @4 @1 (sing :: Sing '[3,2]) g
+    -- print n
+    print . _loLayer =<< ffLayer @4 @3 g
 
 
 
