@@ -19,7 +19,9 @@ module Numeric.Backprop
   , newBPRef3
   , backprop
   , runBPOp
-  -- , splitRefs
+  , refParts
+  , splitGeneric
+  , splitRefs
   , internally
   , plugBP
   , newBPRef'
@@ -29,7 +31,9 @@ module Numeric.Backprop
   , newBPRef3'
   , backprop'
   , runBPOp'
-  -- , splitRefs'
+  , refParts'
+  , splitGeneric'
+  , splitRefs'
   , internally'
   , plugBP'
   , inpRef, inpRefs, withInps
@@ -44,8 +48,6 @@ import           Control.Monad.Base
 import           Control.Monad.Reader
 import           Control.Monad.ST
 import           Control.Monad.State
-import           Data.Foldable
-import           Data.Maybe
 import           Data.STRef
 import           Data.Traversable
 import           Data.Type.Combinator
@@ -53,14 +55,15 @@ import           Data.Type.Conjunction
 import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Product
-import           Data.Type.Product         as TCP
 import           Data.Type.Util
 import           Lens.Micro hiding         (ix)
 import           Lens.Micro.Mtl
 import           Numeric.Backprop.Internal
+import           Numeric.Backprop.Iso
 import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness
+import qualified Generics.SOP              as SOP
 
 type BPOp s rs a = BP s rs (BPRef s rs a)
 
@@ -89,12 +92,29 @@ splitRefs'
     -> Prod Unity as
     -> BPRef s rs (Tuple as)
     -> BP s rs (Prod (BPRef s rs) as)
-splitRefs' ss us r = do
-    xs <- resolveRef r
-    let bp :: BPNode s rs '[Tuple as] as
+splitRefs' ss us = refParts' ss us id
+
+splitRefs
+    :: forall s rs as. (Every Num as, Known Length as)
+    => BPRef s rs (Tuple as)
+    -> BP s rs (Prod (BPRef s rs) as)
+splitRefs = refParts id
+
+refParts'
+    :: forall s rs bs b. ()
+    => Prod Summer bs
+    -> Prod Unity bs
+    -> Iso' b (Tuple bs)
+    -> BPRef s rs b
+    -> BP s rs (Prod (BPRef s rs) bs)
+refParts' ss us l r = do
+    x <- resolveRef r
+    let xs = view l x
+        bp :: BPNode s rs '[b] bs
         bp = BPN { _bpnOut       = map1 (const (FRInternal [])) xs
                  , _bpnRes       = xs
                  , _bpnGradFunc  = return . only_
+                                 . review l
                                  . map1 (uncurryFan $ \u ->
                                            maybe (I (getUnity u)) I
                                         )
@@ -102,33 +122,48 @@ splitRefs' ss us r = do
                  , _bpnGradCache = Nothing
                  , _bpnSummer    = ss
                  }
-    r <- liftBase $ newSTRef bp
-    return $ imap1 (\i _ -> BPRNode i r) xs
+    r' <- liftBase $ newSTRef bp
+    return $ imap1 (\i _ -> BPRNode i r') xs
 
-splitRefs
-    :: forall s rs as. (Every Num as, Known Length as)
-    => BPRef s rs (Tuple as)
-    -> BP s rs (Prod (BPRef s rs) as)
-splitRefs = splitRefs' (map1 ((// known) . every @_ @Num) indices)
-                       (map1 ((// known) . every @_ @Num) indices)
+refParts
+    :: forall s rs bs b. (Every Num bs, Known Length bs)
+    => Iso' b (Tuple bs)
+    -> BPRef s rs b
+    -> BP s rs (Prod (BPRef s rs) bs)
+refParts = refParts' (map1 ((// known) . every @_ @Num) indices)
+                     (map1 ((// known) . every @_ @Num) indices)
+
+splitGeneric'
+    :: (SOP.Generic b, SOP.Code b ~ '[bs])
+    => Prod Summer bs
+    -> Prod Unity bs
+    -> BPRef s rs b
+    -> BP s rs (Prod (BPRef s rs) bs)
+splitGeneric' ss us = refParts' ss us genProd
+
+splitGeneric
+    :: (Every Num bs, Known Length bs, SOP.Generic b, SOP.Code b ~ '[bs])
+    => BPRef s rs b
+    -> BP s rs (Prod (BPRef s rs) bs)
+splitGeneric = splitGeneric' (map1 ((// known) . every @_ @Num) indices)
+                             (map1 ((// known) . every @_ @Num) indices)
 
 internally'
     :: forall s rs bs b a. ()
     => Prod Summer bs
     -> Prod Unity bs
     -> Summer a
-    -> (b -> Tuple bs)
-    -> (Tuple bs -> b)
+    -> Iso' b (Tuple bs)
     -> BPRef s rs b
     -> BP s bs (BPRef s bs a)
     -> BP s rs (BPRef s rs a)
-internally' ss us sa f g r bp = do
-    xs <- f <$> resolveRef r
+internally' ss us sa l r bp = do
+    xs <- view l <$> resolveRef r
     (res, gFunc) <- liftBase $ backpropWith bp ss us xs
     let bpn :: BPNode s rs '[ b ] '[ a ]
         bpn = BPN { _bpnOut       = FRInternal [] :< Ø
                   , _bpnRes       = only_ res
-                  , _bpnGradFunc  = fmap (only_ . g) . gFunc . head'
+                  , _bpnGradFunc  = fmap (only_ . review l) . gFunc . head'
                   , _bpnGradCache = Nothing
                   , _bpnSummer    = sa :< Ø
                   }
@@ -138,8 +173,7 @@ internally' ss us sa f g r bp = do
 
 internally
     :: forall s rs bs b a. (Every Num bs, Known Length bs, Num a)
-    => (b -> Tuple bs)
-    -> (Tuple bs -> b)
+    => Iso' b (Tuple bs)
     -> BPRef s rs b
     -> BP s bs (BPRef s bs a)
     -> BP s rs (BPRef s rs a)
