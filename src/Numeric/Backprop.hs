@@ -40,6 +40,8 @@ import           Control.Monad.Base
 import           Control.Monad.Reader
 import           Control.Monad.ST
 import           Control.Monad.State
+import           Data.Foldable
+import           Data.Maybe
 import           Data.STRef
 import           Data.Traversable
 import           Data.Type.Combinator
@@ -47,6 +49,7 @@ import           Data.Type.Conjunction
 import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Product
+import           Data.Type.Product         as TCP
 import           Data.Type.Util
 import           Lens.Micro hiding         (ix)
 import           Lens.Micro.Mtl
@@ -77,27 +80,46 @@ newBPRef' i o sm = do
     return (BPRNode r)
 
 splitBPRef
-    :: Prod Summer as
+    :: forall s rs as. ()
+    => Prod Summer as
     -> Prod Unity as
     -> BPRef s rs (Tuple as)
     -> BP s rs (Prod (BPRef s rs) as)
 splitBPRef ss us r = do
-    n <- resolveRef r
-    rs <- ifor1 (us `zipP` n) $ \ix (u :&: I x) -> do
-        let bp = BPN { _bpnOut       = FRInternal []
-                     , _bpnRes       = x
-                     , _bpnGradFunc  = return . only_ <$> \case
-                          Nothing -> set (indexP ix) (I (getUnity u)) zeroes
-                          Just g  -> set (indexP ix) (I g           ) zeroes
+    xs <- resolveRef r
+    let noths = map1 (const Nothing) xs
+        empts = map1 (const []) xs
+    rs <- ifor1 (ss `zipP` us `zipP` xs) $ \(ix :: Index as a) ((s :&: u) :&: I x) -> do
+      let bp :: BPNode s rs '[ Prod Maybe as ] a
+          bp = BPN { _bpnOut       = FRInternal []
+                   , _bpnRes       = x
+                   , _bpnGradFunc  = \case
+                        Nothing -> return . only_ $ set (indexP ix) (Just (getUnity u)) noths
+                        Just g  -> return . only_ $ set (indexP ix) (Just g) noths
+                   , _bpnGradCache = Nothing
+                   , _bpnSummer    = s
+                   }
+      Comp <$> liftBase (newSTRef bp)
+    let master :: BPNode s rs '[Tuple as] (Prod Maybe as)
+        master = BPN { _bpnOut = FRInternal $ TCP.toList (BPIR IZ . getComp) rs
+                     , _bpnRes = map1 (Just . getI) xs
+                     , _bpnGradFunc = \case
+                          Nothing -> return . only_ $ map1 (I . getUnity) us
+                          Just g  -> return . only_ $
+                            map1 (\(s :&: g') -> I $ runSummer s (maybeToList g'))
+                                 (ss `zipP` g)
                      , _bpnGradCache = Nothing
-                     , _bpnSummer    = undefined
+                     , _bpnSummer    = Summer $ map1 (\(s :&: xs) -> Just $ runSummer s xs)
+                                              . zipP ss
+                                              . foldl' folder empts
+                                              . map (map1 maybeToList)
                      }
-        r' <- liftBase $ newSTRef bp
-        registerRef r' IZ r
-        return (BPRNode r')
-    return rs
+    r' <- liftBase $ newSTRef master
+    registerRef r' IZ r
+    return $ map1 (BPRNode . getComp) rs
   where
-    zeroes = map1 (\s -> I (runSummer s [])) ss
+    folder :: Prod [] as -> Prod [] as -> Prod [] as
+    folder xs = map1 (uncurryFan (++)) . zipP xs
 
 internally
     :: forall s rs bs b a. ()
@@ -106,10 +128,10 @@ internally
     -> Summer a
     -> (b -> Tuple bs)
     -> (Tuple bs -> b)
-    -> BP s bs (BPRef s bs a)
     -> BPRef s rs b
+    -> BP s bs (BPRef s bs a)
     -> BP s rs (BPRef s rs a)
-internally ss us sa f g bp r = do
+internally ss us sa f g r bp = do
     xs <- f <$> resolveRef r
     (res, gFunc) <- liftBase $ backpropWith bp ss us xs
     let bpn :: BPNode s rs '[ b ] a
