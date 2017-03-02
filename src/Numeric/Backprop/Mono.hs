@@ -18,10 +18,10 @@ module Numeric.Backprop.Mono
   ( BP, BPOp, Replicate
   , BPRef
   , constRef
-  , newBPRef
-  , newBPRef1
-  , newBPRef2
-  , newBPRef3
+  , opRef
+  , opRef1
+  , opRef2
+  , opRef3
   , backprop
   , runBPOp
   , plugBP
@@ -94,41 +94,41 @@ gradOpWith o i = gradOpWith' o i . Just
 gradOp :: Op n a b -> Vec n a -> Vec n a
 gradOp o i = gradOpWith' o i Nothing
 
-newBPRef
+opRef
     :: forall s m n a b. Num b
     => VecT m (BPRef s n a) a
     -> Op m a b
     -> BP s n a (BPRef s n a b)
-newBPRef i o = BP.newBPRef (vecToProd i) o
+opRef i o = BP.opRef (vecToProd i) o
 
 constRef
     :: b
     -> BPRef s n a b
 constRef = BP.constRef
 
-newBPRef1
+opRef1
     :: forall s n a b. Num b
     => BPRef s n a a
     -> Op N1 a b
     -> BP s n a (BPRef s n a b)
-newBPRef1 x o = newBPRef @_ @_ @n (x :* ØV) o
+opRef1 x o = opRef @_ @_ @n (x :* ØV) o
 
-newBPRef2
+opRef2
     :: forall s n a b. Num b
     => BPRef s n a a
     -> BPRef s n a a
     -> Op N2 a b
     -> BP s n a (BPRef s n a b)
-newBPRef2 x y o = newBPRef @_ @_ @n (x :* y :* ØV) o
+opRef2 x y o = opRef @_ @_ @n (x :* y :* ØV) o
 
-newBPRef3
+opRef3
     :: forall s n a b. Num b
     => BPRef s n a a
     -> BPRef s n a a
     -> BPRef s n a a
     -> Op N3 a b
     -> BP s n a (BPRef s n a b)
-newBPRef3 x y z o = newBPRef @_ @_ @n (x :* y :* z :* ØV) o
+opRef3 x y z o = opRef @_ @_ @n (x :* y :* z :* ØV) o
 
 backprop
     :: forall n a b. Num a

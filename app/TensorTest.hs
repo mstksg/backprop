@@ -125,10 +125,10 @@ ffLayer g = LO ffLayer' <$> uniform g
   where
     ffLayer' :: BPOp s '[ Tensor '[i], Layer '(i, o) ] (Tensor '[o])
     ffLayer' = withInps $ \(x :< l :< Ø) -> do
-      w :< b :< Ø <- refParts layer l
-      y           <- newBPRef2 w x matVec
-      y'          <- newBPRef2 y b $ op2 (+)
-      newBPRef1 y' $ op1 logistic
+      w :< b :< Ø <- partsRef layer l
+      y           <- opRef2 w x matVec
+      y'          <- opRef2 y b $ op2 (+)
+      opRef1 y' $ op1 logistic
 
 data Network :: Nat -> Nat -> Type where
     N :: (Every Num (Layer <$> ls), Every Fractional (Layer <$> ls), Known Length (Layer <$> ls))
@@ -166,8 +166,8 @@ err
     -> BPOp s rs (Tensor '[])
 err targ r = do
     let t = constRef targ
-    d <- newBPRef2 r t $ op2 (-)
-    newBPRef2 d d      $ dot
+    d <- opRef2 r t $ op2 (-)
+    opRef2 d d      $ dot
 
 train
     :: (KnownNat i, KnownNat o)

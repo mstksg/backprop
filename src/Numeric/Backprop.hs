@@ -13,13 +13,13 @@ module Numeric.Backprop
   ( BP, BPOp
   , BPRef
   , constRef
-  , newBPRef
-  , newBPRef1
-  , newBPRef2
-  , newBPRef3
+  , opRef
+  , opRef1
+  , opRef2
+  , opRef3
   , backprop
   , runBPOp
-  , refParts
+  , partsRef
   , splitGeneric
   , splitRefs
   , internally
@@ -28,13 +28,13 @@ module Numeric.Backprop
   , inpRef
   , inpRefs
   , withInps
-  , newBPRef'
-  , newBPRef1'
-  , newBPRef2'
-  , newBPRef3'
+  , opRef'
+  , opRef1'
+  , opRef2'
+  , opRef3'
   , backprop'
   , runBPOp'
-  , refParts'
+  , partsRef'
   , splitGeneric'
   , splitRefs'
   , internally'
@@ -72,13 +72,13 @@ import qualified Generics.SOP              as SOP
 
 type BPOp s rs a = BP s rs (BPRef s rs a)
 
-newBPRef'
+opRef'
     :: forall s rs as a. ()
     => Prod (BPRef s rs) as
     -> Op as a
     -> Summer a
     -> BP s rs (BPRef s rs a)
-newBPRef' i o sm = do
+opRef' i o sm = do
     xs <- traverse1 (fmap I . resolveRef) i
     let (res, gf) = runOp' o xs
         bp = BPN { _bpnOut       = FRInternal [] :< Ø
@@ -97,22 +97,22 @@ splitRefs'
     -> Prod Unity as
     -> BPRef s rs (Tuple as)
     -> BP s rs (Prod (BPRef s rs) as)
-splitRefs' ss us = refParts' ss us id
+splitRefs' ss us = partsRef' ss us id
 
 splitRefs
     :: forall s rs as. (Every Num as, Known Length as)
     => BPRef s rs (Tuple as)
     -> BP s rs (Prod (BPRef s rs) as)
-splitRefs = refParts id
+splitRefs = partsRef id
 
-refParts'
+partsRef'
     :: forall s rs bs b. ()
     => Prod Summer bs
     -> Prod Unity bs
     -> Iso' b (Tuple bs)
     -> BPRef s rs b
     -> BP s rs (Prod (BPRef s rs) bs)
-refParts' ss us l r = do
+partsRef' ss us l r = do
     x <- resolveRef r
     let xs = view l x
         bp :: BPNode s rs '[b] bs
@@ -130,12 +130,12 @@ refParts' ss us l r = do
     r' <- liftBase $ newSTRef bp
     return $ imap1 (\i _ -> BPRNode i r') xs
 
-refParts
+partsRef
     :: forall s rs bs b. (Every Num bs, Known Length bs)
     => Iso' b (Tuple bs)
     -> BPRef s rs b
     -> BP s rs (Prod (BPRef s rs) bs)
-refParts = refParts' (map1 ((// known) . every @_ @Num) indices)
+partsRef = partsRef' (map1 ((// known) . every @_ @Num) indices)
                      (map1 ((// known) . every @_ @Num) indices)
 
 splitGeneric'
@@ -144,7 +144,7 @@ splitGeneric'
     -> Prod Unity bs
     -> BPRef s rs b
     -> BP s rs (Prod (BPRef s rs) bs)
-splitGeneric' ss us = refParts' ss us genProd
+splitGeneric' ss us = partsRef' ss us genProd
 
 splitGeneric
     :: (Every Num bs, Known Length bs, SOP.Generic b, SOP.Code b ~ '[bs])
@@ -226,63 +226,63 @@ registerRef r ix = \case
   where
     bpir = BPIR ix r
 
-newBPRef
+opRef
     :: Num a
     => Prod (BPRef s rs) as
     -> Op as a
     -> BP s rs (BPRef s rs a)
-newBPRef i o = newBPRef' i o known
+opRef i o = opRef' i o known
 
 constRef :: a -> BPRef s rs a 
 constRef = BPRConst
 
-newBPRef1'
+opRef1'
     :: BPRef s rs a
     -> Op '[a] b
     -> Summer b
     -> BP s rs (BPRef s rs b)
-newBPRef1' r = newBPRef' (r :< Ø)
+opRef1' r = opRef' (r :< Ø)
 
-newBPRef1
+opRef1
     :: Num b
     => BPRef s rs a
     -> Op '[a] b
     -> BP s rs (BPRef s rs b)
-newBPRef1 r o = newBPRef1' r o known
+opRef1 r o = opRef1' r o known
 
-newBPRef2'
+opRef2'
     :: BPRef s rs a
     -> BPRef s rs b
     -> Op '[a,b] c
     -> Summer c
     -> BP s rs (BPRef s rs c)
-newBPRef2' rx ry = newBPRef' (rx :< ry :< Ø)
+opRef2' rx ry = opRef' (rx :< ry :< Ø)
 
-newBPRef2
+opRef2
     :: Num c
     => BPRef s rs a
     -> BPRef s rs b
     -> Op '[a,b] c
     -> BP s rs (BPRef s rs c)
-newBPRef2 rx ry o = newBPRef2' rx ry o known
+opRef2 rx ry o = opRef2' rx ry o known
 
-newBPRef3'
+opRef3'
     :: BPRef s rs a
     -> BPRef s rs b
     -> BPRef s rs c
     -> Op '[a,b,c] d
     -> Summer d
     -> BP s rs (BPRef s rs d)
-newBPRef3' rx ry rz = newBPRef' (rx :< ry :< rz :< Ø)
+opRef3' rx ry rz = opRef' (rx :< ry :< rz :< Ø)
 
-newBPRef3
+opRef3
     :: Num d
     => BPRef s rs a
     -> BPRef s rs b
     -> BPRef s rs c
     -> Op '[a,b,c] d
     -> BP s rs (BPRef s rs d)
-newBPRef3 rx ry rz o = newBPRef3' rx ry rz o known
+opRef3 rx ry rz o = opRef3' rx ry rz o known
 
 backwardPass
     :: forall s rs as a. ()
