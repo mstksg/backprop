@@ -12,6 +12,18 @@ iso :: (s -> a) -> (b -> t) -> Iso s t a b
 review :: Iso s t a b -> b -> t
 genProd :: (Generic a, Code a ~ '[as]) => Iso' a (Tuple as)
 
+module Data.Type.Util
+vecToProd :: VecT n f a -> Prod f (Replicate n a)
+prodToVec' :: Nat n -> Prod f (Replicate n a) -> VecT n f a
+prodAlong :: VecT n f b -> Prod f (Replicate n a) -> VecT n f a
+finIndex :: Fin n -> Index (Replicate n a) a
+itraverse1_ :: (Applicative h, IxTraversable1 i t) => (forall a. i b a -> f a -> h ()) -> t f b -> h ()
+for1 :: (Applicative h, Traversable1 t) => t f b -> (forall a. f a -> h (g a)) -> h (t g b)
+ifor1 :: (Applicative h, IxTraversable1 i t) => t f b -> (forall a. i b a -> f a -> h (g a)) -> h (t g b)
+zipP :: Prod f as -> Prod g as -> Prod (f :&: g) as
+indexP :: Index as a -> Lens' (Prod g as) (g a)
+reIndex :: forall k (f :: k -> Type) (as :: [k]) (a :: k). Index as a -> Index (f <$> as) (f a)
+
 module Numeric.Backprop
 data BP s rs b
 type BPOp s rs a = BP s rs (BPRef s rs a)
@@ -27,7 +39,13 @@ refParts :: forall s rs bs b. (Every Num bs, Known Length bs) => Iso' b (Tuple b
 splitGeneric :: (Every Num bs, Known Length bs, Generic b, Code b ~ '[bs]) => BPRef s rs b -> BP s rs (Prod (BPRef s rs) bs)
 splitRefs :: forall s rs as. (Every Num as, Known Length as) => BPRef s rs (Tuple as) -> BP s rs (Prod (BPRef s rs) as)
 internally :: forall s rs bs b a. (Every Num bs, Known Length bs, Num a) => Iso' b (Tuple bs) -> BPRef s rs b -> BP s bs (BPRef s bs a) -> BP s rs (BPRef s rs a)
+generically :: forall s rs bs b a. (Num a, Every Num bs, Known Length bs, Generic b, Code b ~ '[bs]) => BPRef s rs b -> BP s bs (BPRef s bs a) -> BP s rs (BPRef s rs a)
 plugBP :: forall s rs as a. (Every Num as, Num a) => Prod (BPRef s rs) as -> BPOp s as a -> BPOp s rs a
+(~$) :: (Every Num as, Num a) => BPOp s as a -> Prod (BPRef s rs) as -> BPOp s rs a
+infixr 1 ~$
+inpRef :: Index rs a -> BPRef s rs a
+inpRefs :: Known Length rs => Prod (BPRef s rs) rs
+withInps :: Known Length rs => (Prod (BPRef s rs) rs -> BP s rs a) -> BP s rs a
 newBPRef' :: forall s rs as a. Prod (BPRef s rs) as -> Op as a -> Summer a -> BP s rs (BPRef s rs a)
 newBPRef0' :: Op '[] a -> Summer a -> BP s rs (BPRef s rs a)
 newBPRef1' :: BPRef s rs a -> Op '[a] b -> Summer b -> BP s rs (BPRef s rs b)
@@ -39,10 +57,10 @@ refParts' :: forall s rs bs b. Prod Summer bs -> Prod Unity bs -> Iso' b (Tuple 
 splitGeneric' :: (Generic b, Code b ~ '[bs]) => Prod Summer bs -> Prod Unity bs -> BPRef s rs b -> BP s rs (Prod (BPRef s rs) bs)
 splitRefs' :: forall s rs as. Prod Summer as -> Prod Unity as -> BPRef s rs (Tuple as) -> BP s rs (Prod (BPRef s rs) as)
 internally' :: forall s rs bs b a. Prod Summer bs -> Prod Unity bs -> Summer a -> Iso' b (Tuple bs) -> BPRef s rs b -> BP s bs (BPRef s bs a) -> BP s rs (BPRef s rs a)
-plugBP' :: Prod (BPRef s rs) as -> BPOp s as a -> Prod (Summer) as -> Prod (Unity) as -> Summer a -> BPOp s rs a
-inpRef :: Index rs a -> BPRef s rs a
-inpRefs :: Known Length rs => Prod (BPRef s rs) rs
-withInps :: Known Length rs => (Prod (BPRef s rs) rs -> BP s rs a) -> BP s rs a
+generically' :: forall s rs bs b a. (Generic b, Code b ~ '[bs]) => Prod Summer bs -> Prod Unity bs -> Summer a -> BPRef s rs b -> BP s bs (BPRef s bs a) -> BP s rs (BPRef s rs a)
+plugBP' :: Prod (BPRef s rs) as -> Prod Summer as -> Prod Unity as -> Summer a -> BPOp s as a -> BPOp s rs a
+inpRefs' :: Length rs -> Prod (BPRef s rs) rs
+withInps' :: Length rs -> (Prod (BPRef s rs) rs -> BP s rs a) -> BP s rs a
 newtype Op as a
 Op :: (Tuple as -> (a, Maybe a -> Tuple as)) -> Op as a
 [runOp'] :: Op as a -> Tuple as -> (a, Maybe a -> Tuple as)
