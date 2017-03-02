@@ -98,9 +98,32 @@ splitBPRef ss us r = do
     return rs
   where
     zeroes = map1 (\s -> I (runSummer s [])) ss
-    
--- TODO: pull summers too
 
+internally
+    :: forall s rs bs b a. ()
+    => Prod Summer bs
+    -> Prod Unity bs
+    -> Summer a
+    -> (b -> Tuple bs)
+    -> (Tuple bs -> b)
+    -> BP s bs (BPRef s bs a)
+    -> BPRef s rs b
+    -> BP s rs (BPRef s rs a)
+internally ss us sa f g bp r = do
+    xs <- f <$> resolveRef r
+    (res, gFunc) <- liftBase $ backpropWith bp ss us xs
+    let bpn :: BPNode s rs '[ b ] a
+        bpn = BPN { _bpnOut       = FRInternal []
+                  , _bpnRes       = res
+                  , _bpnGradFunc  = fmap (only_ . g) . gFunc
+                  , _bpnGradCache = Nothing
+                  , _bpnSummer    = sa
+                  }
+    r' <- liftBase $ newSTRef bpn
+    registerRef r' IZ r
+    return (BPRNode r')
+
+-- TODO: pull summers too
 resolveRef
     :: (MonadReader (Tuple rs) m, MonadBase (ST s) m)
     => BPRef s rs a
@@ -240,8 +263,8 @@ runBPOp bp = fst . backprop bp
 
 backpropWith
     :: BPOp s rs a
-    -> Prod (Summer) rs
-    -> Prod (Unity) rs
+    -> Prod Summer rs
+    -> Prod Unity rs
     -> Tuple rs
     -> ST s (a, Maybe a -> ST s (Tuple rs))
 backpropWith bp ss us env = do
