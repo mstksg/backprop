@@ -1,5 +1,8 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE EmptyCase            #-}
+{-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
 {-# LANGUAGE LambdaCase           #-}
@@ -13,18 +16,27 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns         #-}
 
+import           Control.Applicative
 import           Data.Kind
 import           Data.Singletons
 import           Data.Singletons.Prelude
 import           Data.Singletons.TypeLits
 import           Data.Type.Combinator
+import           Data.Type.Conjunction
+import           Data.Type.Index
+import           Data.Type.Length
 import           Data.Type.Product
+import           Data.Type.Util
 import           Data.Type.Vector
+import           GHC.Generics                        (Generic)
 import           GHC.TypeLits
 import           Numeric.AD
 import           Numeric.Backprop
+import           Numeric.Backprop.Iso
 import           Numeric.Backprop.Op
 import           Numeric.LinearAlgebra.Static hiding (dot)
+import           Type.Class.Higher
+import           Type.Class.Known
 import           Type.Class.Witness hiding           (outer)
 import           Type.Family.List
 
@@ -65,6 +77,12 @@ data Layer :: (Nat, Nat) -> Type where
              }
           -> Layer '(n, m)
 
+deriving instance (KnownNat n, KnownNat m) => Show (Layer '(n, m))
+
+layer :: Iso' (Layer '(n, m)) (Tuple '[ Tensor '[m, n], Tensor '[m] ])
+layer = iso (\case Layer w b -> w ::< b ::< Ø)
+            (\case I w :< I b :< Ø -> Layer w b)
+
 instance (KnownNat m, KnownNat n) => Num (Layer '(n, m)) where
     Layer w1 b1 + Layer w2 b2 = Layer (w1 + w2) (b1 + b2)
     Layer w1 b1 - Layer w2 b2 = Layer (w1 - w2) (b1 - b2)
@@ -74,55 +92,83 @@ instance (KnownNat m, KnownNat n) => Num (Layer '(n, m)) where
     negate (Layer w b) = Layer (negate w) (negate b)
     fromInteger x = Layer (fromInteger x) (fromInteger x)
 
+instance (KnownNat m, KnownNat n) => Fractional (Layer '(n, m)) where
+    Layer w1 b1 / Layer w2 b2 = Layer (w1 / w2) (b1 / b2)
+    recip (Layer w b) = Layer (recip w) (recip b)
+    fromRational x = Layer (fromRational x) (fromRational x)
+
 unLayer
     :: Layer '(n, m)
     -> (Tensor '[m, n], Tensor '[m])
 unLayer (Layer w b) = (w, b)
 
-data Network :: Type -> Nat -> Nat -> Type where
-    N :: { _nsPs    :: !(Sing ls)
-         , _nOp     :: !(Tensor '[i] -> BPOp s (Layer <$> ls) (Tensor '[o]))
-         , _nParams :: !(Prod Layer ls)
-         }
-      -> Network s i o
-
 -- ffLayer
 --     :: forall s n m. (KnownNat m, KnownNat n)
---     => Network s n m
--- ffLayer = N sing ffLayer' (0 :< Ø)
+--     => LayerOp s n m
+-- ffLayer = LO ffLayer' 0
 --   where
 --     ffLayer'
 --         :: Tensor '[n]
---         -> BPOp s '[ Layer '(n, m) ] (Tensor '[o])
---     ffLayer' x = withInps $ \( rl :< Ø ) -> do
---         _
---     -- ffLayer'
---     --     :: BPOp s Tensor '[ '[n], '[m, n], '[m] ] '[m]
---     -- ffLayer' = withInps $ \(x :< w :< b :< Ø) -> do
---     --     y <- newBPRef2 w x $ matVec
---     --     z <- newBPRef2 y b $ op2 (+)
---     --     newBPRef1 z        $ op1 logistic
+--         -> BPOp s '[ Layer '(n, m) ] (Tensor '[m])
+--     ffLayer' = internally layer (inpRef (IS IZ))
+--              . withInps $ \(w :< b :< Ø) -> do
+--       x' <- newBPRef0     $ op0 x
+--       y  <- newBPRef2 w x' matVec
+--       y' <- newBPRef2 y b $ op2 (+)
+--       newBPRef1 y' $ op1 logistic
 
--- -- (~*~)
--- --     :: Network s a b
--- --     -> Network s b c
--- --     -> Network s a c
--- -- N sPs1 o1 p1 ~*~ N sPs2 o2 p2 =
--- --     N (sPs1 %:++ sPs2) _ (p1 `append'` p2)
--- --         \\ singLength sPs1
--- -- infixr 4 ~*~
--- -- {-# INLINE (~*~) #-}
+data Network :: Nat -> Nat -> Type where
+    N :: (Every Num (Layer <$> ls), Every Fractional (Layer <$> ls), Known Length (Layer <$> ls))
+      => { _nsLs    :: !(Sing ls)
+         , _nParams :: !(Tuple (Layer <$> ls))
+         , _nOp     :: !(forall s. BPOp s (Tensor '[i] ': (Layer <$> ls)) (Tensor '[o]))
+         }
+      -> Network i o
 
+data LayerOp :: Nat -> Nat -> Type where
+    LO :: { _loOp    :: (forall s. BPOp s '[ Tensor '[n],  Layer '(n, m) ] (Tensor '[m]))
+          , _loLayer :: Layer '(n, m)
+          }
+        -> LayerOp n m
 
--- -- err
--- --     :: KnownNat m
--- --     => Tensor '[m]
--- --     -> BPRef s Tensor rs '[m]
--- --     -> BPOp s Tensor rs '[]
--- -- err targ r = do
--- --     t <- newBPRef0     $ op0 targ
--- --     d <- newBPRef2 r t $ op2 (-)
--- --     newBPRef2 d d      $ dot
+(~*)
+    :: forall n m o. (KnownNat n, KnownNat m, KnownNat o)
+    => LayerOp n m
+    -> Network m o
+    -> Network n o
+(~*) = \case
+    LO oL l -> \case
+      N gs ls oN ->
+        N (sing `SCons` gs) (l ::< ls) $ withInps $ \(rx :< rl :< rls) -> do
+          ry <- oL ~$ rx :< rl :< Ø
+          oN ~$ ry :< rls
+
+err
+    :: KnownNat m
+    => Tensor '[m]
+    -> BPRef s rs (Tensor '[m])
+    -> BPOp s rs (Tensor '[])
+err targ r = do
+    t <- newBPRef0     $ op0 targ
+    d <- newBPRef2 r t $ op2 (-)
+    newBPRef2 d d      $ dot
+
+train
+    :: (KnownNat i, KnownNat o)
+    => Double
+    -> Tensor '[i]
+    -> Tensor '[o]
+    -> Network i o
+    -> Network i o
+train r x t = \case
+    N ss ls oN ->
+      case backprop (err t =<< oN) (x ::< ls) of
+        (_, _ :< gLs) ->
+          N ss
+            (imap1 (\ix (I l :&: I g) -> I (l - realToFrac r * g) \\ every @_ @Fractional ix)
+                   (ls `zipP` gLs)
+            )
+            oN
 
 main :: IO ()
 main = putStrLn "hey"

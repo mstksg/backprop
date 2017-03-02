@@ -153,8 +153,7 @@ plugBP
     => VecT m (BPRef s n a) b
     -> BPOp s m b c
     -> BPOp s n a c
-plugBP i bp =
-    BP.plugBP' (vecToProd i) bp (toSummers i) (toUnities i) (BP.Summer sum)
+plugBP i = BP.plugBP' (vecToProd i) (toSummers i) (toUnities i) (BP.Summer sum)
 
 inpRef
     :: Fin n

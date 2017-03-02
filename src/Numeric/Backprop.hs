@@ -23,7 +23,11 @@ module Numeric.Backprop
   , splitGeneric
   , splitRefs
   , internally
-  , plugBP
+  , generically
+  , plugBP, (~$)
+  , inpRef
+  , inpRefs
+  , withInps
   , newBPRef'
   , newBPRef0'
   , newBPRef1'
@@ -35,8 +39,10 @@ module Numeric.Backprop
   , splitGeneric'
   , splitRefs'
   , internally'
+  , generically'
   , plugBP'
-  , inpRef, inpRefs, withInps
+  , inpRefs'
+  , withInps'
   , Op(..)
   , Summer(..)
   , Unity(..)
@@ -180,6 +186,23 @@ internally
 internally = internally' (map1 ((// known) . every @_ @Num) indices)
                          (map1 ((// known) . every @_ @Num) indices)
                          known
+
+generically'
+    :: forall s rs bs b a. (SOP.Generic b, SOP.Code b ~ '[bs])
+    => Prod Summer bs
+    -> Prod Unity bs
+    -> Summer a
+    -> BPRef s rs b
+    -> BP s bs (BPRef s bs a)
+    -> BP s rs (BPRef s rs a)
+generically' ss us sa = internally' ss us sa genProd
+
+generically
+    :: forall s rs bs b a. (Num a, Every Num bs, Known Length bs, SOP.Generic b, SOP.Code b ~ '[bs])
+    => BPRef s rs b
+    -> BP s bs (BPRef s bs a)
+    -> BP s rs (BPRef s rs a)
+generically = internally genProd
 
 -- TODO: pull summers too
 resolveRef
@@ -350,12 +373,12 @@ backpropWith bp ss us env = do
 
 plugBP'
     :: Prod (BPRef s rs) as
-    -> BPOp s as a
-    -> Prod (Summer) as
-    -> Prod (Unity) as
+    -> Prod Summer as
+    -> Prod Unity as
     -> Summer a
+    -> BPOp s as a
     -> BPOp s rs a
-plugBP' i bp ss us sa = do
+plugBP' i ss us sa bp = do
     env <- traverse1 (fmap I . resolveRef) i
     (res, gFunc) <- liftBase $ backpropWith bp ss us env
     let bpn = BPN { _bpnOut       = FRInternal [] :< Ø
@@ -373,9 +396,17 @@ plugBP
     => Prod (BPRef s rs) as
     -> BPOp s as a
     -> BPOp s rs a
-plugBP i bp = plugBP' i bp (imap1 (\j _ -> known \\ every @_ @Num j) i)
-                           (imap1 (\j _ -> known \\ every @_ @Num j) i)
-                           known
+plugBP i = plugBP' i (imap1 (\j _ -> known \\ every @_ @Num j) i)
+                     (imap1 (\j _ -> known \\ every @_ @Num j) i)
+                     known
+
+infixr 1 ~$
+(~$)
+    :: (Every Num as, Num a)
+    => BPOp s as a
+    -> Prod (BPRef s rs) as
+    -> BPOp s rs a
+(~$) = flip plugBP
 
 inpRef
     :: Index rs a
@@ -385,13 +416,24 @@ inpRef = BPRInp
 inpRefs
     :: Known Length rs
     => Prod (BPRef s rs) rs
-inpRefs = map1 inpRef indices
+inpRefs = inpRefs' known
+
+inpRefs'
+    :: Length rs
+    -> Prod (BPRef s rs) rs
+inpRefs' = map1 inpRef . indices'
+
+withInps'
+    :: Length rs
+    -> (Prod (BPRef s rs) rs -> BP s rs a)
+    -> BP s rs a
+withInps' l f = f (inpRefs' l)
 
 withInps
     :: Known Length rs
     => (Prod (BPRef s rs) rs -> BP s rs a)
     -> BP s rs a
-withInps f = f inpRefs
+withInps = withInps' known
 
 
 

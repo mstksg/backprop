@@ -19,8 +19,8 @@ library
                        Numeric.Backprop.Op
                        Numeric.Backprop.Mono
                        Numeric.Backprop.Iso
-  other-modules:       Numeric.Backprop.Internal
                        Data.Type.Util
+  other-modules:       Numeric.Backprop.Internal
   build-depends:       base >= 4.7 && < 5
                      , ad
                      , generics-sop
@@ -45,17 +45,18 @@ executable backprop-monotest
                      -- , type-combinators
   default-language:    Haskell2010
 
--- executable backprop-tensortest
---   hs-source-dirs:      app
---   main-is:             TensorTest.hs
---   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -O2
---   build-depends:       base
---                      , ad
---                      , backprop
---                      , hmatrix
---                      , singletons
---                      , type-combinators
---   default-language:    Haskell2010
+executable backprop-tensortest
+  hs-source-dirs:      app
+  main-is:             TensorTest.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -O2
+  build-depends:       base
+                     , ad
+                     , backprop
+                     , generics-sop
+                     , hmatrix
+                     , singletons
+                     , type-combinators
+  default-language:    Haskell2010
 
 -- test-suite backprop-test
 --   type:                exitcode-stdio-1.0
