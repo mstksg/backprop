@@ -1,0 +1,76 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DataKinds    #-}</span><span>
+</span><a name="line-2"></a><span class="hs-pragma">{-# LANGUAGE GADTs        #-}</span><span>
+</span><a name="line-3"></a><span class="hs-pragma">{-# LANGUAGE LambdaCase   #-}</span><span>
+</span><a name="line-4"></a><span class="hs-pragma">{-# LANGUAGE PolyKinds    #-}</span><span>
+</span><a name="line-5"></a><span class="hs-pragma">{-# LANGUAGE RankNTypes   #-}</span><span>
+</span><a name="line-6"></a><span class="hs-pragma">{-# LANGUAGE TypeFamilies #-}</span><span>
+</span><a name="line-7"></a><span>
+</span><a name="line-8"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">Backprop</span><span class="hs-operator">.</span><span class="hs-identifier">Iso</span><span>
+</span><a name="line-9"></a><span>  </span><span class="hs-special">(</span><span> </span><a href="Numeric.Backprop.Iso.html#Iso"><span class="hs-identifier hs-type">Iso</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Iso.html#Iso%27"><span class="hs-identifier hs-type">Iso'</span></a><span>
+</span><a name="line-10"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Iso.html#iso"><span class="hs-identifier hs-var">iso</span></a><span>
+</span><a name="line-11"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Iso.html#review"><span class="hs-identifier hs-var">review</span></a><span>
+</span><a name="line-12"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Iso.html#genProd"><span class="hs-identifier hs-var">genProd</span></a><span>
+</span><a name="line-13"></a><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-14"></a><span>
+</span><a name="line-15"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Functor</span><span class="hs-operator">.</span><span class="hs-identifier">Identity</span><span>
+</span><a name="line-16"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Profunctor</span><span class="hs-operator">.</span><span class="hs-identifier">Unsafe</span><span>
+</span><a name="line-17"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Tagged</span><span>
+</span><a name="line-18"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Combinator</span><span>
+</span><a name="line-19"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Product</span><span>
+</span><a name="line-20"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Sum</span><span>
+</span><a name="line-21"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Lens</span><span class="hs-operator">.</span><span class="hs-identifier">Micro</span><span class="hs-operator">.</span><span class="hs-identifier">Extras</span><span>
+</span><a name="line-22"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Type</span><span class="hs-operator">.</span><span class="hs-identifier">Class</span><span class="hs-operator">.</span><span class="hs-identifier">Higher</span><span>
+</span><a name="line-23"></a><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-identifier">Generics</span><span class="hs-operator">.</span><span class="hs-identifier">SOP</span><span>           </span><span class="hs-keyword">as</span><span> </span><span class="hs-identifier">SOP</span><span>
+</span><a name="line-24"></a><span>
+</span><a name="line-25"></a><span class="hs-keyword">type</span><span> </span><a name="Iso"><a href="Numeric.Backprop.Iso.html#Iso"><span class="hs-identifier">Iso</span></a></a><span> </span><a name="local-6989586621679087238"><a href="#local-6989586621679087238"><span class="hs-identifier">s</span></a></a><span> </span><a name="local-6989586621679087239"><a href="#local-6989586621679087239"><span class="hs-identifier">t</span></a></a><span> </span><a name="local-6989586621679087240"><a href="#local-6989586621679087240"><span class="hs-identifier">a</span></a></a><span> </span><a name="local-6989586621679087241"><a href="#local-6989586621679087241"><span class="hs-identifier">b</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679087242"><a href="#local-6989586621679087242"><span class="hs-identifier">p</span></a></a><span> </span><a name="local-6989586621679087243"><a href="#local-6989586621679087243"><span class="hs-identifier">f</span></a></a><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Profunctor</span><span> </span><a href="#local-6989586621679087242"><span class="hs-identifier hs-type">p</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Functor</span><span> </span><a href="#local-6989586621679087243"><span class="hs-identifier hs-type">f</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="#local-6989586621679087242"><span class="hs-identifier hs-type">p</span></a><span> </span><a href="#local-6989586621679087240"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-special">(</span><a href="#local-6989586621679087243"><span class="hs-identifier hs-type">f</span></a><span> </span><a href="#local-6989586621679087241"><span class="hs-identifier hs-type">b</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679087242"><span class="hs-identifier hs-type">p</span></a><span> </span><a href="#local-6989586621679087238"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><a href="#local-6989586621679087243"><span class="hs-identifier hs-type">f</span></a><span> </span><a href="#local-6989586621679087239"><span class="hs-identifier hs-type">t</span></a><span class="hs-special">)</span><span>
+</span><a name="line-26"></a><span class="hs-keyword">type</span><span> </span><a name="Iso%27"><a href="Numeric.Backprop.Iso.html#Iso%27"><span class="hs-identifier">Iso'</span></a></a><span> </span><a name="local-6989586621679087236"><a href="#local-6989586621679087236"><span class="hs-identifier">s</span></a></a><span> </span><a name="local-6989586621679087237"><a href="#local-6989586621679087237"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Iso.html#Iso"><span class="hs-identifier hs-type">Iso</span></a><span> </span><a href="#local-6989586621679087236"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679087236"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679087237"><span class="hs-identifier hs-type">a</span></a><span> </span><a href="#local-6989586621679087237"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-27"></a><span>
+</span><a name="line-28"></a><span class="hs-identifier">iso</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><a href="#local-6989586621679087259"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679087260"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><a href="#local-6989586621679087261"><span class="hs-identifier hs-type">b</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679087262"><span class="hs-identifier hs-type">t</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Iso.html#Iso"><span class="hs-identifier hs-type">Iso</span></a><span> </span><a href="#local-6989586621679087259"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679087262"><span class="hs-identifier hs-type">t</span></a><span> </span><a href="#local-6989586621679087260"><span class="hs-identifier hs-type">a</span></a><span> </span><a href="#local-6989586621679087261"><span class="hs-identifier hs-type">b</span></a><span>
+</span><a name="line-29"></a><a name="iso"><a href="Numeric.Backprop.Iso.html#iso"><span class="hs-identifier">iso</span></a></a><span> </span><a name="local-6989586621679087263"><a href="#local-6989586621679087263"><span class="hs-identifier">to</span></a></a><span> </span><a name="local-6989586621679087264"><a href="#local-6989586621679087264"><span class="hs-identifier">from</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">dimap</span><span> </span><a href="#local-6989586621679087263"><span class="hs-identifier hs-var">to</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">fmap</span><span> </span><a href="#local-6989586621679087264"><span class="hs-identifier hs-var">from</span></a><span class="hs-special">)</span><span>
+</span><a name="line-30"></a><span>
+</span><a name="line-31"></a><span class="hs-identifier">review</span><span> </span><span class="hs-glyph">::</span><span> </span><a href="Numeric.Backprop.Iso.html#Iso"><span class="hs-identifier hs-type">Iso</span></a><span> </span><a href="#local-6989586621679087255"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679087256"><span class="hs-identifier hs-type">t</span></a><span> </span><a href="#local-6989586621679087257"><span class="hs-identifier hs-type">a</span></a><span> </span><a href="#local-6989586621679087258"><span class="hs-identifier hs-type">b</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679087258"><span class="hs-identifier hs-type">b</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679087256"><span class="hs-identifier hs-type">t</span></a><span>
+</span><a name="line-32"></a><a name="review"><a href="Numeric.Backprop.Iso.html#review"><span class="hs-identifier">review</span></a></a><span> </span><a name="local-6989586621679087265"><a href="#local-6989586621679087265"><span class="hs-identifier">i</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier">runIdentity</span><span> </span><span class="hs-operator hs-var">#.</span><span> </span><span class="hs-identifier">unTagged</span><span> </span><span class="hs-operator hs-var">#.</span><span> </span><a href="#local-6989586621679087265"><span class="hs-identifier hs-var">i</span></a><span> </span><span class="hs-operator hs-var">.#</span><span> </span><span class="hs-identifier hs-var">Tagged</span><span> </span><span class="hs-operator hs-var">.#</span><span> </span><span class="hs-identifier hs-var">Identity</span><span>
+</span><a name="line-33"></a><span>
+</span><a name="line-34"></a><span class="hs-identifier">genProd</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">SOP</span><span class="hs-operator hs-type">.</span><span class="hs-identifier hs-type">Generic</span><span> </span><a href="#local-6989586621679087253"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">SOP</span><span class="hs-operator hs-type">.</span><span class="hs-identifier hs-type">Code</span><span> </span><a href="#local-6989586621679087253"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">~</span><span> </span><span class="hs-char">'[as]) =&gt; Iso' a (Tuple as)
+genProd = sop
+        . sopTC
+        . iso (map1 (map1 (I . SOP.unI))) (map1 (map1 (SOP.I . getI)))
+        . sum1
+
+sum1 :: Iso' (Sum f '[a]) (f a)
+sum1 = iso (\case InL x -&gt; x
+                  InR _ -&gt; error &quot;inaccessible?&quot;
+           ) InL
+
+sop :: SOP.Generic a =&gt; Iso' a (SOP.SOP SOP.I (SOP.Code a))
+sop = iso SOP.from SOP.to
+
+sopTC :: Iso' (SOP.SOP f as) (Sum (Prod f) as)
+sopTC = iso SOP.unSOP SOP.SOP
+      . nsSum
+      . iso (map1 (view npProd)) (map1 (review npProd))
+
+npProd :: Iso' (SOP.NP f as) (Prod f as)
+npProd = iso to from
+  where
+    to :: SOP.NP f as -&gt; Prod f as
+    to = \case
+      SOP.Nil     -&gt; &#216;
+      x SOP.:* xs -&gt; x :&lt; to xs
+    from :: Prod f as -&gt; SOP.NP f as
+    from = \case
+      &#216;       -&gt; SOP.Nil
+      x :&lt; xs -&gt; x SOP.:* from xs
+
+nsSum :: Iso' (SOP.NS f as) (Sum f as)
+nsSum = iso to from
+  where
+    to :: SOP.NS f as -&gt; Sum f as
+    to = \case
+      SOP.Z x  -&gt; InL x
+      SOP.S xs -&gt; InR (to xs)
+    from :: Sum f as -&gt; SOP.NS f as
+    from = \case
+      InL x  -&gt; SOP.Z x
+      InR xs -&gt; SOP.S (from xs)
+</span></pre></body></html>
