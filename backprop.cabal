@@ -52,8 +52,9 @@ executable backprop-tensortest
   build-depends:       base
                      , ad
                      , backprop
-                     , generics-sop
                      , hmatrix
+                     , mwc-random
+                     , primitive
                      , singletons
                      , type-combinators
   default-language:    Haskell2010

@@ -17,6 +17,7 @@
 {-# LANGUAGE ViewPatterns         #-}
 
 import           Control.Applicative
+import           Control.Monad.Primitive
 import           Data.Kind
 import           Data.Singletons
 import           Data.Singletons.Prelude
@@ -35,6 +36,7 @@ import           Numeric.Backprop
 import           Numeric.Backprop.Iso
 import           Numeric.Backprop.Op
 import           Numeric.LinearAlgebra.Static hiding (dot)
+import           System.Random.MWC
 import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness hiding           (outer)
@@ -46,6 +48,17 @@ data Tensor :: [Nat] -> Type where
     TM :: { unTM :: L m n  } -> Tensor '[m,n]
 
 deriving instance ListC (KnownNat <$> ns) => Show (Tensor ns)
+
+instance SingI ns => Variate (Tensor ns) where
+    uniform g = case sing :: Sing ns of
+      SNil                             ->
+          TS <$> uniform g
+      SNat `SCons` SNil                ->
+          TV <$> (randomVector <$> uniform g <*> pure Uniform)
+      SNat `SCons` (SNat `SCons` SNil) ->
+          TM <$> (uniformSample <$> uniform g <*> pure 0 <*> pure 1)
+      _`SCons`(_`SCons`(_`SCons`_))    ->
+          error "unimplemented"
 
 matVec
     :: (KnownNat m, KnownNat n)
@@ -78,6 +91,8 @@ data Layer :: (Nat, Nat) -> Type where
           -> Layer '(n, m)
 
 deriving instance (KnownNat n, KnownNat m) => Show (Layer '(n, m))
+instance (KnownNat n, KnownNat m) => Variate (Layer '(n, m)) where
+    uniform g = subtract 1 . (* 2) <$> (Layer <$> uniform g <*> uniform g)
 
 layer :: Iso' (Layer '(n, m)) (Tuple '[ Tensor '[m, n], Tensor '[m] ])
 layer = iso (\case Layer w b -> w ::< b ::< Ø)
@@ -103,11 +118,12 @@ unLayer
 unLayer (Layer w b) = (w, b)
 
 ffLayer
-    :: forall n m. (KnownNat m, KnownNat n)
-    => LayerOp n m
-ffLayer = LO ffLayer' 0
+    :: forall i o m. (KnownNat i, KnownNat o, PrimMonad m)
+    => Gen (PrimState m)
+    -> m (LayerOp i o)
+ffLayer g = LO ffLayer' <$> uniform g
   where
-    ffLayer' :: BPOp s '[ Tensor '[n], Layer '(n, m) ] (Tensor '[m])
+    ffLayer' :: BPOp s '[ Tensor '[i], Layer '(i, o) ] (Tensor '[o])
     ffLayer' = withInps $ \(x :< l :< Ø) -> do
       w :< b :< Ø <- refParts layer l
       y           <- newBPRef2 w x matVec
@@ -168,7 +184,8 @@ train r x t = \case
             oN
 
 main :: IO ()
-main = putStrLn "hey"
+main = withSystemRandom $ \g ->
+    print =<< uniform @(Layer '(3,2)) g
 
 
 
