@@ -16,27 +16,19 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns         #-}
 
-import           Control.Monad.Primitive
 import           Data.Functor
 import           Data.Kind
 import           Data.Singletons
-import           Data.Singletons.Decide
 import           Data.Singletons.Prelude
 import           Data.Singletons.TypeLits
 import           Data.Type.Combinator
-import           Data.Type.Conjunction
-import           Data.Type.Index
-import           Data.Type.Length
 import           Data.Type.Product
-import           Data.Type.Util
 import           GHC.Generics                        (Generic)
 import           Numeric.Backprop
 import           Numeric.Backprop.Iso
 import           Numeric.Backprop.Op
 import           Numeric.LinearAlgebra.Static hiding (dot)
 import           System.Random.MWC
-import           Type.Class.Higher
-import           Type.Class.Known
 import           Type.Class.Witness hiding           (outer)
 import           Type.Family.List
 import qualified Generics.SOP                        as SOP
@@ -47,17 +39,6 @@ data Tensor :: [Nat] -> Type where
     TM :: { unTM :: L m n  } -> Tensor '[m,n]
 
 deriving instance ListC (KnownNat <$> ns) => Show (Tensor ns)
-
-instance SingI ns => Variate (Tensor ns) where
-    uniform g = case sing :: Sing ns of
-      SNil                             ->
-          TS <$> uniform g
-      SNat `SCons` SNil                ->
-          TV <$> (randomVector <$> uniform g <*> pure Uniform)
-      SNat `SCons` (SNat `SCons` SNil) ->
-          TM <$> (uniformSample <$> uniform g <*> pure 0 <*> pure 1)
-      _`SCons`(_`SCons`(_`SCons`_))    ->
-          error "unimplemented"
 
 matVec
     :: (KnownNat m, KnownNat n)
@@ -89,24 +70,7 @@ data Layer :: Nat -> Nat -> Type where
              }
           -> Layer n m
       deriving (Show, Generic)
-
 instance SOP.Generic (Layer n m)
-instance (KnownNat n, KnownNat m) => Variate (Layer n m) where
-    uniform g = subtract 1 . (* 2) <$> (Layer <$> uniform g <*> uniform g)
-
-instance (KnownNat m, KnownNat n) => Num (Layer n m) where
-    Layer w1 b1 + Layer w2 b2 = Layer (w1 + w2) (b1 + b2)
-    Layer w1 b1 - Layer w2 b2 = Layer (w1 - w2) (b1 - b2)
-    Layer w1 b1 * Layer w2 b2 = Layer (w1 * w2) (b1 * b2)
-    abs    (Layer w b) = Layer (abs w) (abs b)
-    signum (Layer w b) = Layer (signum w) (signum b)
-    negate (Layer w b) = Layer (negate w) (negate b)
-    fromInteger x = Layer (fromInteger x) (fromInteger x)
-
-instance (KnownNat m, KnownNat n) => Fractional (Layer n m) where
-    Layer w1 b1 / Layer w2 b2 = Layer (w1 / w2) (b1 / b2)
-    recip (Layer w b) = Layer (recip w) (recip b)
-    fromRational x = Layer (fromRational x) (fromRational x)
 
 data Network :: Nat -> [Nat] -> Nat -> Type where
     NØ   :: !(Layer a b) -> Network a '[] b
@@ -130,10 +94,10 @@ netOp sbs = go sbs
         => Sing es
         -> BPOp s '[ Tensor '[d], Network d es c ] (Tensor '[c])
     go = \case
-      ses@SNil -> withInps $ \(x :< n :< Ø) -> do
+      SNil -> withInps $ \(x :< n :< Ø) -> do
         l :< Ø       <- netExternal #<~ n
         layerOp ~$ x :< l :< Ø
-      se@SNat `SCons` ses -> withInps $ \(x :< n :< Ø) -> singWit ses // do
+      SNat `SCons` ses -> withInps $ \(x :< n :< Ø) -> withSingI ses $ do
         l :< n' :< Ø <- netInternal #<~ n
         z <- layerOp ~$ x :< l :< Ø
         go ses       ~$ z :< n' :< Ø
@@ -146,11 +110,6 @@ netOp sbs = go sbs
         y'          <- opRef2 y b (op2 (+))
         opRef1 y' (op1 logistic)
 
-singWit
-    :: Sing a
-    -> Wit (SingI a)
-singWit s = withSingI s Wit
-
 err
     :: KnownNat m
     => Tensor '[m]
@@ -161,18 +120,15 @@ err targ r = do
     d <- opRef2 r t $ op2 (-)
     opRef2 d d      $ dot
 
-instance (KnownNat a, SingI bs, KnownNat c) => Variate (Network a bs c) where
-    uniform g = genNet sing (uniform g)
-
 train
     :: (KnownNat a, SingI bs, KnownNat c)
     => Double
     -> Tensor '[a]
-    -> Tensor '[b]
+    -> Tensor '[c]
     -> Network a bs c
     -> Network a bs c
-train r x t n = case backprop (netOp sing) (x ::< n ::< Ø) of
-    (_, _ :< I gN :< Ø) -> n - (realToFrac r * gN)
+train r x t n = case backprop (err t =<< netOp sing) (x ::< n ::< Ø) of
+    (_, _ :< I g :< Ø) -> n - (realToFrac r * g)
 
 main :: IO ()
 main = withSystemRandom $ \g -> do
@@ -183,6 +139,26 @@ main = withSystemRandom $ \g -> do
 
 
 
+
+
+
+
+
+
+
+
+-- non-bp-related boilerplate for working with data types
+
+instance SingI ns => Variate (Tensor ns) where
+    uniform g = case sing :: Sing ns of
+      SNil                             ->
+          TS <$> uniform g
+      SNat `SCons` SNil                ->
+          TV <$> (randomVector <$> uniform g <*> pure Uniform)
+      SNat `SCons` (SNat `SCons` SNil) ->
+          TM <$> (uniformSample <$> uniform g <*> pure 0 <*> pure 1)
+      _`SCons`(_`SCons`(_`SCons`_))    ->
+          error "unimplemented"
 
 
 liftT0
@@ -263,6 +239,26 @@ instance SingI ns => Floating (Tensor ns) where
     asinh = liftT1 asinh
     acosh = liftT1 acosh
     atanh = liftT1 atanh
+
+instance (KnownNat n, KnownNat m) => Variate (Layer n m) where
+    uniform g = subtract 1 . (* 2) <$> (Layer <$> uniform g <*> uniform g)
+
+instance (KnownNat m, KnownNat n) => Num (Layer n m) where
+    Layer w1 b1 + Layer w2 b2 = Layer (w1 + w2) (b1 + b2)
+    Layer w1 b1 - Layer w2 b2 = Layer (w1 - w2) (b1 - b2)
+    Layer w1 b1 * Layer w2 b2 = Layer (w1 * w2) (b1 * b2)
+    abs    (Layer w b) = Layer (abs w) (abs b)
+    signum (Layer w b) = Layer (signum w) (signum b)
+    negate (Layer w b) = Layer (negate w) (negate b)
+    fromInteger x = Layer (fromInteger x) (fromInteger x)
+
+instance (KnownNat m, KnownNat n) => Fractional (Layer n m) where
+    Layer w1 b1 / Layer w2 b2 = Layer (w1 / w2) (b1 / b2)
+    recip (Layer w b) = Layer (recip w) (recip b)
+    fromRational x = Layer (fromRational x) (fromRational x)
+
+instance (KnownNat a, SingI bs, KnownNat c) => Variate (Network a bs c) where
+    uniform g = genNet sing (uniform g)
 
 genNet
     :: forall f a bs c. (Applicative f, KnownNat a, KnownNat c)
