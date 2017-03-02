@@ -17,8 +17,8 @@
 module Numeric.Backprop.Mono
   ( BP, BPOp, Replicate
   , BPRef
+  , constRef
   , newBPRef
-  , newBPRef0
   , newBPRef1
   , newBPRef2
   , newBPRef3
@@ -101,11 +101,10 @@ newBPRef
     -> BP s n a (BPRef s n a b)
 newBPRef i o = BP.newBPRef (vecToProd i) o
 
-newBPRef0
-    :: forall s n a b. Num b
-    => Op N0 a b
-    -> BP s n a (BPRef s n a b)
-newBPRef0 o = newBPRef @_ @_ @n @a ØV o
+constRef
+    :: b
+    -> BPRef s n a b
+constRef = BP.constRef
 
 newBPRef1
     :: forall s n a b. Num b

@@ -85,11 +85,13 @@ newtype BP s rs b = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s
                )
 
 data BPRef :: Type -> [Type] -> Type -> Type where
-    BPRNode :: !(Index bs a)
-            -> !(STRef s (BPNode s rs as bs))
-            -> BPRef s rs a
-    BPRInp  :: !(Index rs a)
-            -> BPRef s rs a
+    BPRNode  :: !(Index bs a)
+             -> !(STRef s (BPNode s rs as bs))
+             -> BPRef s rs a
+    BPRInp   :: !(Index rs a)
+             -> BPRef s rs a
+    BPRConst :: !a
+             -> BPRef s rs a
 
 data BPInpRef :: Type -> [Type] -> Type -> Type where
     BPIR :: { _bpirIndex :: !(Index bs a)

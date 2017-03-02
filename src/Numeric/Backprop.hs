@@ -12,8 +12,8 @@
 module Numeric.Backprop
   ( BP, BPOp
   , BPRef
+  , constRef
   , newBPRef
-  , newBPRef0
   , newBPRef1
   , newBPRef2
   , newBPRef3
@@ -29,7 +29,6 @@ module Numeric.Backprop
   , inpRefs
   , withInps
   , newBPRef'
-  , newBPRef0'
   , newBPRef1'
   , newBPRef2'
   , newBPRef3'
@@ -210,8 +209,9 @@ resolveRef
     => BPRef s rs a
     -> m a
 resolveRef = \case
-    BPRNode ix r -> getI . index ix . _bpnRes <$> liftBase (readSTRef r)
-    BPRInp  ix   -> getI . index ix <$> ask
+    BPRNode  ix r -> getI . index ix . _bpnRes <$> liftBase (readSTRef r)
+    BPRInp   ix   -> getI . index ix <$> ask
+    BPRConst    x -> return x
 
 registerRef
     :: STRef s (BPNode s rs as b)
@@ -219,9 +219,10 @@ registerRef
     -> BPRef s rs a
     -> BP s rs ()
 registerRef r ix = \case
-    BPRNode ix' r' -> liftBase . modifySTRef r' $
-                        over (bpnOut . indexP ix' . _FRInternal) (bpir :)
-    BPRInp ix'     -> modifying (bpsSources . indexP ix' . _FRInternal) (bpir :)
+    BPRNode  ix' r' -> liftBase . modifySTRef r' $
+                         over (bpnOut . indexP ix' . _FRInternal) (bpir :)
+    BPRInp   ix'    -> modifying (bpsSources . indexP ix' . _FRInternal) (bpir :)
+    BPRConst _      -> return ()
   where
     bpir = BPIR ix r
 
@@ -232,17 +233,8 @@ newBPRef
     -> BP s rs (BPRef s rs a)
 newBPRef i o = newBPRef' i o known
 
-newBPRef0'
-    :: Op '[] a
-    -> Summer a
-    -> BP s rs (BPRef s rs a)
-newBPRef0' = newBPRef' Ø
-
-newBPRef0
-    :: Num a
-    => Op '[] a
-    -> BP s rs (BPRef s rs a)
-newBPRef0 = newBPRef Ø
+constRef :: a -> BPRef s rs a 
+constRef = BPRConst
 
 newBPRef1'
     :: BPRef s rs a
@@ -358,8 +350,9 @@ backpropWith bp ss us env = do
                      Just g  -> FRExternal g
                      Nothing -> FRTerminal
           BPS{..} <- case r of
-            BPRNode ix sr -> bps0 <$ modifySTRef sr (set (bpnOut . indexP ix) fr)
-            BPRInp  ix    -> return $ set (bpsSources . indexP ix) fr bps0
+            BPRNode  ix sr -> bps0 <$ modifySTRef sr (set (bpnOut . indexP ix) fr)
+            BPRInp   ix    -> return $ set (bpsSources . indexP ix) fr bps0
+            BPRConst _     -> return bps0
           for1 (ss `zipP` us `zipP` _bpsSources) $ \((s :&: u) :&: rs) -> do
             I <$> case rs of
               FRInternal rs' ->

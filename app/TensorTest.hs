@@ -165,7 +165,7 @@ err
     -> BPRef s rs (Tensor '[m])
     -> BPOp s rs (Tensor '[])
 err targ r = do
-    t <- newBPRef0     $ op0 targ
+    let t = constRef targ
     d <- newBPRef2 r t $ op2 (-)
     newBPRef2 d d      $ dot
 
