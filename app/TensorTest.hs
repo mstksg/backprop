@@ -102,20 +102,17 @@ unLayer
     -> (Tensor '[m, n], Tensor '[m])
 unLayer (Layer w b) = (w, b)
 
--- ffLayer
---     :: forall s n m. (KnownNat m, KnownNat n)
---     => LayerOp s n m
--- ffLayer = LO ffLayer' 0
---   where
---     ffLayer'
---         :: Tensor '[n]
---         -> BPOp s '[ Layer '(n, m) ] (Tensor '[m])
---     ffLayer' = internally layer (inpRef (IS IZ))
---              . withInps $ \(w :< b :< Ø) -> do
---       x' <- newBPRef0     $ op0 x
---       y  <- newBPRef2 w x' matVec
---       y' <- newBPRef2 y b $ op2 (+)
---       newBPRef1 y' $ op1 logistic
+ffLayer
+    :: forall n m. (KnownNat m, KnownNat n)
+    => LayerOp n m
+ffLayer = LO ffLayer' 0
+  where
+    ffLayer' :: BPOp s '[ Tensor '[n], Layer '(n, m) ] (Tensor '[m])
+    ffLayer' = withInps $ \(x :< l :< Ø) -> do
+      w :< b :< Ø <- refParts layer l
+      y           <- newBPRef2 w x matVec
+      y'          <- newBPRef2 y b $ op2 (+)
+      newBPRef1 y' $ op1 logistic
 
 data Network :: Nat -> Nat -> Type where
     N :: (Every Num (Layer <$> ls), Every Fractional (Layer <$> ls), Known Length (Layer <$> ls))
