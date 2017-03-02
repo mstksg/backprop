@@ -52,6 +52,7 @@ executable backprop-tensortest
                      , ad
                      , backprop
                      , hmatrix
+                     , generics-sop
                      , mwc-random
                      , primitive
                      , singletons

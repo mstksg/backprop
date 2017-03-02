@@ -16,10 +16,11 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns         #-}
 
-import           Control.Applicative
 import           Control.Monad.Primitive
+import           Data.Functor
 import           Data.Kind
 import           Data.Singletons
+import           Data.Singletons.Decide
 import           Data.Singletons.Prelude
 import           Data.Singletons.TypeLits
 import           Data.Type.Combinator
@@ -28,10 +29,7 @@ import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Product
 import           Data.Type.Util
-import           Data.Type.Vector
 import           GHC.Generics                        (Generic)
-import           GHC.TypeLits
-import           Numeric.AD
 import           Numeric.Backprop
 import           Numeric.Backprop.Iso
 import           Numeric.Backprop.Op
@@ -41,6 +39,7 @@ import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness hiding           (outer)
 import           Type.Family.List
+import qualified Generics.SOP                        as SOP
 
 data Tensor :: [Nat] -> Type where
     TS :: { unTS :: Double } -> Tensor '[]
@@ -84,21 +83,18 @@ dot = op2' $ \case
 logistic :: Floating a => a -> a
 logistic x = 1 / (1 + exp (-x))
 
-data Layer :: (Nat, Nat) -> Type where
+data Layer :: Nat -> Nat -> Type where
     Layer :: { _lWeights :: Tensor '[m, n]
              , _lBiases  :: Tensor '[m]
              }
-          -> Layer '(n, m)
+          -> Layer n m
+      deriving (Show, Generic)
 
-deriving instance (KnownNat n, KnownNat m) => Show (Layer '(n, m))
-instance (KnownNat n, KnownNat m) => Variate (Layer '(n, m)) where
+instance SOP.Generic (Layer n m)
+instance (KnownNat n, KnownNat m) => Variate (Layer n m) where
     uniform g = subtract 1 . (* 2) <$> (Layer <$> uniform g <*> uniform g)
 
-layer :: Iso' (Layer '(n, m)) (Tuple '[ Tensor '[m, n], Tensor '[m] ])
-layer = iso (\case Layer w b -> w ::< b ::< Ø)
-            (\case I w :< I b :< Ø -> Layer w b)
-
-instance (KnownNat m, KnownNat n) => Num (Layer '(n, m)) where
+instance (KnownNat m, KnownNat n) => Num (Layer n m) where
     Layer w1 b1 + Layer w2 b2 = Layer (w1 + w2) (b1 + b2)
     Layer w1 b1 - Layer w2 b2 = Layer (w1 - w2) (b1 - b2)
     Layer w1 b1 * Layer w2 b2 = Layer (w1 * w2) (b1 * b2)
@@ -107,57 +103,53 @@ instance (KnownNat m, KnownNat n) => Num (Layer '(n, m)) where
     negate (Layer w b) = Layer (negate w) (negate b)
     fromInteger x = Layer (fromInteger x) (fromInteger x)
 
-instance (KnownNat m, KnownNat n) => Fractional (Layer '(n, m)) where
+instance (KnownNat m, KnownNat n) => Fractional (Layer n m) where
     Layer w1 b1 / Layer w2 b2 = Layer (w1 / w2) (b1 / b2)
     recip (Layer w b) = Layer (recip w) (recip b)
     fromRational x = Layer (fromRational x) (fromRational x)
 
-unLayer
-    :: Layer '(n, m)
-    -> (Tensor '[m, n], Tensor '[m])
-unLayer (Layer w b) = (w, b)
+data Network :: Nat -> [Nat] -> Nat -> Type where
+    NØ   :: !(Layer a b) -> Network a '[] b
+    (:&) :: !(Layer a b) -> Network b bs c -> Network a (b ': bs) c
 
-ffLayer
-    :: forall i o m. (KnownNat i, KnownNat o, PrimMonad m)
-    => Gen (PrimState m)
-    -> m (LayerOp i o)
-ffLayer g = LO ffLayer' <$> uniform g
+netExternal :: Iso' (Network a '[] b) (Tuple '[Layer a b])
+netExternal = iso (\case NØ x     -> x ::< Ø)
+                  (\case I x :< Ø -> NØ x   )
+
+netInternal :: Iso' (Network a (b ': bs) c) (Tuple '[Layer a b, Network b bs c])
+netInternal = iso (\case x :& xs          -> x ::< xs ::< Ø)
+                  (\case I x :< I xs :< Ø -> x :& xs       )
+
+netOp
+    :: forall s a bs c. (KnownNat a, KnownNat c)
+    => Sing bs
+    -> BPOp s '[ Tensor '[a], Network a bs c ] (Tensor '[c])
+netOp sbs = go sbs
   where
-    ffLayer' :: BPOp s '[ Tensor '[i], Layer '(i, o) ] (Tensor '[o])
-    ffLayer' = withInps $ \(x :< l :< Ø) -> do
-      w :< b :< Ø <- partsRef layer l
-      y           <- opRef2 w x matVec
-      y'          <- opRef2 y b $ op2 (+)
-      opRef1 y' $ op1 logistic
+    go :: forall d es. KnownNat d
+        => Sing es
+        -> BPOp s '[ Tensor '[d], Network d es c ] (Tensor '[c])
+    go = \case
+      ses@SNil -> withInps $ \(x :< n :< Ø) -> do
+        l :< Ø       <- partsRef netExternal n
+        layerOp ~$ x :< l :< Ø
+      se@SNat `SCons` ses -> withInps $ \(x :< n :< Ø) -> singWit ses // do
+        l :< n' :< Ø <- partsRef netInternal n
+        z <- layerOp ~$ x :< l :< Ø
+        go ses       ~$ z :< n' :< Ø
+    layerOp
+        :: forall d e. (KnownNat d, KnownNat e)
+        => BPOp s '[ Tensor '[d], Layer d e ] (Tensor '[e])
+    layerOp = withInps $ \(x :< l :< Ø) -> do
+        w :< b  :< Ø <- splitGeneric l
+        y            <- opRef2 w x matVec
+        y'           <- opRef2 y b (op2 (+))
+        opRef1 y' (op1 logistic)
 
-data Network :: Nat -> Nat -> Type where
-    N :: (Every Num (Layer <$> ls), Every Fractional (Layer <$> ls), Known Length (Layer <$> ls))
-      => { _nsLs    :: !(Sing ls)
-         , _nParams :: !(Tuple (Layer <$> ls))
-         , _nOp     :: !(forall s. BPOp s (Tensor '[i] ': (Layer <$> ls)) (Tensor '[o]))
-         }
-      -> Network i o
-
-data LayerOp :: Nat -> Nat -> Type where
-    LO :: { _loOp    :: (forall s. BPOp s '[ Tensor '[n],  Layer '(n, m) ] (Tensor '[m]))
-          , _loLayer :: Layer '(n, m)
-          }
-        -> LayerOp n m
-
-net0 :: Network n n
-net0 = N SNil Ø (return $ inpRef IZ)
-
-(~*)
-    :: forall n m o. (KnownNat n, KnownNat m, KnownNat o)
-    => LayerOp n m
-    -> Network m o
-    -> Network n o
-(~*) = \case
-    LO oL l -> \case
-      N gs ls oN ->
-        N (sing `SCons` gs) (l ::< ls) $ withInps $ \(rx :< rl :< rls) -> do
-          ry <- oL ~$ rx :< rl :< Ø
-          oN ~$ ry :< rls
+singWit
+    :: Sing a
+    -> Wit (SingI a)
+singWit s = withSingI s Wit
 
 err
     :: KnownNat m
@@ -169,43 +161,23 @@ err targ r = do
     d <- opRef2 r t $ op2 (-)
     opRef2 d d      $ dot
 
-train
-    :: (KnownNat i, KnownNat o)
-    => Double
-    -> Tensor '[i]
-    -> Tensor '[o]
-    -> Network i o
-    -> Network i o
-train r x t = \case
-    N ss ls oN ->
-      case backprop (err t =<< oN) (x ::< ls) of
-        (_, _ :< gLs) ->
-          N ss
-            (imap1 (\ix (I l :&: I g) -> I (l - realToFrac r * g) \\ every @_ @Fractional ix)
-                   (ls `zipP` gLs)
-            )
-            oN
+instance (KnownNat a, SingI bs, KnownNat c) => Variate (Network a bs c) where
+    uniform g = genNet sing (uniform g)
 
-genNet
-    :: forall i o (ls :: [Nat]) m. (KnownNat i, KnownNat o, PrimMonad m)
-    => Sing ls
-    -> Gen (PrimState m)
-    -> m (Network i o)
-genNet = \case
-    SNil            -> fmap (~* net0) . ffLayer
-    (SNat :: Sing h) `SCons` ss -> \g -> do
-      l <- ffLayer @i @h g
-      n <- genNet ss g
-      return $ l ~* n
+train
+    :: (KnownNat a, SingI bs, KnownNat c)
+    => Double
+    -> Tensor '[a]
+    -> Tensor '[b]
+    -> Network a bs c
+    -> Network a bs c
+train r x t n = case backprop (netOp sing) (x ::< n ::< Ø) of
+    (_, _ :< I gN :< Ø) -> n - (realToFrac r * gN)
 
 main :: IO ()
 main = withSystemRandom $ \g -> do
-    n <- genNet @4 @1 (sing :: Sing '[3,2]) g
-    -- print n
-    print . _loLayer =<< ffLayer @4 @3 g
-
-
-
+    n <- uniform @(Network 4 '[3,2] 1) g
+    void $ traverseNetwork sing (\l -> l <$ print l) n
 
 
 
@@ -292,4 +264,76 @@ instance SingI ns => Floating (Tensor ns) where
     acosh = liftT1 acosh
     atanh = liftT1 atanh
 
+genNet
+    :: forall f a bs c. (Applicative f, KnownNat a, KnownNat c)
+    => Sing bs
+    -> (forall d e. (KnownNat d, KnownNat e) => f (Layer d e))
+    -> f (Network a bs c)
+genNet sbs f = go sbs
+  where
+    go :: forall d es. KnownNat d => Sing es -> f (Network d es c)
+    go = \case
+      SNil             -> NØ <$> f
+      SNat `SCons` ses -> (:&) <$> f <*> go ses
 
+mapNetwork0
+    :: forall a bs c. (KnownNat a, KnownNat c)
+    => Sing bs
+    -> (forall d e. (KnownNat d, KnownNat e) => Layer d e)
+    -> Network a bs c
+mapNetwork0 sbs f = getI $ genNet sbs (I f)
+
+traverseNetwork
+    :: forall a bs c f. (KnownNat a, KnownNat c, Applicative f)
+    => Sing bs
+    -> (forall d e. (KnownNat d, KnownNat e) => Layer d e -> f (Layer d e))
+    -> Network a bs c
+    -> f (Network a bs c)
+traverseNetwork sbs f = go sbs
+  where
+    go :: forall d es. KnownNat d => Sing es -> Network d es c -> f (Network d es c)
+    go = \case
+      SNil -> \case
+        NØ x -> NØ <$> f x
+      SNat `SCons` ses -> \case
+        x :& xs -> (:&) <$> f x <*> go ses xs
+
+mapNetwork1
+    :: forall a bs c. (KnownNat a, KnownNat c)
+    => Sing bs
+    -> (forall d e. (KnownNat d, KnownNat e) => Layer d e -> Layer d e)
+    -> Network a bs c
+    -> Network a bs c
+mapNetwork1 sbs f = getI . traverseNetwork sbs (I . f)
+
+mapNetwork2
+    :: forall a bs c. (KnownNat a, KnownNat c)
+    => Sing bs
+    -> (forall d e. (KnownNat d, KnownNat e) => Layer d e -> Layer d e -> Layer d e)
+    -> Network a bs c
+    -> Network a bs c
+    -> Network a bs c
+mapNetwork2 sbs f = go sbs
+  where
+    go :: forall d es. KnownNat d => Sing es -> Network d es c -> Network d es c -> Network d es c
+    go = \case
+      SNil -> \case
+        NØ x -> \case
+          NØ y -> NØ (f x y)
+      SNat `SCons` ses -> \case
+        x :& xs -> \case
+          y :& ys -> f x y :& go ses xs ys
+
+instance (KnownNat a, SingI bs, KnownNat c) => Num (Network a bs c) where
+    (+)           = mapNetwork2 sing (+)
+    (-)           = mapNetwork2 sing (-)
+    (*)           = mapNetwork2 sing (*)
+    negate        = mapNetwork1 sing negate
+    abs           = mapNetwork1 sing abs
+    signum        = mapNetwork1 sing signum
+    fromInteger x = mapNetwork0 sing (fromInteger x)
+
+instance (KnownNat a, SingI bs, KnownNat c) => Fractional (Network a bs c) where
+    (/)            = mapNetwork2 sing (/)
+    recip          = mapNetwork1 sing recip
+    fromRational x = mapNetwork0 sing (fromRational x)
