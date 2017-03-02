@@ -85,25 +85,26 @@ newtype BP s rs b = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s
                )
 
 data BPRef :: Type -> [Type] -> Type -> Type where
-    BPRNode :: !(STRef s (BPNode s rs as a))
+    BPRNode :: !(Index bs a)
+            -> !(STRef s (BPNode s rs as bs))
             -> BPRef s rs a
     BPRInp  :: !(Index rs a)
             -> BPRef s rs a
 
 data BPInpRef :: Type -> [Type] -> Type -> Type where
     BPIR :: { _bpirIndex :: !(Index bs a)
-            , _bpirRef   :: !(STRef s (BPNode s rs bs b))
+            , _bpirRef   :: !(STRef s (BPNode s rs bs cs))
             }
          -> BPInpRef s rs a
 
-data BPNode :: Type -> [Type] -> [Type] -> Type -> Type where
-    BPN :: { _bpnOut       :: !(ForwardRefs s rs a)
-           , _bpnRes       :: !a
-           , _bpnGradFunc  :: !(Maybe a -> ST s (Tuple as))
-           , _bpnGradCache :: !(Maybe (Maybe a, Tuple as))  -- nothing if is the "final output"
-           , _bpnSummer    :: !(Summer a)
+data BPNode :: Type -> [Type] -> [Type] -> [Type] -> Type where
+    BPN :: { _bpnOut       :: !(Prod (ForwardRefs s rs) bs)
+           , _bpnRes       :: !(Tuple bs)
+           , _bpnGradFunc  :: !(Prod Maybe bs -> ST s (Tuple as))
+           , _bpnGradCache :: !(Maybe (Prod Maybe bs, Tuple as))  -- nothing if is the "final output"
+           , _bpnSummer    :: !(Prod Summer bs)
            }
-        -> BPNode s rs as a
+        -> BPNode s rs as bs
 
 makeLenses ''BPState
 makeLenses ''BPNode
