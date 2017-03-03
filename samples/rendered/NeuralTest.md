@@ -1,12 +1,14 @@
 ---
 author:
 - Justin Le
+fontfamily: 'palatino,cmtt'
+geometry: margin=1in
 title: Neural networks with backprop library
 ---
 
 The *backprop* library performs backpropagation over a *hetereogeneous*
 system of relationships. It does so by letting you build an explicit
-graph and keeps track of what nodes depend on what. Let's use it to
+graph and keeps track of what nodes depend on what. Let’s use it to
 build neural networks!
 
 Repository source is [on github](https://github.com/mstksg/backprop),
@@ -87,7 +89,7 @@ logistic :: Floating a => Op '[a] a
 logistic = op1 $ \x -> 1 / (1 + exp (-x))
 ```
 
-That's really it!
+That’s really it!
 
 A Simple Complete Example
 =========================
@@ -119,7 +121,7 @@ simpleOp inp targ = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
     
 ```
 
-Now `simpleOp` can be "run" with the input vectors and parameters (a
+Now `simpleOp` can be “run” with the input vectors and parameters (a
 `L n m`, `R n`, `L o n`, `R o`, etc.) and calculate their gradients on
 the final `Double` result (the squared error).
 
@@ -133,14 +135,14 @@ simpleGrad
 simpleGrad inp targ params = backprop (simpleOp inp targ) params
 ```
 
-The resulting tuple gives the network's squared error along with the
+The resulting tuple gives the network’s squared error along with the
 gradient along all of the input tuple.
 
 With Parameter Containers
 =========================
 
-This method doesn't quite scale, because we might want to make networks
-with multiple layers and parameterize networks by layers. Let's make
+This method doesn’t quite scale, because we might want to make networks
+with multiple layers and parameterize networks by layers. Let’s make
 some basic container data types to help us organize our types, including
 a recursive `Network` type that lets us chain multiple layers.
 
@@ -165,10 +167,10 @@ and outputs an e-vector, with hidden layers of sizes b, c, and d.
 Isomorphisms
 ------------
 
-The *backprop* library lets you apply operations on "parts" of data
-types (like on the weights and biases of a `Layer`) by using `Iso`'s
+The *backprop* library lets you apply operations on “parts” of data
+types (like on the weights and biases of a `Layer`) by using `Iso`’s
 (isomorphisms), like the ones from the *lens* library. The library
-doesn't depend on lens, but it can use the `Iso`s from the library and
+doesn’t depend on lens, but it can use the `Iso`s from the library and
 also custom-defined ones.
 
 First, we can auto-generate isomorphisms using the *generics-sop*
@@ -199,7 +201,7 @@ Running a network
 
 Now, we can write the `BPOp` that reprenents running the network and
 getting a result. We pass in a `Sing bs` (a singleton list of the hidden
-layer sizes) so that we can "pattern match" on the list and handle the
+layer sizes) so that we can “pattern match” on the list and handle the
 different network constructors differently.
 
 ``` {.sourceCode .literate .haskell}
@@ -236,9 +238,9 @@ netOp sbs = go sbs
         opRef1 y' logistic
 ```
 
-There's some singletons work going on here, but it's fairly standard
-singletons stuff. From *backprop* specifically, `(#<~)` lets you "split"
-an input ref with the given iso, and `(~$)` lets you "run" an `BP`
+There’s some singletons work going on here, but it’s fairly standard
+singletons stuff. From *backprop* specifically, `(#<~)` lets you “split”
+an input ref with the given iso, and `(~$)` lets you “run” an `BP`
 within an `BP`, by plugging in its inputs.
 
 Gradient Descent
