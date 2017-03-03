@@ -62,7 +62,7 @@ neuralNet inp = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
 ~~~
 
 Now `neuralNet` can be "run" with the input vectors and parameters (a
-`L n m`, `R n`, `L o n`, `R o`, etc.) and calculate the output of the
+`L n m`, `R n`, `L o n`, and `R o`) and calculate the output of the
 neural net.
 
 ~~~haskell

@@ -19,8 +19,8 @@ library
                        Numeric.Backprop.Op
                        Numeric.Backprop.Mono
                        Numeric.Backprop.Iso
-                       Data.Type.Util
   other-modules:       Numeric.Backprop.Internal
+                       Data.Type.Util
   build-depends:       base >= 4.7 && < 5
                      , ad
                      , generics-sop

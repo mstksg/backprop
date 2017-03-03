@@ -102,7 +102,7 @@ neural network:
 >     x1 = constRef inp
 
 Now `simpleOp` can be "run" with the input vectors and parameters (a
-`L n m`, `R n`, `L o n`, `R o`, etc.) and calculate the output of the
+`L n m`, `R n`, `L o n`, and `R o`) and calculate the output of the
 neural net.
 
 > runSimple
