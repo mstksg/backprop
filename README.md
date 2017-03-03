@@ -104,7 +104,7 @@ file][neuraltest], and gives over a full example with a recursive network type.
 It is also [rendered as a pdf][neuraltest-pdf].
 
 [neuraltest]: https://github.com/mstksg/backprop/blob/master/samples/NeuralTest.lhs
-[neuraltest-pdf]: https://github.com/mstksg/backprop/blob/master/samples/rendered/NeuralTest.pdf
+[neuraltest-pdf]: https://github.com/mstksg/backprop/blob/master/renders/NeuralTest.pdf
 
 Documentation is currently rendered [on github pages][docs]!
 
