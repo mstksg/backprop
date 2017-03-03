@@ -24,6 +24,7 @@ module Numeric.Backprop
   , splitRefs
   , internally
   , generically
+  , choicesRef
   , plugBP, (~$), ($~)
   , inpRef
   , inpRefs
@@ -39,6 +40,7 @@ module Numeric.Backprop
   , splitRefs'
   , internally'
   , generically'
+  , choicesRef'
   , plugBP'
   , inpRefs'
   , withInps'
@@ -82,11 +84,11 @@ opRef'
 opRef' i o sm = do
     xs <- traverse1 (fmap I . resolveRef) i
     let (res, gf) = runOp' o xs
-        bp = BPN { _bpnOut       = FRInternal [] :< Ø
+        bp = BPN { _bpnOut       = only $ FRInternal []
                  , _bpnRes       = only_ res
                  , _bpnGradFunc  = return . gf . head'
                  , _bpnGradCache = Nothing
-                 , _bpnSummer    = sm :< Ø
+                 , _bpnSummer    = only sm
                  }
     r <- liftBase $ newSTRef bp
     itraverse1_ (registerRef r) i
@@ -129,6 +131,7 @@ partsRef' ss us l r = do
                  , _bpnSummer    = ss
                  }
     r' <- liftBase $ newSTRef bp
+    registerRef r' IZ r
     return $ imap1 (\i _ -> BPRNode i r') xs
 
 partsRef
@@ -137,32 +140,6 @@ partsRef
     -> BPRef s rs b
     -> BP s rs (Prod (BPRef s rs) bs)
 partsRef = partsRef' (withEvery @Num known) (withEvery @Num known)
-
-choicesRef'
-    :: forall s rs bs b. ()
-    => Prod Summer bs
-    -> Prod Unity bs
-    -> Iso' b (Sum I bs)
-    -> BPRef s rs b
-    -> BP s rs (Sum (BPRef s rs) bs)
-choicesRef' ss us i r = do
-    x <- resolveRef r
-    let xs :: Sum I bs
-        xs = view i x
-    ifor1 ((ss `zipP` us) `tagSum` xs) $ \ix ((s :&: u) :&: I (y :: c)) -> do
-      let bp :: BPNode s rs '[b] '[c]
-          bp = BPN { _bpnOut       = undefined
-                   , _bpnRes       = only_ y
-                   , _bpnGradFunc  = return . only_ . review i
-                                   . injectSum ix
-                                   . maybe (I (getUnity u)) I
-                                   . head'
-                   , _bpnGradCache = Nothing
-                   , _bpnSummer    = only s
-                   }
-      r' <- liftBase $ newSTRef bp
-      return $ BPRNode IZ r'
-
 
 infixr 1 #<~
 (#<~)
@@ -220,11 +197,11 @@ internally' ss us sa l r bp = do
     xs <- view l <$> resolveRef r
     (res, gFunc) <- liftBase $ backpropWith bp ss us xs
     let bpn :: BPNode s rs '[ b ] '[ a ]
-        bpn = BPN { _bpnOut       = FRInternal [] :< Ø
+        bpn = BPN { _bpnOut       = only $ FRInternal []
                   , _bpnRes       = only_ res
                   , _bpnGradFunc  = fmap (only_ . review l) . gFunc . head'
                   , _bpnGradCache = Nothing
-                  , _bpnSummer    = sa :< Ø
+                  , _bpnSummer    = only sa
                   }
     r' <- liftBase $ newSTRef bpn
     registerRef r' IZ r
@@ -254,6 +231,76 @@ generically
     -> BP s bs (BPRef s bs a)
     -> BP s rs (BPRef s rs a)
 generically = internally gTuple
+
+choicesRef'
+    :: forall s rs bs b. ()
+    => Prod Summer bs
+    -> Prod Unity bs
+    -> Iso' b (Sum I bs)
+    -> BPRef s rs b
+    -> BP s rs (Sum (BPRef s rs) bs)
+choicesRef' ss us i r = do
+    x <- resolveRef r
+    let xs :: Sum I bs
+        xs = view i x
+    ifor1 ((ss `zipP` us) `tagSum` xs) $ \ix ((s :&: u) :&: I (y :: c)) -> do
+      let bp :: BPNode s rs '[b] '[c]
+          bp = BPN { _bpnOut       = only $ FRInternal []
+                   , _bpnRes       = only_ y
+                   , _bpnGradFunc  = return . only_ . review i
+                                   . injectSum ix
+                                   . maybe (I (getUnity u)) I
+                                   . head'
+                   , _bpnGradCache = Nothing
+                   , _bpnSummer    = only s
+                   }
+      r' <- liftBase $ newSTRef bp
+      registerRef r' IZ r
+      return $ BPRNode IZ r'
+
+choicesRef
+    :: forall s rs bs b. (Every Num bs, Known Length bs)
+    => Iso' b (Sum I bs)
+    -> BPRef s rs b
+    -> BP s rs (Sum (BPRef s rs) bs)
+choicesRef = choicesRef' (withEvery @Num known) (withEvery @Num known)
+
+sopRef'
+    :: forall s rs bss b. ()
+    => Prod (Prod Summer) bss
+    -> Prod (Prod Unity) bss
+    -> Iso' b (Sum Tuple bss)
+    -> BPRef s rs b
+    -> BP s rs (Sum (Prod (BPRef s rs)) bss)
+sopRef' sss uss i r = do
+    x <- resolveRef r
+    let xs :: Sum Tuple bss
+        xs = view i x
+    ifor1 ((sss `zipP` uss) `tagSum` xs) $ \ix ((ss :&: us) :&: (ys :: Tuple bs)) -> do
+      let bp :: BPNode s rs '[b] bs
+          bp = BPN { _bpnOut       = map1 (const (FRInternal [])) ys
+                   , _bpnRes       = ys
+                   , _bpnGradFunc  = return . only_
+                                   . review i . injectSum ix
+                                   . map1 (uncurryFan $ \u ->
+                                             maybe (I (getUnity u)) I
+                                          )
+                                   . zipP us
+                   , _bpnGradCache = Nothing
+                   , _bpnSummer    = ss
+                   }
+      r' <- liftBase $ newSTRef bp
+      registerRef r' IZ r
+      return $ imap1 (\ix' _ -> BPRNode ix' r') ys
+
+sopRef
+    :: forall s rs bss b. (Known Length bss, Every (Every Num ∧ Known Length) bss)
+    => Iso' b (Sum Tuple bss)
+    -> BPRef s rs b
+    -> BP s rs (Sum (Prod (BPRef s rs)) bss)
+sopRef = sopRef' (withEvery @(Every Num ∧ Known Length) (withEvery @Num known))
+                 (withEvery @(Every Num ∧ Known Length) (withEvery @Num known))
+
 
 -- TODO: pull summers too
 resolveRef
