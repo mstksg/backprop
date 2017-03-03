@@ -9,7 +9,7 @@ module Numeric.Backprop.Iso
   ( Iso, Iso'
   , iso, re
   , review
-  , gTuple
+  , gTuple, gSOP
   , sum1, resum1
   ) where
 
@@ -33,10 +33,11 @@ review :: Iso s t a b -> b -> t
 review i = runIdentity #. unTagged #. i .# Tagged .# Identity
 
 gTuple :: (SOP.Generic a, SOP.Code a ~ '[as]) => Iso' a (Tuple as)
-gTuple = sop
-       . sopTC
-       . iso (map1 (map1 (I . SOP.unI))) (map1 (map1 (SOP.I . getI)))
-       . sum1
+gTuple = gSOP . sum1
+
+gSOP :: SOP.Generic a => Iso' a (Sum Tuple (SOP.Code a))
+gSOP = sop . sopTC
+     . iso (map1 (map1 (I . SOP.unI))) (map1 (map1 (SOP.I . getI)))
 
 sum1 :: Iso' (Sum f '[a]) (f a)
 sum1 = iso (\case InL x -> x

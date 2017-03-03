@@ -53,10 +53,14 @@ module Numeric.Backprop (
   , choicesRef'
   -- *** As sums of products
   , sopRef
+  , gSplits
   , sopRef'
+  , gSplits'
   -- ** Transforming BP
   , internally
+  , generically
   , internally'
+  , generically'
   -- * Utility
   , Prod(..), pattern (:>), only
   , Tuple, pattern (::<), only_
@@ -297,6 +301,24 @@ sopRef
     -> BP s rs (Sum (Prod (BPRef s rs)) bss)
 sopRef = sopRef' (withEvery @(Every Num ∧ Known Length) (withEvery @Num known))
                  (withEvery @(Every Num ∧ Known Length) (withEvery @Num known))
+
+gSplits'
+    :: forall s rs b. SOP.Generic b
+    => Prod (Prod Summer) (SOP.Code b)
+    -> Prod (Prod Unity) (SOP.Code b)
+    -> BPRef s rs b
+    -> BP s rs (Sum (Prod (BPRef s rs)) (SOP.Code b))
+gSplits' sss uss = sopRef' sss uss gSOP
+
+gSplits
+    :: forall s rs b.
+      ( SOP.Generic b
+      , Known Length (SOP.Code b)
+      , Every (Every Num ∧ Known Length) (SOP.Code b)
+      )
+    => BPRef s rs b
+    -> BP s rs (Sum (Prod (BPRef s rs)) (SOP.Code b))
+gSplits = sopRef gSOP
 
 
 -- TODO: pull summers too
