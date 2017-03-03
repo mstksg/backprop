@@ -25,7 +25,6 @@ module Numeric.Backprop.Internal
  , ForwardRefs(..), _FRInternal
  ) where
 
-import           Control.Monad.Base
 import           Control.Monad.Reader
 import           Control.Monad.ST
 import           Control.Monad.State
@@ -79,9 +78,6 @@ newtype BP s rs b = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s
       deriving ( Functor
                , Applicative
                , Monad
-               , MonadReader (Tuple rs)
-               , MonadState (BPState s rs)
-               , MonadBase (ST s)
                )
 
 data BPRef :: Type -> [Type] -> Type -> Type where

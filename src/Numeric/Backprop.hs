@@ -100,7 +100,7 @@ opRef'
     -> Summer a
     -> BP s rs (BPRef s rs a)
 opRef' i o sm = do
-    xs <- traverse1 (fmap I . resolveRef) i
+    xs <- traverse1 (fmap I . BP . resolveRef) i
     let (res, gf) = runOp' o xs
         bp = BPN { _bpnOut       = only $ FRInternal []
                  , _bpnRes       = only_ res
@@ -108,7 +108,7 @@ opRef' i o sm = do
                  , _bpnGradCache = Nothing
                  , _bpnSummer    = only sm
                  }
-    r <- liftBase $ newSTRef bp
+    r <- BP . liftBase $ newSTRef bp
     itraverse1_ (registerRef r) i
     return (BPRNode IZ r)
 
@@ -196,8 +196,8 @@ internally'
     -> BP s bs (BPRef s bs a)
     -> BP s rs (BPRef s rs a)
 internally' ss us sa l r bp = do
-    xs <- view l <$> resolveRef r
-    (res, gFunc) <- liftBase $ backpropWith bp ss us xs
+    xs <- view l <$> BP (resolveRef r)
+    (res, gFunc) <- BP . liftBase $ backpropWith bp ss us xs
     let bpn :: BPNode s rs '[ b ] '[ a ]
         bpn = BPN { _bpnOut       = only $ FRInternal []
                   , _bpnRes       = only_ res
@@ -205,7 +205,7 @@ internally' ss us sa l r bp = do
                   , _bpnGradCache = Nothing
                   , _bpnSummer    = only sa
                   }
-    r' <- liftBase $ newSTRef bpn
+    r' <- BP . liftBase $ newSTRef bpn
     registerRef r' IZ r
     return (BPRNode IZ r')
 
@@ -242,7 +242,7 @@ choicesRef'
     -> BPRef s rs b
     -> BP s rs (Sum (BPRef s rs) bs)
 choicesRef' ss us i r = do
-    x <- resolveRef r
+    x <- BP $ resolveRef r
     let xs :: Sum I bs
         xs = view i x
     ifor1 ((ss `zipP` us) `tagSum` xs) $ \ix ((s :&: u) :&: I (y :: c)) -> do
@@ -256,7 +256,7 @@ choicesRef' ss us i r = do
                    , _bpnGradCache = Nothing
                    , _bpnSummer    = only s
                    }
-      r' <- liftBase $ newSTRef bp
+      r' <- BP . liftBase $ newSTRef bp
       registerRef r' IZ r
       return $ BPRNode IZ r'
 -- TODO: cannot implement via sopRef?  oh well.
@@ -276,7 +276,7 @@ sopRef'
     -> BPRef s rs b
     -> BP s rs (Sum (Prod (BPRef s rs)) bss)
 sopRef' sss uss i r = do
-    x <- resolveRef r
+    x <- BP $ resolveRef r
     let xs :: Sum Tuple bss
         xs = view i x
     ifor1 ((sss `zipP` uss) `tagSum` xs) $ \ix ((ss :&: us) :&: (ys :: Tuple bs)) -> do
@@ -292,7 +292,7 @@ sopRef' sss uss i r = do
                    , _bpnGradCache = Nothing
                    , _bpnSummer    = ss
                    }
-      r' <- liftBase $ newSTRef bp
+      r' <- BP . liftBase $ newSTRef bp
       registerRef r' IZ r
       return $ imap1 (\ix' _ -> BPRNode ix' r') ys
 
@@ -339,9 +339,9 @@ registerRef
     -> BPRef s rs a
     -> BP s rs ()
 registerRef r ix = \case
-    BPRNode  ix' r' -> liftBase . modifySTRef r' $
+    BPRNode  ix' r' -> BP . liftBase . modifySTRef r' $
                          over (bpnOut . indexP ix' . _FRInternal) (bpir :)
-    BPRInp   ix'    -> modifying (bpsSources . indexP ix' . _FRInternal) (bpir :)
+    BPRInp   ix'    -> BP $ modifying (bpsSources . indexP ix' . _FRInternal) (bpir :)
     BPRConst _      -> return ()
   where
     bpir = BPIR ix r
@@ -517,15 +517,15 @@ plugBP'
     -> BPOp s as a
     -> BPOp s rs a
 plugBP' i ss us sa bp = do
-    env <- traverse1 (fmap I . resolveRef) i
-    (res, gFunc) <- liftBase $ backpropWith bp ss us env
+    env <- traverse1 (fmap I . BP . resolveRef) i
+    (res, gFunc) <- BP . liftBase $ backpropWith bp ss us env
     let bpn = BPN { _bpnOut       = FRInternal [] :< Ø
                   , _bpnRes       = only_ res
                   , _bpnGradFunc  = gFunc . head'
                   , _bpnGradCache = Nothing
                   , _bpnSummer    = sa :< Ø
                   }
-    r <- liftBase $ newSTRef bpn
+    r <- BP . liftBase $ newSTRef bpn
     itraverse1_ (registerRef r) i
     return (BPRNode IZ r)
 
