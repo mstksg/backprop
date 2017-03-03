@@ -15,8 +15,8 @@
 
 module Numeric.Backprop.Internal
  ( Op(..)
- , Summer(..), summers
- , Unity(..), unities
+ , Summer(..), summers, summers'
+ , Unity(..), unities, unities'
  , BPState(..), bpsSources
  , BP(..)
  , BPInpRef(..)
@@ -33,11 +33,10 @@ import           Data.STRef
 import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Product
+import           Data.Type.Util
 import           Lens.Micro
 import           Lens.Micro.TH
-import           Type.Class.Higher
 import           Type.Class.Known
-import           Type.Class.Witness
 
 -- instead of Tuple as, Prod Diff as, where Diff can be a value, or zero,
 -- or one?
@@ -58,12 +57,24 @@ instance Num a => Known Unity a where
 summers
     :: (Every Num as, Known Length as)
     => Prod Summer as
-summers = map1 ((// known) . every @_ @Num) indices
+summers = summers' known
+
+summers'
+    :: Every Num as
+    => Length as
+    -> Prod Summer as
+summers' l = withEvery' @Num l known
 
 unities
     :: (Every Num as, Known Length as)
     => Prod Unity as
-unities = map1 ((// known) . every @_ @Num) indices
+unities = unities' known
+
+unities'
+    :: Every Num as
+    => Length as
+    -> Prod Unity as
+unities' l = withEvery' @Num l known
 
 data ForwardRefs s rs a = FRInternal ![BPInpRef s rs a]
                         | FRExternal a

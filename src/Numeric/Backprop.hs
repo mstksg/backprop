@@ -141,7 +141,7 @@ partsRef
     => Iso' b (Tuple bs)
     -> BPRef s rs b
     -> BP s rs (Prod (BPRef s rs) bs)
-partsRef = partsRef' (withEvery @Num known) (withEvery @Num known)
+partsRef = partsRef' summers unities
 
 infixr 1 #<~
 (#<~)
@@ -184,7 +184,7 @@ gSplit
     :: (Every Num bs, Known Length bs, SOP.Generic b, SOP.Code b ~ '[bs])
     => BPRef s rs b
     -> BP s rs (Prod (BPRef s rs) bs)
-gSplit = gSplit' (withEvery @Num known) (withEvery @Num known)
+gSplit = gSplit' summers unities
 
 internally'
     :: forall s rs bs b a. ()
@@ -215,7 +215,7 @@ internally
     -> BPRef s rs b
     -> BP s bs (BPRef s bs a)
     -> BP s rs (BPRef s rs a)
-internally = internally' (withEvery @Num known) (withEvery @Num known) known
+internally = internally' summers unities known
 
 generically'
     :: forall s rs bs b a. (SOP.Generic b, SOP.Code b ~ '[bs])
@@ -266,7 +266,7 @@ choicesRef
     => Iso' b (Sum I bs)
     -> BPRef s rs b
     -> BP s rs (Sum (BPRef s rs) bs)
-choicesRef = choicesRef' (withEvery @Num known) (withEvery @Num known)
+choicesRef = choicesRef' summers unities
 
 sopRef'
     :: forall s rs bss b. ()
@@ -301,8 +301,8 @@ sopRef
     => Iso' b (Sum Tuple bss)
     -> BPRef s rs b
     -> BP s rs (Sum (Prod (BPRef s rs)) bss)
-sopRef = sopRef' (withEvery @(Every Num ∧ Known Length) (withEvery @Num known))
-                 (withEvery @(Every Num ∧ Known Length) (withEvery @Num known))
+sopRef = sopRef' (withEvery @(Every Num ∧ Known Length) summers)
+                 (withEvery @(Every Num ∧ Known Length) unities)
 
 gSplits'
     :: forall s rs b. SOP.Generic b
@@ -443,7 +443,7 @@ backprop
     => (forall s. BPOp s rs a)
     -> Tuple rs
     -> (a, Tuple rs)
-backprop bp xs = backprop' bp (withEvery' @Num l known) (withEvery' @Num l known) xs
+backprop bp xs = backprop' bp (summers' l) (unities' l) xs
   where
     l :: Length rs
     l = prodLength xs
