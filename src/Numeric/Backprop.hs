@@ -9,46 +9,58 @@
 {-# LANGUAGE TypeInType          #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module Numeric.Backprop
-  ( BP, BPOp
+module Numeric.Backprop (
+  -- * Types
+    BP, BPOp
   , BPRef
+  , Op(..)
+  , Summer(..)
+  , Unity(..)
+  -- * BP
+  -- ** Backprop
+  , backprop
+  , runBPOp
+  , backprop'
+  , runBPOp'
+  -- ** Inputs
+  , withInps
+  , plugBP, (~$), ($~)
+  , withInps'
+  , plugBP'
+  -- * Refs
+  , inpRef
   , constRef
+  , inpRefs
+  , inpRefs'
+  -- ** From Ops
   , opRef
   , opRef1
   , opRef2
   , opRef3
-  , backprop
-  , runBPOp
-  , partsRef, (#<~), withParts
-  , gSplit
-  , splitRefs
-  , internally
-  , generically
-  , choicesRef
-  , plugBP, (~$), ($~)
-  , inpRef
-  , inpRefs
-  , withInps
   , opRef'
   , opRef1'
   , opRef2'
   , opRef3'
-  , backprop'
-  , runBPOp'
+  -- ** Ref manipulation
+  -- *** As parts
+  , partsRef, (#<~), withParts
   , partsRef', withParts'
-  , gSplit'
+  , gSplit, gSplit'
+  , splitRefs
   , splitRefs'
-  , internally'
-  , generically'
+  -- *** As sums
+  , choicesRef
   , choicesRef'
-  , plugBP'
-  , inpRefs'
-  , withInps'
-  , Op(..)
-  , Summer(..)
-  , Unity(..)
+  -- *** As sums of products
+  , sopRef
+  , sopRef'
+  -- ** Transforming BP
+  , internally
+  , internally'
+  -- * Utility
   , Prod(..), pattern (:>), only
   , Tuple, pattern (::<), only_
+
   ) where
 
 import           Control.Monad.Base
@@ -115,24 +127,8 @@ partsRef'
     -> Iso' b (Tuple bs)
     -> BPRef s rs b
     -> BP s rs (Prod (BPRef s rs) bs)
-partsRef' ss us l r = do
-    x <- resolveRef r
-    let xs = view l x
-        bp :: BPNode s rs '[b] bs
-        bp = BPN { _bpnOut       = map1 (const (FRInternal [])) xs
-                 , _bpnRes       = xs
-                 , _bpnGradFunc  = return . only_
-                                 . review l
-                                 . map1 (uncurryFan $ \u ->
-                                           maybe (I (getUnity u)) I
-                                        )
-                                 . zipP us
-                 , _bpnGradCache = Nothing
-                 , _bpnSummer    = ss
-                 }
-    r' <- liftBase $ newSTRef bp
-    registerRef r' IZ r
-    return $ imap1 (\i _ -> BPRNode i r') xs
+partsRef' ss us i =
+    fmap (view sum1) . sopRef' (only ss) (only us) (i . resum1)
 
 partsRef
     :: forall s rs bs b. (Every Num bs, Known Length bs)
@@ -257,6 +253,7 @@ choicesRef' ss us i r = do
       r' <- liftBase $ newSTRef bp
       registerRef r' IZ r
       return $ BPRNode IZ r'
+-- TODO: cannot implement via sopRef?  oh well.
 
 choicesRef
     :: forall s rs bs b. (Every Num bs, Known Length bs)

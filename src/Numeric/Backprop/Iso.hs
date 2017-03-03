@@ -7,9 +7,10 @@
 
 module Numeric.Backprop.Iso
   ( Iso, Iso'
-  , iso
+  , iso, re
   , review
   , gTuple
+  , sum1, resum1
   ) where
 
 import           Data.Functor.Identity
@@ -41,6 +42,15 @@ sum1 :: Iso' (Sum f '[a]) (f a)
 sum1 = iso (\case InL x -> x
                   InR _ -> error "inaccessible?"
            ) InL
+
+resum1 :: Iso' (f a) (Sum f '[a])
+resum1 = iso InL
+             (\case InL x -> x
+                    InR _ -> error "inaccessible?"
+             )
+
+re :: Iso' s a -> Iso' a s
+re i = iso (review i) (view i)
 
 sop :: SOP.Generic a => Iso' a (SOP.SOP SOP.I (SOP.Code a))
 sop = iso SOP.from SOP.to
