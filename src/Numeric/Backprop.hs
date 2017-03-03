@@ -60,6 +60,7 @@ import           Data.Type.Conjunction
 import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Product
+import           Data.Type.Sum hiding      (index)
 import           Data.Type.Util
 import           Lens.Micro hiding         (ix)
 import           Lens.Micro.Mtl
@@ -136,6 +137,32 @@ partsRef
     -> BPRef s rs b
     -> BP s rs (Prod (BPRef s rs) bs)
 partsRef = partsRef' (withEvery @Num known) (withEvery @Num known)
+
+choicesRef'
+    :: forall s rs bs b. ()
+    => Prod Summer bs
+    -> Prod Unity bs
+    -> Iso' b (Sum I bs)
+    -> BPRef s rs b
+    -> BP s rs (Sum (BPRef s rs) bs)
+choicesRef' ss us i r = do
+    x <- resolveRef r
+    let xs :: Sum I bs
+        xs = view i x
+    ifor1 ((ss `zipP` us) `tagSum` xs) $ \ix ((s :&: u) :&: I (y :: c)) -> do
+      let bp :: BPNode s rs '[b] '[c]
+          bp = BPN { _bpnOut       = undefined
+                   , _bpnRes       = only_ y
+                   , _bpnGradFunc  = return . only_ . review i
+                                   . injectSum ix
+                                   . maybe (I (getUnity u)) I
+                                   . head'
+                   , _bpnGradCache = Nothing
+                   , _bpnSummer    = only s
+                   }
+      r' <- liftBase $ newSTRef bp
+      return $ BPRNode IZ r'
+
 
 infixr 1 #<~
 (#<~)
@@ -258,7 +285,7 @@ opRef
     -> BP s rs (BPRef s rs a)
 opRef i o = opRef' i o known
 
-constRef :: a -> BPRef s rs a 
+constRef :: a -> BPRef s rs a
 constRef = BPRConst
 
 opRef1'

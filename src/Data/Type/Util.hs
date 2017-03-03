@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes    #-}
 {-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE EmptyCase              #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE KindSignatures         #-}
 {-# LANGUAGE LambdaCase             #-}
@@ -17,13 +18,14 @@ module Data.Type.Util where
 
 import           Control.Applicative
 import           Data.Kind
-import           Data.Monoid
+import           Data.Monoid hiding (Sum)
 import           Data.Type.Conjunction
 import           Data.Type.Fin
 import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Nat
 import           Data.Type.Product
+import           Data.Type.Sum
 import           Data.Type.Vector
 import           Lens.Micro
 import           Type.Class.Higher
@@ -136,3 +138,13 @@ withEvery'
     -> (forall a. c a => f a)
     -> Prod f as
 withEvery' l x = map1 ((// x) . every @_ @c) (indices' l)
+
+tagSum
+    :: Prod f as
+    -> Sum g as
+    -> Sum (f :&: g) as
+tagSum = \case
+    Ø       -> \case
+    x :< xs -> \case
+      InL y  -> InL (x :&: y)
+      InR ys -> InR (tagSum xs ys)
