@@ -135,8 +135,7 @@ partsRef
     => Iso' b (Tuple bs)
     -> BPRef s rs b
     -> BP s rs (Prod (BPRef s rs) bs)
-partsRef = partsRef' (map1 ((// known) . every @_ @Num) indices)
-                     (map1 ((// known) . every @_ @Num) indices)
+partsRef = partsRef' (withEvery @Num known) (withEvery @Num known)
 
 infixr 1 #<~
 (#<~)
@@ -179,8 +178,7 @@ gSplit
     :: (Every Num bs, Known Length bs, SOP.Generic b, SOP.Code b ~ '[bs])
     => BPRef s rs b
     -> BP s rs (Prod (BPRef s rs) bs)
-gSplit = gSplit' (map1 ((// known) . every @_ @Num) indices)
-                 (map1 ((// known) . every @_ @Num) indices)
+gSplit = gSplit' (withEvery @Num known) (withEvery @Num known)
 
 internally'
     :: forall s rs bs b a. ()
@@ -211,9 +209,7 @@ internally
     -> BPRef s rs b
     -> BP s bs (BPRef s bs a)
     -> BP s rs (BPRef s rs a)
-internally = internally' (map1 ((// known) . every @_ @Num) indices)
-                         (map1 ((// known) . every @_ @Num) indices)
-                         known
+internally = internally' (withEvery @Num known) (withEvery @Num known) known
 
 generically'
     :: forall s rs bs b a. (SOP.Generic b, SOP.Code b ~ '[bs])
@@ -344,9 +340,10 @@ backprop
     => (forall s. BPOp s rs a)
     -> Tuple rs
     -> (a, Tuple rs)
-backprop bp xs = backprop' bp (imap1 (\i _ -> known \\ every @_ @Num i) xs)
-                              (imap1 (\i _ -> known \\ every @_ @Num i) xs)
-                              xs
+backprop bp xs = backprop' bp (withEvery' @Num l known) (withEvery' @Num l known) xs
+  where
+    l :: Length rs
+    l = prodLength xs
 
 runBPOp'
     :: (forall s. BPOp s rs a)

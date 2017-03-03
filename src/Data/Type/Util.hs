@@ -1,8 +1,13 @@
+{-# LANGUAGE AllowAmbiguousTypes    #-}
+{-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE KindSignatures         #-}
 {-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE PolyKinds              #-}
 {-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeApplications       #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeInType             #-}
@@ -22,6 +27,8 @@ import           Data.Type.Product
 import           Data.Type.Vector
 import           Lens.Micro
 import           Type.Class.Higher
+import           Type.Class.Known
+import           Type.Class.Witness
 import           Type.Family.List
 import           Type.Family.Nat
 
@@ -116,3 +123,16 @@ prodLength
 prodLength = \case
     Ø       -> LZ
     _ :< xs -> LS (prodLength xs)
+
+withEvery
+    :: forall c f as. (Known Length as, Every c as)
+    => (forall a. c a => f a)
+    -> Prod f as
+withEvery = withEvery' @c known
+
+withEvery'
+    :: forall c f as. Every c as
+    => Length as
+    -> (forall a. c a => f a)
+    -> Prod f as
+withEvery' l x = map1 ((// x) . every @_ @c) (indices' l)
