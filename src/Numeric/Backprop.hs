@@ -20,8 +20,10 @@ module Numeric.Backprop (
   -- ** Backprop
   , backprop
   , runBPOp
+  , gradBPOp
   , backprop'
   , runBPOp'
+  , gradBPOp'
   -- ** Inputs
   , withInps
   , plugBP, (~$), ($~)
@@ -448,8 +450,8 @@ backprop bp xs = backprop' bp (withEvery' @Num l known) (withEvery' @Num l known
 
 runBPOp'
     :: (forall s. BPOp s rs a)
-    -> Prod (Summer) rs
-    -> Prod (Unity) rs
+    -> Prod Summer rs
+    -> Prod Unity rs
     -> Tuple rs
     -> a
 runBPOp' bp ss us = fst . backprop' bp ss us
@@ -460,6 +462,22 @@ runBPOp
     -> Tuple rs
     -> a
 runBPOp bp = fst . backprop bp
+
+gradBPOp'
+    :: (forall s. BPOp s rs a)
+    -> Prod Summer rs
+    -> Prod Unity rs
+    -> Tuple rs
+    -> Tuple rs
+gradBPOp' bp ss us = snd . backprop' bp ss us
+
+gradBPOp
+    :: Every Num rs
+    => (forall s. BPOp s rs a)
+    -> Tuple rs
+    -> Tuple rs
+gradBPOp bp = snd . backprop bp
+
 
 
 backpropWith

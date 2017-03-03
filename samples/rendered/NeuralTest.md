@@ -104,9 +104,8 @@ single-hidden-layer neural network:
 simpleOp
       :: (KnownNat m, KnownNat n, KnownNat o)
       => R m
-      -> R o
-      -> BPOp s '[ L n m, R n, L o n, R o ] Double
-simpleOp inp targ = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
+      -> BPOp s '[ L n m, R n, L o n, R o ] (R o)
+simpleOp inp = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
     -- First layer
     y1  <- matVec   -$ (w1 :< x1 :< Ø)
     z1  <- op2 (+)  -$ (y1 :< b1 :< Ø)
@@ -114,32 +113,48 @@ simpleOp inp targ = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
     -- Second layer
     y2  <- matVec   -$ (w2 :< x2 :< Ø)
     z2  <- op2 (+)  -$ (y2 :< b2 :< Ø)
-    out <- logistic -$ only z2
-    -- Return error squared
-    err <- op2 (-)  -$ (out :< t :< Ø)
-    dot             -$ (err :< err :< Ø)
+    logistic        -$ only z2
   where
     x1 = constRef inp
-    t  = constRef targ
-    
 ```
 
 Now `simpleOp` can be “run” with the input vectors and parameters (a
-`L n m`, `R n`, `L o n`, `R o`, etc.) and calculate their gradients on
-the final `Double` result (the squared error).
+`L n m`, `R n`, `L o n`, `R o`, etc.) and calculate the output of the
+neural net.
+
+``` {.sourceCode .literate .haskell}
+runSimple
+    :: (KnownNat m, KnownNat n, KnownNat o)
+    => R m
+    -> Tuple '[ L n m, R n, L o n, R o ]
+    -> R o
+runSimple inp = runBPOp (simpleOp inp)
+```
+
+But, in defining `simpleOp`, we also generated a graph that *backprop*
+can use to do backpropagation, too!
 
 ``` {.sourceCode .literate .haskell}
 simpleGrad
-    :: (KnownNat m, KnownNat n, KnownNat o)
+    :: forall m n o. (KnownNat m, KnownNat n, KnownNat o)
     => R m
     -> R o
     -> Tuple '[ L n m, R n, L o n, R o ]
-    -> (Double, Tuple '[L n m, R n, L o n, R o])
-simpleGrad inp targ params = backprop (simpleOp inp targ) params
+    -> Tuple '[ L n m, R n, L o n, R o ]
+simpleGrad inp targ params = gradBPOp opError params
+  where
+    opError :: BPOp s '[ L n m, R n, L o n, R o ] Double
+    opError = do
+        res <- simpleOp inp
+        err <- op2 (-) -$ (res :< t   :< Ø)
+        dot            -$ (err :< err :< Ø)
+      where
+        t = constRef targ
 ```
 
-The resulting tuple gives the network’s squared error along with the
-gradient along all of the input tuple.
+The result is the gradient of the input tuple’s components, with respect
+to the `Double` result of `opError` (the squared error). We can then use
+this gradient to do gradient descent.
 
 With Parameter Containers
 =========================

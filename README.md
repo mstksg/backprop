@@ -44,12 +44,11 @@ target `targ`, which is parameterized by two weight matrices and two bias
 vectors.  Vector/matrix types are from the *hmatrix* package.
 
 ~~~haskell
-simpleOp
+neuralNet
       :: (KnownNat m, KnownNat n, KnownNat o)
       => R m
-      -> R o
-      -> BPOp s '[ L n m, R n, L o n, R o ] Double
-simpleOp inp targ = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
+      -> BPOp s '[ L n m, R n, L o n, R o ] (R o)
+neuralNet inp = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
     -- First layer
     y1  <- matVec   -$ (w1 :< x1 :< Ø)
     z1  <- op2 (+)  -$ (y1 :< b1 :< Ø)
@@ -57,14 +56,48 @@ simpleOp inp targ = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
     -- Second layer
     y2  <- matVec   -$ (w2 :< x2 :< Ø)
     z2  <- op2 (+)  -$ (y2 :< b2 :< Ø)
-    out <- logistic -$ only z2
-    -- Return error squared
-    err <- op2 (-)  -$ (out :< t :< Ø)
-    dot             -$ (err :< err :< Ø)
+    logistic        -$ only z2
   where
     x1 = constRef inp
-    t  = constRef targ
 ~~~
+
+Now `neuralNet` can be "run" with the input vectors and parameters (a
+`L n m`, `R n`, `L o n`, `R o`, etc.) and calculate the output of the
+neural net.
+
+~~~haskell
+runNet
+    :: (KnownNat m, KnownNat n, KnownNat o)
+    => R m
+    -> Tuple '[ L n m, R n, L o n, R o ]
+    -> R o
+runNet inp = runBPOp (neuralNet inp)
+~~~
+
+But, in defining `neuralNet`, we also generated a graph that *backprop* can
+use to do backpropagation, too!
+
+~~~haskell
+netGrad
+    :: forall m n o. (KnownNat m, KnownNat n, KnownNat o)
+    => R m
+    -> R o
+    -> Tuple '[ L n m, R n, L o n, R o ]
+    -> Tuple '[ L n m, R n, L o n, R o ]
+netGrad inp targ params = gradBPOp opError params
+  where
+    opError :: BPOp s '[ L n m, R n, L o n, R o ] Double
+    opError = do
+        res <- neuralNet inp
+        err <- op2 (-) -$ (res :< t   :< Ø)
+        dot            -$ (err :< err :< Ø)
+      where
+        t = constRef targ
+~~~
+
+The result is the gradient of the input tuple's components, with respect
+to the `Double` result of `opError` (the squared error).  We can then use
+this gradient to do gradient descent.
 
 A more full annotated example is given [in the repository as a literate haskell
 file][neuraltest], and gives over a full example with a recursive network type.
@@ -72,3 +105,7 @@ It is also [rendered as a pdf][neuraltest-pdf].
 
 [neuraltest]: https://github.com/mstksg/backprop/blob/master/samples/NeuralTest.lhs
 [neuraltest-pdf]: https://github.com/mstksg/backprop/blob/master/samples/rendered/NeuralTest.pdf
+
+Documentation is currently rendered [on github pages][docs]!
+
+[docs]: https://mstksg.github.io/backprop
