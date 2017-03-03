@@ -3,6 +3,7 @@ author:
 - Justin Le
 fontfamily: 'palatino,cmtt'
 geometry: margin=1in
+links-as-notes: true
 title: Neural networks with backprop library
 ---
 
@@ -107,16 +108,16 @@ simpleOp
       -> BPOp s '[ L n m, R n, L o n, R o ] Double
 simpleOp inp targ = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
     -- First layer
-    y1  <- opRef2 w1 x1 $ matVec
-    z1  <- opRef2 y1 b1 $ op2 (+)
-    x2  <- opRef1 z1    $ logistic
+    y1  <- matVec   -$ (w1 :< x1 :< Ø)
+    z1  <- op2 (+)  -$ (y1 :< b1 :< Ø)
+    x2  <- logistic -$ only z1
     -- Second layer
-    y2  <- opRef2 w2 x2 $ matVec
-    z2  <- opRef2 y2 b2 $ op2 (+)
-    out <- opRef1 z2    $ logistic
+    y2  <- matVec   -$ (w2 :< x2 :< Ø)
+    z2  <- op2 (+)  -$ (y2 :< b2 :< Ø)
+    out <- logistic -$ only z2
     -- Return error squared
-    err <- opRef2 out t $ op2 (-)
-    opRef2 err err      $ dot
+    err <- op2 (-)  -$ (out :< t :< Ø)
+    dot             -$ (err :< err :< Ø)
   where
     x1 = constRef inp
     t  = constRef targ
@@ -219,25 +220,25 @@ netOp sbs = go sbs
     go = \case
       SNil -> withInps $ \(x :< n :< Ø) -> do
         -- peek into the NØ using netExternal iso
-        l :< Ø       <- netExternal #<~ n
+        l :< Ø <- netExternal #<~ n
         -- run the 'layerOp' op, with x and l as inputs
-        layerOp ~$ x :< l :< Ø
+        layerOp ~$ (x :< l :< Ø)
       SNat `SCons` ses -> withInps $ \(x :< n :< Ø) -> withSingI ses $ do
         -- peek into the (:&) using the netInternal iso
         l :< n' :< Ø <- netInternal #<~ n
         -- run the 'layerOp' BP, with x and l as inputs
-        z <- layerOp ~$ x :< l :< Ø
+        z <- layerOp ~$ (x :< l :< Ø)
         -- run the 'go ses' BP, with z and n as inputs
-        go ses       ~$ z :< n' :< Ø
+        go ses       ~$ (z :< n' :< Ø)
     layerOp
         :: forall d e. (KnownNat d, KnownNat e)
         => BPOp s '[ R d, Layer d e ] (R e)
     layerOp = withInps $ \(x :< l :< Ø) -> do
         -- peek into the layer using the gTuple iso, auto-generated with SOP.Generic
         w :< b :< Ø <- gTuple #<~ l
-        y           <- opRef2 w x matVec
-        y'          <- opRef2 y b (op2 (+))
-        opRef1 y' logistic
+        y           <- matVec  -$ (w :< x :< Ø)
+        z           <- op2 (+) -$ (y :< b :< Ø)
+        logistic -$ only z
 ```
 
 There’s some singletons work going on here, but it’s fairly standard

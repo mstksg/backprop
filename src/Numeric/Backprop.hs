@@ -33,7 +33,7 @@ module Numeric.Backprop (
   , inpRefs
   , inpRefs'
   -- ** From Ops
-  , opRef
+  , opRef, (-$)
   , opRef1
   , opRef2
   , opRef3
@@ -350,6 +350,14 @@ opRef
     -> Op as a
     -> BP s rs (BPRef s rs a)
 opRef i o = opRef' i o known
+
+infixr 1 -$
+(-$)
+    :: Num a
+    => Op as a
+    -> Prod (BPRef s rs) as
+    -> BP s rs (BPRef s rs a)
+(-$) = flip opRef
 
 constRef :: a -> BPRef s rs a
 constRef = BPRConst

@@ -18,7 +18,7 @@ module Numeric.Backprop.Mono
   ( BP, BPOp, Replicate
   , BPRef
   , constRef
-  , opRef
+  , opRef, (-$)
   , opRef1
   , opRef2
   , opRef3
@@ -27,7 +27,7 @@ module Numeric.Backprop.Mono
   , plugBP
   , inpRef, inpRefs, withInps
   , Op
-  , op0, op1, op2, op3, opN
+  , op1, op2, op3, opN
   , runOp', runOp, gradOp, gradOpWith, gradOpWith'
   , N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10
   , VecT(..), Vec, pattern (:+), (*:), (+:)
@@ -52,9 +52,6 @@ type BP s n a     = BP.BP s (Replicate n a)
 type BPRef s n a  = BP.BPRef s (Replicate n a)
 type BPOp s n a b = BP s n a (BPRef s n a b)
 type Op n a       = BP.Op (Replicate n a)
-
-op0 :: a -> Op N0 r a
-op0 = BP.op0
 
 op1 :: Num a
     => (forall s. AD s (Forward a) -> AD s (Forward a))
@@ -100,6 +97,14 @@ opRef
     -> Op m a b
     -> BP s n a (BPRef s n a b)
 opRef i o = BP.opRef (vecToProd i) o
+
+infixr 1 -$
+(-$)
+    :: Num b
+    => Op m a b
+    -> VecT m (BPRef s n a) a
+    -> BP s n a (BPRef s n a b)
+(-$) = flip opRef
 
 constRef
     :: b
