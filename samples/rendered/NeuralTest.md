@@ -11,9 +11,11 @@ system of relationships. It does so by letting you build an explicit
 graph and keeps track of what nodes depend on what. Let’s use it to
 build neural networks!
 
-Repository source is [on github](https://github.com/mstksg/backprop),
-and so are the [rendered unstable
-docs](https://mstksg.github.io/backprop).
+Repository source is [on github], and so are the [rendered unstable
+docs].
+
+  [on github]: https://github.com/mstksg/backprop
+  [rendered unstable docs]: https://mstksg.github.io/backprop
 
 ``` {.sourceCode .literate .haskell}
 {-# LANGUAGE DeriveGeneric        #-}

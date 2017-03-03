@@ -1,8 +1,8 @@
 #!/usr/bin/env stack
 -- stack --install-ghc runghc --package shake
 
-import Development.Shake
-import Development.Shake.FilePath
+import           Development.Shake
+import           Development.Shake.FilePath
 
 opts = shakeOptions { shakeFiles     = ".shake"
                     , shakeVersion   = "1.0"
@@ -38,11 +38,15 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>=
       need [src]
       cmd "pandoc" "-V geometry:margin=1in"
                    "-V fontfamily:palatino,cmtt"
+                   "-V links-as-notes"
                    "-sS"
                    "--highlight-style tango"
+                   "--reference-links"
+                   "--reference-location block"
                    "-o" f
                    src
 
-    "clean" ~>
+    "clean" ~> do
+      unit $ cmd "stack clean"
       removeFilesAfter ".shake" ["//*"]
 
