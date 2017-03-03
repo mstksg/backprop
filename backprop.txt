@@ -16,22 +16,6 @@ gSOP :: Generic a => Iso' a (Sum Tuple (Code a))
 sum1 :: Iso' (Sum f '[a]) (f a)
 resum1 :: Iso' (f a) (Sum f '[a])
 
-module Data.Type.Util
-vecToProd :: VecT n f a -> Prod f (Replicate n a)
-prodToVec' :: Nat n -> Prod f (Replicate n a) -> VecT n f a
-prodAlong :: VecT n f b -> Prod f (Replicate n a) -> VecT n f a
-finIndex :: Fin n -> Index (Replicate n a) a
-itraverse1_ :: (Applicative h, IxTraversable1 i t) => (forall a. i b a -> f a -> h ()) -> t f b -> h ()
-for1 :: (Applicative h, Traversable1 t) => t f b -> (forall a. f a -> h (g a)) -> h (t g b)
-ifor1 :: (Applicative h, IxTraversable1 i t) => t f b -> (forall a. i b a -> f a -> h (g a)) -> h (t g b)
-zipP :: Prod f as -> Prod g as -> Prod (f :&: g) as
-indexP :: Index as a -> Lens' (Prod g as) (g a)
-reIndex :: forall k (f :: k -> Type) (as :: [k]) (a :: k). Index as a -> Index (f <$> as) (f a)
-prodLength :: Prod f as -> Length as
-withEvery :: forall c f as. (Known Length as, Every c as) => (forall a. c a => f a) -> Prod f as
-withEvery' :: forall c f as. Every c as => Length as -> (forall a. c a => f a) -> Prod f as
-tagSum :: Prod f as -> Sum g as -> Sum (f :&: g) as
-
 module Numeric.Backprop
 data BP s rs b
 type BPOp s rs a = BP s rs (BPRef s rs a)
