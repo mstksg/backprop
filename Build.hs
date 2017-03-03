@@ -3,6 +3,7 @@
 
 import           Development.Shake
 import           Development.Shake.FilePath
+import           System.Directory
 
 opts = shakeOptions { shakeFiles     = ".shake"
                     , shakeVersion   = "1.0"
@@ -22,10 +23,10 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>=
       need ["pdf", "md", "build", "haddocks"]
 
     "pdf" ~>
-      need (map (\f -> "samples/rendered" </> takeFileName f -<.> "pdf") allSrc)
+      need (map (\f -> "renders" </> takeFileName f -<.> "pdf") allSrc)
 
     "md" ~>
-      need (map (\f -> "samples/rendered" </> takeFileName f -<.> "md") allSrc)
+      need (map (\f -> "renders" </> takeFileName f -<.> "md") allSrc)
 
     "build" ~>
       cmd "stack" "install"
@@ -33,9 +34,10 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>=
     "haddocks" ~>
       cmd "jle-git-haddocks"
 
-    ["samples/rendered/*.pdf", "samples/rendered/*.md"] |%> \f -> do
+    ["renders/*.pdf", "renders/*.md"] |%> \f -> do
       let src = "samples" </> takeFileName f -<.> "lhs"
       need [src]
+      liftIO $ createDirectoryIfMissing True "renders"
       cmd "pandoc" "-V geometry:margin=1in"
                    "-V fontfamily:palatino,cmtt"
                    "-V links-as-notes"
