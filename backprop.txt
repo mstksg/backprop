@@ -62,6 +62,8 @@ constRef :: a -> BPRef s rs a
 inpRefs :: Known Length rs => Prod (BPRef s rs) rs
 inpRefs' :: Length rs -> Prod (BPRef s rs) rs
 opRef :: Num a => Prod (BPRef s rs) as -> Op as a -> BP s rs (BPRef s rs a)
+(-$) :: Num a => Op as a -> Prod (BPRef s rs) as -> BP s rs (BPRef s rs a)
+infixr 1 -$
 opRef1 :: Num b => BPRef s rs a -> Op '[a] b -> BP s rs (BPRef s rs b)
 opRef2 :: Num c => BPRef s rs a -> BPRef s rs b -> Op '[a, b] c -> BP s rs (BPRef s rs c)
 opRef3 :: Num d => BPRef s rs a -> BPRef s rs b -> BPRef s rs c -> Op '[a, b, c] d -> BP s rs (BPRef s rs d)
