@@ -19,7 +19,7 @@ module Numeric.Backprop
   , opRef3
   , backprop
   , runBPOp
-  , partsRef, (#<~)
+  , partsRef, (#<~), withParts
   , gSplit
   , splitRefs
   , internally
@@ -34,7 +34,7 @@ module Numeric.Backprop
   , opRef3'
   , backprop'
   , runBPOp'
-  , partsRef'
+  , partsRef', withParts'
   , gSplit'
   , splitRefs'
   , internally'
@@ -140,11 +140,32 @@ partsRef = partsRef' (map1 ((// known) . every @_ @Num) indices)
 
 infixr 1 #<~
 (#<~)
-    :: forall s rs bs b. (Every Num bs, Known Length bs)
+    :: (Every Num bs, Known Length bs)
     => Iso' b (Tuple bs)
     -> BPRef s rs b
     -> BP s rs (Prod (BPRef s rs) bs)
 (#<~) = partsRef
+
+withParts'
+    :: Prod Summer bs
+    -> Prod Unity bs
+    -> Iso' b (Tuple bs)
+    -> BPRef s rs b
+    -> (Prod (BPRef s rs) bs -> BP s rs a)
+    -> BP s rs a
+withParts' ss us i r f = do
+    p <- partsRef' ss us i r
+    f p
+
+withParts
+    :: (Every Num bs, Known Length bs)
+    => Iso' b (Tuple bs)
+    -> BPRef s rs b
+    -> (Prod (BPRef s rs) bs -> BP s rs a)
+    -> BP s rs a
+withParts i r f = do
+    p <- partsRef i r
+    f p
 
 gSplit'
     :: (SOP.Generic b, SOP.Code b ~ '[bs])
