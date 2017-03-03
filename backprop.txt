@@ -47,8 +47,10 @@ Unity :: a -> Unity a
 [getUnity] :: Unity a -> a
 backprop :: forall rs a. Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> (a, Tuple rs)
 runBPOp :: Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> a
+gradBPOp :: Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> Tuple rs
 backprop' :: (forall s. BPOp s rs a) -> Prod (Summer) rs -> Prod (Unity) rs -> Tuple rs -> (a, Tuple rs)
-runBPOp' :: (forall s. BPOp s rs a) -> Prod (Summer) rs -> Prod (Unity) rs -> Tuple rs -> a
+runBPOp' :: (forall s. BPOp s rs a) -> Prod Summer rs -> Prod Unity rs -> Tuple rs -> a
+gradBPOp' :: (forall s. BPOp s rs a) -> Prod Summer rs -> Prod Unity rs -> Tuple rs -> Tuple rs
 withInps :: Known Length rs => (Prod (BPRef s rs) rs -> BP s rs a) -> BP s rs a
 plugBP :: forall s rs as a. (Every Num as, Num a) => Prod (BPRef s rs) as -> BPOp s as a -> BPOp s rs a
 (~$) :: (Every Num as, Num a) => BPOp s as a -> Prod (BPRef s rs) as -> BPOp s rs a
@@ -151,6 +153,8 @@ type BPOp s n a b = BP s n a (BPRef s n a b)
 type BPRef s n a = BPRef s (Replicate n a)
 constRef :: b -> BPRef s n a b
 opRef :: forall s m n a b. Num b => VecT m (BPRef s n a) a -> Op m a b -> BP s n a (BPRef s n a b)
+(-$) :: Num b => Op m a b -> VecT m (BPRef s n a) a -> BP s n a (BPRef s n a b)
+infixr 1 -$
 opRef1 :: forall s n a b. Num b => BPRef s n a a -> Op N1 a b -> BP s n a (BPRef s n a b)
 opRef2 :: forall s n a b. Num b => BPRef s n a a -> BPRef s n a a -> Op N2 a b -> BP s n a (BPRef s n a b)
 opRef3 :: forall s n a b. Num b => BPRef s n a a -> BPRef s n a a -> BPRef s n a a -> Op N3 a b -> BP s n a (BPRef s n a b)
@@ -161,7 +165,6 @@ inpRef :: Fin n -> BPRef s n a a
 inpRefs :: Known Nat n => VecT n (BPRef s n a) a
 withInps :: Known Nat n => (VecT n (BPRef s n a) a -> BP s n a b) -> BP s n a b
 type Op n a = Op (Replicate n a)
-op0 :: a -> Op N0 r a
 op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op N1 a a
 op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op N2 a a
 op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op N3 a a
