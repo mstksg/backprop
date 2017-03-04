@@ -178,79 +178,93 @@ _FRInternal f = \case
 
 
 
+
+
+
+
+
+
+
 -- internal helpers, which are done easily using functions in
 -- Numeric.Backprop.Op, but are duplicated here to prevent cyclic
 -- dependencies
 
-opPlus :: Num a =&gt; Op '[a, a] a
-opPlus = Op $ \(I x :&lt; I y :&lt; &#216;) -&gt;
-    (x + y, \case Nothing -&gt; 1 ::&lt; 1 ::&lt; &#216;
-                  Just g  -&gt; g ::&lt; g ::&lt; &#216;
-    )
+op0 :: (Known Length as, Every Num as) =&gt; a -&gt; Op as a
+op0 x = Op $ \xs -&gt; (x, const (imap1 (\ix _ -&gt; 0 \\ every @_ @Num ix) xs))
 
-opMinus :: Num a =&gt; Op '[a, a] a
-opMinus = Op $ \(I x :&lt; I y :&lt; &#216;) -&gt;
-    (x - y, \case Nothing -&gt; 1 ::&lt; (-1) ::&lt; &#216;
-                  Just g  -&gt; g ::&lt; (-g) ::&lt; &#216;
-    )
+op1 :: (a -&gt; b) -&gt; (a -&gt; a) -&gt; (a -&gt; b -&gt; a) -&gt; Op '[a] b
+op1 f df df' = Op $ \(I x :&lt; &#216;) -&gt; (f x, only_ . maybe (df x) (df' x))
 
-opTimes :: Num a =&gt; Op '[a, a] a
-opTimes = Op $ \(I x :&lt; I y :&lt; &#216;) -&gt;
-    (x * y, \case Nothing -&gt; y     ::&lt; x     ::&lt; &#216;
-                  Just g  -&gt; (g*y) ::&lt; (x*g) ::&lt; &#216;
-    )
-
-opNegate :: Num a =&gt; Op '[a] a
-opNegate = Op $ \(I x :&lt; &#216;) -&gt;
-    (negate x, \case Nothing -&gt; (-1) ::&lt; &#216;
-                     Just g  -&gt; (-g) ::&lt; &#216;
-    )
-
-opAbs :: Num a =&gt; Op '[a] a
-opAbs = Op $ \(I x :&lt; &#216;) -&gt;
-    (abs x   , \case Nothing -&gt; signum x       ::&lt; &#216;
-                     Just g  -&gt; (g * signum x) ::&lt; &#216;
-    )
-
-opSignum :: Num a =&gt; Op '[a] a
-opSignum = Op $ \(I x :&lt; &#216;) -&gt; (signum x, const (0 ::&lt; &#216;))
-
-opRecip :: Fractional a =&gt; Op '[a] a
-opRecip = Op $ \(I x :&lt; &#216;) -&gt;
-    (recip x, \case Nothing -&gt; (-1/(x*x)) ::&lt; &#216;
-                    Just g  -&gt; (-g/(x*x)) ::&lt; &#216;
-    )
-
-
-
-
+op2 :: (a -&gt; b -&gt; c) -&gt; (a -&gt; b -&gt; (a, b)) -&gt; (a -&gt; b -&gt; c -&gt; (a, b)) -&gt; Op '[a, b] c
+op2 f df df' = Op $ \(I x :&lt; I y :&lt; &#216;) -&gt; (f x y, maybe (tup $ df x y) (tup . df' x y))
+  where
+    tup (x, y) = x ::&lt; y ::&lt; &#216;
 
 instance (Known Length as, Every Num as, Num a) =&gt; Num (Op as a) where
-    o1 + o2       = composeOp summers (o1 :&lt; o2 :&lt; &#216;) opPlus
-    o1 - o2       = composeOp summers (o1 :&lt; o2 :&lt; &#216;) opMinus
-    o1 * o2       = composeOp summers (o1 :&lt; o2 :&lt; &#216;) opTimes
-    negate o      = composeOp summers (o :&lt; &#216;) opNegate
-    signum o      = composeOp summers (o :&lt; &#216;) opSignum
-    abs    o      = composeOp summers (o :&lt; &#216;) opAbs
-    fromInteger x = Op $ \xs -&gt; (fromInteger x, const (imap1 (\ix _ -&gt; 0 \\ every @_ @Num ix) xs))
-
-instance (Known Length as, Every Fractional as, Every Num as, Fractional a) =&gt; Fractional (Op as a) where
-    recip o        = composeOp summers (o :&lt; &#216;) . Op $ \(I x :&lt; &#216;) -&gt;
-                       (1/x, \case Nothing -&gt; (-1 / (x * x)) ::&lt; &#216;
-                                   Just g  -&gt; (-g / (x * x)) ::&lt; &#216;
-                       )
-    fromRational x = Op $ \xs -&gt; (fromRational x, const (imap1 (\ix _ -&gt; 0 \\ every @_ @Fractional ix) xs))
+    o1 + o2       = composeOp summers (o1 :&lt; o2 :&lt; &#216;) $ op2 (+) (\_ _ -&gt; (1,  1)) (\_ _ g -&gt; (g,  g))
+    o1 - o2       = composeOp summers (o1 :&lt; o2 :&lt; &#216;) $ op2 (-) (\_ _ -&gt; (1, -1)) (\_ _ g -&gt; (g, -g))
+    o1 * o2       = composeOp summers (o1 :&lt; o2 :&lt; &#216;) $ op2 (*) (\x y -&gt; (y,  x)) (\x y g -&gt; (g*y, x*g))
+    negate o      = composeOp summers (o :&lt; &#216;) $ op1 negate (const (-1)) (const negate)
+    signum o      = composeOp summers (o :&lt; &#216;) $ op1 signum (const 0)    (const (const 0))
+    abs    o      = composeOp summers (o :&lt; &#216;) $ op1 abs    signum       (\x g -&gt; signum x * g)
+    fromInteger x = op0 (fromInteger x)
 
 instance Num a =&gt; Num (BPRef s rs a) where
-    r1 + r2       = BPROp (r1 :&lt; r2 :&lt; &#216;) opPlus
-    r1 - r2       = BPROp (r1 :&lt; r2 :&lt; &#216;) opMinus
-    r1 * r2       = BPROp (r1 :&lt; r2 :&lt; &#216;) opTimes
-    negate r      = BPROp (r :&lt; &#216;) opNegate
-    signum r      = BPROp (r :&lt; &#216;) opSignum
-    abs    r      = BPROp (r :&lt; &#216;) opAbs
+    r1 + r2       = BPROp (r1 :&lt; r2 :&lt; &#216;) $ op2 (+) (\_ _ -&gt; (1,  1)) (\_ _ g -&gt; (g,  g))
+    r1 - r2       = BPROp (r1 :&lt; r2 :&lt; &#216;) $ op2 (-) (\_ _ -&gt; (1, -1)) (\_ _ g -&gt; (g, -g))
+    r1 * r2       = BPROp (r1 :&lt; r2 :&lt; &#216;) $ op2 (*) (\x y -&gt; (y,  x)) (\x y g -&gt; (g*y, x*g))
+    negate r      = BPROp (r :&lt; &#216;) $ op1 negate (const (-1)) (const negate)
+    signum r      = BPROp (r :&lt; &#216;) $ op1 signum (const 0)    (const (const 0))
+    abs    r      = BPROp (r :&lt; &#216;) $ op1 abs    signum       (\x g -&gt; signum x * g)
     fromInteger x = BPRConst (fromIntegral x)
 
+instance (Known Length as, Every Fractional as, Every Num as, Fractional a) =&gt; Fractional (Op as a) where
+    recip o        = composeOp summers (o :&lt; &#216;) $ op1 recip (\x -&gt; -1/(x*x)) (\x g -&gt; -g/(x*x))
+    fromRational x = op0 (fromRational x)
+
 instance Fractional a =&gt; Fractional (BPRef s rs a) where
-    recip r        = BPROp (r :&lt; &#216;) opRecip
+    recip r        = BPROp (r :&lt; &#216;) $ op1 recip (\x -&gt; -1/(x*x)) (\x g -&gt; -g/(x*x))
     fromRational x = BPRConst (fromRational x)
+
+-- TODO: logBase and (**)
+instance (Known Length as, Every Floating as, Every Fractional as, Every Num as, Floating a) =&gt; Floating (Op as a) where
+    pi      = op0 pi
+    exp   o = composeOp summers (o :&lt; &#216;) $ op1 exp  exp                        (\x g -&gt; exp x * g)
+    log   o = composeOp summers (o :&lt; &#216;) $ op1 log  recip                      (\x g -&gt; g / x    )
+    sqrt  o = composeOp summers (o :&lt; &#216;) $ op1 sqrt (\x -&gt; 1 / (2 * sqrt x))   (\x g -&gt; g / (2 * sqrt x))
+    sin   o = composeOp summers (o :&lt; &#216;) $ op1 sin  cos                        (\x g -&gt;  g * cos x)
+    cos   o = composeOp summers (o :&lt; &#216;) $ op1 cos  (negate . sin)             (\x g -&gt; -g * sin x)
+    tan   o = composeOp summers (o :&lt; &#216;) $ op1 tan  (\x -&gt; 1 / (cos x ^ 2))    (\x g -&gt;  g / (cos x ^2))
+    asin  o = composeOp summers (o :&lt; &#216;) $ op1 asin (\x -&gt;  1 / sqrt(1 - x*x)) (\x g -&gt;  g / sqrt(1 - x*x))
+    acos  o = composeOp summers (o :&lt; &#216;) $ op1 acos (\x -&gt; -1 / sqrt(1 - x*x)) (\x g -&gt; -g / sqrt(1 - x*x))
+    atan  o = composeOp summers (o :&lt; &#216;) $ op1 atan (\x -&gt;  1 / (1 + x*x)    ) (\x g -&gt;  g / (1 + x*x))
+    sinh  o = composeOp summers (o :&lt; &#216;) $ op1 sinh cosh                       (\x g -&gt; g * cosh x )
+    cosh  o = composeOp summers (o :&lt; &#216;) $ op1 cosh sinh                       (\x g -&gt; g * sinh x )
+    asinh o = composeOp summers (o :&lt; &#216;) $ op1 asinh (\x -&gt; 1 / sqrt(1 + x*x)) (\x g -&gt; g / sqrt(1 + x*x))
+    acosh o = composeOp summers (o :&lt; &#216;) $ op1 acosh (\x -&gt; 1 / (sqrt(x-1)*sqrt(x+1))) (\x g -&gt; g / (sqrt(x-1)*sqrt(x+1)))
+    atanh o = composeOp summers (o :&lt; &#216;) $ op1 atanh (\x -&gt;  1 / (1 - x*x)) (\x g -&gt;  g / (1 - x*x))
+
+instance Floating a =&gt; Floating (BPRef s rs a) where
+    pi      = BPRConst pi
+    exp   r = BPROp (r :&lt; &#216;) $ op1 exp  exp                        (\x g -&gt; exp x * g)
+    log   r = BPROp (r :&lt; &#216;) $ op1 log  recip                      (\x g -&gt; g / x    )
+    sqrt  r = BPROp (r :&lt; &#216;) $ op1 sqrt (\x -&gt; 1 / (2 * sqrt x))   (\x g -&gt; g / (2 * sqrt x))
+    sin   r = BPROp (r :&lt; &#216;) $ op1 sin  cos                        (\x g -&gt;  g * cos x)
+    cos   r = BPROp (r :&lt; &#216;) $ op1 cos (negate . sin)              (\x g -&gt; -g * sin x)
+    tan   r = BPROp (r :&lt; &#216;) $ op1 tan  (\x -&gt; 1 / (cos x ^ 2))    (\x g -&gt;  g / (cos x ^2))
+    asin  r = BPROp (r :&lt; &#216;) $ op1 asin (\x -&gt;  1 / sqrt(1 - x*x)) (\x g -&gt;  g / sqrt(1 - x*x))
+    acos  r = BPROp (r :&lt; &#216;) $ op1 acos (\x -&gt; -1 / sqrt(1 - x*x)) (\x g -&gt; -g / sqrt(1 - x*x))
+    atan  r = BPROp (r :&lt; &#216;) $ op1 atan (\x -&gt;  1 / (1 + x*x)    ) (\x g -&gt;  g / (1 + x*x))
+    sinh  r = BPROp (r :&lt; &#216;) $ op1 sinh cosh                       (\x g -&gt; g * cosh x )
+    cosh  r = BPROp (r :&lt; &#216;) $ op1 cosh sinh                       (\x g -&gt; g * sinh x )
+    asinh r = BPROp (r :&lt; &#216;) $ op1 asinh (\x -&gt; 1 / sqrt(1 + x*x)) (\x g -&gt; g / sqrt(1 + x*x))
+    acosh r = BPROp (r :&lt; &#216;) $ op1 acosh (\x -&gt; 1 / (sqrt(x-1)*sqrt(x+1))) (\x g -&gt; g / (sqrt(x-1)*sqrt(x+1)))
+    atanh r = BPROp (r :&lt; &#216;) $ op1 atanh (\x -&gt; 1 / (1 - x*x))     (\x g -&gt;  g / (1 - x*x))
+
+
+
+
+
+
+
 </span></pre></body></html>
