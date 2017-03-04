@@ -42,7 +42,7 @@ opCoerce' :: Coercible a b => Unity a -> Op '[a] b
 opTup' :: Prod Unity as -> Op as (Tuple as)
 opIso' :: Unity a -> Iso' a b -> Op '[a] b
 
-module Numeric.Backprop.Explicit
+module Numeric.Backprop
 data BP s rs b
 type BPOp s rs a = BP s rs (BPRef s rs a)
 data BPRef :: Type -> [Type] -> Type -> Type
@@ -155,7 +155,7 @@ backprop' :: Prod Summer rs -> Prod Unity rs -> (forall s. Prod (BPRef s rs) rs 
 grad' :: Prod Summer rs -> Prod Unity rs -> (forall s. Prod (BPRef s rs) rs -> BPRef s rs a) -> Tuple rs -> Tuple rs
 eval' :: Prod Summer rs -> Prod Unity rs -> (forall s. Prod (BPRef s rs) rs -> BPRef s rs a) -> Tuple rs -> a
 
-module Numeric.Backprop.Mono.Explicit
+module Numeric.Backprop.Mono
 type BP s n a = BP s (Replicate n a)
 type BPOp s n a b = BP s n a (BPRef s n a b)
 type BPRef s n a = BPRef s (Replicate n a)
