@@ -87,7 +87,7 @@ netGrad inp targ params = gradBPOp opError params
     opError :: BPOp s '[ L n m, R n, L o n, R o ] Double
     opError = do
         res <- simpleOp inp
-        err <- op2 (-) -$ (res :< t :< Ø)
+        err <- bindRef $ res - t
         dot -$ (err :< err :< Ø)
       where
         t = constRef targ

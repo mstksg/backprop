@@ -26,7 +26,10 @@ module Numeric.Backprop (
   , plugBP'
   -- * Refs
   , constRef
-  , inpRef, inpRefs, inpRefs'
+  , inpRef, inpRefs
+  , bindRef
+  , inpRefs'
+  , bindRef'
   -- ** From Ops
   , opRef, (-$)
   , opRef1, opRef2, opRef3
@@ -88,18 +91,18 @@ type BPOp s rs a = BP s rs (BPRef s rs a)
 
 opRef'
     :: forall s rs as a. ()
-    => Prod (BPRef s rs) as
+    => Summer a
+    -> Prod (BPRef s rs) as
     -> Op as a
-    -> Summer a
     -> BP s rs (BPRef s rs a)
-opRef' i o sm = do
+opRef' s i o = do
     xs <- traverse1 (fmap I . BP . resolveRef) i
     let (res, gf) = runOp' o xs
         bp = BPN { _bpnOut       = only $ FRInternal []
                  , _bpnRes       = only_ res
                  , _bpnGradFunc  = return . gf . head'
                  , _bpnGradCache = Nothing
-                 , _bpnSummer    = only sm
+                 , _bpnSummer    = only s
                  }
     r <- BP . liftBase $ newSTRef bp
     itraverse1_ (registerRef . flip IRNode r) i
@@ -359,7 +362,7 @@ opRef
     => Prod (BPRef s rs) as
     -> Op as a
     -> BP s rs (BPRef s rs a)
-opRef i o = opRef' i o known
+opRef = opRef' known
 
 infixr 1 -$
 (-$)
@@ -373,26 +376,26 @@ constRef :: a -> BPRef s rs a
 constRef = BPRConst
 
 opRef1'
-    :: BPRef s rs a
+    :: Summer b
+    -> BPRef s rs a
     -> Op '[a] b
-    -> Summer b
     -> BP s rs (BPRef s rs b)
-opRef1' r = opRef' (r :< Ø)
+opRef1' s r = opRef' s (r :< Ø)
 
 opRef1
     :: Num b
     => BPRef s rs a
     -> Op '[a] b
     -> BP s rs (BPRef s rs b)
-opRef1 r o = opRef1' r o known
+opRef1 = opRef1' known
 
 opRef2'
-    :: BPRef s rs a
+    :: Summer c
+    -> BPRef s rs a
     -> BPRef s rs b
     -> Op '[a,b] c
-    -> Summer c
     -> BP s rs (BPRef s rs c)
-opRef2' rx ry = opRef' (rx :< ry :< Ø)
+opRef2' s rx ry = opRef' s (rx :< ry :< Ø)
 
 opRef2
     :: Num c
@@ -400,16 +403,16 @@ opRef2
     -> BPRef s rs b
     -> Op '[a,b] c
     -> BP s rs (BPRef s rs c)
-opRef2 rx ry o = opRef2' rx ry o known
+opRef2 = opRef2' known
 
 opRef3'
-    :: BPRef s rs a
+    :: Summer d
+    -> BPRef s rs a
     -> BPRef s rs b
     -> BPRef s rs c
     -> Op '[a,b,c] d
-    -> Summer d
     -> BP s rs (BPRef s rs d)
-opRef3' rx ry rz = opRef' (rx :< ry :< rz :< Ø)
+opRef3' s rx ry rz = opRef' s (rx :< ry :< rz :< Ø)
 
 opRef3
     :: Num d
@@ -418,7 +421,25 @@ opRef3
     -> BPRef s rs c
     -> Op '[a,b,c] d
     -> BP s rs (BPRef s rs d)
-opRef3 rx ry rz o = opRef3' rx ry rz o known
+opRef3 = opRef3' known
+
+bindRef'
+    :: Summer a
+    -> BPRef s rs a
+    -> BP s rs (BPRef s rs a)
+bindRef' s r = case r of
+    BPRNode  _  _ -> return r
+    BPRInp   _    -> return r
+    BPRConst _    -> return r
+    BPROp    rs o -> opRef' s rs o
+
+bindRef
+    :: Num a
+    => BPRef s rs a
+    -> BP s rs (BPRef s rs a)
+bindRef = bindRef' known
+
+
 
 backwardPass
     :: forall s rs a. ()

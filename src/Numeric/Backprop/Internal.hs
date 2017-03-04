@@ -106,9 +106,9 @@ instance Monoid (ForwardRefs s rs a) where
     mempty  = FRInternal []
     mappend = \case
         FRInternal rs -> \case
-          FRInternal rs' -> FRInternal (rs ++ rs')
-          FRTerminal g   -> FRTerminal g
-        FRTerminal g  -> \_ -> FRTerminal g
+          FRInternal rs'   -> FRInternal (rs ++ rs')
+          t@(FRTerminal _) -> t
+        t@(FRTerminal _)   -> \_ -> t
 
 data BPState :: Type -> [Type] -> Type where
     BPS :: { _bpsSources :: !(Prod (ForwardRefs s rs) rs)
@@ -234,7 +234,7 @@ instance (Known Length as, Every Floating as, Every Fractional as, Every Num as,
     sqrt  o = composeOp summers (o :< Ø) $ op1 sqrt (\x -> 1 / (2 * sqrt x))   (\x g -> g / (2 * sqrt x))
     sin   o = composeOp summers (o :< Ø) $ op1 sin  cos                        (\x g ->  g * cos x)
     cos   o = composeOp summers (o :< Ø) $ op1 cos  (negate . sin)             (\x g -> -g * sin x)
-    tan   o = composeOp summers (o :< Ø) $ op1 tan  (\x -> 1 / (cos x ^ 2))    (\x g ->  g / (cos x ^2))
+    tan   o = composeOp summers (o :< Ø) $ op1 tan  (\x -> 1 / (cos x ** 2))   (\x g ->  g / (cos x ** 2))
     asin  o = composeOp summers (o :< Ø) $ op1 asin (\x ->  1 / sqrt(1 - x*x)) (\x g ->  g / sqrt(1 - x*x))
     acos  o = composeOp summers (o :< Ø) $ op1 acos (\x -> -1 / sqrt(1 - x*x)) (\x g -> -g / sqrt(1 - x*x))
     atan  o = composeOp summers (o :< Ø) $ op1 atan (\x ->  1 / (1 + x*x)    ) (\x g ->  g / (1 + x*x))
@@ -251,7 +251,7 @@ instance Floating a => Floating (BPRef s rs a) where
     sqrt  r = BPROp (r :< Ø) $ op1 sqrt (\x -> 1 / (2 * sqrt x))   (\x g -> g / (2 * sqrt x))
     sin   r = BPROp (r :< Ø) $ op1 sin  cos                        (\x g ->  g * cos x)
     cos   r = BPROp (r :< Ø) $ op1 cos (negate . sin)              (\x g -> -g * sin x)
-    tan   r = BPROp (r :< Ø) $ op1 tan  (\x -> 1 / (cos x ^ 2))    (\x g ->  g / (cos x ^2))
+    tan   r = BPROp (r :< Ø) $ op1 tan  (\x -> 1 / (cos x ** 2))   (\x g ->  g / (cos x ** 2))
     asin  r = BPROp (r :< Ø) $ op1 asin (\x ->  1 / sqrt(1 - x*x)) (\x g ->  g / sqrt(1 - x*x))
     acos  r = BPROp (r :< Ø) $ op1 acos (\x -> -1 / sqrt(1 - x*x)) (\x g -> -g / sqrt(1 - x*x))
     atan  r = BPROp (r :< Ø) $ op1 atan (\x ->  1 / (1 + x*x)    ) (\x g ->  g / (1 + x*x))

@@ -122,7 +122,7 @@ use to do backpropagation, too!
 >     opError :: BPOp s '[ L n m, R n, L o n, R o ] Double
 >     opError = do
 >         res <- simpleOp inp
->         err <- op2 (-) -$ (res :< t :< Ø)
+>         err <- bindRef $ res - t
 >         dot -$ (err :< err :< Ø)
 >       where
 >         t = constRef targ
@@ -231,13 +231,14 @@ Gradient Descent
 
 Now we can do simple gradient descent.  Defining an error function:
 
-> err :: KnownNat m
+> errOp
+>     :: KnownNat m
 >     => R m
 >     -> BPRef s rs (R m)
 >     -> BPOp s rs Double
-> err targ r = do
->     d <- op2 (-) -$ (r :< t :< Ø)
->     dot          -$ (d :< d :< Ø)
+> errOp targ r = do
+>     err <- bindRef $ r - t
+>     dot -$ (err :< err :< Ø)
 >   where
 >     t = constRef targ
 
@@ -252,7 +253,7 @@ has a `Num` instance, so we can use `(-)` and `(*)` etc.
 >     -> R c
 >     -> Network a bs c
 >     -> Network a bs c
-> train r x t n = case backprop (err t =<< netOp sing) (x ::< n ::< Ø) of
+> train r x t n = case backprop (errOp t =<< netOp sing) (x ::< n ::< Ø) of
 >     (_, _ :< I g :< Ø) -> n - (realToFrac r * g)
 
 (`(::<)` is cons and `Ø` is nil for tuples.)
