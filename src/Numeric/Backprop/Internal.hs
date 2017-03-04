@@ -6,7 +6,6 @@
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE PolyKinds                  #-}
-{-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeApplications           #-}
@@ -16,7 +15,7 @@
 {-# LANGUAGE UndecidableInstances       #-}
 
 module Numeric.Backprop.Internal
- ( Op(..), composeOp, op1, op1', opN, opN'
+ ( Op(..), composeOp
  , Summer(..), summers, summers'
  , Unity(..), unities, unities'
  , BPState(..), bpsSources
@@ -32,27 +31,20 @@ module Numeric.Backprop.Internal
 import           Control.Monad.Reader
 import           Control.Monad.ST
 import           Control.Monad.State
-import           Data.Bifunctor
 import           Data.Kind
-import           Data.List                   (foldl')
-import           Data.Reflection             (Reifies)
+import           Data.List             (foldl')
 import           Data.STRef
 import           Data.Type.Combinator
 import           Data.Type.Conjunction
 import           Data.Type.Index
 import           Data.Type.Length
-import           Data.Type.Nat
 import           Data.Type.Product
 import           Data.Type.Util
-import           Data.Type.Vector
 import           Lens.Micro
 import           Lens.Micro.TH
-import           Numeric.AD                  (AD, grad', diff')
-import           Numeric.AD.Internal.Reverse (Reverse, Tape)
-import           Numeric.AD.Mode.Forward     (Forward)
 import           Type.Class.Higher
 import           Type.Class.Known
-import           Type.Family.Nat
+import           Type.Class.Witness
 
 -- instead of Tuple as, Prod Diff as, where Diff can be a value, or zero,
 -- or one?
@@ -68,47 +60,41 @@ composeOp ss os o = Op $ \xs ->
         (z, gFz) = runOp' o ys
     in  (z, map1 (\(s :&: gs) -> I $ runSummer s gs)
           . zipP ss
-          . foldr (\x -> map1 (uncurryFan (\(I x) -> (x:))) . zipP x) (map1 (const []) ss)
+          . foldr (\x -> map1 (uncurryFan (\(I y) -> (y:))) . zipP x) (map1 (const []) ss)
           . toList (\(oc :&: I g) -> runOpCont oc (Just g))
           . zipP conts . gFz
         )
 
-op1'
-    :: (a -> (b, Maybe b -> a))
-    -> Op '[a] b
-op1' f = Op $ \case
-    I x :< Ø ->
-      let (y, dx) = f x
-      in  (y, only_ . dx)
-
-op1 :: Num a
-    => (forall s. AD s (Forward a) -> AD s (Forward a))
-    -> Op '[a] a
-op1 f = op1' $ \x ->
-    let (z, dx) = diff' f x
-    in  (z, maybe dx (* dx))
-
-opN' :: (Known Nat n)
-     => (Vec n a -> (b, Maybe b -> Vec n a))
-     -> Op (Replicate n a) b
-opN' f = Op $ (second . fmap) vecToProd
-            . f
-            . prodToVec' known
-
-opN :: (Num a, Known Nat n)
-    => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a)
-    -> Op (Replicate n a) a
-opN f = opN' $ \xs ->
-    let (y, dxs) = grad' f xs
-    in  (y, maybe dxs (\q -> (q *) <$> dxs))
-
 instance (Known Length as, Every Num as, Num a) => Num (Op as a) where
-    o1 + o2   = composeOp summers (o1 :< o2 :< Ø) (opN $ \(I x :* I y :* ØV) -> x + y   )
-    o1 * o2   = composeOp summers (o1 :< o2 :< Ø) (opN $ \(I x :* I y :* ØV) -> x * y   )
-    o1 - o2   = composeOp summers (o1 :< o2 :< Ø) (opN $ \(I x :* I y :* ØV) -> x - y   )
-    negate o1 = composeOp summers (only o1)       (op1 negate)
-    abs    o1 = composeOp summers (only o1)       (op1 abs   )
-    signum o1 = composeOp summers (only o1)       (op1 signum)
+    o1 + o2 = composeOp summers (o1 :< o2 :< Ø) . Op $ \(I x :< I y :< Ø) ->
+                (x + y, \case Nothing -> 1 ::< 1 ::< Ø
+                              Just g  -> g ::< g ::< Ø
+                )
+    o1 - o2 = composeOp summers (o1 :< o2 :< Ø) . Op $ \(I x :< I y :< Ø) ->
+                (x - y, \case Nothing -> 1 ::< (-1) ::< Ø
+                              Just g  -> g ::< (-g) ::< Ø
+                )
+    o1 * o2 = composeOp summers (o1 :< o2 :< Ø) . Op $ \(I x :< I y :< Ø) ->
+                (x * y, \case Nothing -> y     ::< x     ::< Ø
+                              Just g  -> (g*y) ::< (x*g) ::< Ø
+                )
+    negate o = composeOp summers (o :< Ø) . Op $ \(I x :< Ø) ->
+                 (negate x, \case Nothing -> (-1) ::< Ø
+                                  Just g  -> (-g) ::< Ø
+                 )
+    signum o = composeOp summers (o :< Ø) . Op $ \(I x :< Ø) -> (signum x, const (0 :< Ø))
+    abs    o = composeOp summers (o :< Ø) . Op $ \(I x :< Ø) ->
+                 (abs x   , \case Nothing -> signum x       ::< Ø
+                                  Just g  -> (g * signum x) ::< Ø
+                 )
+    fromInteger i = Op $ \xs -> (fromInteger i, const (imap1 (\i _ -> 0 \\ every @_ @Num i) xs))
+
+instance (Known Length as, Every Fractional as, Every Num as, Fractional a) => Fractional (Op as a) where
+    recip o = composeOp summers (o :< Ø) . Op $ \(I x :< Ø) ->
+                (1/x, \case Nothing -> (-1 / (x * x)) ::< Ø
+                            Just g  -> (-g / (x * x)) ::< Ø
+                )
+    fromRational r = Op $ \xs -> (fromRational r, const (imap1 (\i _ -> 0 \\ every @_ @Fractional i) xs))
 
 newtype Summer a = Summer { runSummer :: [a] -> a }
 newtype Unity  a = Unity  { getUnity  :: a        }
