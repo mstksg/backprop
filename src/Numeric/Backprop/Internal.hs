@@ -31,18 +31,37 @@ import           Control.Monad.Reader
 import           Control.Monad.ST
 import           Control.Monad.State
 import           Data.Kind
+import           Data.List             (foldl')
 import           Data.STRef
+import           Data.Type.Combinator
+import           Data.Type.Conjunction
 import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Product
 import           Data.Type.Util
 import           Lens.Micro
 import           Lens.Micro.TH
+import           Type.Class.Higher
 import           Type.Class.Known
 
 -- instead of Tuple as, Prod Diff as, where Diff can be a value, or zero,
 -- or one?
 newtype Op as a = Op { runOp' :: Tuple as -> (a, Maybe a -> Tuple as) }
+
+newtype OpCont as a = OC { runOpCont :: Maybe a -> Tuple as }
+
+composeOp :: Prod Summer as -> Prod (Op as) bs -> Op bs c -> Op as c
+composeOp ss os o = Op $ \xs ->
+    let (ys, conts) = unzipP
+                    . map1 ((\(x, c) -> I x :&: OC c) . flip runOp' xs)
+                    $ os
+        (z, gFz) = runOp' o ys
+    in  (z, map1 (\(s :&: gs) -> I $ runSummer s gs)
+          . zipP ss
+          . foldr (\x -> map1 (uncurryFan (\(I x) -> (x:))) . zipP x) (map1 (const []) ss)
+          . toList (\(oc :&: I g) -> runOpCont oc (Just g))
+          . zipP conts . gFz
+        )
 
 newtype Summer a = Summer { runSummer :: [a] -> a }
 newtype Unity  a = Unity  { getUnity  :: a        }

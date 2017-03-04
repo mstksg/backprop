@@ -17,8 +17,9 @@
 module Data.Type.Util where
 
 import           Control.Applicative
+import           Data.Bifunctor
 import           Data.Kind
-import           Data.Monoid hiding (Sum)
+import           Data.Monoid hiding    (Sum)
 import           Data.Type.Conjunction
 import           Data.Type.Fin
 import           Data.Type.Index
@@ -129,6 +130,13 @@ zipP = \case
       Ø       -> Ø
     x :< xs -> \case
       y :< ys -> x :&: y :< zipP xs ys
+
+unzipP
+    :: Prod (f :&: g) as
+    -> (Prod f as, Prod g as)
+unzipP = \case
+    Ø               -> (Ø, Ø)
+    (x :&: y) :< zs -> bimap (x :<) (y :<) (unzipP zs)
 
 indexP :: Index as a -> Lens' (Prod g as) (g a)
 indexP = \case
