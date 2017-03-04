@@ -2,6 +2,8 @@
 {-# LANGUAGE RankNTypes       #-}
 
 module Numeric.Backprop.Implicit (
+    backprop, grad, eval
+  , backprop', grad', eval'
   ) where
 
 import           Data.Type.Index
@@ -41,4 +43,19 @@ grad
     -> Tuple rs
     -> Tuple rs
 grad f = BP.gradBPOp (return $ f BP.inpRefs)
+
+eval'
+    :: Prod Summer rs
+    -> Prod Unity rs
+    -> (forall s. Prod (BPRef s rs) rs -> BPRef s rs a)
+    -> Tuple rs
+    -> a
+eval' ss us f = BP.runBPOp' ss us (return $ f (BP.inpRefs' (prodLength ss)))
+  
+eval
+    :: (Known Length rs, Every Num rs)
+    => (forall s. Prod (BPRef s rs) rs -> BPRef s rs a)
+    -> Tuple rs
+    -> a
+eval f = BP.runBPOp (return $ f BP.inpRefs)
 
