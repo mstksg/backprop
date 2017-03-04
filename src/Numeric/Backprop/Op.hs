@@ -30,6 +30,7 @@ import           Numeric.AD
 import           Numeric.AD.Internal.Reverse    (Reverse, Tape)
 import           Numeric.AD.Mode.Forward hiding (grad')
 import           Numeric.Backprop.Internal
+import           Numeric.Backprop.Internal
 import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness
@@ -80,14 +81,6 @@ op0 :: a -> Op '[] a
 op0 x = Op $ \case
     Ø -> (x, const Ø)
 
-op1'
-    :: (a -> (b, Maybe b -> a))
-    -> Op '[a] b
-op1' f = Op $ \case
-    I x :< Ø ->
-      let (y, dx) = f x
-      in  (y, only_ . dx)
-
 op2'
     :: (a -> b -> (c, Maybe c -> (a, b)))
     -> Op '[a,b] c
@@ -104,20 +97,6 @@ op3' f = Op $ \case
       let (q, dxdydz) = f x y z
       in  (q, (\(dx, dy, dz) -> dx ::< dy ::< dz ::< Ø) . dxdydz)
 
-opN' :: (Known Nat n)
-     => (Vec n a -> (b, Maybe b -> Vec n a))
-     -> Op (Replicate n a) b
-opN' f = Op $ (second . fmap) vecToProd
-            . f
-            . prodToVec' known
-
-op1 :: Num a
-    => (forall s. AD s (Forward a) -> AD s (Forward a))
-    -> Op '[a] a
-op1 f = op1' $ \x ->
-    let (z, dx) = diff' f x
-    in  (z, maybe dx (* dx))
-
 op2 :: Num a
     => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a)
     -> Op '[a,a] a
@@ -127,10 +106,3 @@ op3 :: Num a
     => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a)
     -> Op '[a,a,a] a
 op3 f = opN $ \case I x :* I y :* I z :* ØV -> f x y z
-
-opN :: (Num a, Known Nat n)
-    => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a)
-    -> Op (Replicate n a) a
-opN f = opN' $ \xs ->
-    let (y, dxs) = grad' f xs
-    in  (y, maybe dxs (\q -> (q *) <$> dxs))
