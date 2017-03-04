@@ -189,6 +189,8 @@ _FRInternal f = \case
 -- Numeric.Backprop.Op, but are duplicated here to prevent cyclic
 -- dependencies
 
+-- TODO: Move to separate module?
+
 op0 :: (Known Length as, Every Num as) => a -> Op as a
 op0 x = Op $ \xs -> (x, const (imap1 (\ix _ -> 0 \\ every @_ @Num ix) xs))
 
@@ -219,10 +221,12 @@ instance Num a => Num (BPRef s rs a) where
     fromInteger x = BPRConst (fromIntegral x)
 
 instance (Known Length as, Every Fractional as, Every Num as, Fractional a) => Fractional (Op as a) where
+    o1 / o2        = composeOp summers (o1 :< o2 :< Ø) $ op2 (/) (\x y -> (1/y,  -x/(y*y))) (\x y g -> (g/y, -g*x/(y*y)))
     recip o        = composeOp summers (o :< Ø) $ op1 recip (\x -> -1/(x*x)) (\x g -> -g/(x*x))
     fromRational x = op0 (fromRational x)
 
 instance Fractional a => Fractional (BPRef s rs a) where
+    r1 / r2        = BPROp (r1 :< r2 :< Ø) $ op2 (/) (\x y -> (1/y,  -x/(y*y))) (\x y g -> (g/y, -g*x/(y*y)))
     recip r        = BPROp (r :< Ø) $ op1 recip (\x -> -1/(x*x)) (\x g -> -g/(x*x))
     fromRational x = BPRConst (fromRational x)
 

@@ -342,6 +342,8 @@ registerRef bpir = \case
                          over (bpnOut . indexP ix' . _FRInternal) (bpir :)
     BPRInp   ix'    -> BP $ modifying (bpsSources . indexP ix' . _FRInternal) (bpir :)
     BPRConst _      -> return ()
+    -- This independently makes a new BPPipe for every usage site of the
+    -- BPROp, so it's a bit inefficient.
     BPROp    (rs :: Prod (BPRef s rs) ds) (o :: Op ds a) -> do
       xs :: Tuple ds <- traverse1 (fmap I . BP . resolveRef) rs
       let res :: a
@@ -423,6 +425,7 @@ opRef3
     -> BP s rs (BPRef s rs d)
 opRef3 = opRef3' known
 
+-- can be recursive too?  would have to have resolveRef also pull summers
 bindRef'
     :: Summer a
     -> BPRef s rs a
