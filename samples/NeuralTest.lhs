@@ -35,7 +35,6 @@ docs][docs].
 > import           GHC.Generics                        (Generic)
 > import           Numeric.Backprop
 > import           Numeric.Backprop.Iso
-> import           Numeric.Backprop.Op
 > import           Numeric.LinearAlgebra.Static hiding (dot)
 > import           System.Random.MWC
 > import qualified Generics.SOP                        as SOP

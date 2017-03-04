@@ -5,14 +5,19 @@
 {-# LANGUAGE RankNTypes   #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Numeric.Backprop.Iso
-  ( Iso, Iso'
-  , iso, re
-  , review
+module Numeric.Backprop.Iso (
+  -- * Isomorphisms
+    Iso, Iso'
+  -- ** Construction and usage
+  , iso
+  , re, review
+  -- * Useful Isos
+  , coercible
   , gTuple, gSOP
   , sum1, resum1
   ) where
 
+import           Data.Coerce
 import           Data.Functor.Identity
 import           Data.Profunctor.Unsafe
 import           Data.Tagged
@@ -31,6 +36,9 @@ iso to from = dimap to (fmap from)
 
 review :: Iso s t a b -> b -> t
 review i = runIdentity #. unTagged #. i .# Tagged .# Identity
+
+coercible :: Coercible s a => Iso' s a
+coercible = iso coerce coerce
 
 gTuple :: (SOP.Generic a, SOP.Code a ~ '[as]) => Iso' a (Tuple as)
 gTuple = gSOP . sum1
@@ -84,3 +92,4 @@ nsSum = iso to from
     from = \case
       InL x  -> SOP.Z x
       InR xs -> SOP.S (from xs)
+

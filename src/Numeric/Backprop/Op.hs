@@ -6,12 +6,18 @@
 {-# LANGUAGE RankNTypes       #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Numeric.Backprop.Op
-  ( Op(..), composeOp
+module Numeric.Backprop.Op (
+  -- * Type
+    Op(..)
+  -- ** Running
   , runOp, gradOp, gradOpWith, gradOpWith'
+  -- ** Manipulation
+  , composeOp
+  -- * Creation
   , op0
   , op1, op2, op3, opN, opCoerce, opTup, opIso
   , op1', op2', op3', opN', opCoerce', opTup', opIso'
+  -- * Utility
   , Replicate
   ) where
 
@@ -26,10 +32,12 @@ import           Data.Type.Nat
 import           Data.Type.Product
 import           Data.Type.Util
 import           Data.Type.Vector
+import           Lens.Micro.Extras
 import           Numeric.AD
 import           Numeric.AD.Internal.Reverse    (Reverse, Tape)
 import           Numeric.AD.Mode.Forward hiding (grad')
 import           Numeric.Backprop.Internal
+import           Numeric.Backprop.Iso
 import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness
@@ -47,10 +55,10 @@ gradOp :: Op as a -> Tuple as -> Tuple as
 gradOp o i = gradOpWith' o i Nothing
 
 opCoerce' :: Coercible a b => Unity a -> Op '[a] b
-opCoerce' u = opIso' u coerce coerce
+opCoerce' u = opIso' u coercible
 
 opCoerce :: (Coercible a b, Num a) => Op '[a] b
-opCoerce = opIso coerce coerce
+opCoerce = opIso coercible
 
 opTup'
     :: Prod Unity as
@@ -62,18 +70,10 @@ opTup
     => Op as (Tuple as)
 opTup = opTup' (map1 ((// known) . every @_ @Num) indices)
 
-opIso'
-    :: Unity a
-    -> (a -> b)
-    -> (b -> a)
-    -> Op '[ a ] b
-opIso' u f g = op1' $ \x -> (f x, maybe (getUnity u) g)
+opIso' :: Unity a -> Iso' a b -> Op '[ a ] b
+opIso' u i = op1' $ \x -> (view i x, maybe (getUnity u) (review i))
 
-opIso
-    :: Num a
-    => (a -> b)
-    -> (b -> a)
-    -> Op '[ a ] b
+opIso :: Num a => Iso' a b -> Op '[ a ] b
 opIso = opIso' known
 
 op0 :: a -> Op '[] a

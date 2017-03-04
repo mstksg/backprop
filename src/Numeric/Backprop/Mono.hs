@@ -14,23 +14,33 @@
 {-# LANGUAGE TypeOperators          #-}
 
 
-module Numeric.Backprop.Mono
-  ( BP, BPOp, Replicate
-  , BPRef
-  , constRef
-  , opRef, (-$)
-  , opRef1
-  , opRef2
-  , opRef3
-  , backprop
-  , runBPOp
-  , plugBP
-  , inpRef, inpRefs, withInps
+module Numeric.Backprop.Mono (
+  -- * Types
+    BP, BPOp, BPRef
   , Op
+  , Replicate
+  -- * BP
+  -- ** Backprop
+  , backprop, runBPOp, gradBPOp
+  -- ** Inputs
+  , withInps
+  -- * Refs
+  , constRef
+  , inpRef, inpRefs
+  -- ** From Ops
+  , opRef, (-$)
+  , opRef1, opRef2, opRef3
+  -- ** Transforming BP
+  , plugBP
+  -- ** Combining
+  , liftR, liftR1, liftR2, liftR3
+  -- * Op
   , op1, op2, op3, opN
   , runOp', runOp, gradOp, gradOpWith, gradOpWith'
-  , liftR, liftR1, liftR2, liftR3
+  -- * Utility
+  -- ** Type synonyms
   , N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10
+  -- ** Vectors
   , VecT(..), Vec, pattern (:+), (*:), (+:)
   ) where
 
@@ -47,7 +57,6 @@ import           Type.Class.Known
 import           Type.Family.Nat
 import qualified Numeric.Backprop            as BP
 import qualified Numeric.Backprop.Internal   as BP
-import qualified Numeric.Backprop.Op         as BP
 
 type BP s n a     = BP.BP s (Replicate n a)
 type BPRef s n a  = BP.BPRef s (Replicate n a)
@@ -151,6 +160,14 @@ runBPOp
     -> Vec n a
     -> b
 runBPOp bp = fst . backprop bp
+
+gradBPOp
+    :: forall n a b. Num a
+    => (forall s. BPOp s n a b)
+    -> Vec n a
+    -> Vec n a
+gradBPOp bp = snd . backprop bp
+
 
 
 plugBP

@@ -11,61 +11,49 @@
 
 module Numeric.Backprop (
   -- * Types
-    BP, BPOp
-  , BPRef
+    BP, BPOp, BPRef
   , Op(..)
   , Summer(..)
   , Unity(..)
   -- * BP
   -- ** Backprop
-  , backprop
-  , runBPOp
-  , gradBPOp
-  , backprop'
-  , runBPOp'
-  , gradBPOp'
+  , backprop, runBPOp, gradBPOp
+  , backprop', runBPOp', gradBPOp'
   -- ** Inputs
   , withInps
   , plugBP, (~$), ($~)
   , withInps'
   , plugBP'
   -- * Refs
-  , inpRef
   , constRef
-  , inpRefs
-  , inpRefs'
+  , inpRef, inpRefs, inpRefs'
   -- ** From Ops
   , opRef, (-$)
-  , opRef1
-  , opRef2
-  , opRef3
+  , opRef1, opRef2, opRef3
   , opRef'
-  , opRef1'
-  , opRef2'
-  , opRef3'
+  , opRef1', opRef2', opRef3'
   -- ** Ref manipulation
   -- *** As parts
   , partsRef, (#<~), withParts
+  , splitRefs, gSplit
   , partsRef', withParts'
-  , gSplit, gSplit'
-  , splitRefs
-  , splitRefs'
+  , splitRefs', gSplit'
   -- *** As sums
   , choicesRef
   , choicesRef'
   -- *** As sums of products
-  , sopRef
-  , gSplits
-  , sopRef'
-  , gSplits'
+  , sopRef, gSplits
+  , sopRef', gSplits'
   -- ** Transforming BP
   , internally
   , generically
   , internally'
   , generically'
   -- ** Combining
-  , liftR
-  , liftR1, liftR2, liftR3
+  , liftR, liftR1, liftR2, liftR3
+  -- * Op
+  , op1, op2, op3, opN
+  , op1', op2', op3', opN'
   -- * Utility
   , Prod(..), pattern (:>), only
   , Tuple, pattern (::<), only_
