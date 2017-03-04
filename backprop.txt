@@ -42,7 +42,7 @@ opCoerce' :: Coercible a b => Unity a -> Op '[a] b
 opTup' :: Prod Unity as -> Op as (Tuple as)
 opIso' :: Unity a -> Iso' a b -> Op '[a] b
 
-module Numeric.Backprop
+module Numeric.Backprop.Explicit
 data BP s rs b
 type BPOp s rs a = BP s rs (BPRef s rs a)
 data BPRef :: Type -> [Type] -> Type -> Type
@@ -58,9 +58,9 @@ Unity :: a -> Unity a
 backprop :: forall rs a. Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> (a, Tuple rs)
 runBPOp :: Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> a
 gradBPOp :: Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> Tuple rs
-backprop' :: (forall s. BPOp s rs a) -> Prod (Summer) rs -> Prod (Unity) rs -> Tuple rs -> (a, Tuple rs)
-runBPOp' :: (forall s. BPOp s rs a) -> Prod Summer rs -> Prod Unity rs -> Tuple rs -> a
-gradBPOp' :: (forall s. BPOp s rs a) -> Prod Summer rs -> Prod Unity rs -> Tuple rs -> Tuple rs
+backprop' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple rs -> (a, Tuple rs)
+runBPOp' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple rs -> a
+gradBPOp' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple rs -> Tuple rs
 withInps :: Known Length rs => (Prod (BPRef s rs) rs -> BP s rs a) -> BP s rs a
 plugBP :: forall s rs as a. (Every Num as, Num a) => Prod (BPRef s rs) as -> BPOp s as a -> BPOp s rs a
 (~$) :: (Every Num as, Num a) => BPOp s as a -> Prod (BPRef s rs) as -> BPOp s rs a
@@ -147,7 +147,15 @@ infixr 5 ::<
 -- | Singleton Tuple.
 only_ :: a -> Tuple ((:) * a ([] *))
 
-module Numeric.Backprop.Mono
+module Numeric.Backprop.Implicit
+backprop :: (Known Length rs, Every Num rs) => (forall s. Prod (BPRef s rs) rs -> BPRef s rs a) -> Tuple rs -> (a, Tuple rs)
+grad :: (Known Length rs, Every Num rs) => (forall s. Prod (BPRef s rs) rs -> BPRef s rs a) -> Tuple rs -> Tuple rs
+eval :: (Known Length rs, Every Num rs) => (forall s. Prod (BPRef s rs) rs -> BPRef s rs a) -> Tuple rs -> a
+backprop' :: Prod Summer rs -> Prod Unity rs -> (forall s. Prod (BPRef s rs) rs -> BPRef s rs a) -> Tuple rs -> (a, Tuple rs)
+grad' :: Prod Summer rs -> Prod Unity rs -> (forall s. Prod (BPRef s rs) rs -> BPRef s rs a) -> Tuple rs -> Tuple rs
+eval' :: Prod Summer rs -> Prod Unity rs -> (forall s. Prod (BPRef s rs) rs -> BPRef s rs a) -> Tuple rs -> a
+
+module Numeric.Backprop.Mono.Explicit
 type BP s n a = BP s (Replicate n a)
 type BPOp s n a b = BP s n a (BPRef s n a b)
 type BPRef s n a = BPRef s (Replicate n a)
