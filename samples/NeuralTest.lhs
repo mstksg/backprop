@@ -71,12 +71,11 @@ Now, dot products:
 >                              Just g  -> (konst g * y, x * konst g)
 >                      )
 
-And for kicks, we can show an auto-derived logistic function op:
+Polymorphic functions can be easily turned into `Op`s with `op1`/`op2`
+etc., but they can also be run directly on graph nodes.
 
-> logistic :: Floating a => Op '[a] a
-> logistic = op1 $ \x -> 1 / (1 + exp (-x))
-
-That's really it!
+> logistic :: Floating a => a -> a
+> logistic x = 1 / (1 + exp (-x))
 
 A Simple Complete Example
 =========================
@@ -91,12 +90,10 @@ neural network:
 > simpleOp inp = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
 >     -- First layer
 >     y1  <- matVec   -$ (w1 :< x1 :< Ø)
->     z1  <- op2 (+)  -$ (y1 :< b1 :< Ø)
->     x2  <- logistic -$ only z1
+>     let x2 = logistic (y1 + b1)
 >     -- Second layer
 >     y2  <- matVec   -$ (w2 :< x2 :< Ø)
->     z2  <- op2 (+)  -$ (y2 :< b2 :< Ø)
->     logistic        -$ only z2
+>     return $ logistic (y2 + b2)
 >   where
 >     x1 = constRef inp
 
@@ -125,8 +122,8 @@ use to do backpropagation, too!
 >     opError :: BPOp s '[ L n m, R n, L o n, R o ] Double
 >     opError = do
 >         res <- simpleOp inp
->         err <- op2 (-) -$ (res :< t   :< Ø)
->         dot            -$ (err :< err :< Ø)
+>         err <- op2 (-) -$ (res :< t :< Ø)
+>         dot -$ (err :< err :< Ø)
 >       where
 >         t = constRef targ
 
@@ -222,8 +219,7 @@ different network constructors differently.
 >         -- peek into the layer using the gTuple iso, auto-generated with SOP.Generic
 >         w :< b :< Ø <- gTuple #<~ l
 >         y           <- matVec  -$ (w :< x :< Ø)
->         z           <- op2 (+) -$ (y :< b :< Ø)
->         logistic -$ only z
+>         return $ logistic (y + b)
 
 There's some singletons work going on here, but it's fairly standard
 singletons stuff.  From *backprop* specifically, `(#<~)` lets you "split"
@@ -240,8 +236,8 @@ Now we can do simple gradient descent.  Defining an error function:
 >     -> BPRef s rs (R m)
 >     -> BPOp s rs Double
 > err targ r = do
->     d <- opRef2 r t $ op2 (-)
->     opRef2 d d      $ dot
+>     d <- op2 (-) -$ (r :< t :< Ø)
+>     dot          -$ (d :< d :< Ø)
 >   where
 >     t = constRef targ
 

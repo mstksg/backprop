@@ -51,12 +51,10 @@ neuralNet
 neuralNet inp = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
     -- First layer
     y1  <- matVec   -$ (w1 :< x1 :< Ø)
-    z1  <- op2 (+)  -$ (y1 :< b1 :< Ø)
-    x2  <- logistic -$ only z1
+    let x2 = logistic (y1 + b1)
     -- Second layer
     y2  <- matVec   -$ (w2 :< x2 :< Ø)
-    z2  <- op2 (+)  -$ (y2 :< b2 :< Ø)
-    logistic        -$ only z2
+    return $ logistic (y2 + b2)
   where
     x1 = constRef inp
 ~~~
@@ -88,9 +86,9 @@ netGrad inp targ params = gradBPOp opError params
   where
     opError :: BPOp s '[ L n m, R n, L o n, R o ] Double
     opError = do
-        res <- neuralNet inp
-        err <- op2 (-) -$ (res :< t   :< Ø)
-        dot            -$ (err :< err :< Ø)
+        res <- simpleOp inp
+        err <- op2 (-) -$ (res :< t :< Ø)
+        dot -$ (err :< err :< Ø)
       where
         t = constRef targ
 ~~~
