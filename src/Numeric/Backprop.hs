@@ -63,6 +63,9 @@ module Numeric.Backprop (
   , generically
   , internally'
   , generically'
+  -- ** Combining
+  , liftR
+  , liftR1, liftR2, liftR3
   -- * Utility
   , Prod(..), pattern (:>), only
   , Tuple, pattern (::<), only_
@@ -617,6 +620,35 @@ withInps
     => (Prod (BPRef s rs) rs -> BP s rs a)
     -> BP s rs a
 withInps = withInps' known
+
+liftR
+    :: Op as a
+    -> Prod (BPRef s rs) as
+    -> BPRef s rs a
+liftR = flip BPROp
+
+liftR1
+    :: Op '[a] b
+    -> BPRef s rs a
+    -> BPRef s rs b
+liftR1 o = liftR o . only
+
+liftR2
+    :: Op '[a,b] c
+    -> BPRef s rs a
+    -> BPRef s rs b
+    -> BPRef s rs c
+liftR2 o x y = liftR o (x :< y :< Ø)
+
+liftR3
+    :: Op '[a,b,c] d
+    -> BPRef s rs a
+    -> BPRef s rs b
+    -> BPRef s rs c
+    -> BPRef s rs d
+liftR3 o x y z = liftR o (x :< y :< z :< Ø)
+
+
 
 
 
