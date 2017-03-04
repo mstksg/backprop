@@ -20,14 +20,14 @@ backprop'
     -> (forall s. Prod (BPRef s rs) rs -> BPRef s rs a)
     -> Tuple rs
     -> (a, Tuple rs)
-backprop' ss us f = BP.backprop' ss us (return $ f (BP.inpRefs' (prodLength ss)))
+backprop' ss us f = BP.backprop' ss us $ BP.withInps' (prodLength ss) (return . f)
 
 backprop
     :: (Known Length rs, Every Num rs)
     => (forall s. Prod (BPRef s rs) rs -> BPRef s rs a)
     -> Tuple rs
     -> (a, Tuple rs)
-backprop f = BP.backprop (return $ f BP.inpRefs)
+backprop f = BP.backprop $ BP.withInps (return . f)
 
 grad'
     :: Prod Summer rs
@@ -35,14 +35,14 @@ grad'
     -> (forall s. Prod (BPRef s rs) rs -> BPRef s rs a)
     -> Tuple rs
     -> Tuple rs
-grad' ss us f = BP.gradBPOp' ss us (return $ f (BP.inpRefs' (prodLength ss)))
+grad' ss us f = snd . backprop' ss us f
 
 grad
     :: (Known Length rs, Every Num rs)
     => (forall s. Prod (BPRef s rs) rs -> BPRef s rs a)
     -> Tuple rs
     -> Tuple rs
-grad f = BP.gradBPOp (return $ f BP.inpRefs)
+grad f = snd . backprop f
 
 eval'
     :: Prod Summer rs
@@ -50,11 +50,11 @@ eval'
     -> (forall s. Prod (BPRef s rs) rs -> BPRef s rs a)
     -> Tuple rs
     -> a
-eval' ss us f = BP.runBPOp' ss us (return $ f (BP.inpRefs' (prodLength ss)))
-  
+eval' ss us f = fst . backprop' ss us f
+
 eval
     :: (Known Length rs, Every Num rs)
     => (forall s. Prod (BPRef s rs) rs -> BPRef s rs a)
     -> Tuple rs
     -> a
-eval f = BP.runBPOp (return $ f BP.inpRefs)
+eval f = fst . backprop f
