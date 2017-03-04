@@ -72,17 +72,19 @@ plugBP' :: Prod (BPRef s rs) as -> Prod Summer as -> Prod Unity as -> Summer a -
 constRef :: a -> BPRef s rs a
 inpRef :: Index rs a -> BPRef s rs a
 inpRefs :: Known Length rs => Prod (BPRef s rs) rs
+bindRef :: Num a => BPRef s rs a -> BP s rs (BPRef s rs a)
 inpRefs' :: Length rs -> Prod (BPRef s rs) rs
+bindRef' :: Summer a -> BPRef s rs a -> BP s rs (BPRef s rs a)
 opRef :: Num a => Prod (BPRef s rs) as -> Op as a -> BP s rs (BPRef s rs a)
 (-$) :: Num a => Op as a -> Prod (BPRef s rs) as -> BP s rs (BPRef s rs a)
 infixr 1 -$
 opRef1 :: Num b => BPRef s rs a -> Op '[a] b -> BP s rs (BPRef s rs b)
 opRef2 :: Num c => BPRef s rs a -> BPRef s rs b -> Op '[a, b] c -> BP s rs (BPRef s rs c)
 opRef3 :: Num d => BPRef s rs a -> BPRef s rs b -> BPRef s rs c -> Op '[a, b, c] d -> BP s rs (BPRef s rs d)
-opRef' :: forall s rs as a. Prod (BPRef s rs) as -> Op as a -> Summer a -> BP s rs (BPRef s rs a)
-opRef1' :: BPRef s rs a -> Op '[a] b -> Summer b -> BP s rs (BPRef s rs b)
-opRef2' :: BPRef s rs a -> BPRef s rs b -> Op '[a, b] c -> Summer c -> BP s rs (BPRef s rs c)
-opRef3' :: BPRef s rs a -> BPRef s rs b -> BPRef s rs c -> Op '[a, b, c] d -> Summer d -> BP s rs (BPRef s rs d)
+opRef' :: forall s rs as a. Summer a -> Prod (BPRef s rs) as -> Op as a -> BP s rs (BPRef s rs a)
+opRef1' :: Summer b -> BPRef s rs a -> Op '[a] b -> BP s rs (BPRef s rs b)
+opRef2' :: Summer c -> BPRef s rs a -> BPRef s rs b -> Op '[a, b] c -> BP s rs (BPRef s rs c)
+opRef3' :: Summer d -> BPRef s rs a -> BPRef s rs b -> BPRef s rs c -> Op '[a, b, c] d -> BP s rs (BPRef s rs d)
 partsRef :: forall s rs bs b. (Every Num bs, Known Length bs) => Iso' b (Tuple bs) -> BPRef s rs b -> BP s rs (Prod (BPRef s rs) bs)
 (#<~) :: (Every Num bs, Known Length bs) => Iso' b (Tuple bs) -> BPRef s rs b -> BP s rs (Prod (BPRef s rs) bs)
 infixr 1 #<~
