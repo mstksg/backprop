@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Numeric.Backprop.Explicit
                        Numeric.Backprop.Op
+                       Numeric.Backprop.Implicit
                        Numeric.Backprop.Mono.Explicit
                        Numeric.Backprop.Iso
   other-modules:       Numeric.Backprop.Internal
