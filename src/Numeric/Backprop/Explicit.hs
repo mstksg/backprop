@@ -9,7 +9,7 @@
 {-# LANGUAGE TypeInType          #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module Numeric.Backprop (
+module Numeric.Backprop.Explicit (
   -- * Types
     BP, BPOp, BPRef
   , Op(..)

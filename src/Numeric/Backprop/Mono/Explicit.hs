@@ -14,7 +14,7 @@
 {-# LANGUAGE TypeOperators          #-}
 
 
-module Numeric.Backprop.Mono (
+module Numeric.Backprop.Mono.Explicit (
   -- * Types
     BP, BPOp, BPRef
   , Op
@@ -55,7 +55,7 @@ import           Numeric.AD.Internal.Reverse (Reverse, Tape)
 import           Numeric.AD.Mode.Forward     (AD, Forward)
 import           Type.Class.Known
 import           Type.Family.Nat
-import qualified Numeric.Backprop            as BP
+import qualified Numeric.Backprop.Explicit   as BP
 import qualified Numeric.Backprop.Internal   as BP
 
 type BP s n a     = BP.BP s (Replicate n a)
