@@ -76,6 +76,7 @@ import           Control.Monad.Base
 import           Control.Monad.Reader
 import           Control.Monad.ST
 import           Control.Monad.State
+import           Data.Monoid               ((<>))
 import           Data.STRef
 import           Data.Type.Combinator
 import           Data.Type.Conjunction
@@ -357,7 +358,6 @@ registerRef bpir = \case
           bpp :: BPPipe s rs ds '[a]
           bpp = BPP { _bppOut       = only bpir
                     , _bppRes       = only_ res
-                    -- , _bppGradFunc  = gF . head'
                     , _bppGradFunc  = gF . Just . getI . head'
                     , _bppGradCache = Nothing
                     }
@@ -436,8 +436,9 @@ backwardPass
     => BPInpRef s rs a
     -> ST s a
 backwardPass = \case
-    IRNode ix r' -> getI . index ix <$> pullNode r'
-    IRPipe ix r' -> getI . index ix <$> pullPipe r'
+    IRNode  ix r' -> getI . index ix <$> pullNode r'
+    IRPipe  ix r' -> getI . index ix <$> pullPipe r'
+    IRConst g     -> return g
   where
     pullNode
         :: forall as bs. ()
@@ -447,7 +448,7 @@ backwardPass = \case
         totdervs <- for1 (_bpnSummer `zipP` _bpnOut) $ \case
           s :&: FRInternal rs -> Just . runSummer s
               <$> traverse backwardPass rs
-          _ :&: FRExternal gE -> return (Just gE)
+          -- _ :&: FRExternal gE -> return (Just gE)
           _ :&: FRTerminal    -> return Nothing
         g <- _bpnGradFunc totdervs
         return g
@@ -516,8 +517,8 @@ closeOff
     -> BPRef s rs a
     -> m ()
 closeOff gOut = \case
-    BPRNode  ix sr -> liftBase $ modifySTRef sr (set (bpnOut . indexP ix) fr)
-    BPRInp   ix'   -> assign (bpsSources . indexP ix') fr
+    BPRNode  ix sr -> liftBase $ modifySTRef sr (over (bpnOut . indexP ix) (<> fr))
+    BPRInp   ix'   -> modifying (bpsSources . indexP ix') (<> fr)
     BPRConst _     -> return ()
     BPROp    rs o  -> do
       xs <- traverse1 (fmap I . resolveRef) rs
@@ -526,8 +527,11 @@ closeOff gOut = \case
         closeOff (Just g) r
   where
     fr = case gOut of
-      Just g  -> FRExternal g
+      Just g  -> FRInternal [IRConst g]
       Nothing -> FRTerminal
+
+-- here's the problem -- things are being closed off more than once as
+-- external.
 
 backpropWith
     :: BPOp s rs a
@@ -544,7 +548,7 @@ backpropWith bp ss us env = do
           for1 (ss `zipP` us `zipP` _bpsSources) $ \((s :&: u) :&: rs) -> do
             I <$> case rs of
               FRInternal rs' -> runSummer s <$> traverse backwardPass rs'
-              FRExternal gE  -> return $ gE
+              -- FRExternal gE  -> return $ gE
               FRTerminal     -> return $ getUnity u
     return (res, gradFunc)
 

@@ -100,8 +100,15 @@ unities'
 unities' l = withEvery' @Num l known
 
 data ForwardRefs s rs a = FRInternal ![BPInpRef s rs a]
-                        | FRExternal a
                         | FRTerminal
+
+instance Monoid (ForwardRefs s rs a) where
+    mempty  = FRInternal []
+    mappend = \case
+        FRInternal rs -> \case
+          FRInternal rs' -> FRInternal (rs ++ rs')
+          FRTerminal     -> FRTerminal
+        FRTerminal    -> \_ -> FRTerminal
 
 data BPState :: Type -> [Type] -> Type where
     BPS :: { _bpsSources :: !(Prod (ForwardRefs s rs) rs)
@@ -127,18 +134,14 @@ data BPRef :: Type -> [Type] -> Type -> Type where
              -> BPRef s rs a
 
 data BPInpRef :: Type -> [Type] -> Type -> Type where
-    IRNode :: !(Index bs a)
-           -> !(STRef s (BPNode s rs bs cs))
-           -> BPInpRef s rs a
-    IRPipe :: !(Index bs a)
-           -> !(STRef s (BPPipe s rs bs cs))
-           -> BPInpRef s rs a
-
--- data BPComp :: Type -> [Type] -> [Type] -> [Type] -> Type where
---     BPCNode :: !(BPNode s rs as bs)
---             -> BPComp s rs as bs
---     BPCPipe :: !(BPPipe s rs as bs)
---             -> BPComp s rs as bs
+    IRNode  :: !(Index bs a)
+            -> !(STRef s (BPNode s rs bs cs))
+            -> BPInpRef s rs a
+    IRPipe  :: !(Index bs a)
+            -> !(STRef s (BPPipe s rs bs cs))
+            -> BPInpRef s rs a
+    IRConst :: !a
+            -> BPInpRef s rs a
 
 data BPNode :: Type -> [Type] -> [Type] -> [Type] -> Type where
     BPN :: { _bpnOut       :: !(Prod (ForwardRefs s rs) bs)
@@ -167,7 +170,7 @@ _FRInternal
                  [BPInpRef s as a]    [BPInpRef t bs a]
 _FRInternal f = \case
     FRInternal xs -> FRInternal <$> f xs
-    FRExternal x  -> pure (FRExternal x)
+    -- FRExternal x  -> pure (FRExternal x)
     FRTerminal    -> pure FRTerminal
 
 
