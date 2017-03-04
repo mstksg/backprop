@@ -32,7 +32,6 @@ import           Control.Monad.Reader
 import           Control.Monad.ST
 import           Control.Monad.State
 import           Data.Kind
-import           Data.List             (foldl')
 import           Data.STRef
 import           Data.Type.Combinator
 import           Data.Type.Conjunction
@@ -40,7 +39,7 @@ import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Product
 import           Data.Type.Util
-import           Lens.Micro
+import           Lens.Micro hiding     (ix)
 import           Lens.Micro.TH
 import           Type.Class.Higher
 import           Type.Class.Known
@@ -87,7 +86,7 @@ instance (Known Length as, Every Num as, Num a) => Num (Op as a) where
                  (abs x   , \case Nothing -> signum x       ::< Ø
                                   Just g  -> (g * signum x) ::< Ø
                  )
-    fromInteger i = Op $ \xs -> (fromInteger i, const (imap1 (\i _ -> 0 \\ every @_ @Num i) xs))
+    fromInteger i = Op $ \xs -> (fromInteger i, const (imap1 (\ix _ -> 0 \\ every @_ @Num ix) xs))
 
 instance (Known Length as, Every Fractional as, Every Num as, Fractional a) => Fractional (Op as a) where
     recip o = composeOp summers (o :< Ø) . Op $ \(I x :< Ø) ->

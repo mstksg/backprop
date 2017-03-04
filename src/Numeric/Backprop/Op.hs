@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeApplications #-}
 
 module Numeric.Backprop.Op
-  ( Op(..)
+  ( Op(..), composeOp
   , runOp, gradOp, gradOpWith, gradOpWith'
   , op0
   , op1, op2, op3, opN, opCoerce, opTup, opIso
