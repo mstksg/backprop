@@ -12,9 +12,10 @@
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeInType                 #-}
 {-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
 module Numeric.Backprop.Internal
- ( Op(..)
+ ( Op(..), composeOp
  , Summer(..), summers, summers'
  , Unity(..), unities, unities'
  , BPState(..), bpsSources
@@ -43,6 +44,7 @@ import           Lens.Micro
 import           Lens.Micro.TH
 import           Type.Class.Higher
 import           Type.Class.Known
+import           Type.Class.Witness
 
 -- instead of Tuple as, Prod Diff as, where Diff can be a value, or zero,
 -- or one?
@@ -58,10 +60,41 @@ composeOp ss os o = Op $ \xs ->
         (z, gFz) = runOp' o ys
     in  (z, map1 (\(s :&: gs) -> I $ runSummer s gs)
           . zipP ss
-          . foldr (\x -> map1 (uncurryFan (\(I x) -> (x:))) . zipP x) (map1 (const []) ss)
+          . foldr (\x -> map1 (uncurryFan (\(I y) -> (y:))) . zipP x) (map1 (const []) ss)
           . toList (\(oc :&: I g) -> runOpCont oc (Just g))
           . zipP conts . gFz
         )
+
+instance (Known Length as, Every Num as, Num a) => Num (Op as a) where
+    o1 + o2 = composeOp summers (o1 :< o2 :< Ø) . Op $ \(I x :< I y :< Ø) ->
+                (x + y, \case Nothing -> 1 ::< 1 ::< Ø
+                              Just g  -> g ::< g ::< Ø
+                )
+    o1 - o2 = composeOp summers (o1 :< o2 :< Ø) . Op $ \(I x :< I y :< Ø) ->
+                (x - y, \case Nothing -> 1 ::< (-1) ::< Ø
+                              Just g  -> g ::< (-g) ::< Ø
+                )
+    o1 * o2 = composeOp summers (o1 :< o2 :< Ø) . Op $ \(I x :< I y :< Ø) ->
+                (x * y, \case Nothing -> y     ::< x     ::< Ø
+                              Just g  -> (g*y) ::< (x*g) ::< Ø
+                )
+    negate o = composeOp summers (o :< Ø) . Op $ \(I x :< Ø) ->
+                 (negate x, \case Nothing -> (-1) ::< Ø
+                                  Just g  -> (-g) ::< Ø
+                 )
+    signum o = composeOp summers (o :< Ø) . Op $ \(I x :< Ø) -> (signum x, const (0 :< Ø))
+    abs    o = composeOp summers (o :< Ø) . Op $ \(I x :< Ø) ->
+                 (abs x   , \case Nothing -> signum x       ::< Ø
+                                  Just g  -> (g * signum x) ::< Ø
+                 )
+    fromInteger i = Op $ \xs -> (fromInteger i, const (imap1 (\i _ -> 0 \\ every @_ @Num i) xs))
+
+instance (Known Length as, Every Fractional as, Every Num as, Fractional a) => Fractional (Op as a) where
+    recip o = composeOp summers (o :< Ø) . Op $ \(I x :< Ø) ->
+                (1/x, \case Nothing -> (-1 / (x * x)) ::< Ø
+                            Just g  -> (-g / (x * x)) ::< Ø
+                )
+    fromRational r = Op $ \xs -> (fromRational r, const (imap1 (\i _ -> 0 \\ every @_ @Fractional i) xs))
 
 newtype Summer a = Summer { runSummer :: [a] -> a }
 newtype Unity  a = Unity  { getUnity  :: a        }
