@@ -29,6 +29,7 @@ module Numeric.Backprop.Mono
   , Op
   , op1, op2, op3, opN
   , runOp', runOp, gradOp, gradOpWith, gradOpWith'
+  , liftR, liftR1, liftR2, liftR3
   , N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10
   , VecT(..), Vec, pattern (:+), (*:), (+:)
   ) where
@@ -174,6 +175,35 @@ withInps
     => (VecT n (BPRef s n a) a -> BP s n a b)
     -> BP s n a b
 withInps f = f inpRefs
+
+liftR
+    :: Op m a b
+    -> VecT m (BPRef s n r) a
+    -> BPRef s n r b
+liftR o = BP.liftR o . vecToProd
+
+liftR1
+    :: Op N1 a a
+    -> BPRef s n r a
+    -> BPRef s n r a
+liftR1 = BP.liftR1
+
+liftR2
+    :: Op N2 a a
+    -> BPRef s n r a
+    -> BPRef s n r a
+    -> BPRef s n r a
+liftR2 = BP.liftR2
+
+liftR3
+    :: Op N3 a a
+    -> BPRef s n r a
+    -> BPRef s n r a
+    -> BPRef s n r a
+    -> BPRef s n r a
+liftR3 = BP.liftR3
+
+
 
 
 
