@@ -74,7 +74,6 @@ import           Control.Monad.Reader
 import           Control.Monad.ST
 import           Control.Monad.State
 import           Data.STRef
-import           Data.Traversable
 import           Data.Type.Combinator
 import           Data.Type.Conjunction
 import           Data.Type.Index
@@ -337,9 +336,6 @@ resolveRef = \case
       xs <- traverse1 (fmap I . resolveRef) rs
       return $ runOp o xs
 
-    -- -> STRef s (BPNode s rs as cs)
-    -- -> Index as a
-
 registerRef
     :: forall s rs a. ()
     => BPInpRef s rs a
@@ -432,36 +428,32 @@ opRef3
     -> BP s rs (BPRef s rs d)
 opRef3 rx ry rz o = opRef3' rx ry rz o known
 
-pullNode
-    :: forall s rs as a. ()
-    => STRef s (BPNode s rs as a)
-    -> ST s (Tuple as)
-pullNode r = caching bpnGradCache r $ \BPN{..} -> do
-    totdervs <- for1 (_bpnSummer `zipP` _bpnOut) $ \case
-      s :&: FRInternal rs -> do
-        outs <- for rs $ \case
-          IRNode ix r' ->
-            getI . index ix <$> pullNode r'
-          IRPipe ix r' ->
-            getI . index ix <$> pullPipe r'
-        return (Just $ runSummer s outs)
-      _ :&: FRExternal gE -> return (Just gE)
-      _ :&: FRTerminal    -> return Nothing
-    g <- _bpnGradFunc totdervs
-    return g
-
-pullPipe
-    :: forall s rs as a. ()
-    => STRef s (BPPipe s rs as a)
-    -> ST s (Tuple as)
-pullPipe r = caching bppGradCache r $ \BPP{..} -> do
-    totdervs <- for1 _bppOut $ \case
-      IRNode ix r' ->
-        index ix <$> pullNode r'
-      IRPipe ix r' ->
-        index ix <$> pullPipe r'
-    let g = _bppGradFunc totdervs
-    return g
+backwardPass
+    :: forall s rs a. ()
+    => BPInpRef s rs a
+    -> ST s a
+backwardPass = \case
+    IRNode ix r' -> getI . index ix <$> pullNode r'
+    IRPipe ix r' -> getI . index ix <$> pullPipe r'
+  where
+    pullNode
+        :: forall as bs. ()
+        => STRef s (BPNode s rs as bs)
+        -> ST s (Tuple as)
+    pullNode r = caching bpnGradCache r $ \BPN{..} -> do
+        totdervs <- for1 (_bpnSummer `zipP` _bpnOut) $ \case
+          s :&: FRInternal rs -> Just . runSummer s
+              <$> traverse backwardPass rs
+          _ :&: FRExternal gE -> return (Just gE)
+          _ :&: FRTerminal    -> return Nothing
+        g <- _bpnGradFunc totdervs
+        return g
+    pullPipe
+        :: forall as bs. ()
+        => STRef s (BPPipe s rs as bs)
+        -> ST s (Tuple as)
+    pullPipe r = caching bppGradCache r $ \BPP{..} ->
+        _bppGradFunc <$> traverse1 (fmap I . backwardPass) _bppOut
 
 backprop'
     :: (forall s. BPOp s rs a)
@@ -545,26 +537,12 @@ backpropWith bp ss us env = do
                            (BPS (map1 (\_ -> FRInternal []) env))
     res <- runReaderT (resolveRef r) env
     let gradFunc gradOut = do
-          -- let fr = case gradOut of
-          --            Just g  -> FRExternal g
-          --            Nothing -> FRTerminal
           BPS{..} <- execStateT (runReaderT (closeOff gradOut r) env) bps0
-            -- BPRNode  ix sr -> bps0 <$ modifySTRef sr (set (bpnOut . indexP ix) fr)
-            -- BPRInp   ix    -> return $ set (bpsSources . indexP ix) fr bps0
-            -- BPRConst _     -> return bps0
-            -- -- BPROp    rs o  -> _
           for1 (ss `zipP` us `zipP` _bpsSources) $ \((s :&: u) :&: rs) -> do
             I <$> case rs of
-              FRInternal rs' ->
-                fmap (runSummer s) . for rs' $ \case
-                  IRNode ix r' ->
-                    getI . index ix <$> pullNode r'
-                  IRPipe ix r' ->
-                    getI . index ix <$> pullPipe r'
-              FRExternal gE  ->
-                return $ gE
-              FRTerminal     ->
-                return $ getUnity u
+              FRInternal rs' -> runSummer s <$> traverse backwardPass rs'
+              FRExternal gE  -> return $ gE
+              FRTerminal     -> return $ getUnity u
     return (res, gradFunc)
 
 plugBP'
