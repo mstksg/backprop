@@ -76,6 +76,7 @@ import           Control.Monad.Base
 import           Control.Monad.Reader
 import           Control.Monad.ST
 import           Control.Monad.State
+import           Data.Maybe
 import           Data.Monoid               ((<>))
 import           Data.STRef
 import           Data.Type.Combinator
@@ -448,8 +449,7 @@ backwardPass = \case
         totdervs <- for1 (_bpnSummer `zipP` _bpnOut) $ \case
           s :&: FRInternal rs -> Just . runSummer s
               <$> traverse backwardPass rs
-          -- _ :&: FRExternal gE -> return (Just gE)
-          _ :&: FRTerminal    -> return Nothing
+          _ :&: FRTerminal g   -> return g
         g <- _bpnGradFunc totdervs
         return g
     pullPipe
@@ -513,10 +513,11 @@ gradBPOp bp = snd . backprop bp
 
 closeOff
     :: (MonadReader (Tuple rs) m, MonadState (BPState s rs) m, MonadBase (ST s) m)
-    => Maybe a
+    => Bool
+    -> Maybe a
     -> BPRef s rs a
     -> m ()
-closeOff gOut = \case
+closeOff isTerminal gOut = \case
     BPRNode  ix sr -> liftBase $ modifySTRef sr (over (bpnOut . indexP ix) (<> fr))
     BPRInp   ix'   -> modifying (bpsSources . indexP ix') (<> fr)
     BPRConst _     -> return ()
@@ -524,14 +525,10 @@ closeOff gOut = \case
       xs <- traverse1 (fmap I . resolveRef) rs
       let gs = gradOpWith' o xs gOut
       for1_ (gs `zipP` rs) $ \(I g :&: r) ->
-        closeOff (Just g) r
+        closeOff False (Just g) r
   where
-    fr = case gOut of
-      Just g  -> FRInternal [IRConst g]
-      Nothing -> FRTerminal
-
--- here's the problem -- things are being closed off more than once as
--- external.
+    fr | isTerminal = FRTerminal gOut
+       | otherwise  = FRInternal (IRConst <$> maybeToList gOut)
 
 backpropWith
     :: BPOp s rs a
@@ -544,12 +541,11 @@ backpropWith bp ss us env = do
                            (BPS (map1 (\_ -> FRInternal []) env))
     res <- runReaderT (resolveRef r) env
     let gradFunc gradOut = do
-          BPS{..} <- execStateT (runReaderT (closeOff gradOut r) env) bps0
+          BPS{..} <- execStateT (runReaderT (closeOff True gradOut r) env) bps0
           for1 (ss `zipP` us `zipP` _bpsSources) $ \((s :&: u) :&: rs) -> do
             I <$> case rs of
               FRInternal rs' -> runSummer s <$> traverse backwardPass rs'
-              -- FRExternal gE  -> return $ gE
-              FRTerminal     -> return $ getUnity u
+              FRTerminal g   -> return $ fromMaybe (getUnity u) g
     return (res, gradFunc)
 
 plugBP'

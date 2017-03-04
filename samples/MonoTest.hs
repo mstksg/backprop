@@ -14,5 +14,5 @@ test' = withInps $ \(x :* y :* z :* ØV) ->
 
 main :: IO ()
 main = do
-    print $ backprop test  (2 :+ 3 :+ 40 :+ ØV)
-    print $ backprop test' (2 :+ 3 :+ 40 :+ ØV)
+    print $ backprop test  (2 :+ 3 :+ 4 :+ ØV)
+    print $ backprop test' (2 :+ 3 :+ 4 :+ ØV)

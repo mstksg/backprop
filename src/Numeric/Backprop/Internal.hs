@@ -100,15 +100,15 @@ unities'
 unities' l = withEvery' @Num l known
 
 data ForwardRefs s rs a = FRInternal ![BPInpRef s rs a]
-                        | FRTerminal
+                        | FRTerminal !(Maybe a)
 
 instance Monoid (ForwardRefs s rs a) where
     mempty  = FRInternal []
     mappend = \case
         FRInternal rs -> \case
           FRInternal rs' -> FRInternal (rs ++ rs')
-          FRTerminal     -> FRTerminal
-        FRTerminal    -> \_ -> FRTerminal
+          FRTerminal g   -> FRTerminal g
+        FRTerminal g  -> \_ -> FRTerminal g
 
 data BPState :: Type -> [Type] -> Type where
     BPS :: { _bpsSources :: !(Prod (ForwardRefs s rs) rs)
@@ -170,8 +170,7 @@ _FRInternal
                  [BPInpRef s as a]    [BPInpRef t bs a]
 _FRInternal f = \case
     FRInternal xs -> FRInternal <$> f xs
-    -- FRExternal x  -> pure (FRExternal x)
-    FRTerminal    -> pure FRTerminal
+    FRTerminal g  -> pure (FRTerminal g)
 
 
 
