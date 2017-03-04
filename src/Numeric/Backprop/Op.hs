@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs            #-}
 {-# LANGUAGE LambdaCase       #-}
+{-# LANGUAGE PatternSynonyms  #-}
 {-# LANGUAGE PolyKinds        #-}
 {-# LANGUAGE RankNTypes       #-}
 {-# LANGUAGE TypeApplications #-}
@@ -18,6 +19,8 @@ module Numeric.Backprop.Op (
   , op1, op2, op3, opN, opCoerce, opTup, opIso
   , op1', op2', op3', opN', opCoerce', opTup', opIso'
   -- * Utility
+  , Prod(..), pattern (:>), only
+  , Tuple, pattern (::<), only_
   , Replicate
   ) where
 

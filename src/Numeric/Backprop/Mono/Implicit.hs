@@ -5,7 +5,6 @@
 module Numeric.Backprop.Mono.Implicit (
   -- * Types
     BPRef, Op
-  , Replicate
   -- * Backpropagation
   , backprop, grad, eval
   -- * Ref manipulation
