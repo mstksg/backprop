@@ -99,10 +99,14 @@ data BPRef :: Type -> [Type] -> Type -> Type where
              -> BPRef s rs a
     BPRConst :: !a
              -> BPRef s rs a
+    BPROp    :: !(Prod (BPRef s rs) as)
+             -> !(Op as a)
+             -> BPRef s rs a
 
 data BPInpRef :: Type -> [Type] -> Type -> Type where
-    BPIR :: { _bpirIndex :: !(Index bs a)
+    BPIR :: { _bpirIndex :: !(Index bs b)
             , _bpirRef   :: !(STRef s (BPNode s rs bs cs))
+            , _bpirOp    :: !(b -> a)
             }
          -> BPInpRef s rs a
 

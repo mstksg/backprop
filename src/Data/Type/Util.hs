@@ -72,8 +72,18 @@ finIndex = \case
     FZ   -> IZ
     FS f -> IS (finIndex f)
 
+traverse1_
+    :: (Applicative h, Traversable1 t)
+    => (forall a. f a -> h ())
+    -> t f b
+    -> h ()
+traverse1_ f = ($ pure ())
+             . appEndo
+             . getConst
+             . foldMap1 (\y -> Const (Endo (f y *>)))
+
 itraverse1_
-    :: (Applicative h, IxTraversable1 i t)
+    :: (Applicative h, IxFoldable1 i t)
     => (forall a. i b a -> f a -> h ())
     -> t f b
     -> h ()
@@ -89,12 +99,26 @@ for1
     -> h (t g b)
 for1 x f = traverse1 f x
 
+for1_
+    :: (Applicative h, Traversable1 t)
+    => t f b
+    -> (forall a. f a -> h ())
+    -> h ()
+for1_ x f = traverse1_ f x
+
 ifor1
     :: (Applicative h, IxTraversable1 i t)
     => t f b
     -> (forall a. i b a -> f a -> h (g a))
     -> h (t g b)
 ifor1 x f = itraverse1 f x
+
+ifor1_
+    :: (Applicative h, IxFoldable1 i t)
+    => t f b
+    -> (forall a. i b a -> f a -> h ())
+    -> h ()
+ifor1_ x f = itraverse1_ f x
 
 zipP
     :: Prod f as
