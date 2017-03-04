@@ -658,7 +658,6 @@ liftR3 o x y z = liftR o (x :< y :< z :< Ø)
 
 
 
-
 -- | Apply a function to the contents of an STRef, and cache the results
 -- using the given lens.  If already calculated, simply returned the cached
 -- result.

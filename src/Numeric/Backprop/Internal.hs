@@ -64,36 +64,6 @@ composeOp ss os o = Op $ \xs ->
           . zipP conts . gFz
         )
 
-instance (Known Length as, Every Num as, Num a) => Num (Op as a) where
-    o1 + o2 = composeOp summers (o1 :< o2 :< Ø) . Op $ \(I x :< I y :< Ø) ->
-                (x + y, \case Nothing -> 1 ::< 1 ::< Ø
-                              Just g  -> g ::< g ::< Ø
-                )
-    o1 - o2 = composeOp summers (o1 :< o2 :< Ø) . Op $ \(I x :< I y :< Ø) ->
-                (x - y, \case Nothing -> 1 ::< (-1) ::< Ø
-                              Just g  -> g ::< (-g) ::< Ø
-                )
-    o1 * o2 = composeOp summers (o1 :< o2 :< Ø) . Op $ \(I x :< I y :< Ø) ->
-                (x * y, \case Nothing -> y     ::< x     ::< Ø
-                              Just g  -> (g*y) ::< (x*g) ::< Ø
-                )
-    negate o = composeOp summers (o :< Ø) . Op $ \(I x :< Ø) ->
-                 (negate x, \case Nothing -> (-1) ::< Ø
-                                  Just g  -> (-g) ::< Ø
-                 )
-    signum o = composeOp summers (o :< Ø) . Op $ \(I x :< Ø) -> (signum x, const (0 :< Ø))
-    abs    o = composeOp summers (o :< Ø) . Op $ \(I x :< Ø) ->
-                 (abs x   , \case Nothing -> signum x       ::< Ø
-                                  Just g  -> (g * signum x) ::< Ø
-                 )
-    fromInteger i = Op $ \xs -> (fromInteger i, const (imap1 (\ix _ -> 0 \\ every @_ @Num ix) xs))
-
-instance (Known Length as, Every Fractional as, Every Num as, Fractional a) => Fractional (Op as a) where
-    recip o = composeOp summers (o :< Ø) . Op $ \(I x :< Ø) ->
-                (1/x, \case Nothing -> (-1 / (x * x)) ::< Ø
-                            Just g  -> (-g / (x * x)) ::< Ø
-                )
-    fromRational r = Op $ \xs -> (fromRational r, const (imap1 (\i _ -> 0 \\ every @_ @Fractional i) xs))
 
 newtype Summer a = Summer { runSummer :: [a] -> a }
 newtype Unity  a = Unity  { getUnity  :: a        }
@@ -200,3 +170,84 @@ _FRInternal f = \case
     FRExternal x  -> pure (FRExternal x)
     FRTerminal    -> pure FRTerminal
 
+
+
+
+
+
+
+-- internal helpers, which are done easily using functions in
+-- Numeric.Backprop.Op, but are duplicated here to prevent cyclic
+-- dependencies
+
+opPlus :: Num a => Op '[a, a] a
+opPlus = Op $ \(I x :< I y :< Ø) ->
+    (x + y, \case Nothing -> 1 ::< 1 ::< Ø
+                  Just g  -> g ::< g ::< Ø
+    )
+
+opMinus :: Num a => Op '[a, a] a
+opMinus = Op $ \(I x :< I y :< Ø) ->
+    (x - y, \case Nothing -> 1 ::< (-1) ::< Ø
+                  Just g  -> g ::< (-g) ::< Ø
+    )
+
+opTimes :: Num a => Op '[a, a] a
+opTimes = Op $ \(I x :< I y :< Ø) ->
+    (x * y, \case Nothing -> y     ::< x     ::< Ø
+                  Just g  -> (g*y) ::< (x*g) ::< Ø
+    )
+
+opNegate :: Num a => Op '[a] a
+opNegate = Op $ \(I x :< Ø) ->
+    (negate x, \case Nothing -> (-1) ::< Ø
+                     Just g  -> (-g) ::< Ø
+    )
+
+opAbs :: Num a => Op '[a] a
+opAbs = Op $ \(I x :< Ø) ->
+    (abs x   , \case Nothing -> signum x       ::< Ø
+                     Just g  -> (g * signum x) ::< Ø
+    )
+
+opSignum :: Num a => Op '[a] a
+opSignum = Op $ \(I x :< Ø) -> (signum x, const (0 ::< Ø))
+
+opRecip :: Fractional a => Op '[a] a
+opRecip = Op $ \(I x :< Ø) ->
+    (recip x, \case Nothing -> (-1/(x*x)) ::< Ø
+                    Just g  -> (-g/(x*x)) ::< Ø
+    )
+
+
+
+
+
+instance (Known Length as, Every Num as, Num a) => Num (Op as a) where
+    o1 + o2       = composeOp summers (o1 :< o2 :< Ø) opPlus
+    o1 - o2       = composeOp summers (o1 :< o2 :< Ø) opMinus
+    o1 * o2       = composeOp summers (o1 :< o2 :< Ø) opTimes
+    negate o      = composeOp summers (o :< Ø) opNegate
+    signum o      = composeOp summers (o :< Ø) opSignum
+    abs    o      = composeOp summers (o :< Ø) opAbs
+    fromInteger x = Op $ \xs -> (fromInteger x, const (imap1 (\ix _ -> 0 \\ every @_ @Num ix) xs))
+
+instance (Known Length as, Every Fractional as, Every Num as, Fractional a) => Fractional (Op as a) where
+    recip o        = composeOp summers (o :< Ø) . Op $ \(I x :< Ø) ->
+                       (1/x, \case Nothing -> (-1 / (x * x)) ::< Ø
+                                   Just g  -> (-g / (x * x)) ::< Ø
+                       )
+    fromRational x = Op $ \xs -> (fromRational x, const (imap1 (\ix _ -> 0 \\ every @_ @Fractional ix) xs))
+
+instance Num a => Num (BPRef s rs a) where
+    r1 + r2       = BPROp (r1 :< r2 :< Ø) opPlus
+    r1 - r2       = BPROp (r1 :< r2 :< Ø) opMinus
+    r1 * r2       = BPROp (r1 :< r2 :< Ø) opTimes
+    negate r      = BPROp (r :< Ø) opNegate
+    signum r      = BPROp (r :< Ø) opSignum
+    abs    r      = BPROp (r :< Ø) opAbs
+    fromInteger x = BPRConst (fromIntegral x)
+
+instance Fractional a => Fractional (BPRef s rs a) where
+    recip r        = BPROp (r :< Ø) opRecip
+    fromRational x = BPRConst (fromRational x)
