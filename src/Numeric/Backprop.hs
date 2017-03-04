@@ -17,8 +17,8 @@ module Numeric.Backprop (
   , Unity(..)
   -- * BP
   -- ** Backprop
-  , backprop, runBPOp, gradBPOp
-  , backprop', runBPOp', gradBPOp'
+  , backprop, evalBPOp, gradBPOp
+  , backprop', evalBPOp', gradBPOp'
   -- ** Inputs
   , withInps
   , plugBP, (~$), ($~)
@@ -60,7 +60,6 @@ module Numeric.Backprop (
   -- * Utility
   , Prod(..), pattern (:>), only
   , Tuple, pattern (::<), only_
-
   ) where
 
 import           Control.Monad.Base
@@ -492,20 +491,20 @@ backprop bp xs = backprop' (summers' l) (unities' l) bp xs
     l :: Length rs
     l = prodLength xs
 
-runBPOp'
+evalBPOp'
     :: Prod Summer rs
     -> Prod Unity rs
     -> (forall s. BPOp s rs a)
     -> Tuple rs
     -> a
-runBPOp' ss us bp = fst . backprop' ss us bp
+evalBPOp' ss us bp = fst . backprop' ss us bp
 
-runBPOp
+evalBPOp
     :: Every Num rs
     => (forall s. BPOp s rs a)
     -> Tuple rs
     -> a
-runBPOp bp = fst . backprop bp
+evalBPOp bp = fst . backprop bp
 
 gradBPOp'
     :: Prod Summer rs

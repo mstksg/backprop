@@ -21,7 +21,7 @@ module Numeric.Backprop.Mono (
   , Replicate
   -- * BP
   -- ** Backprop
-  , backprop, runBPOp, gradBPOp
+  , backprop, evalBPOp, gradBPOp
   -- ** Inputs
   , withInps
   -- * Refs
@@ -154,12 +154,12 @@ backprop bp i = (x, prodAlong i g)
   where
     (x, g) = BP.backprop' (toSummers i) (toUnities i) bp (vecToProd i)
 
-runBPOp
+evalBPOp
     :: forall n a b. Num a
     => (forall s. BPOp s n a b)
     -> Vec n a
     -> b
-runBPOp bp = fst . backprop bp
+evalBPOp bp = fst . backprop bp
 
 gradBPOp
     :: forall n a b. Num a

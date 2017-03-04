@@ -1,14 +1,29 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE PatternSynonyms  #-}
 {-# LANGUAGE RankNTypes       #-}
 
 module Numeric.Backprop.Mono.Implicit (
-    backprop, grad, eval
+  -- * Types
+    BPRef, Op
+  , Replicate
+  -- * Backpropagation
+  , backprop, grad, eval
+  -- * Ref manipulation
+  , constRef, liftR, liftR1, liftR2, liftR3
+  -- * Op
+  , op1, op2, op3, opN
+  -- * Utility
+  -- ** Type synonyms
+  , N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10
+  -- ** Vectors
+  , VecT(..), Vec, pattern (:+), (*:), (+:)
   ) where
 
 import           Data.Type.Nat
 import           Data.Type.Vector
+import           Numeric.Backprop.Mono hiding (backprop)
 import           Type.Class.Known
-import qualified Numeric.Backprop.Mono as BP
+import qualified Numeric.Backprop.Mono        as BP
 
 backprop
     :: forall n a b. (Num a, Known Nat n)
