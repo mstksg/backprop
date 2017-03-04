@@ -207,7 +207,7 @@ different network constructors differently.
 >       SNil -> withInps $ \(x :< n :< Ø) -> do
 >         -- peek into the NØ using netExternal iso
 >         l :< Ø <- netExternal #<~ n
->         -- run the 'layerOp' op, with x and l as inputs
+>         -- run the 'layerOp' BP, with x and l as inputs
 >         layerOp ~$ (x :< l :< Ø)
 >       SNat `SCons` ses -> withInps $ \(x :< n :< Ø) -> withSingI ses $ do
 >         -- peek into the (:&) using the netInternal iso
@@ -236,8 +236,7 @@ Gradient Descent
 
 Now we can do simple gradient descent.  Defining an error function:
 
-> err
->     :: KnownNat m
+> err :: KnownNat m
 >     => R m
 >     -> BPRef s rs (R m)
 >     -> BPOp s rs Double
