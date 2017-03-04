@@ -15,10 +15,10 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Numeric.Backprop.Explicit
+  exposed-modules:     Numeric.Backprop
                        Numeric.Backprop.Op
                        Numeric.Backprop.Implicit
-                       Numeric.Backprop.Mono.Explicit
+                       Numeric.Backprop.Mono
                        Numeric.Backprop.Iso
   other-modules:       Numeric.Backprop.Internal
                        Data.Type.Util

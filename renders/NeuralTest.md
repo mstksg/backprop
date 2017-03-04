@@ -40,7 +40,7 @@ import           Data.Singletons.TypeLits
 import           Data.Type.Combinator
 import           Data.Type.Product
 import           GHC.Generics                        (Generic)
-import           Numeric.Backprop
+import           Numeric.Backprop.Explicit
 import           Numeric.Backprop.Iso
 import           Numeric.LinearAlgebra.Static hiding (dot)
 import           System.Random.MWC

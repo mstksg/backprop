@@ -1,6 +1,6 @@
 {-# LANGUAGE GADTs #-}
 
-import           Numeric.Backprop.Mono.Explicit
+import           Numeric.Backprop.Mono
 
 test :: BPOp s N3 Double Double
 test = withInps $ \(x :* y :* z :* ØV) -> do

@@ -10,9 +10,9 @@ import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Product
 import           Data.Type.Util
-import           Type.Class.Known
-import qualified Numeric.Backprop.Explicit        as BP
 import           Numeric.Backprop.Internal
+import           Type.Class.Known
+import qualified Numeric.Backprop          as BP
 
 backprop'
     :: Prod Summer rs
@@ -58,4 +58,3 @@ eval
     -> Tuple rs
     -> a
 eval f = BP.runBPOp (return $ f BP.inpRefs)
-
