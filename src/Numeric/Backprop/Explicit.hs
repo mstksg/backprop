@@ -193,7 +193,7 @@ internally'
     -> BP s rs (BPRef s rs a)
 internally' ss us sa l r bp = do
     xs <- view l <$> BP (resolveRef r)
-    (res, gFunc) <- BP . liftBase $ backpropWith bp ss us xs
+    (res, gFunc) <- BP . liftBase $ backpropWith ss us bp xs
     let bpn :: BPNode s rs '[ b ] '[ a ]
         bpn = BPN { _bpnOut       = only $ FRInternal []
                   , _bpnRes       = only_ res
@@ -472,13 +472,13 @@ backwardPass = \case
         _bppGradFunc <$> traverse1 (fmap I . backwardPass) _bppOut
 
 backprop'
-    :: (forall s. BPOp s rs a)
-    -> Prod (Summer) rs
-    -> Prod (Unity) rs
+    :: Prod Summer rs
+    -> Prod Unity rs
+    -> (forall s. BPOp s rs a)
     -> Tuple rs
     -> (a, Tuple rs)
-backprop' bp ss us env = runST $ do
-    (res, gFunc) <- backpropWith bp ss us env
+backprop' ss us bp env = runST $ do
+    (res, gFunc) <- backpropWith ss us bp env
     grad <- gFunc Nothing
     return (res, grad)
 
@@ -487,18 +487,18 @@ backprop
     => (forall s. BPOp s rs a)
     -> Tuple rs
     -> (a, Tuple rs)
-backprop bp xs = backprop' bp (summers' l) (unities' l) xs
+backprop bp xs = backprop' (summers' l) (unities' l) bp xs
   where
     l :: Length rs
     l = prodLength xs
 
 runBPOp'
-    :: (forall s. BPOp s rs a)
-    -> Prod Summer rs
+    :: Prod Summer rs
     -> Prod Unity rs
+    -> (forall s. BPOp s rs a)
     -> Tuple rs
     -> a
-runBPOp' bp ss us = fst . backprop' bp ss us
+runBPOp' ss us bp = fst . backprop' ss us bp
 
 runBPOp
     :: Every Num rs
@@ -508,12 +508,12 @@ runBPOp
 runBPOp bp = fst . backprop bp
 
 gradBPOp'
-    :: (forall s. BPOp s rs a)
-    -> Prod Summer rs
+    :: Prod Summer rs
     -> Prod Unity rs
+    -> (forall s. BPOp s rs a)
     -> Tuple rs
     -> Tuple rs
-gradBPOp' bp ss us = snd . backprop' bp ss us
+gradBPOp' ss us bp = snd . backprop' ss us bp
 
 gradBPOp
     :: Every Num rs
@@ -543,12 +543,12 @@ closeOff isTerminal gOut = \case
        | otherwise  = FRInternal (IRConst <$> maybeToList gOut)
 
 backpropWith
-    :: BPOp s rs a
-    -> Prod Summer rs
+    :: Prod Summer rs
     -> Prod Unity rs
+    -> BPOp s rs a
     -> Tuple rs
     -> ST s (a, Maybe a -> ST s (Tuple rs))
-backpropWith bp ss us env = do
+backpropWith ss us bp env = do
     (r, bps0) <- runStateT (runReaderT (bpST bp) env)
                            (BPS (map1 (\_ -> FRInternal []) env))
     res <- runReaderT (resolveRef r) env
@@ -569,7 +569,7 @@ plugBP'
     -> BPOp s rs a
 plugBP' i ss us sa bp = do
     env <- traverse1 (fmap I . BP . resolveRef) i
-    (res, gFunc) <- BP . liftBase $ backpropWith bp ss us env
+    (res, gFunc) <- BP . liftBase $ backpropWith ss us bp env
     let bpn = BPN { _bpnOut       = FRInternal [] :< Ø
                   , _bpnRes       = only_ res
                   , _bpnGradFunc  = gFunc . head'

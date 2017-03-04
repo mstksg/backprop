@@ -152,7 +152,7 @@ backprop
     -> (b, Vec n a)
 backprop bp i = (x, prodAlong i g)
   where
-    (x, g) = BP.backprop' bp (toSummers i) (toUnities i) (vecToProd i)
+    (x, g) = BP.backprop' (toSummers i) (toUnities i) bp (vecToProd i)
 
 runBPOp
     :: forall n a b. Num a
