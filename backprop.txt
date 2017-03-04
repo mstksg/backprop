@@ -148,6 +148,7 @@ infixr 5 ::<
 only_ :: a -> Tuple ((:) * a ([] *))
 
 module Numeric.Backprop.Implicit
+data BPRef :: Type -> [Type] -> Type -> Type
 backprop :: (Known Length rs, Every Num rs) => (forall s. Prod (BPRef s rs) rs -> BPRef s rs a) -> Tuple rs -> (a, Tuple rs)
 grad :: (Known Length rs, Every Num rs) => (forall s. Prod (BPRef s rs) rs -> BPRef s rs a) -> Tuple rs -> Tuple rs
 eval :: (Known Length rs, Every Num rs) => (forall s. Prod (BPRef s rs) rs -> BPRef s rs a) -> Tuple rs -> a
@@ -209,3 +210,8 @@ infixr 4 :+
 infix 5 *:
 (+:) :: a -> a -> Vec (S (S Z)) a
 infix 5 +:
+
+module Numeric.Backprop.Mono.Implicit
+backprop :: forall n a b. (Num a, Known Nat n) => (forall s. VecT n (BPRef s n a) a -> BPRef s n a b) -> Vec n a -> (b, Vec n a)
+grad :: forall n a b. (Num a, Known Nat n) => (forall s. VecT n (BPRef s n a) a -> BPRef s n a b) -> Vec n a -> Vec n a
+eval :: forall n a b. (Num a, Known Nat n) => (forall s. VecT n (BPRef s n a) a -> BPRef s n a b) -> Vec n a -> b
