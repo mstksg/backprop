@@ -110,7 +110,7 @@ opRef' i o sm = do
                  , _bpnSummer    = only sm
                  }
     r <- BP . liftBase $ newSTRef bp
-    itraverse1_ (registerRef id r ) i
+    itraverse1_ (registerRef . flip IRNode r) i
     return (BPRNode IZ r)
 
 splitRefs'
@@ -207,7 +207,7 @@ internally' ss us sa l r bp = do
                   , _bpnSummer    = only sa
                   }
     r' <- BP . liftBase $ newSTRef bpn
-    registerRef id r' IZ r
+    registerRef (IRNode IZ r') r
     return (BPRNode IZ r')
 
 internally
@@ -258,7 +258,7 @@ choicesRef' ss us i r = do
                    , _bpnSummer    = only s
                    }
       r' <- BP . liftBase $ newSTRef bp
-      registerRef id r' IZ r
+      registerRef (IRNode IZ r') r
       return $ BPRNode IZ r'
 -- TODO: cannot implement via sopRef?  oh well.
 
@@ -294,7 +294,7 @@ sopRef' sss uss i r = do
                    , _bpnSummer    = ss
                    }
       r' <- BP . liftBase $ newSTRef bp
-      registerRef id r' IZ r
+      registerRef (IRNode IZ r') r
       return $ imap1 (\ix' _ -> BPRNode ix' r') ys
 
 sopRef
@@ -337,30 +337,34 @@ resolveRef = \case
       xs <- traverse1 (fmap I . resolveRef) rs
       return $ runOp o xs
 
+    -- -> STRef s (BPNode s rs as cs)
+    -- -> Index as a
+
 registerRef
-    :: forall s rs as b a c. ()
-    => (b -> a)
-    -> STRef s (BPNode s rs as c)
-    -> Index as b
+    :: forall s rs a. ()
+    => BPInpRef s rs a
     -> BPRef s rs a
     -> BP s rs ()
-registerRef f r ix = \case
+registerRef bpir = \case
     BPRNode  ix' r' -> BP . liftBase . modifySTRef r' $
                          over (bpnOut . indexP ix' . _FRInternal) (bpir :)
     BPRInp   ix'    -> BP $ modifying (bpsSources . indexP ix' . _FRInternal) (bpir :)
     BPRConst _      -> return ()
     BPROp    (rs :: Prod (BPRef s rs) ds) (o :: Op ds a) -> do
-      -- this will re-calculate the gradient every time though.  maybe
-      -- should cache?
       xs :: Tuple ds <- traverse1 (fmap I . BP . resolveRef) rs
       let res :: a
           gF :: Maybe a -> Tuple ds
           (res, gF) = runOp' o xs
-      ifor1_ (xs `zipP` rs) $ \ix' (I (x :: d) :&: (bpr :: BPRef s rs d)) ->
-        registerRef (getI . index ix' . gF . Just . f) r ix bpr
-      return ()
-  where
-    bpir = BPIR ix r f
+          bpp :: BPPipe s rs ds '[a]
+          bpp = BPP { _bppOut       = only bpir
+                    , _bppRes       = only_ res
+                    -- , _bppGradFunc  = gF . head'
+                    , _bppGradFunc  = gF . Just . getI . head'
+                    , _bppGradCache = Nothing
+                    }
+      r' <- BP . liftBase $ newSTRef bpp
+      ifor1_ rs $ \ix' (bpr :: BPRef s rs d) ->
+        registerRef (IRPipe ix' r') bpr
 
 opRef
     :: Num a
@@ -428,20 +432,36 @@ opRef3
     -> BP s rs (BPRef s rs d)
 opRef3 rx ry rz o = opRef3' rx ry rz o known
 
-backwardPass
+pullNode
     :: forall s rs as a. ()
     => STRef s (BPNode s rs as a)
     -> ST s (Tuple as)
-backwardPass r = fmap snd . caching bpnGradCache r $ \BPN{..} -> do
+pullNode r = caching bpnGradCache r $ \BPN{..} -> do
     totdervs <- for1 (_bpnSummer `zipP` _bpnOut) $ \case
       s :&: FRInternal rs -> do
-        outs <- for rs $ \(BPIR ix r' f) ->
-          f . getI . index ix <$> backwardPass r'
+        outs <- for rs $ \case
+          IRNode ix r' ->
+            getI . index ix <$> pullNode r'
+          IRPipe ix r' ->
+            getI . index ix <$> pullPipe r'
         return (Just $ runSummer s outs)
       _ :&: FRExternal gE -> return (Just gE)
       _ :&: FRTerminal    -> return Nothing
     g <- _bpnGradFunc totdervs
-    return (totdervs, g)
+    return g
+
+pullPipe
+    :: forall s rs as a. ()
+    => STRef s (BPPipe s rs as a)
+    -> ST s (Tuple as)
+pullPipe r = caching bppGradCache r $ \BPP{..} -> do
+    totdervs <- for1 _bppOut $ \case
+      IRNode ix r' ->
+        index ix <$> pullNode r'
+      IRPipe ix r' ->
+        index ix <$> pullPipe r'
+    let g = _bppGradFunc totdervs
+    return g
 
 backprop'
     :: (forall s. BPOp s rs a)
@@ -495,6 +515,24 @@ gradBPOp
 gradBPOp bp = snd . backprop bp
 
 
+closeOff
+    :: (MonadReader (Tuple rs) m, MonadState (BPState s rs) m, MonadBase (ST s) m)
+    => Maybe a
+    -> BPRef s rs a
+    -> m ()
+closeOff gOut = \case
+    BPRNode  ix sr -> liftBase $ modifySTRef sr (set (bpnOut . indexP ix) fr)
+    BPRInp   ix'   -> assign (bpsSources . indexP ix') fr
+    BPRConst _     -> return ()
+    BPROp    rs o  -> do
+      xs <- traverse1 (fmap I . resolveRef) rs
+      let gs = gradOpWith' o xs gOut
+      for1_ (gs `zipP` rs) $ \(I g :&: r) ->
+        closeOff (Just g) r
+  where
+    fr = case gOut of
+      Just g  -> FRExternal g
+      Nothing -> FRTerminal
 
 backpropWith
     :: BPOp s rs a
@@ -507,18 +545,22 @@ backpropWith bp ss us env = do
                            (BPS (map1 (\_ -> FRInternal []) env))
     res <- runReaderT (resolveRef r) env
     let gradFunc gradOut = do
-          let fr = case gradOut of
-                     Just g  -> FRExternal g
-                     Nothing -> FRTerminal
-          BPS{..} <- case r of
-            BPRNode  ix sr -> bps0 <$ modifySTRef sr (set (bpnOut . indexP ix) fr)
-            BPRInp   ix    -> return $ set (bpsSources . indexP ix) fr bps0
-            BPRConst _     -> return bps0
+          -- let fr = case gradOut of
+          --            Just g  -> FRExternal g
+          --            Nothing -> FRTerminal
+          BPS{..} <- execStateT (runReaderT (closeOff gradOut r) env) bps0
+            -- BPRNode  ix sr -> bps0 <$ modifySTRef sr (set (bpnOut . indexP ix) fr)
+            -- BPRInp   ix    -> return $ set (bpsSources . indexP ix) fr bps0
+            -- BPRConst _     -> return bps0
+            -- -- BPROp    rs o  -> _
           for1 (ss `zipP` us `zipP` _bpsSources) $ \((s :&: u) :&: rs) -> do
             I <$> case rs of
               FRInternal rs' ->
-                fmap (runSummer s) . for rs' $ \(BPIR ix r' f) ->
-                  f . getI . index ix <$> backwardPass r'
+                fmap (runSummer s) . for rs' $ \case
+                  IRNode ix r' ->
+                    getI . index ix <$> pullNode r'
+                  IRPipe ix r' ->
+                    getI . index ix <$> pullPipe r'
               FRExternal gE  ->
                 return $ gE
               FRTerminal     ->
@@ -542,7 +584,7 @@ plugBP' i ss us sa bp = do
                   , _bpnSummer    = sa :< Ø
                   }
     r <- BP . liftBase $ newSTRef bpn
-    itraverse1_ (registerRef id r) i
+    itraverse1_ (registerRef . flip IRNode r) i
     return (BPRNode IZ r)
 
 plugBP

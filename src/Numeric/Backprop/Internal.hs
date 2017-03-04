@@ -20,7 +20,9 @@ module Numeric.Backprop.Internal
  , BPState(..), bpsSources
  , BP(..)
  , BPInpRef(..)
+ -- , BPComp(..)
  , BPNode(..), bpnOut, bpnRes, bpnGradFunc, bpnGradCache, bpnSummer
+ , BPPipe(..), bppOut, bppRes, bppGradFunc, bppGradCache
  , BPRef(..)
  , ForwardRefs(..), _FRInternal
  ) where
@@ -104,23 +106,40 @@ data BPRef :: Type -> [Type] -> Type -> Type where
              -> BPRef s rs a
 
 data BPInpRef :: Type -> [Type] -> Type -> Type where
-    BPIR :: { _bpirIndex :: !(Index bs b)
-            , _bpirRef   :: !(STRef s (BPNode s rs bs cs))
-            , _bpirOp    :: !(b -> a)
-            }
-         -> BPInpRef s rs a
+    IRNode :: !(Index bs a)
+           -> !(STRef s (BPNode s rs bs cs))
+           -> BPInpRef s rs a
+    IRPipe :: !(Index bs a)
+           -> !(STRef s (BPPipe s rs bs cs))
+           -> BPInpRef s rs a
+
+-- data BPComp :: Type -> [Type] -> [Type] -> [Type] -> Type where
+--     BPCNode :: !(BPNode s rs as bs)
+--             -> BPComp s rs as bs
+--     BPCPipe :: !(BPPipe s rs as bs)
+--             -> BPComp s rs as bs
 
 data BPNode :: Type -> [Type] -> [Type] -> [Type] -> Type where
     BPN :: { _bpnOut       :: !(Prod (ForwardRefs s rs) bs)
            , _bpnRes       :: !(Tuple bs)
            , _bpnGradFunc  :: !(Prod Maybe bs -> ST s (Tuple as))
-           , _bpnGradCache :: !(Maybe (Prod Maybe bs, Tuple as))  -- nothing if is the "final output"
+           , _bpnGradCache :: !(Maybe (Tuple as))  -- nothing if is the "final output"
            , _bpnSummer    :: !(Prod Summer bs)
            }
         -> BPNode s rs as bs
+-- data ForwardRefs s rs a = FRInternal ![BPInpRef s rs a]
+
+data BPPipe :: Type -> [Type] -> [Type] -> [Type] -> Type where
+    BPP :: { _bppOut       :: !(Prod (BPInpRef s rs) bs)
+           , _bppRes       :: !(Tuple bs)
+           , _bppGradFunc  :: !(Tuple bs -> Tuple as)
+           , _bppGradCache :: !(Maybe (Tuple as))
+           }
+        -> BPPipe s rs as bs
 
 makeLenses ''BPState
 makeLenses ''BPNode
+makeLenses ''BPPipe
 
 _FRInternal
     :: Traversal (ForwardRefs s as a) (ForwardRefs t bs a)
