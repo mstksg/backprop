@@ -1,15 +1,18 @@
-{-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs            #-}
-{-# LANGUAGE LambdaCase       #-}
-{-# LANGUAGE PatternSynonyms  #-}
-{-# LANGUAGE PolyKinds        #-}
-{-# LANGUAGE RankNTypes       #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE LambdaCase           #-}
+{-# LANGUAGE PatternSynonyms      #-}
+{-# LANGUAGE PolyKinds            #-}
+{-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Numeric.Backprop.Op (
   -- * Type
     Op(..)
+  , Summer(..), summers, summers'
+  , Unity(..), unities, unities'
   -- ** Running
   , runOp, gradOp, gradOpWith, gradOpWith'
   -- ** Manipulation
@@ -27,8 +30,9 @@ module Numeric.Backprop.Op (
 import           Data.Bifunctor
 import           Data.Coerce
 import           Data.Maybe
-import           Data.Reflection                (Reifies)
+import           Data.Reflection                  (Reifies)
 import           Data.Type.Combinator
+import           Data.Type.Conjunction
 import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Nat
@@ -37,13 +41,32 @@ import           Data.Type.Util
 import           Data.Type.Vector
 import           Lens.Micro.Extras
 import           Numeric.AD
-import           Numeric.AD.Internal.Reverse    (Reverse, Tape)
-import           Numeric.AD.Mode.Forward hiding (grad')
-import           Numeric.Backprop.Internal
+import           Numeric.AD.Internal.Reverse      (Reverse, Tape)
+import           Numeric.AD.Mode.Forward hiding   (grad')
+import           Numeric.Backprop.Internal.Helper
 import           Numeric.Backprop.Iso
 import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness
+
+-- instead of Tuple as, Prod Diff as, where Diff can be a value, or zero,
+-- or one?
+newtype Op as a = Op { runOp' :: Tuple as -> (a, Maybe a -> Tuple as) }
+
+newtype OpCont as a = OC { runOpCont :: Maybe a -> Tuple as }
+
+composeOp :: Prod Summer as -> Prod (Op as) bs -> Op bs c -> Op as c
+composeOp ss os o = Op $ \xs ->
+    let (ys, conts) = unzipP
+                    . map1 ((\(x, c) -> I x :&: OC c) . flip runOp' xs)
+                    $ os
+        (z, gFz) = runOp' o ys
+    in  (z, map1 (\(s :&: gs) -> I $ runSummer s gs)
+          . zipP ss
+          . foldr (\x -> map1 (uncurryFan (\(I y) -> (y:))) . zipP x) (map1 (const []) ss)
+          . toList (\(oc :&: I g) -> runOpCont oc (Just g))
+          . zipP conts . gFz
+        )
 
 runOp :: Op as a -> Tuple as -> a
 runOp o = fst . runOp' o
@@ -78,6 +101,13 @@ opIso' u i = op1' $ \x -> (view i x, maybe (getUnity u) (review i))
 
 opIso :: Num a => Iso' a b -> Op '[ a ] b
 opIso = opIso' known
+
+opConst' :: Prod Summer as -> a -> Op as a
+opConst' ss x = Op $ \_ ->
+    (x , const $ map1 (\s -> I $ runSummer s []) ss)
+
+opConst :: (Every Num as, Known Length as) => a -> Op as a
+opConst = opConst' summers
 
 op0 :: a -> Op '[] a
 op0 x = Op $ \case
@@ -137,3 +167,37 @@ opN :: (Num a, Known Nat n)
 opN f = opN' $ \xs ->
     let (y, dxs) = grad' f xs
     in  (y, maybe dxs (\q -> (q *) <$> dxs))
+
+instance (Known Length as, Every Num as, Num a) => Num (Op as a) where
+    o1 + o2       = composeOp summers (o1 :< o2 :< Ø) $ op2 (+)
+    o1 - o2       = composeOp summers (o1 :< o2 :< Ø) $ op2 (-)
+    o1 * o2       = composeOp summers (o1 :< o2 :< Ø) $ op2 (*)
+    negate o      = composeOp summers (o :< Ø)        $ op1 negate
+    signum o      = composeOp summers (o :< Ø)        $ op1 signum
+    abs    o      = composeOp summers (o :< Ø)        $ op1 abs
+    fromInteger x = opConst (fromInteger x)
+
+instance (Known Length as, Every Fractional as, Every Num as, Fractional a) => Fractional (Op as a) where
+    o1 / o2        = composeOp summers (o1 :< o2 :< Ø) $ op2 (/)
+    recip o        = composeOp summers (o :< Ø)        $ op1 recip
+    fromRational x = opConst (fromRational x)
+
+instance (Known Length as, Every Floating as, Every Fractional as, Every Num as, Floating a) => Floating (Op as a) where
+    pi            = opConst pi
+    exp   o       = composeOp summers (o :< Ø)        $ op1 exp
+    log   o       = composeOp summers (o :< Ø)        $ op1 log
+    sqrt  o       = composeOp summers (o :< Ø)        $ op1 sqrt
+    o1 ** o2      = composeOp summers (o1 :< o2 :< Ø) $ op2 (**)
+    logBase o1 o2 = composeOp summers (o1 :< o2 :< Ø) $ op2 logBase
+    sin   o       = composeOp summers (o :< Ø)        $ op1 sin
+    cos   o       = composeOp summers (o :< Ø)        $ op1 cos
+    tan   o       = composeOp summers (o :< Ø)        $ op1 tan
+    asin  o       = composeOp summers (o :< Ø)        $ op1 asin
+    acos  o       = composeOp summers (o :< Ø)        $ op1 acos
+    atan  o       = composeOp summers (o :< Ø)        $ op1 atan
+    sinh  o       = composeOp summers (o :< Ø)        $ op1 sinh
+    cosh  o       = composeOp summers (o :< Ø)        $ op1 cosh
+    asinh o       = composeOp summers (o :< Ø)        $ op1 asinh
+    acosh o       = composeOp summers (o :< Ø)        $ op1 acosh
+    atanh o       = composeOp summers (o :< Ø)        $ op1 atanh
+

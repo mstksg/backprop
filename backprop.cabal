@@ -23,6 +23,7 @@ library
                        Numeric.Backprop.Op
                        Numeric.Backprop.Op.Mono
   other-modules:       Numeric.Backprop.Internal
+                       Numeric.Backprop.Internal.Helper
                        Data.Type.Util
   build-depends:       base >= 4.7 && < 5
                      , ad

@@ -25,7 +25,6 @@ import           Numeric.AD.Internal.Reverse (Reverse, Tape)
 import           Numeric.AD.Mode.Forward     (AD, Forward)
 import           Type.Class.Known
 import           Type.Family.Nat
-import qualified Numeric.Backprop.Internal   as BP
 import qualified Numeric.Backprop.Op         as BP
 
 type Op n a       = BP.Op (Replicate n a)

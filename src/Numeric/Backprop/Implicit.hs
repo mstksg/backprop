@@ -38,6 +38,7 @@ import           Lens.Micro hiding         (ix)
 import           Lens.Micro.Extras
 import           Numeric.Backprop.Internal
 import           Numeric.Backprop.Iso
+import           Numeric.Backprop.Op
 import           Type.Class.Higher
 import           Type.Class.Known
 import qualified Generics.SOP              as SOP
@@ -162,3 +163,4 @@ gSplit
     -> Prod (BPRef s rs) as
 gSplit = partsRef gTuple
 
+-- TODO: figure out how to split sums
