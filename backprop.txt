@@ -96,6 +96,28 @@ module Numeric.Backprop
 data BP s rs b
 type BPOp s rs a = BP s rs (BRef s rs a)
 type BPOpI s rs a = Prod (BRef s rs) rs -> BRef s rs a
+
+-- | The basic unit of manipulation inside <a>BP</a>. Instead of directly
+--   working with values, you work with <i>references</i> to those values.
+--   When you work with a <a>BRef</a>, the <i>backprop</i> library can keep
+--   track of what values refer to which other values, and so can perform
+--   backpropagation to compute gradients.
+--   
+--   A <tt><a>BRef</a> s rs a</tt> lives inside a <tt><a>BP</a> s rs</tt>
+--   monad, and refers to a value of type <tt>a</tt>. (The <tt>rs</tt>
+--   refers to the environment of the <a>BP</a> action that the
+--   <tt>BPRef</tt> lives inside.)
+--   
+--   <tt>BPRef</tt>s have <a>Num</a>, <a>Fractional</a>, <a>Floating</a>,
+--   etc. instances, so they can be manipulated using polymorphic functions
+--   and numeric functions in Haskell. You can add them, subtract them,
+--   etc., in "implicit" backprop style.
+--   
+--   (However, note that if you directly manipulate <tt>BPRef</tt>s using
+--   those instances or using <tt>liftR</tt>, it delays evaluation, so
+--   every usage site has to re-compute the result/create a new node. If
+--   you want to re-use a <tt>BPRef</tt> you created using '(+)' or '(-)'
+--   or <tt>liftR</tt>, use <tt>bindRef</tt> to force it first.)
 data BRef :: Type -> [Type] -> Type -> Type
 newtype Op as a
 Op :: (Tuple as -> (a, Maybe a -> Tuple as)) -> Op as a
@@ -204,6 +226,28 @@ infixr 5 ::<
 only_ :: a -> Tuple ((:) * a ([] *))
 
 module Numeric.Backprop.Implicit
+
+-- | The basic unit of manipulation inside <a>BP</a>. Instead of directly
+--   working with values, you work with <i>references</i> to those values.
+--   When you work with a <a>BRef</a>, the <i>backprop</i> library can keep
+--   track of what values refer to which other values, and so can perform
+--   backpropagation to compute gradients.
+--   
+--   A <tt><a>BRef</a> s rs a</tt> lives inside a <tt><a>BP</a> s rs</tt>
+--   monad, and refers to a value of type <tt>a</tt>. (The <tt>rs</tt>
+--   refers to the environment of the <a>BP</a> action that the
+--   <tt>BPRef</tt> lives inside.)
+--   
+--   <tt>BPRef</tt>s have <a>Num</a>, <a>Fractional</a>, <a>Floating</a>,
+--   etc. instances, so they can be manipulated using polymorphic functions
+--   and numeric functions in Haskell. You can add them, subtract them,
+--   etc., in "implicit" backprop style.
+--   
+--   (However, note that if you directly manipulate <tt>BPRef</tt>s using
+--   those instances or using <tt>liftR</tt>, it delays evaluation, so
+--   every usage site has to re-compute the result/create a new node. If
+--   you want to re-use a <tt>BPRef</tt> you created using '(+)' or '(-)'
+--   or <tt>liftR</tt>, use <tt>bindRef</tt> to force it first.)
 data BRef :: Type -> [Type] -> Type -> Type
 type BPOp rs a = forall s. Prod (BRef s rs) rs -> BRef s rs a
 newtype Op as a
