@@ -13,9 +13,9 @@
 
 module Numeric.Backprop.Op (
   -- * Type
-    Op, OpM(.., Op, runOp')
+    Op, OpM(..), pattern Op
   -- ** Running
-  , runOp, gradOp, gradOpWith, gradOpWith'
+  , runOp', runOp, gradOp, gradOpWith, gradOpWith'
   , runOpM, gradOpWithM, gradOpWithM'
   -- ** Manipulation
   , composeOp
