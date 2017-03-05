@@ -91,11 +91,12 @@ netGrad
     -> Tuple '[ L n m, R n, L o n, R o ]
 netGrad inp targ params = gradBPOp opError params
   where
-    -- calculate squared error, in explicit style
+    -- calculate squared error, in *explicit* style
+    -- (implicit style also possible)
     opError :: BPOp s '[ L n m, R n, L o n, R o ] Double
     opError = do
-        res <- simpleOp inp
-        err <- bindRef $ res - t
+        res <- neuralNet inp
+        err <- bindRef (res - t)
         dot -$ (err :< err :< Ø)
       where
         t = constRef targ
