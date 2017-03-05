@@ -39,6 +39,11 @@ import           Type.Class.Known
 -- that are /not/ instances of 'Num'.  Any type can be used, as long as you
 -- provide a way to "sum" it!
 --
+-- For most of the functions in this library, you can completely ignore
+-- this, as they will be generated automatically.  You only need to work
+-- with this directly if you want to use custom types that /aren't/
+-- instances of 'Num' with this library.
+--
 -- If 'Num a' is satisfied, one can create the canonical 'Summer' using
 -- @'known' :: 'Num' a => 'Summer' a@.
 newtype Summer a = Summer { runSummer :: [a] -> a }
@@ -50,6 +55,11 @@ newtype Summer a = Summer { runSummer :: [a] -> a }
 -- @'Unity' 1'@.  However, using 'Unity' lets us use 'BP' with types
 -- that are /not/ instances of 'Num'.  Any type can be used, as long as you
 -- provide a way to get a multiplicative identity in it!
+--
+-- For most of the functions in this library, you can completely ignore
+-- this, as they will be generated automatically.  You only need to work
+-- with this directly if you want to use custom types that /aren't/
+-- instances of 'Num' with this library.
 --
 -- If 'Num a' is satisfied, one can create the canonical 'Unity' using
 -- @'known' :: 'Num' a => 'Unity' a@.

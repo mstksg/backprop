@@ -13,8 +13,6 @@ module Numeric.Backprop (
   -- * Types
     BP, BPOp, BPOpI, BRef
   , Op(..)
-  , Summer(..)
-  , Unity(..)
   -- * BP
   -- ** Backprop
   , backprop, evalBPOp, gradBPOp
@@ -58,7 +56,8 @@ module Numeric.Backprop (
   , op1, op2, op3, opN
   , op1', op2', op3', opN'
   -- * Utility
-  , summers, unities
+  , Summer(..), summers, summers'
+  , Unity(..), unities, unities'
   , Prod(..), pattern (:>), only, head'
   , Tuple, pattern (::<), only_
   ) where
