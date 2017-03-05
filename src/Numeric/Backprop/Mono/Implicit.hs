@@ -28,21 +28,21 @@ type BPOp n a b = forall s. VecT n (BRef s n a) a -> BRef s n a b
 
 backprop
     :: forall n a b. (Num a, Known Nat n)
-    => (forall s. VecT n (BRef s n a) a -> BRef s n a b)
+    => BPOp n a b
     -> Vec n a
     -> (b, Vec n a)
 backprop f = BP.backprop $ BP.withInps (return . f)
 
 grad
     :: forall n a b. (Num a, Known Nat n)
-    => (forall s. VecT n (BRef s n a) a -> BRef s n a b)
+    => BPOp n a b
     -> Vec n a
     -> Vec n a
 grad f = snd . backprop f
 
 eval
     :: forall n a b. (Num a, Known Nat n)
-    => (forall s. VecT n (BRef s n a) a -> BRef s n a b)
+    => BPOp n a b
     -> Vec n a
     -> b
 eval f = fst . backprop f
