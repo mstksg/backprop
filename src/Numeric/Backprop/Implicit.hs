@@ -8,7 +8,7 @@
 
 module Numeric.Backprop.Implicit (
   -- * Types
-    BPRef, BPOp, Op(..)
+    BRef, BPOp, Op(..)
   , Summer(..), Unity(..)
   -- * Backpropagation
   , backprop, grad, eval
@@ -44,19 +44,19 @@ import           Type.Class.Known
 import qualified Generics.SOP              as SOP
 import qualified Numeric.Backprop          as BP
 
-type BPOp rs a = forall s. Prod (BPRef s rs) rs -> BPRef s rs a
+type BPOp rs a = forall s. Prod (BRef s rs) rs -> BRef s rs a
 
 backprop'
     :: Prod Summer rs
     -> Prod Unity rs
-    -> (forall s. Prod (BPRef s rs) rs -> BPRef s rs a)
+    -> (forall s. Prod (BRef s rs) rs -> BRef s rs a)
     -> Tuple rs
     -> (a, Tuple rs)
 backprop' ss us f = BP.backprop' ss us $ BP.withInps' (prodLength ss) (return . f)
 
 backprop
     :: (Known Length rs, Every Num rs)
-    => (forall s. Prod (BPRef s rs) rs -> BPRef s rs a)
+    => (forall s. Prod (BRef s rs) rs -> BRef s rs a)
     -> Tuple rs
     -> (a, Tuple rs)
 backprop f = BP.backprop $ BP.withInps (return . f)
@@ -64,14 +64,14 @@ backprop f = BP.backprop $ BP.withInps (return . f)
 grad'
     :: Prod Summer rs
     -> Prod Unity rs
-    -> (forall s. Prod (BPRef s rs) rs -> BPRef s rs a)
+    -> (forall s. Prod (BRef s rs) rs -> BRef s rs a)
     -> Tuple rs
     -> Tuple rs
 grad' ss us f = snd . backprop' ss us f
 
 grad
     :: (Known Length rs, Every Num rs)
-    => (forall s. Prod (BPRef s rs) rs -> BPRef s rs a)
+    => (forall s. Prod (BRef s rs) rs -> BRef s rs a)
     -> Tuple rs
     -> Tuple rs
 grad f = snd . backprop f
@@ -79,14 +79,14 @@ grad f = snd . backprop f
 eval'
     :: Prod Summer rs
     -> Prod Unity rs
-    -> (forall s. Prod (BPRef s rs) rs -> BPRef s rs a)
+    -> (forall s. Prod (BRef s rs) rs -> BRef s rs a)
     -> Tuple rs
     -> a
 eval' ss us f = fst . backprop' ss us f
 
 eval
     :: (Known Length rs, Every Num rs)
-    => (forall s. Prod (BPRef s rs) rs -> BPRef s rs a)
+    => (forall s. Prod (BRef s rs) rs -> BRef s rs a)
     -> Tuple rs
     -> a
 eval f = fst . backprop f
@@ -96,8 +96,8 @@ partsRef'
     => Prod Summer bs
     -> Prod Unity bs
     -> Iso' a (Tuple bs)
-    -> BPRef s rs a
-    -> Prod (BPRef s rs) bs
+    -> BRef s rs a
+    -> Prod (BRef s rs) bs
 partsRef' ss us i r = imap1 (\ix u -> BP.liftR1 (BP.op1' (f ix u)) r) us
   where
     f :: Index bs b
@@ -115,8 +115,8 @@ partsRef' ss us i r = imap1 (\ix u -> BP.liftR1 (BP.op1' (f ix u)) r) us
 partsRef
     :: forall s rs bs a. (Known Length bs, Every Num bs)
     => Iso' a (Tuple bs)
-    -> BPRef s rs a
-    -> Prod (BPRef s rs) bs
+    -> BRef s rs a
+    -> Prod (BRef s rs) bs
 partsRef = partsRef' summers unities
 
 withParts'
@@ -124,16 +124,16 @@ withParts'
     => Prod Summer bs
     -> Prod Unity bs
     -> Iso' a (Tuple bs)
-    -> BPRef s rs a
-    -> (Prod (BPRef s rs) bs -> r)
+    -> BRef s rs a
+    -> (Prod (BRef s rs) bs -> r)
     -> r
 withParts' ss us i r f = f (partsRef' ss us i r)
 
 withParts
     :: forall s rs bs a r. (Known Length bs, Every Num bs)
     => Iso' a (Tuple bs)
-    -> BPRef s rs a
-    -> (Prod (BPRef s rs) bs -> r)
+    -> BRef s rs a
+    -> (Prod (BRef s rs) bs -> r)
     -> r
 withParts i r f = f (partsRef i r)
 
@@ -141,28 +141,28 @@ splitRefs'
     :: forall s rs as. ()
     => Prod Summer as
     -> Prod Unity as
-    -> BPRef s rs (Tuple as)
-    -> Prod (BPRef s rs) as
+    -> BRef s rs (Tuple as)
+    -> Prod (BRef s rs) as
 splitRefs' ss us = partsRef' ss us id
 
 splitRefs
     :: forall s rs as. (Known Length as, Every Num as)
-    => BPRef s rs (Tuple as)
-    -> Prod (BPRef s rs) as
+    => BRef s rs (Tuple as)
+    -> Prod (BRef s rs) as
 splitRefs = partsRef id
 
 gSplit'
     :: forall s rs as a. (SOP.Generic a, SOP.Code a ~ '[as])
     => Prod Summer as
     -> Prod Unity as
-    -> BPRef s rs a
-    -> Prod (BPRef s rs) as
+    -> BRef s rs a
+    -> Prod (BRef s rs) as
 gSplit' ss us = partsRef' ss us gTuple
 
 gSplit
     :: forall s rs as a. (SOP.Generic a, SOP.Code a ~ '[as], Known Length as, Every Num as)
-    => BPRef s rs a
-    -> Prod (BPRef s rs) as
+    => BRef s rs a
+    -> Prod (BRef s rs) as
 gSplit = partsRef gTuple
 
 -- TODO: figure out how to split sums

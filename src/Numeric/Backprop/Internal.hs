@@ -23,7 +23,7 @@ module Numeric.Backprop.Internal
   -- , BPComp(..)
   , BPNode(..), bpnOut, bpnRes, bpnGradFunc, bpnGradCache, bpnSummer
   , BPPipe(..), bppOut, bppRes, bppGradFunc, bppGradCache
-  , BPRef(..)
+  , BRef(..)
   , ForwardRefs(..), _FRInternal
   ) where
 
@@ -61,17 +61,17 @@ newtype BP s rs b = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s
                , Monad
                )
 
-data BPRef :: Type -> [Type] -> Type -> Type where
-    BPRNode  :: !(Index bs a)
-             -> !(STRef s (BPNode s rs as bs))
-             -> BPRef s rs a
-    BPRInp   :: !(Index rs a)
-             -> BPRef s rs a
-    BPRConst :: !a
-             -> BPRef s rs a
-    BPROp    :: !(Prod (BPRef s rs) as)
-             -> !(Op as a)
-             -> BPRef s rs a
+data BRef :: Type -> [Type] -> Type -> Type where
+    BRNode  :: !(Index bs a)
+            -> !(STRef s (BPNode s rs as bs))
+            -> BRef s rs a
+    BRInp   :: !(Index rs a)
+            -> BRef s rs a
+    BRConst :: !a
+            -> BRef s rs a
+    BROp    :: !(Prod (BRef s rs) as)
+            -> !(Op as a)
+            -> BRef s rs a
 
 data BPInpRef :: Type -> [Type] -> Type -> Type where
     IRNode  :: !(Index bs a)
@@ -114,37 +114,37 @@ _FRInternal f = \case
 
 
 
-instance Num a => Num (BPRef s rs a) where
-    r1 + r2       = BPROp (r1 :< r2 :< Ø) $ op2 (+)
-    r1 - r2       = BPROp (r1 :< r2 :< Ø) $ op2 (-)
-    r1 * r2       = BPROp (r1 :< r2 :< Ø) $ op2 (*)
-    negate r      = BPROp (r :< Ø)        $ op1 negate
-    signum r      = BPROp (r :< Ø)        $ op1 negate
-    abs r         = BPROp (r :< Ø)        $ op1 abs
-    fromInteger x = BPRConst (fromInteger x)
+instance Num a => Num (BRef s rs a) where
+    r1 + r2       = BROp (r1 :< r2 :< Ø) $ op2 (+)
+    r1 - r2       = BROp (r1 :< r2 :< Ø) $ op2 (-)
+    r1 * r2       = BROp (r1 :< r2 :< Ø) $ op2 (*)
+    negate r      = BROp (r :< Ø)        $ op1 negate
+    signum r      = BROp (r :< Ø)        $ op1 negate
+    abs r         = BROp (r :< Ø)        $ op1 abs
+    fromInteger x = BRConst (fromInteger x)
 
-instance Fractional a => Fractional (BPRef s rs a) where
-    r1 / r2        = BPROp (r1 :< r2 :< Ø) $ op2 (/)
-    recip r        = BPROp (r :< Ø)        $ op1 recip
-    fromRational x = BPRConst (fromRational x)
+instance Fractional a => Fractional (BRef s rs a) where
+    r1 / r2        = BROp (r1 :< r2 :< Ø) $ op2 (/)
+    recip r        = BROp (r :< Ø)        $ op1 recip
+    fromRational x = BRConst (fromRational x)
 
-instance Floating a => Floating (BPRef s rs a) where
-    pi            = BPRConst pi
-    exp   r       = BPROp (r :< Ø)        $ op1 exp
-    log   r       = BPROp (r :< Ø)        $ op1 log
-    sqrt  r       = BPROp (r :< Ø)        $ op1 sqrt
-    r1 ** r2      = BPROp (r1 :< r2 :< Ø) $ op2 (**)
-    logBase r1 r2 = BPROp (r1 :< r2 :< Ø) $ op2 logBase
-    sin   r       = BPROp (r :< Ø)        $ op1 sin
-    cos   r       = BPROp (r :< Ø)        $ op1 cos
-    tan   r       = BPROp (r :< Ø)        $ op1 tan
-    asin  r       = BPROp (r :< Ø)        $ op1 asin
-    acos  r       = BPROp (r :< Ø)        $ op1 acos
-    atan  r       = BPROp (r :< Ø)        $ op1 atan
-    sinh  r       = BPROp (r :< Ø)        $ op1 sinh
-    cosh  r       = BPROp (r :< Ø)        $ op1 cosh
-    tanh  r       = BPROp (r :< Ø)        $ op1 tanh
-    asinh r       = BPROp (r :< Ø)        $ op1 asinh
-    acosh r       = BPROp (r :< Ø)        $ op1 acosh
-    atanh r       = BPROp (r :< Ø)        $ op1 atanh
+instance Floating a => Floating (BRef s rs a) where
+    pi            = BRConst pi
+    exp   r       = BROp (r :< Ø)        $ op1 exp
+    log   r       = BROp (r :< Ø)        $ op1 log
+    sqrt  r       = BROp (r :< Ø)        $ op1 sqrt
+    r1 ** r2      = BROp (r1 :< r2 :< Ø) $ op2 (**)
+    logBase r1 r2 = BROp (r1 :< r2 :< Ø) $ op2 logBase
+    sin   r       = BROp (r :< Ø)        $ op1 sin
+    cos   r       = BROp (r :< Ø)        $ op1 cos
+    tan   r       = BROp (r :< Ø)        $ op1 tan
+    asin  r       = BROp (r :< Ø)        $ op1 asin
+    acos  r       = BROp (r :< Ø)        $ op1 acos
+    atan  r       = BROp (r :< Ø)        $ op1 atan
+    sinh  r       = BROp (r :< Ø)        $ op1 sinh
+    cosh  r       = BROp (r :< Ø)        $ op1 cosh
+    tanh  r       = BROp (r :< Ø)        $ op1 tanh
+    asinh r       = BROp (r :< Ø)        $ op1 asinh
+    acosh r       = BROp (r :< Ø)        $ op1 acosh
+    atanh r       = BROp (r :< Ø)        $ op1 atanh
 
