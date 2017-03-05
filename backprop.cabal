@@ -57,7 +57,7 @@ executable backprop-neuraltest
                      , ad
                      , backprop
                      , generics-sop
-                     , hmatrix
+                     , hmatrix        >= 0.18
                      , mwc-random
                      , primitive
                      , singletons
