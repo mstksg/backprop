@@ -124,7 +124,7 @@ runSimple
     => R m
     -> Tuple '[ L n m, R n, L o n, R o ]
     -> R o
-runSimple inp = runBPOp (simpleOp inp)
+runSimple inp = evalBPOp (simpleOp inp)
 ```
 
 But, in defining `simpleOp`, we also generated a graph that *backprop*
