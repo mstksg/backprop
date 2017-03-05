@@ -24,7 +24,7 @@ import           Numeric.Backprop.Mono hiding (backprop, BPOp)
 import           Type.Class.Known
 import qualified Numeric.Backprop.Mono        as BP
 
-type BPOp s n a b = VecT n (BPRef s n a) a -> BPRef s n a b
+type BPOp n a b = forall s. VecT n (BPRef s n a) a -> BPRef s n a b
 
 backprop
     :: forall n a b. (Num a, Known Nat n)

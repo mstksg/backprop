@@ -44,7 +44,7 @@ import           Type.Class.Known
 import qualified Generics.SOP              as SOP
 import qualified Numeric.Backprop          as BP
 
-type BPOp s rs a = Prod (BPRef s rs) rs -> BPRef s rs a
+type BPOp rs a = forall s. Prod (BPRef s rs) rs -> BPRef s rs a
 
 backprop'
     :: Prod Summer rs

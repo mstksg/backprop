@@ -22,7 +22,7 @@ module Numeric.Backprop.Mono (
   -- ** Backprop
   , backprop, evalBPOp, gradBPOp
   -- ** Inputs
-  , withInps
+  , withInps, implicitly
   -- * Refs
   , constRef
   , inpRef, inpRefs
@@ -52,9 +52,10 @@ import           Type.Class.Known
 import qualified Numeric.Backprop          as BP
 import qualified Numeric.Backprop.Internal as BP
 
-type BP s n a     = BP.BP s (Replicate n a)
-type BPRef s n a  = BP.BPRef s (Replicate n a)
-type BPOp s n a b = BP s n a (BPRef s n a b)
+type BP s n a      = BP.BP s (Replicate n a)
+type BPRef s n a   = BP.BPRef s (Replicate n a)
+type BPOp s n a b  = BP s n a (BPRef s n a b)
+type BPOpI s n a b = VecT n (BPRef s n a) a -> BPRef s n a b
 
 opRef
     :: forall s m n a b. Num b
@@ -147,6 +148,12 @@ withInps
     => (VecT n (BPRef s n a) a -> BP s n a b)
     -> BP s n a b
 withInps f = f inpRefs
+
+implicitly
+    :: Known Nat n
+    => BPOpI s n a b
+    -> BPOp s n a b
+implicitly f = withInps (return . f)
 
 liftR
     :: Op m a b

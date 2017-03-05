@@ -11,7 +11,7 @@
 
 module Numeric.Backprop (
   -- * Types
-    BP, BPOp, BPRef
+    BP, BPOp, BPOpI, BPRef
   , Op(..)
   , Summer(..)
   , Unity(..)
@@ -20,9 +20,9 @@ module Numeric.Backprop (
   , backprop, evalBPOp, gradBPOp
   , backprop', evalBPOp', gradBPOp'
   -- ** Inputs
-  , withInps
+  , withInps, implicitly
   , plugBP, (~$), ($~)
-  , withInps'
+  , withInps', implicitly'
   , plugBP'
   -- * Refs
   , constRef
@@ -87,7 +87,8 @@ import           Type.Class.Known
 import           Type.Class.Witness
 import qualified Generics.SOP              as SOP
 
-type BPOp s rs a = BP s rs (BPRef s rs a)
+type BPOp s rs a  = BP s rs (BPRef s rs a)
+type BPOpI s rs a = Prod (BPRef s rs) rs -> BPRef s rs a
 
 opRef'
     :: forall s rs as a. ()
@@ -559,6 +560,18 @@ backpropWith ss us bp env = do
               FRInternal rs' -> runSummer s <$> traverse backwardPass rs'
               FRTerminal g   -> return $ fromMaybe (getUnity u) g
     return (res, gradFunc)
+
+implicitly'
+    :: Length rs
+    -> BPOpI s rs a
+    -> BPOp s rs a
+implicitly' l f = withInps' l (return . f)
+
+implicitly
+    :: Known Length rs
+    => BPOpI s rs a
+    -> BPOp s rs a
+implicitly = implicitly' known
 
 plugBP'
     :: Prod (BPRef s rs) as
