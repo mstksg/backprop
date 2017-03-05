@@ -283,7 +283,7 @@ Now we can do simple gradient descent. Defining an error function:
 errOp
     :: KnownNat m
     => R m
-    -> BPRef s rs (R m)
+    -> BRef s rs (R m)
     -> BPOp s rs Double
 errOp targ r = do
     err <- bindRef $ r - t
