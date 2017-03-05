@@ -129,7 +129,7 @@ gradBPOp bp = snd . backprop bp
 plugBP
     :: (Num b, Num c)
     => VecT m (BRef s n a) b
-    -> (forall s. BPOp s m b c)
+    -> BPOp s m b c
     -> BPOp s n a c
 plugBP i = BP.plugBP' (vecToProd i) (toSummers i) (toUnities i) (BP.Summer sum)
 

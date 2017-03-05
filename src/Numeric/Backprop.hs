@@ -14,8 +14,8 @@ module Numeric.Backprop (
     BP, BPOp, BPOpI, BRef, Op, OpB
   -- * BP
   -- ** Backprop
-  , backprop, evalBPOp, gradBPOp
-  , backprop', evalBPOp', gradBPOp'
+  , backprop, evalBPOp, gradBPOp, bpOp
+  , backprop', evalBPOp', gradBPOp', bpOp'
   -- ** Inputs
   , withInps, implicitly
   , plugBP, (~$), ($~)
@@ -92,7 +92,7 @@ opRef'
     :: forall s rs as a. ()
     => Summer a
     -> Prod (BRef s rs) as
-    -> OpB as a
+    -> OpB s as a
     -> BP s rs (BRef s rs a)
 opRef' s i o = do
     xs <- traverse1 (fmap I . BP . resolveRef) i
@@ -492,14 +492,14 @@ backprop bp xs = backprop' (summers' l) (unities' l) bp xs
 bpOp'
     :: Prod Summer as
     -> Prod Unity as
-    -> (forall s. BPOp s as a)
-    -> OpB as a
+    -> BPOp s as a
+    -> OpB s as a
 bpOp' ss us bp = OpM $ backpropWith ss us bp
 
 bpOp
     :: (Every Num as, Known Length as)
-    => (forall s. BPOp s as a)
-    -> OpB as a
+    => BPOp s as a
+    -> OpB s as a
 bpOp = bpOp' summers unities
 
 evalBPOp'
@@ -587,14 +587,14 @@ plugBP'
     -> Prod Summer as
     -> Prod Unity as
     -> Summer a
-    -> (forall s. BPOp s as a)
+    -> BPOp s as a
     -> BPOp s rs a
 plugBP' i ss us sa bp = opRef' sa i $ bpOp' ss us bp
 
 plugBP
     :: forall s rs as a. (Every Num as, Num a)
     => Prod (BRef s rs) as
-    -> (forall s. BPOp s as a)
+    -> BPOp s as a
     -> BPOp s rs a
 plugBP i = plugBP' i (imap1 (\j _ -> known \\ every @_ @Num j) i)
                      (imap1 (\j _ -> known \\ every @_ @Num j) i)
@@ -603,7 +603,7 @@ plugBP i = plugBP' i (imap1 (\j _ -> known \\ every @_ @Num j) i)
 infixr 1 ~$
 (~$)
     :: (Every Num as, Num a)
-    => (forall s. BPOp s as a)
+    => BPOp s as a
     -> Prod (BRef s rs) as
     -> BPOp s rs a
 o ~$ xs = plugBP xs o
@@ -612,7 +612,7 @@ infixr 1 $~
 ($~)
     :: (Every Num as, Num a)
     => Prod (BRef s rs) as
-    -> (forall s. Prod (BRef s as) as -> BPOp s as a)
+    -> (Prod (BRef s as) as -> BPOp s as a)
     -> BPOp s rs a
 x $~ f = plugBP x (withInps' (prodLength x) f)
 

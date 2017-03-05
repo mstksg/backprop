@@ -52,7 +52,7 @@ import           Lens.Micro.TH
 import           Numeric.Backprop.Internal.Helper
 import           Numeric.Backprop.Op
 
-type OpB as a = forall s. OpM (ST s) as a
+type OpB s as a = OpM (ST s) as a
 
 -- | Reference to /usage sites/ for a given entity, used to get partial or
 -- total derivatives.
@@ -139,7 +139,7 @@ data BRef :: Type -> [Type] -> Type -> Type where
     -- | A BRef that combines several other BRefs using a function (an
     -- 'Op').  Essentially a branch of a tree.
     BROp    :: !(Prod (BRef s rs) as)
-            -> !(OpB as a)
+            -> !(OpB s as a)
             -> BRef s rs a
 
 -- | Used exclusively by 'ForwardRefs' to specify "where" and "how" to look
