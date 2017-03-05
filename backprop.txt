@@ -76,6 +76,23 @@ instance (Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Eve
 instance (Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Float.Floating as, Data.Type.Index.Every GHC.Real.Fractional as, Data.Type.Index.Every GHC.Num.Num as, GHC.Float.Floating a) => GHC.Float.Floating (Numeric.Backprop.Op.Op as a)
 
 module Numeric.Backprop
+
+-- | A Monad allowing you to explicitly build hetereogeneous data
+--   dependency graphs and that the library can perform backpropagation on.
+--   
+--   A <tt><a>BP</a> s rs b</tt> is a <a>BP</a> action that uses an
+--   environment of <tt>rs</tt> returning a <tt>b</tt>. The <tt>s</tt>
+--   parameter is used the same way that <a>ST</a> uses it, basically to
+--   enforce that nothing important "leaks" out of the monad. When "run",
+--   it will compute a gradient that is a tuple of <tt>rs</tt>.
+--   
+--   For example, a <tt><a>BP</a> s '[ Int, Double, Double ]</tt> is a
+--   monad that represents a computation with an <a>Int</a>, <a>Double</a>,
+--   and <a>Double</a> as inputs.
+--   
+--   When run with <tt>backprop</tt> or <tt>gradBPOp</tt>, it would return
+--   a <i>gradient</i> on the inputs. So in the above example, the gradient
+--   would be a tuple of an <a>Int</a>, <a>Double</a>, and <a>Double</a>.
 data BP s rs b
 type BPOp s rs a = BP s rs (BRef s rs a)
 type BPOpI s rs a = Prod (BRef s rs) rs -> BRef s rs a
