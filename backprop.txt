@@ -61,6 +61,7 @@ infix 6 :>
 
 -- | Build a singleton Prod.
 only :: f a -> Prod k f ((:) k a ([] k))
+head' :: Prod k f ((:<) k a as) -> f a
 
 -- | A Prod of simple Haskell types.
 type Tuple = Prod * I
@@ -171,6 +172,7 @@ infix 6 :>
 
 -- | Build a singleton Prod.
 only :: f a -> Prod k f ((:) k a ([] k))
+head' :: Prod k f ((:<) k a as) -> f a
 
 -- | A Prod of simple Haskell types.
 type Tuple = Prod * I
@@ -241,6 +243,7 @@ infix 6 :>
 
 -- | Build a singleton Prod.
 only :: f a -> Prod k f ((:) k a ([] k))
+head' :: Prod k f ((:<) k a as) -> f a
 
 -- | A Prod of simple Haskell types.
 type Tuple = Prod * I
@@ -284,6 +287,7 @@ infixr 4 :+
 infix 5 *:
 (+:) :: a -> a -> Vec (S (S Z)) a
 infix 5 +:
+head' :: VecT k (S n) f a -> f a
 
 module Numeric.Backprop.Mono
 type BP s n a = BP s (Replicate n a)
@@ -334,6 +338,7 @@ infixr 4 :+
 infix 5 *:
 (+:) :: a -> a -> Vec (S (S Z)) a
 infix 5 +:
+head' :: VecT k (S n) f a -> f a
 
 module Numeric.Backprop.Mono.Implicit
 type BPRef s n a = BPRef s (Replicate n a)
@@ -372,3 +377,4 @@ infixr 4 :+
 infix 5 *:
 (+:) :: a -> a -> Vec (S (S Z)) a
 infix 5 +:
+head' :: VecT k (S n) f a -> f a
