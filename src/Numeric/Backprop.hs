@@ -11,8 +11,7 @@
 
 module Numeric.Backprop (
   -- * Types
-    BP, BPOp, BPOpI, BRef
-  , Op(..)
+    BP, BPOp, BPOpI, BRef, Op, OpB
   -- * BP
   -- ** Backprop
   , backprop, evalBPOp, gradBPOp
@@ -93,7 +92,7 @@ opRef'
     :: forall s rs as a. ()
     => Summer a
     -> Prod (BRef s rs) as
-    -> Op' as a
+    -> OpB as a
     -> BP s rs (BRef s rs a)
 opRef' s i o = do
     xs <- traverse1 (fmap I . BP . resolveRef) i
@@ -490,6 +489,19 @@ backprop bp xs = backprop' (summers' l) (unities' l) bp xs
     l :: Length rs
     l = prodLength xs
 
+bpOp'
+    :: Prod Summer as
+    -> Prod Unity as
+    -> (forall s. BPOp s as a)
+    -> OpB as a
+bpOp' ss us bp = OpM $ backpropWith ss us bp
+
+bpOp
+    :: (Every Num as, Known Length as)
+    => (forall s. BPOp s as a)
+    -> OpB as a
+bpOp = bpOp' summers unities
+
 evalBPOp'
     :: Prod Summer rs
     -> Prod Unity rs
@@ -575,25 +587,14 @@ plugBP'
     -> Prod Summer as
     -> Prod Unity as
     -> Summer a
-    -> BPOp s as a
+    -> (forall s. BPOp s as a)
     -> BPOp s rs a
-plugBP' i ss us sa bp = do
-    env <- traverse1 (fmap I . BP . resolveRef) i
-    (res, gFunc) <- BP . liftBase $ backpropWith ss us bp env
-    let bpn = BPN { _bpnOut       = FRInternal [] :< Ø
-                  , _bpnRes       = only_ res
-                  , _bpnGradFunc  = gFunc . head'
-                  , _bpnGradCache = Nothing
-                  , _bpnSummer    = sa :< Ø
-                  }
-    r <- BP . liftBase $ newSTRef bpn
-    itraverse1_ (registerRef . flip IRNode r) i
-    return (BRNode IZ r)
+plugBP' i ss us sa bp = opRef' sa i $ bpOp' ss us bp
 
 plugBP
     :: forall s rs as a. (Every Num as, Num a)
     => Prod (BRef s rs) as
-    -> BPOp s as a
+    -> (forall s. BPOp s as a)
     -> BPOp s rs a
 plugBP i = plugBP' i (imap1 (\j _ -> known \\ every @_ @Num j) i)
                      (imap1 (\j _ -> known \\ every @_ @Num j) i)
@@ -602,16 +603,16 @@ plugBP i = plugBP' i (imap1 (\j _ -> known \\ every @_ @Num j) i)
 infixr 1 ~$
 (~$)
     :: (Every Num as, Num a)
-    => BPOp s as a
+    => (forall s. BPOp s as a)
     -> Prod (BRef s rs) as
     -> BPOp s rs a
-(~$) = flip plugBP
+o ~$ xs = plugBP xs o
 
 infixr 1 $~
 ($~)
     :: (Every Num as, Num a)
     => Prod (BRef s rs) as
-    -> (Prod (BRef s as) as -> BPOp s as a)
+    -> (forall s. Prod (BRef s as) as -> BPOp s as a)
     -> BPOp s rs a
 x $~ f = plugBP x (withInps' (prodLength x) f)
 

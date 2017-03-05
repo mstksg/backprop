@@ -13,10 +13,10 @@
 
 module Numeric.Backprop.Op (
   -- * Type
-    Op, Op', OpM(.., Op, runOp')
+    Op, OpM(.., Op, runOp')
   -- ** Running
   , runOp, gradOp, gradOpWith, gradOpWith'
-  , runOpM, gradOpWithM'
+  , runOpM, gradOpWithM, gradOpWithM'
   -- ** Manipulation
   , composeOp
   -- * Creation
@@ -29,7 +29,6 @@ module Numeric.Backprop.Op (
   , Replicate
   ) where
 
-import           Control.Monad.ST
 import           Data.Bifunctor
 import           Data.Coerce
 import           Data.Maybe
@@ -58,7 +57,6 @@ import           Type.Class.Witness
 -- newtype Op as a = Op { runOp' :: Tuple as -> (a, Maybe a -> Tuple as) }
 
 type Op  as a = forall m. Monad m => OpM m as a
-type Op' as a = forall s. OpM (ST s) as a
 
 newtype OpM m as a = OpM { runOpM' :: Tuple as -> m (a, Maybe a -> m (Tuple as)) }
 
