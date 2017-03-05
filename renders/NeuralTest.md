@@ -127,7 +127,7 @@ runSimple inp = evalBPOp (simpleOp inp)
 ```
 
 Alternatively, we can define `simpleOp` in explicit monadic style, were
-we specify our graph nods explicitly. The results should be the same.
+we specify our graph nodes explicitly. The results should be the same.
 
 ``` {.sourceCode .literate .haskell}
 simpleOpExplicit
@@ -160,6 +160,7 @@ simpleGrad inp targ params = gradBPOp opError params
     opError :: BPOp s '[ L n m, R n, L o n, R o ] Double
     opError = do
         res <- simpleOp inp
+        -- we explicitly bind err to prevent recomputation
         err <- bindRef $ res - t
         dot -$ (err :< err :< Ø)
       where
@@ -274,6 +275,10 @@ singletons stuff. From *backprop* specifically, `(#<~)` lets you “split”
 an input ref with the given iso, and `(~$)` lets you “run” an `BP`
 within an `BP`, by plugging in its inputs.
 
+Note that this library doesn’t support truly pattern matching on GADTs,
+and that we had to pass in `Sing bs` as a reference to the structure of
+our networks.
+
 Gradient Descent
 ----------------
 
@@ -291,9 +296,6 @@ errOp targ r = do
   where
     t = constRef targ
 ```
-
-(`errOp` is best written using the explicit style because we re-use a
-binding, `err`, twice.)
 
 And now, we can use `backprop` to generate the gradient, and shift the
 `Network`! Things are made a bit cleaner from the fact that
