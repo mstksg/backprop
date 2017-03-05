@@ -115,10 +115,10 @@ specify our graph nodes explicitly.  The results should be the same.
 >       -> BPOp s '[ L n m, R n, L o n, R o ] (R o)
 > simpleOpExplicit inp = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
 >     -- First layer
->     y1  <- matVec   -$ (w1 :< x1 :< Ø)
+>     y1  <- matVec   ~$ (w1 :< x1 :< Ø)
 >     let x2 = logistic (y1 + b1)
 >     -- Second layer
->     y2  <- matVec   -$ (w2 :< x2 :< Ø)
+>     y2  <- matVec   ~$ (w2 :< x2 :< Ø)
 >     return $ logistic (y2 + b2)
 >   where
 >     x1 = constRef inp
@@ -139,7 +139,7 @@ the implicit (or explicit) graph and use it to do backpropagation, too!
 >         res <- simpleOp inp
 >         -- we explicitly bind err to prevent recomputation
 >         err <- bindRef $ res - t
->         dot -$ (err :< err :< Ø)
+>         dot ~$ (err :< err :< Ø)
 >       where
 >         t = constRef targ
 
@@ -220,21 +220,21 @@ different network constructors differently.
 >         -- peek into the NØ using netExternal iso
 >         l :< Ø <- netExternal #<~ n
 >         -- run the 'layerOp' BP, with x and l as inputs
->         layerOp ~$ (x :< l :< Ø)
+>         bpOp layerOp ~$ (x :< l :< Ø)
 >       SNat `SCons` ses -> withInps $ \(x :< n :< Ø) -> withSingI ses $ do
 >         -- peek into the (:&) using the netInternal iso
 >         l :< n' :< Ø <- netInternal #<~ n
 >         -- run the 'layerOp' BP, with x and l as inputs
->         z <- layerOp ~$ (x :< l :< Ø)
+>         z <- bpOp layerOp  ~$ (x :< l :< Ø)
 >         -- run the 'go ses' BP, with z and n as inputs
->         go ses       ~$ (z :< n' :< Ø)
+>         bpOp (go ses)      ~$ (z :< n' :< Ø)
 >     layerOp
 >         :: forall d e. (KnownNat d, KnownNat e)
 >         => BPOp s '[ R d, Layer d e ] (R e)
 >     layerOp = withInps $ \(x :< l :< Ø) -> do
 >         -- peek into the layer using the gTuple iso, auto-generated with SOP.Generic
 >         w :< b :< Ø <- gTuple #<~ l
->         y           <- matVec  -$ (w :< x :< Ø)
+>         y           <- matVec  ~$ (w :< x :< Ø)
 >         return $ logistic (y + b)
 
 There's some singletons work going on here, but it's fairly standard
@@ -258,7 +258,7 @@ Now we can do simple gradient descent.  Defining an error function:
 >     -> BPOp s rs Double
 > errOp targ r = do
 >     err <- bindRef $ r - t
->     dot -$ (err :< err :< Ø)
+>     dot ~$ (err :< err :< Ø)
 >   where
 >     t = constRef targ
 

@@ -21,16 +21,16 @@ module Numeric.Backprop.Mono (
   -- * BP
   -- ** Backprop
   , backprop, evalBPOp, gradBPOp
+  , bpOp
   -- ** Inputs
   , withInps, implicitly
   -- * Refs
   , constRef
   , inpRef, inpRefs
   -- ** From Ops
-  , opRef, (-$)
+  , opRef, (~$)
   , opRef1, opRef2, opRef3
-  -- ** Transforming BP
-  , plugBP
+  , (-$)
   -- ** Combining
   , liftR, liftR1, liftR2, liftR3
   -- * Op
@@ -57,20 +57,30 @@ type BRef s n a    = BP.BRef s (Replicate n a)
 type BPOp s n a b  = BP s n a (BRef s n a b)
 type BPOpI s n a b = VecT n (BRef s n a) a -> BRef s n a b
 
+type OpB s n a b   = BP.OpB s (Replicate n a) b
+
 opRef
     :: forall s m n a b. Num b
     => VecT m (BRef s n a) a
-    -> Op m a b
+    -> OpB s m a b
     -> BP s n a (BRef s n a b)
 opRef i o = BP.opRef (vecToProd i) o
 
-infixr 1 -$
-(-$)
+infixr 1 ~$
+(~$)
     :: Num b
-    => Op m a b
+    => OpB s m a b
     -> VecT m (BRef s n a) a
     -> BP s n a (BRef s n a b)
-o -$ xs = opRef xs o
+(~$) = flip opRef
+
+infixr 1 -$
+(-$)
+    :: forall s m n a b. Num b
+    => BPOp s m a b
+    -> VecT m (BRef s n a) a
+    -> BP s n a (BRef s n a b)
+o -$ xs = bpOp @_ @_ @a o ~$ xs
 
 constRef
     :: b
@@ -80,7 +90,7 @@ constRef = BP.constRef
 opRef1
     :: forall s n a b. Num b
     => BRef s n a a
-    -> Op N1 a b
+    -> OpB s N1 a b
     -> BP s n a (BRef s n a b)
 opRef1 x o = opRef @_ @_ @n (x :* ØV) o
 
@@ -88,7 +98,7 @@ opRef2
     :: forall s n a b. Num b
     => BRef s n a a
     -> BRef s n a a
-    -> Op N2 a b
+    -> OpB s N2 a b
     -> BP s n a (BRef s n a b)
 opRef2 x y o = opRef @_ @_ @n (x :* y :* ØV) o
 
@@ -97,7 +107,7 @@ opRef3
     => BRef s n a a
     -> BRef s n a a
     -> BRef s n a a
-    -> Op N3 a b
+    -> OpB s N3 a b
     -> BP s n a (BRef s n a b)
 opRef3 x y z o = opRef @_ @_ @n (x :* y :* z :* ØV) o
 
@@ -124,14 +134,12 @@ gradBPOp
     -> Vec n a
 gradBPOp bp = snd . backprop bp
 
+bpOp
+    :: forall s n a b. ()
+    => BPOp s n a b
+    -> OpB s n a b
+bpOp = undefined
 
-
-plugBP
-    :: (Num b, Num c)
-    => VecT m (BRef s n a) b
-    -> BPOp s m b c
-    -> BPOp s n a c
-plugBP i = BP.plugBP' (vecToProd i) (toSummers i) (toUnities i) (BP.Summer sum)
 
 inpRef
     :: Fin n
@@ -156,26 +164,26 @@ implicitly
 implicitly f = withInps (return . f)
 
 liftR
-    :: Op m a b
+    :: OpB s m a b
     -> VecT m (BRef s n r) a
     -> BRef s n r b
 liftR o = BP.liftR o . vecToProd
 
 liftR1
-    :: Op N1 a a
+    :: OpB s N1 a a
     -> BRef s n r a
     -> BRef s n r a
 liftR1 = BP.liftR1
 
 liftR2
-    :: Op N2 a a
+    :: OpB s N2 a a
     -> BRef s n r a
     -> BRef s n r a
     -> BRef s n r a
 liftR2 = BP.liftR2
 
 liftR3
-    :: Op N3 a a
+    :: OpB s N3 a a
     -> BRef s n r a
     -> BRef s n r a
     -> BRef s n r a

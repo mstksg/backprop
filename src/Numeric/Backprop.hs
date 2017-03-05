@@ -18,9 +18,7 @@ module Numeric.Backprop (
   , backprop', evalBPOp', gradBPOp', bpOp'
   -- ** Inputs
   , withInps, implicitly
-  , plugBP, (~$), ($~)
   , withInps', implicitly'
-  , plugBP'
   -- * Refs
   , constRef
   , inpRef, inpRefs
@@ -28,8 +26,9 @@ module Numeric.Backprop (
   , inpRefs'
   , bindRef'
   -- ** From Ops
-  , opRef, (-$)
+  , opRef, (~$)
   , opRef1, opRef2, opRef3
+  , (-$)
   , opRef'
   , opRef1', opRef2', opRef3'
   -- ** Ref manipulation
@@ -359,17 +358,25 @@ registerRef bpir = \case
 opRef
     :: Num a
     => Prod (BRef s rs) as
-    -> Op as a
+    -> OpB s as a
     -> BP s rs (BRef s rs a)
 opRef = opRef' known
 
-infixr 1 -$
-(-$)
+infixr 1 ~$
+(~$)
     :: Num a
-    => Op as a
+    => OpB s as a
     -> Prod (BRef s rs) as
     -> BP s rs (BRef s rs a)
-o -$ xs = opRef xs o
+(~$) = flip opRef
+
+infixr 1 -$
+(-$)
+    :: (Every Num as, Known Length as, Num a)
+    => BPOp s as a
+    -> Prod (BRef s rs) as
+    -> BPOp s rs a
+o -$ xs = bpOp o ~$ xs
 
 constRef :: a -> BRef s rs a
 constRef = BRConst
@@ -377,14 +384,14 @@ constRef = BRConst
 opRef1'
     :: Summer b
     -> BRef s rs a
-    -> Op '[a] b
+    -> OpB s '[a] b
     -> BP s rs (BRef s rs b)
 opRef1' s r = opRef' s (r :< Ø)
 
 opRef1
     :: Num b
     => BRef s rs a
-    -> Op '[a] b
+    -> OpB s '[a] b
     -> BP s rs (BRef s rs b)
 opRef1 = opRef1' known
 
@@ -392,7 +399,7 @@ opRef2'
     :: Summer c
     -> BRef s rs a
     -> BRef s rs b
-    -> Op '[a,b] c
+    -> OpB s '[a,b] c
     -> BP s rs (BRef s rs c)
 opRef2' s rx ry = opRef' s (rx :< ry :< Ø)
 
@@ -400,7 +407,7 @@ opRef2
     :: Num c
     => BRef s rs a
     -> BRef s rs b
-    -> Op '[a,b] c
+    -> OpB s '[a,b] c
     -> BP s rs (BRef s rs c)
 opRef2 = opRef2' known
 
@@ -409,7 +416,7 @@ opRef3'
     -> BRef s rs a
     -> BRef s rs b
     -> BRef s rs c
-    -> Op '[a,b,c] d
+    -> OpB s '[a,b,c] d
     -> BP s rs (BRef s rs d)
 opRef3' s rx ry rz = opRef' s (rx :< ry :< rz :< Ø)
 
@@ -418,7 +425,7 @@ opRef3
     => BRef s rs a
     -> BRef s rs b
     -> BRef s rs c
-    -> Op '[a,b,c] d
+    -> OpB s '[a,b,c] d
     -> BP s rs (BRef s rs d)
 opRef3 = opRef3' known
 
@@ -582,41 +589,6 @@ implicitly
     -> BPOp s rs a
 implicitly = implicitly' known
 
-plugBP'
-    :: Prod (BRef s rs) as
-    -> Prod Summer as
-    -> Prod Unity as
-    -> Summer a
-    -> BPOp s as a
-    -> BPOp s rs a
-plugBP' i ss us sa bp = opRef' sa i $ bpOp' ss us bp
-
-plugBP
-    :: forall s rs as a. (Every Num as, Num a)
-    => Prod (BRef s rs) as
-    -> BPOp s as a
-    -> BPOp s rs a
-plugBP i = plugBP' i (imap1 (\j _ -> known \\ every @_ @Num j) i)
-                     (imap1 (\j _ -> known \\ every @_ @Num j) i)
-                     known
-
-infixr 1 ~$
-(~$)
-    :: (Every Num as, Num a)
-    => BPOp s as a
-    -> Prod (BRef s rs) as
-    -> BPOp s rs a
-o ~$ xs = plugBP xs o
-
-infixr 1 $~
-($~)
-    :: (Every Num as, Num a)
-    => Prod (BRef s rs) as
-    -> (Prod (BRef s as) as -> BPOp s as a)
-    -> BPOp s rs a
-x $~ f = plugBP x (withInps' (prodLength x) f)
-
-
 inpRef
     :: Index rs a
     -> BRef s rs a
@@ -645,26 +617,26 @@ withInps
 withInps = withInps' known
 
 liftR
-    :: Op as a
+    :: OpB s as a
     -> Prod (BRef s rs) as
     -> BRef s rs a
-liftR o xs = BROp xs o
+liftR = flip BROp
 
 liftR1
-    :: Op '[a] b
+    :: OpB s '[a] b
     -> BRef s rs a
     -> BRef s rs b
 liftR1 o = liftR o . only
 
 liftR2
-    :: Op '[a,b] c
+    :: OpB s '[a,b] c
     -> BRef s rs a
     -> BRef s rs b
     -> BRef s rs c
 liftR2 o x y = liftR o (x :< y :< Ø)
 
 liftR3
-    :: Op '[a,b,c] d
+    :: OpB s '[a,b,c] d
     -> BRef s rs a
     -> BRef s rs b
     -> BRef s rs c

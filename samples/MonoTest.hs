@@ -8,9 +8,9 @@ testImplicit = implicitly $ \(x :* y :* z :* ØV) ->
 
 testExplicit :: BPOp s N3 Double Double
 testExplicit = withInps $ \(x :* y :* z :* ØV) -> do
-    xy  <- op2 (*) -$ (x   :* y :* ØV)
-    xyy <- op2 (+) -$ (xy  :* y :* ØV)
-    op2 (*)        -$ (xyy :* z :* ØV)
+    xy  <- op2 (*) ~$ (x   :* y :* ØV)
+    xyy <- op2 (+) ~$ (xy  :* y :* ØV)
+    op2 (*)        ~$ (xyy :* z :* ØV)
 
 main :: IO ()
 main = do
