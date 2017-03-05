@@ -115,10 +115,10 @@ specify our graph nodes explicitly.  The results should be the same.
 >       -> BPOp s '[ L n m, R n, L o n, R o ] (R o)
 > simpleOpExplicit inp = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
 >     -- First layer
->     y1  <- matVec   ~$ (w1 :< x1 :< Ø)
+>     y1  <- matVec ~$ (w1 :< x1 :< Ø)
 >     let x2 = logistic (y1 + b1)
 >     -- Second layer
->     y2  <- matVec   ~$ (w2 :< x2 :< Ø)
+>     y2  <- matVec ~$ (w2 :< x2 :< Ø)
 >     return $ logistic (y2 + b2)
 >   where
 >     x1 = constRef inp
@@ -238,9 +238,12 @@ different network constructors differently.
 >         return $ logistic (y + b)
 
 There's some singletons work going on here, but it's fairly standard
-singletons stuff.  From *backprop* specifically, `(#<~)` lets you "split"
-an input ref with the given iso, and `(~$)` lets you "run" an `BP` within
-an `BP`, by plugging in its inputs.
+singletons stuff.  Most of the complexity here is from the static typing in
+our neural network type, and *not* from *backprop*.
+
+From *backprop* specifically, the only elements are `#<~` lets you "split" an
+input ref with the given iso, and `bpOp`, which converts a `BPOp` into an `Op`
+that you can bind with `~$`.
 
 Note that this library doesn't support truly pattern matching on GADTs, and
 that we had to pass in `Sing bs` as a reference to the structure of our

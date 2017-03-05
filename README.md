@@ -97,7 +97,7 @@ netGrad inp targ params = gradBPOp opError params
     opError = do
         res <- neuralNet inp
         err <- bindRef (res - t)
-        dot -$ (err :< err :< Ø)
+        dot ~$ (err :< err :< Ø)
       where
         t = constRef targ
 ~~~
