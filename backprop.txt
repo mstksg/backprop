@@ -21,16 +21,6 @@ module Numeric.Backprop.Op
 newtype Op as a
 Op :: (Tuple as -> (a, Maybe a -> Tuple as)) -> Op as a
 [runOp'] :: Op as a -> Tuple as -> (a, Maybe a -> Tuple as)
-newtype Summer a
-Summer :: ([a] -> a) -> Summer a
-[runSummer] :: Summer a -> [a] -> a
-summers :: (Every Num as, Known Length as) => Prod Summer as
-summers' :: Every Num as => Length as -> Prod Summer as
-newtype Unity a
-Unity :: a -> Unity a
-[getUnity] :: Unity a -> a
-unities :: (Every Num as, Known Length as) => Prod Unity as
-unities' :: Every Num as => Length as -> Prod Unity as
 runOp :: Op as a -> Tuple as -> a
 gradOp :: Op as a -> Tuple as -> Tuple as
 gradOpWith :: Op as a -> Tuple as -> a -> Tuple as
