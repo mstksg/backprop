@@ -11,8 +11,6 @@
 module Numeric.Backprop.Op (
   -- * Type
     Op(..)
-  , Summer(..), summers, summers'
-  , Unity(..), unities, unities'
   -- ** Running
   , runOp, gradOp, gradOpWith, gradOpWith'
   -- ** Manipulation
@@ -22,7 +20,7 @@ module Numeric.Backprop.Op (
   , op1, op2, op3, opN, opCoerce, opTup, opIso
   , op1', op2', op3', opN', opCoerce', opTup', opIso'
   -- * Utility
-  , Prod(..), pattern (:>), only
+  , Prod(..), pattern (:>), only, head'
   , Tuple, pattern (::<), only_
   , Replicate
   ) where
@@ -38,7 +36,7 @@ import           Data.Type.Length
 import           Data.Type.Nat
 import           Data.Type.Product
 import           Data.Type.Util
-import           Data.Type.Vector
+import           Data.Type.Vector hiding          (head')
 import           Lens.Micro.Extras
 import           Numeric.AD
 import           Numeric.AD.Internal.Reverse      (Reverse, Tape)

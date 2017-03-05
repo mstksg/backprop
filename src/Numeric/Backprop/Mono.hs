@@ -39,18 +39,18 @@ module Numeric.Backprop.Mono (
   -- ** Type synonyms
   , N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10
   -- ** Vectors
-  , VecT(..), Vec, pattern (:+), (*:), (+:)
+  , VecT(..), Vec, pattern (:+), (*:), (+:), head'
   ) where
 
 import           Data.Type.Fin
 import           Data.Type.Nat
-import           Data.Type.Product
+import           Data.Type.Product hiding  (head')
 import           Data.Type.Util
 import           Data.Type.Vector
 import           Numeric.Backprop.Op.Mono
 import           Type.Class.Known
-import qualified Numeric.Backprop               as BP
-import qualified Numeric.Backprop.Internal      as BP
+import qualified Numeric.Backprop          as BP
+import qualified Numeric.Backprop.Internal as BP
 
 type BP s n a     = BP.BP s (Replicate n a)
 type BPRef s n a  = BP.BPRef s (Replicate n a)

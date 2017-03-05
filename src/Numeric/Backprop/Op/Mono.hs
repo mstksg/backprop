@@ -13,7 +13,7 @@ module Numeric.Backprop.Op.Mono (
   -- ** Type synonyms
   , N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10
   -- ** Vectors
-  , VecT(..), Vec, pattern (:+), (*:), (+:)
+  , VecT(..), Vec, pattern (:+), (*:), (+:), head'
  ) where
 
 import           Data.Bifunctor

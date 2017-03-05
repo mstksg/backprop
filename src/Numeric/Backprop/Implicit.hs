@@ -25,7 +25,7 @@ module Numeric.Backprop.Implicit (
   , BP.op1', BP.op2', BP.op3', BP.opN'
   -- * Utility
   , summers, unities
-  , Prod(..), pattern (:>), only
+  , Prod(..), pattern (:>), only, head'
   , Tuple, pattern (::<), only_
   ) where
 
