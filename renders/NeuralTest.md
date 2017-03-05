@@ -8,9 +8,11 @@ title: Neural networks with backprop library
 ---
 
 The *backprop* library performs backpropagation over a *hetereogeneous*
-system of relationships. It does so by letting you build an explicit
-graph and keeps track of what nodes depend on what. Let’s use it to
-build neural networks!
+system of relationships. It offers both an implicit ([ad]-like) and
+explicit graph building usage style. Let’s use it to build neural
+networks!
+
+  [ad]: http://hackage.haskell.org/package/ad
 
 Repository source is [on github], and so are the [rendered unstable
 docs].
@@ -103,20 +105,17 @@ simpleOp
       :: (KnownNat m, KnownNat n, KnownNat o)
       => R m
       -> BPOp s '[ L n m, R n, L o n, R o ] (R o)
-simpleOp inp = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
-    -- First layer
-    y1  <- matVec   -$ (w1 :< x1 :< Ø)
-    let x2 = logistic (y1 + b1)
-    -- Second layer
-    y2  <- matVec   -$ (w2 :< x2 :< Ø)
-    return $ logistic (y2 + b2)
+simpleOp inp = implicitly $ \(w1 :< b1 :< w2 :< b2 :< Ø) ->
+    let z = logistic $ liftR2 matVec w1 x + b1
+    in  logistic $ liftR2 matVec w2 z + b2
   where
-    x1 = constRef inp
+    x = constRef inp
 ```
 
-Now `simpleOp` can be “run” with the input vectors and parameters (a
-`L n m`, `R n`, `L o n`, and `R o`) and calculate the output of the
-neural net.
+Here, `simpleOp` is defined in implicit (non-monadic) style, given a
+tuple of inputs and returning outputs. Now `simpleOp` can be “run” with
+the input vectors and parameters (a `L n m`, `R n`, `L o n`, and `R o`)
+and calculate the output of the neural net.
 
 ``` {.sourceCode .literate .haskell}
 runSimple
@@ -127,8 +126,27 @@ runSimple
 runSimple inp = evalBPOp (simpleOp inp)
 ```
 
-But, in defining `simpleOp`, we also generated a graph that *backprop*
-can use to do backpropagation, too!
+Alternatively, we can define `simpleOp` in explicit monadic style, were
+we specify our graph nods explicitly. The results should be the same.
+
+``` {.sourceCode .literate .haskell}
+simpleOpExplicit
+      :: (KnownNat m, KnownNat n, KnownNat o)
+      => R m
+      -> BPOp s '[ L n m, R n, L o n, R o ] (R o)
+simpleOpExplicit inp = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
+    -- First layer
+    y1  <- matVec   -$ (w1 :< x1 :< Ø)
+    let x2 = logistic (y1 + b1)
+    -- Second layer
+    y2  <- matVec   -$ (w2 :< x2 :< Ø)
+    return $ logistic (y2 + b2)
+  where
+    x1 = constRef inp
+```
+
+Now, for the magic of *backprop*: the library can now take advantage of
+the implicit (or explicit) graph and use it to do backpropagation, too!
 
 ``` {.sourceCode .literate .haskell}
 simpleGrad
@@ -273,6 +291,9 @@ errOp targ r = do
   where
     t = constRef targ
 ```
+
+(`errOp` is best written using the explicit style because we re-use a
+binding, `err`, twice.)
 
 And now, we can use `backprop` to generate the gradient, and shift the
 `Network`! Things are made a bit cleaner from the fact that
