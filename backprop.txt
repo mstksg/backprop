@@ -21,6 +21,16 @@ module Numeric.Backprop.Op
 newtype Op as a
 Op :: (Tuple as -> (a, Maybe a -> Tuple as)) -> Op as a
 [runOp'] :: Op as a -> Tuple as -> (a, Maybe a -> Tuple as)
+newtype Summer a
+Summer :: ([a] -> a) -> Summer a
+[runSummer] :: Summer a -> [a] -> a
+summers :: (Every Num as, Known Length as) => Prod Summer as
+summers' :: Every Num as => Length as -> Prod Summer as
+newtype Unity a
+Unity :: a -> Unity a
+[getUnity] :: Unity a -> a
+unities :: (Every Num as, Known Length as) => Prod Unity as
+unities' :: Every Num as => Length as -> Prod Unity as
 runOp :: Op as a -> Tuple as -> a
 gradOp :: Op as a -> Tuple as -> Tuple as
 gradOpWith :: Op as a -> Tuple as -> a -> Tuple as
@@ -70,6 +80,9 @@ infixr 5 ::<
 
 -- | Singleton Tuple.
 only_ :: a -> Tuple ((:) * a ([] *))
+instance (Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Num.Num as, GHC.Num.Num a) => GHC.Num.Num (Numeric.Backprop.Op.Op as a)
+instance (Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Real.Fractional as, Data.Type.Index.Every GHC.Num.Num as, GHC.Real.Fractional a) => GHC.Real.Fractional (Numeric.Backprop.Op.Op as a)
+instance (Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Float.Floating as, Data.Type.Index.Every GHC.Real.Fractional as, Data.Type.Index.Every GHC.Num.Num as, GHC.Float.Floating a) => GHC.Float.Floating (Numeric.Backprop.Op.Op as a)
 
 module Numeric.Backprop
 data BP s rs b
