@@ -22,6 +22,7 @@ type Op as a = forall m. Monad m => OpM m as a
 newtype OpM m as a
 OpM :: (Tuple as -> m (a, Maybe a -> m (Tuple as))) -> OpM m as a
 [runOpM'] :: OpM m as a -> Tuple as -> m (a, Maybe a -> m (Tuple as))
+runOp' :: Op as a -> Tuple as -> (a, Maybe a -> Tuple as)
 runOp :: Op as a -> Tuple as -> a
 gradOp :: Op as a -> Tuple as -> Tuple as
 gradOpWith :: Op as a -> Tuple as -> a -> Tuple as
