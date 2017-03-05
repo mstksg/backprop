@@ -78,6 +78,7 @@ instance (Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Eve
 module Numeric.Backprop
 data BP s rs b
 type BPOp s rs a = BP s rs (BPRef s rs a)
+type BPOpI s rs a = Prod (BPRef s rs) rs -> BPRef s rs a
 data BPRef :: Type -> [Type] -> Type -> Type
 newtype Op as a
 Op :: (Tuple as -> (a, Maybe a -> Tuple as)) -> Op as a
@@ -95,12 +96,14 @@ backprop' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple
 evalBPOp' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple rs -> a
 gradBPOp' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple rs -> Tuple rs
 withInps :: Known Length rs => (Prod (BPRef s rs) rs -> BP s rs a) -> BP s rs a
+implicitly :: Known Length rs => BPOpI s rs a -> BPOp s rs a
 plugBP :: forall s rs as a. (Every Num as, Num a) => Prod (BPRef s rs) as -> BPOp s as a -> BPOp s rs a
 (~$) :: (Every Num as, Num a) => BPOp s as a -> Prod (BPRef s rs) as -> BPOp s rs a
 infixr 1 ~$
 ($~) :: (Every Num as, Num a) => Prod (BPRef s rs) as -> (Prod (BPRef s as) as -> BPOp s as a) -> BPOp s rs a
 infixr 1 $~
 withInps' :: Length rs -> (Prod (BPRef s rs) rs -> BP s rs a) -> BP s rs a
+implicitly' :: Length rs -> BPOpI s rs a -> BPOp s rs a
 plugBP' :: Prod (BPRef s rs) as -> Prod Summer as -> Prod Unity as -> Summer a -> BPOp s as a -> BPOp s rs a
 constRef :: a -> BPRef s rs a
 inpRef :: Index rs a -> BPRef s rs a
@@ -185,7 +188,7 @@ only_ :: a -> Tuple ((:) * a ([] *))
 
 module Numeric.Backprop.Implicit
 data BPRef :: Type -> [Type] -> Type -> Type
-type BPOp s rs a = Prod (BPRef s rs) rs -> BPRef s rs a
+type BPOp rs a = forall s. Prod (BPRef s rs) rs -> BPRef s rs a
 newtype Op as a
 Op :: (Tuple as -> (a, Maybe a -> Tuple as)) -> Op as a
 [runOp'] :: Op as a -> Tuple as -> (a, Maybe a -> Tuple as)
@@ -299,6 +302,7 @@ backprop :: forall n a b. Num a => (forall s. BPOp s n a b) -> Vec n a -> (b, Ve
 evalBPOp :: forall n a b. Num a => (forall s. BPOp s n a b) -> Vec n a -> b
 gradBPOp :: forall n a b. Num a => (forall s. BPOp s n a b) -> Vec n a -> Vec n a
 withInps :: Known Nat n => (VecT n (BPRef s n a) a -> BP s n a b) -> BP s n a b
+implicitly :: Known Nat n => BPOpI s n a b -> BPOp s n a b
 constRef :: b -> BPRef s n a b
 inpRef :: Fin n -> BPRef s n a a
 inpRefs :: Known Nat n => VecT n (BPRef s n a) a
@@ -343,7 +347,7 @@ head' :: VecT k (S n) f a -> f a
 
 module Numeric.Backprop.Mono.Implicit
 type BPRef s n a = BPRef s (Replicate n a)
-type BPOp s n a b = VecT n (BPRef s n a) a -> BPRef s n a b
+type BPOp n a b = forall s. VecT n (BPRef s n a) a -> BPRef s n a b
 type Op n a = Op (Replicate n a)
 backprop :: forall n a b. (Num a, Known Nat n) => (forall s. VecT n (BPRef s n a) a -> BPRef s n a b) -> Vec n a -> (b, Vec n a)
 grad :: forall n a b. (Num a, Known Nat n) => (forall s. VecT n (BPRef s n a) a -> BPRef s n a b) -> Vec n a -> Vec n a
