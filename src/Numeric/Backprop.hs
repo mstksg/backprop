@@ -58,6 +58,7 @@ module Numeric.Backprop (
   , op1, op2, op3, opN
   , op1', op2', op3', opN'
   -- * Utility
+  , summers, unities
   , Prod(..), pattern (:>), only
   , Tuple, pattern (::<), only_
   ) where
