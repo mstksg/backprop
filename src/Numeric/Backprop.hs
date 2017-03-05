@@ -56,10 +56,10 @@ module Numeric.Backprop (
   , op1, op2, op3, opN
   , op1', op2', op3', opN'
   -- * Utility
-  , Summer(..), summers, summers'
-  , Unity(..), unities, unities'
   , Prod(..), pattern (:>), only, head'
   , Tuple, pattern (::<), only_
+  , Summer(..), summers, summers'
+  , Unity(..), unities, unities'
   ) where
 
 import           Control.Monad.Base
@@ -93,14 +93,14 @@ opRef'
     :: forall s rs as a. ()
     => Summer a
     -> Prod (BRef s rs) as
-    -> Op as a
+    -> Op' as a
     -> BP s rs (BRef s rs a)
 opRef' s i o = do
     xs <- traverse1 (fmap I . BP . resolveRef) i
-    let (res, gf) = runOp' o xs
-        bp = BPN { _bpnOut       = only $ FRInternal []
+    (res, gf) <- BP . liftBase $ runOpM' o xs
+    let bp = BPN { _bpnOut       = only $ FRInternal []
                  , _bpnRes       = only_ res
-                 , _bpnGradFunc  = return . gf . head'
+                 , _bpnGradFunc  = gf . head'
                  , _bpnGradCache = Nothing
                  , _bpnSummer    = only s
                  }
@@ -330,7 +330,7 @@ resolveRef = \case
     BRConst    x -> return x
     BROp    rs o -> do
       xs <- traverse1 (fmap I . resolveRef) rs
-      return $ runOp o xs
+      liftBase $ runOpM o xs
 
 registerRef
     :: forall s rs a. ()
@@ -344,12 +344,10 @@ registerRef bpir = \case
     BRConst _      -> return ()
     -- This independently makes a new BPPipe for every usage site of the
     -- BROp, so it's a bit inefficient.
-    BROp    (rs :: Prod (BRef s rs) ds) (o :: Op ds a) -> do
+    BROp    (rs :: Prod (BRef s rs) ds) (o :: OpM (ST s) ds a) -> do
       xs :: Tuple ds <- traverse1 (fmap I . BP . resolveRef) rs
-      let res :: a
-          gF :: Maybe a -> Tuple ds
-          (res, gF) = runOp' o xs
-          bpp :: BPPipe s rs ds '[a]
+      (res, gF) <- BP . liftBase $ runOpM' o xs
+      let bpp :: BPPipe s rs ds '[a]
           bpp = BPP { _bppOut       = only bpir
                     , _bppRes       = only_ res
                     , _bppGradFunc  = gF . Just . getI . head'
@@ -372,7 +370,7 @@ infixr 1 -$
     => Op as a
     -> Prod (BRef s rs) as
     -> BP s rs (BRef s rs a)
-(-$) = flip opRef
+o -$ xs = opRef xs o
 
 constRef :: a -> BRef s rs a
 constRef = BRConst
@@ -469,7 +467,7 @@ backwardPass = \case
         => STRef s (BPPipe s rs as bs)
         -> ST s (Tuple as)
     pullPipe r = caching bppGradCache r $ \BPP{..} ->
-        _bppGradFunc <$> traverse1 (fmap I . backwardPass) _bppOut
+        _bppGradFunc =<< traverse1 (fmap I . backwardPass) _bppOut
 
 backprop'
     :: Prod Summer rs
@@ -535,7 +533,7 @@ closeOff isTerminal gOut = \case
     BRConst _     -> return ()
     BROp    rs o  -> do
       xs <- traverse1 (fmap I . resolveRef) rs
-      let gs = gradOpWith' o xs gOut
+      gs <- liftBase $ gradOpWithM' o xs gOut
       for1_ (gs `zipP` rs) $ \(I g :&: r) ->
         closeOff False (Just g) r
   where
@@ -649,7 +647,7 @@ liftR
     :: Op as a
     -> Prod (BRef s rs) as
     -> BRef s rs a
-liftR = flip BROp
+liftR o xs = BROp xs o
 
 liftR1
     :: Op '[a] b

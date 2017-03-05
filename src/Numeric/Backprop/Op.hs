@@ -1,18 +1,22 @@
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
 {-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE PatternSynonyms      #-}
 {-# LANGUAGE PolyKinds            #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ViewPatterns         #-}
 
 module Numeric.Backprop.Op (
   -- * Type
-    Op(..)
+    Op, Op', OpM(.., Op, runOp')
   -- ** Running
   , runOp, gradOp, gradOpWith, gradOpWith'
+  , runOpM, gradOpWithM'
   -- ** Manipulation
   , composeOp
   -- * Creation
@@ -25,6 +29,7 @@ module Numeric.Backprop.Op (
   , Replicate
   ) where
 
+import           Control.Monad.ST
 import           Data.Bifunctor
 import           Data.Coerce
 import           Data.Maybe
@@ -49,31 +54,63 @@ import           Type.Class.Witness
 
 -- instead of Tuple as, Prod Diff as, where Diff can be a value, or zero,
 -- or one?
-newtype Op as a = Op { runOp' :: Tuple as -> (a, Maybe a -> Tuple as) }
 
-newtype OpCont as a = OC { runOpCont :: Maybe a -> Tuple as }
+-- newtype Op as a = Op { runOp' :: Tuple as -> (a, Maybe a -> Tuple as) }
 
-composeOp :: Prod Summer as -> Prod (Op as) bs -> Op bs c -> Op as c
-composeOp ss os o = Op $ \xs ->
-    let (ys, conts) = unzipP
-                    . map1 ((\(x, c) -> I x :&: OC c) . flip runOp' xs)
-                    $ os
-        (z, gFz) = runOp' o ys
-    in  (z, map1 (\(s :&: gs) -> I $ runSummer s gs)
-          . zipP ss
-          . foldr (\x -> map1 (uncurryFan (\(I y) -> (y:))) . zipP x) (map1 (const []) ss)
-          . toList (\(oc :&: I g) -> runOpCont oc (Just g))
-          . zipP conts . gFz
-        )
+type Op  as a = forall m. Monad m => OpM m as a
+type Op' as a = forall s. OpM (ST s) as a
+
+newtype OpM m as a = OpM { runOpM' :: Tuple as -> m (a, Maybe a -> m (Tuple as)) }
+
+newtype OpCont m as a = OC { runOpCont :: Maybe a -> m (Tuple as) }
+
+composeOp
+    :: Monad m
+    => Prod Summer as
+    -> Prod (OpM m as) bs
+    -> OpM m bs c
+    -> OpM m as c
+composeOp ss os o = OpM $ \xs -> do
+    (ys, conts) <- fmap unzipP
+                 . traverse1 (fmap (\(x, c) -> I x :&: OC c) . flip runOpM' xs)
+                 $ os
+    (z, gFz) <- runOpM' o ys
+    let gFunc g0 = do
+          g1  <- gFz g0
+          g2s <- sequenceA
+                    . toList (\(oc :&: I g) -> runOpCont oc (Just g))
+                    $ conts `zipP` g1
+          return $ map1 (\(s :&: gs) -> I (runSummer s gs))
+                 . zipP ss
+                 . foldr (\x -> map1 (uncurryFan (\(I y) -> (y:))) . zipP x)
+                         (map1 (const []) ss)
+                 $ g2s
+    return (z, gFunc)
+
+pattern Op :: (Tuple as -> (a, Maybe a -> Tuple as)) -> Op as a
+pattern Op { runOp' }  <- OpM ((\f -> (second . fmap) getI . getI . f) -> runOp')
+  where
+    Op f = OpM (pure . (second . fmap) pure . f)
 
 runOp :: Op as a -> Tuple as -> a
 runOp o = fst . runOp' o
 
+runOpM :: Functor m => OpM m as a -> Tuple as -> m a
+runOpM o = fmap fst . runOpM' o
+
 gradOpWith' :: Op as a -> Tuple as -> Maybe a -> Tuple as
 gradOpWith' o = snd . runOp' o
 
+gradOpWithM' :: Monad m => OpM m as a -> Tuple as -> Maybe a -> m (Tuple as)
+gradOpWithM' o xs g = do
+    (_, f) <- runOpM' o xs
+    f g
+
 gradOpWith :: Op as a -> Tuple as -> a -> Tuple as
 gradOpWith o i = gradOpWith' o i . Just
+
+gradOpWithM :: Monad m => OpM m as a -> Tuple as -> a -> m (Tuple as)
+gradOpWithM o i = gradOpWithM' o i . Just
 
 gradOp :: Op as a -> Tuple as -> Tuple as
 gradOp o i = gradOpWith' o i Nothing
@@ -166,7 +203,7 @@ opN f = opN' $ \xs ->
     let (y, dxs) = grad' f xs
     in  (y, maybe dxs (\q -> (q *) <$> dxs))
 
-instance (Known Length as, Every Num as, Num a) => Num (Op as a) where
+instance (Monad m, Known Length as, Every Num as, Num a) => Num (OpM m as a) where
     o1 + o2       = composeOp summers (o1 :< o2 :< Ø) $ op2 (+)
     o1 - o2       = composeOp summers (o1 :< o2 :< Ø) $ op2 (-)
     o1 * o2       = composeOp summers (o1 :< o2 :< Ø) $ op2 (*)
@@ -175,12 +212,12 @@ instance (Known Length as, Every Num as, Num a) => Num (Op as a) where
     abs    o      = composeOp summers (o :< Ø)        $ op1 abs
     fromInteger x = opConst (fromInteger x)
 
-instance (Known Length as, Every Fractional as, Every Num as, Fractional a) => Fractional (Op as a) where
+instance (Monad m, Known Length as, Every Fractional as, Every Num as, Fractional a) => Fractional (OpM m as a) where
     o1 / o2        = composeOp summers (o1 :< o2 :< Ø) $ op2 (/)
     recip o        = composeOp summers (o :< Ø)        $ op1 recip
     fromRational x = opConst (fromRational x)
 
-instance (Known Length as, Every Floating as, Every Fractional as, Every Num as, Floating a) => Floating (Op as a) where
+instance (Monad m, Known Length as, Every Floating as, Every Fractional as, Every Num as, Floating a) => Floating (OpM m as a) where
     pi            = opConst pi
     exp   o       = composeOp summers (o :< Ø)        $ op1 exp
     log   o       = composeOp summers (o :< Ø)        $ op1 log

@@ -27,7 +27,7 @@ import           Type.Class.Known
 import           Type.Family.Nat
 import qualified Numeric.Backprop.Op         as BP
 
-type Op n a       = BP.Op (Replicate n a)
+type Op n a b = BP.Op (Replicate n a) b
 
 op1 :: Num a
     => (forall s. AD s (Forward a) -> AD s (Forward a))

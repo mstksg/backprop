@@ -70,7 +70,7 @@ infixr 1 -$
     => Op m a b
     -> VecT m (BRef s n a) a
     -> BP s n a (BRef s n a b)
-(-$) = flip opRef
+o -$ xs = opRef xs o
 
 constRef
     :: b

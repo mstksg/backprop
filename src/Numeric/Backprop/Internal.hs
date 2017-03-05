@@ -6,6 +6,7 @@
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE PolyKinds                  #-}
+{-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeApplications           #-}
@@ -135,7 +136,7 @@ data BRef :: Type -> [Type] -> Type -> Type where
     -- | A BRef that combines several other BRefs using a function (an
     -- 'Op').  Essentially a branch of a tree.
     BROp    :: !(Prod (BRef s rs) as)
-            -> !(Op as a)
+            -> !(Op' as a)
             -> BRef s rs a
 
 -- | Used exclusively by 'ForwardRefs' to specify "where" and "how" to look
@@ -173,7 +174,7 @@ data BPNode :: Type -> [Type] -> [Type] -> [Type] -> Type where
 data BPPipe :: Type -> [Type] -> [Type] -> [Type] -> Type where
     BPP :: { _bppOut       :: !(Prod (BPInpRef s rs) bs)
            , _bppRes       :: !(Tuple bs)
-           , _bppGradFunc  :: !(Tuple bs -> Tuple as)
+           , _bppGradFunc  :: !(Tuple bs -> ST s (Tuple as))
            , _bppGradCache :: !(Maybe (Tuple as))
            }
         -> BPPipe s rs as bs

@@ -8,7 +8,7 @@
 
 module Numeric.Backprop.Implicit (
   -- * Types
-    BRef, BPOp, Op(..)
+    BRef, BPOp, Op, Op'
   , Summer(..), Unity(..)
   -- * Backpropagation
   , backprop, grad, eval
