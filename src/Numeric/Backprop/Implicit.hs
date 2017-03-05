@@ -8,7 +8,7 @@
 
 module Numeric.Backprop.Implicit (
   -- * Types
-    BPRef, Op(..)
+    BPRef, BPOp, Op(..)
   , Summer(..), Unity(..)
   -- * Backpropagation
   , backprop, grad, eval
@@ -43,6 +43,8 @@ import           Type.Class.Higher
 import           Type.Class.Known
 import qualified Generics.SOP              as SOP
 import qualified Numeric.Backprop          as BP
+
+type BPOp s rs a = Prod (BPRef s rs) rs -> BPRef s rs a
 
 backprop'
     :: Prod Summer rs
