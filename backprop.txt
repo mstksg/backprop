@@ -2,6 +2,10 @@
 -- See Hoogle, http://www.haskell.org/hoogle/
 
 
+-- | Graph-based, heterogeneous, type-safe backpropagation in
+--   Haskell
+--   
+--   See README.md
 @package backprop
 @version 0.1.0.0
 
