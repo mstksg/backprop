@@ -122,9 +122,33 @@ data BRef :: Type -> [Type] -> Type -> Type
 newtype Op as a
 Op :: (Tuple as -> (a, Maybe a -> Tuple as)) -> Op as a
 [runOp'] :: Op as a -> Tuple as -> (a, Maybe a -> Tuple as)
+
+-- | Instructions on how to "sum" a list of values of a given type.
+--   Basically used as an explicit witness for a <a>Num</a> instance.
+--   
+--   For most types, the only meaningful value of type <tt><a>Summer</a>
+--   a</tt> is <tt><a>Summer</a> <a>sum</a></tt>. However, using
+--   <a>Summer</a> lets us use <tt>BP</tt> with types that are <i>not</i>
+--   instances of <a>Num</a>. Any type can be used, as long as you provide
+--   a way to "sum" it!
+--   
+--   If 'Num a' is satisfied, one can create the canonical <a>Summer</a>
+--   using <tt><a>known</a> :: <a>Num</a> a =&gt; <a>Summer</a> a</tt>.
 newtype Summer a
 Summer :: ([a] -> a) -> Summer a
 [runSummer] :: Summer a -> [a] -> a
+
+-- | A canonical "unity" (the multiplicative identity) for a given type.
+--   Basically used as an explicit witness for a <a>Num</a> instance.
+--   
+--   For most types, the only meaningful value of type <tt><a>Unity</a>
+--   a</tt> is <tt><a>Unity</a> 1'</tt>. However, using <a>Unity</a> lets
+--   us use <tt>BP</tt> with types that are <i>not</i> instances of
+--   <a>Num</a>. Any type can be used, as long as you provide a way to get
+--   a multiplicative identity in it!
+--   
+--   If 'Num a' is satisfied, one can create the canonical <a>Unity</a>
+--   using <tt><a>known</a> :: <a>Num</a> a =&gt; <a>Unity</a> a</tt>.
 newtype Unity a
 Unity :: a -> Unity a
 [getUnity] :: Unity a -> a
@@ -192,7 +216,15 @@ op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
 op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a, b] c
 op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a, b, c] d
 opN' :: (Known Nat n) => (Vec n a -> (b, Maybe b -> Vec n a)) -> Op (Replicate n a) b
+
+-- | If all the types in <tt>as</tt> are instances of <a>Num</a>, generate
+--   a <tt><a>Prod</a> <a>Summer</a> as</tt>, or a tuple of <a>Summer</a>s
+--   for every type in <tt>as</tt>.
 summers :: (Every Num as, Known Length as) => Prod Summer as
+
+-- | If all the types in <tt>as</tt> are instances of <a>Num</a>, generate
+--   a <tt><a>Prod</a> <a>Unity</a> as</tt>, or a tuple of <a>Unity</a>s
+--   for every type in <tt>as</tt>.
 unities :: (Every Num as, Known Length as) => Prod Unity as
 data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
 [Ø] :: Prod k f ([] k)
@@ -253,9 +285,33 @@ type BPOp rs a = forall s. Prod (BRef s rs) rs -> BRef s rs a
 newtype Op as a
 Op :: (Tuple as -> (a, Maybe a -> Tuple as)) -> Op as a
 [runOp'] :: Op as a -> Tuple as -> (a, Maybe a -> Tuple as)
+
+-- | Instructions on how to "sum" a list of values of a given type.
+--   Basically used as an explicit witness for a <a>Num</a> instance.
+--   
+--   For most types, the only meaningful value of type <tt><a>Summer</a>
+--   a</tt> is <tt><a>Summer</a> <a>sum</a></tt>. However, using
+--   <a>Summer</a> lets us use <tt>BP</tt> with types that are <i>not</i>
+--   instances of <a>Num</a>. Any type can be used, as long as you provide
+--   a way to "sum" it!
+--   
+--   If 'Num a' is satisfied, one can create the canonical <a>Summer</a>
+--   using <tt><a>known</a> :: <a>Num</a> a =&gt; <a>Summer</a> a</tt>.
 newtype Summer a
 Summer :: ([a] -> a) -> Summer a
 [runSummer] :: Summer a -> [a] -> a
+
+-- | A canonical "unity" (the multiplicative identity) for a given type.
+--   Basically used as an explicit witness for a <a>Num</a> instance.
+--   
+--   For most types, the only meaningful value of type <tt><a>Unity</a>
+--   a</tt> is <tt><a>Unity</a> 1'</tt>. However, using <a>Unity</a> lets
+--   us use <tt>BP</tt> with types that are <i>not</i> instances of
+--   <a>Num</a>. Any type can be used, as long as you provide a way to get
+--   a multiplicative identity in it!
+--   
+--   If 'Num a' is satisfied, one can create the canonical <a>Unity</a>
+--   using <tt><a>known</a> :: <a>Num</a> a =&gt; <a>Unity</a> a</tt>.
 newtype Unity a
 Unity :: a -> Unity a
 [getUnity] :: Unity a -> a
@@ -286,7 +342,15 @@ op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
 op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a, b] c
 op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a, b, c] d
 opN' :: (Known Nat n) => (Vec n a -> (b, Maybe b -> Vec n a)) -> Op (Replicate n a) b
+
+-- | If all the types in <tt>as</tt> are instances of <a>Num</a>, generate
+--   a <tt><a>Prod</a> <a>Summer</a> as</tt>, or a tuple of <a>Summer</a>s
+--   for every type in <tt>as</tt>.
 summers :: (Every Num as, Known Length as) => Prod Summer as
+
+-- | If all the types in <tt>as</tt> are instances of <a>Num</a>, generate
+--   a <tt><a>Prod</a> <a>Unity</a> as</tt>, or a tuple of <a>Unity</a>s
+--   for every type in <tt>as</tt>.
 unities :: (Every Num as, Known Length as) => Prod Unity as
 data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
 [Ø] :: Prod k f ([] k)
