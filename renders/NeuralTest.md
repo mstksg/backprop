@@ -106,8 +106,8 @@ simpleOp
       => R m
       -> BPOp s '[ L n m, R n, L o n, R o ] (R o)
 simpleOp inp = implicitly $ \(w1 :< b1 :< w2 :< b2 :< Ø) ->
-    let z = logistic $ liftR2 matVec w1 x + b1
-    in  logistic $ liftR2 matVec w2 z + b2
+    let z = logistic $ liftB2 matVec w1 x + b1
+    in  logistic $ liftB2 matVec w2 z + b2
   where
     x = constVar inp
 ```

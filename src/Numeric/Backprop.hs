@@ -55,7 +55,7 @@ module Numeric.Backprop (
   , internally'
   , generically'
   -- ** Combining
-  , liftB, liftB1, liftB2, liftB3
+  , liftB, (.$), liftB1, liftB2, liftB3
   -- * Op
   , op1, op2, op3, opN
   , op1', op2', op3'
@@ -395,7 +395,41 @@ registerVar bpir = \case
       ifor1_ rs $ \ix' (bpr :: BVar s rs d) ->
         registerVar (IRPipe ix' r') bpr
 
--- | Apply several 
+-- | Apply an 'OpB' to a 'Prod' (tupling) of 'BVar's.
+--
+-- If you had an @'OpB' s '[a, b, c] d@, this function will expect a 3-Prod
+-- of a @'BVar' s rs a@, a @'BVar' s rs b@, and a @'BVar' s rs c@, and the
+-- result will be a @'BVar' s rs d@:
+--
+-- @
+-- myOp :: OpB s '[a, b, c] d
+-- x    :: BVar s rs a
+-- y    :: BVar s rs b
+-- z    :: BVar s rs c
+--
+-- x :< y :< z :< Ø              :: Prod (BVar s rs) '[a, b, c]
+-- opVar myOp (x :< y :< z :< Ø) :: BP s rs (BVar s rs d)
+-- @
+--
+-- Note that 'OpB' is a superclass of 'Op', so you can provide any 'Op'
+-- here, as well (like those created by 'op1', 'op2', 'constOp', 'op0'
+-- etc.)
+--
+-- 'opVar' has an infix alias, '~$', so the above example can also be
+-- written as:
+--
+-- @
+-- myOp ~$ (x :< y :< z :< Ø) :: BP s rs (BVar s rs d)
+-- @
+--
+-- to let you pretend that you're applying the 'myOp' function to three
+-- inputs.
+--
+-- Also note the relation between 'opVar' and 'liftB' and 'bindVar':
+--
+-- @
+-- 'opVar' o xs = 'bindVar' ('liftB' o xs)
+-- @
 opVar
     :: Num a
     => OpB s as a
@@ -403,6 +437,18 @@ opVar
     -> BP s rs (BVar s rs a)
 opVar = opVar' known
 
+-- | Infix synonym for 'opVar', which lets you pretend that you're applying
+-- 'OpB's as if they were functions:
+--
+-- @
+-- myOp :: OpB s '[a, b, c] d
+-- x    :: BVar s rs a
+-- y    :: BVar s rs b
+-- z    :: BVar s rs c
+--
+-- x :< y :< z :< Ø           :: Prod (BVar s rs) '[a, b, c]
+-- myOp ~$ (x :< y :< z :< Ø) :: BP s rs (BVar s rs d)
+-- @
 infixr 1 ~$
 (~$)
     :: Num a
@@ -411,6 +457,7 @@ infixr 1 ~$
     -> BP s rs (BVar s rs a)
 (~$) = opVar
 
+-- | Infix synonym
 infixr 1 -$
 (-$)
     :: (Every Num as, Known Length as, Num a)
@@ -758,6 +805,13 @@ liftB
     -> Prod (BVar s rs) as
     -> BVar s rs a
 liftB = flip BVOp
+
+(.$)
+    :: OpB s as a
+    -> Prod (BVar s rs) as
+    -> BVar s rs a
+(.$) = liftB
+
 
 liftB1
     :: OpB s '[a] b

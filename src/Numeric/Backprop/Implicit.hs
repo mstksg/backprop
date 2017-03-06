@@ -13,7 +13,7 @@ module Numeric.Backprop.Implicit (
   , backprop, grad, eval
   , backprop', grad', eval'
   -- * Var manipulation
-  , BP.constVar, BP.liftB, BP.liftB1, BP.liftB2, BP.liftB3
+  , BP.constVar, BP.liftB, (BP..$), BP.liftB1, BP.liftB2, BP.liftB3
   -- ** As Parts
   , partsVar, withParts
   , splitVars, gSplit

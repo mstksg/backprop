@@ -32,7 +32,7 @@ module Numeric.Backprop.Mono (
   , opVar1, opVar2, opVar3
   , (-$)
   -- ** Combining
-  , liftB, liftB1, liftB2, liftB3
+  , liftB, (.$), liftB1, liftB2, liftB3
   -- * Op
   , op1, op2, op3, opN
   -- * Utility
@@ -163,10 +163,18 @@ implicitly
 implicitly f = withInps (return . f)
 
 liftB
-    :: OpB s m a b
+    :: forall s m n a b r. ()
+    => OpB s m a b
     -> VecT m (BVar s n r) a
     -> BVar s n r b
 liftB o = BP.liftB o . vecToProd
+
+(.$)
+    :: forall s m n a b r. ()
+    => OpB s m a b
+    -> VecT m (BVar s n r) a
+    -> BVar s n r b
+o .$ x = liftB @_ @_ @_ @_ @_ @r o x
 
 liftB1
     :: OpB s N1 a a
