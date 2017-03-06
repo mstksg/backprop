@@ -80,22 +80,13 @@ type Op as a = forall m. Monad m => OpM m as a
 --   examples on how to run it.
 newtype OpM m as a
 
--- | Create an <a>OpM</a> by giving a function creating the result, and
+-- | Construct an <a>OpM</a> by giving a function creating the result, and
 --   also a continuation on how to create the gradient, given the total
 --   derivative of <tt>a</tt>.
 --   
 --   See the module documentation for <a>Numeric.Backprop.Op</a> for more
 --   details on the function that this constructor and <a>Op</a> expect.
 OpM :: (Tuple as -> m (a, Maybe a -> m (Tuple as))) -> OpM m as a
-
--- | A combination of <a>runOpM</a> and <a>gradOpWithM'</a>. Given an
---   <a>OpM</a> and inputs, returns the result of the <a>Op</a> and a
---   continuation that gives its gradient.
---   
---   The continuation takes the total derivative of the result as input.
---   See documenation for <a>gradOpWithM'</a> and module documentation for
---   <a>Numeric.Backprop.Op</a> for more information.
-[runOpM'] :: OpM m as a -> Tuple as -> m (a, Maybe a -> m (Tuple as))
 
 -- | <a>Run</a> the function that an <a>Op</a> encodes, to get the result.
 --   
@@ -133,6 +124,14 @@ gradOpWith :: Op as a -> Tuple as -> a -> Tuple as
 --   See <a>gradOp</a> and the module documentaiton for
 --   <a>Numeric.Backprop.Op</a> for more information.
 gradOpWith' :: Op as a -> Tuple as -> Maybe a -> Tuple as
+
+-- | A combination of <a>runOp</a> and <a>gradOpWith'</a>. Given an
+--   <a>Op</a> and inputs, returns the result of the <a>Op</a> and a
+--   continuation that gives its gradient.
+--   
+--   The continuation takes the total derivative of the result as input.
+--   See documenation for <a>gradOpWith'</a> and module documentation for
+--   <a>Numeric.Backprop.Op</a> for more information.
 runOp' :: Op as a -> Tuple as -> (a, Maybe a -> Tuple as)
 
 -- | The monadic version of <a>runOp</a>, for <a>OpM</a>s.
@@ -148,6 +147,15 @@ gradOpWithM :: Monad m => OpM m as a -> Tuple as -> a -> m (Tuple as)
 
 -- | The monadic version of <a>gradOpWith'</a>, for <a>OpM</a>s.
 gradOpWithM' :: Monad m => OpM m as a -> Tuple as -> Maybe a -> m (Tuple as)
+
+-- | A combination of <a>runOpM</a> and <a>gradOpWithM'</a>. Given an
+--   <a>OpM</a> and inputs, returns the result of the <a>OpM</a> and a
+--   continuation that gives its gradient.
+--   
+--   The continuation takes the total derivative of the result as input.
+--   See documenation for <a>gradOpWithM'</a> and module documentation for
+--   <a>Numeric.Backprop.Op</a> for more information.
+runOpM' :: OpM m as a -> Tuple as -> m (a, Maybe a -> m (Tuple as))
 
 -- | Compose <a>OpM</a>s together, similar to <a>.</a>. But, because all
 --   <a>OpM</a>s are &lt;math&gt;, this is more like <a>sequence</a> for
