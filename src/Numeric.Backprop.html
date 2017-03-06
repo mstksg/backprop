@@ -104,7 +104,7 @@
 </span><a name="line-104"></a><span>                 </span><span class="hs-special">}</span><span>
 </span><a name="line-105"></a><span>    </span><a name="local-6989586621679171554"><a href="#local-6989586621679171554"><span class="hs-identifier">r</span></a></a><span> </span><span class="hs-glyph">&lt;-</span><span> </span><a href="Numeric.Backprop.Internal.html#BP"><span class="hs-identifier hs-var">BP</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier hs-var">liftBase</span><span> </span><span class="hs-operator hs-var">$</span><span> </span><span class="hs-identifier hs-var">newSTRef</span><span> </span><a href="#local-6989586621679171553"><span class="hs-identifier hs-var">bp</span></a><span>
 </span><a name="line-106"></a><span>    </span><a href="Data.Type.Util.html#itraverse1_"><span class="hs-identifier hs-var">itraverse1_</span></a><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.html#registerRef"><span class="hs-identifier hs-var">registerRef</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier hs-var">flip</span><span> </span><a href="Numeric.Backprop.Internal.html#IRNode"><span class="hs-identifier hs-var">IRNode</span></a><span> </span><a href="#local-6989586621679171554"><span class="hs-identifier hs-var">r</span></a><span class="hs-special">)</span><span> </span><a href="#local-6989586621679171548"><span class="hs-identifier hs-var">i</span></a><span>
-</span><a name="line-107"></a><span>    </span><span class="hs-identifier hs-var">return</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BRNode"><span class="hs-identifier hs-var">BRNode</span></a><span> </span><span class="hs-identifier hs-var">IZ</span><span> </span><a href="#local-6989586621679171554"><span class="hs-identifier hs-var">r</span></a><span class="hs-special">)</span><span>
+</span><a name="line-107"></a><span>    </span><span class="hs-identifier hs-var">return</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BVNode"><span class="hs-identifier hs-var">BVNode</span></a><span> </span><span class="hs-identifier hs-var">IZ</span><span> </span><a href="#local-6989586621679171554"><span class="hs-identifier hs-var">r</span></a><span class="hs-special">)</span><span>
 </span><a name="line-108"></a><span>
 </span><a name="line-109"></a><span class="hs-identifier">splitRefs'</span><span>
 </span><a name="line-110"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679171540"><a href="#local-6989586621679171540"><span class="hs-identifier">s</span></a></a><span> </span><a name="local-6989586621679171541"><a href="#local-6989586621679171541"><span class="hs-identifier">rs</span></a></a><span> </span><span class="hs-keyword">as</span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
@@ -201,7 +201,7 @@ internally' ss us sa l r bp = do
                   }
     r' &lt;- BP . liftBase $ newSTRef bpn
     registerRef (IRNode IZ r') r
-    return (BRNode IZ r')
+    return (BVNode IZ r')
 
 internally
     :: forall s rs bs b a. (Every Num bs, Known Length bs, Num a)
@@ -252,7 +252,7 @@ choicesRef' ss us i r = do
                    }
       r' &lt;- BP . liftBase $ newSTRef bp
       registerRef (IRNode IZ r') r
-      return $ BRNode IZ r'
+      return $ BVNode IZ r'
 -- TODO: cannot implement via sopRef?  oh well.
 
 choicesRef
@@ -288,7 +288,7 @@ sopRef' sss uss i r = do
                    }
       r' &lt;- BP . liftBase $ newSTRef bp
       registerRef (IRNode IZ r') r
-      return $ imap1 (\ix' _ -&gt; BRNode ix' r') ys
+      return $ imap1 (\ix' _ -&gt; BVNode ix' r') ys
 
 sopRef
     :: forall s rs bss b. (Known Length bss, Every (Every Num &#8743; Known Length) bss)
@@ -323,10 +323,10 @@ resolveRef
     =&gt; BVar s rs a
     -&gt; m a
 resolveRef = \case
-    BRNode  ix r -&gt; getI . index ix . _bpnRes &lt;$&gt; liftBase (readSTRef r)
-    BRInp   ix   -&gt; getI . index ix &lt;$&gt; ask
-    BRConst    x -&gt; return x
-    BROp    rs o -&gt; do
+    BVNode  ix r -&gt; getI . index ix . _bpnRes &lt;$&gt; liftBase (readSTRef r)
+    BVInp   ix   -&gt; getI . index ix &lt;$&gt; ask
+    BVConst    x -&gt; return x
+    BVOp    rs o -&gt; do
       xs &lt;- traverse1 (fmap I . resolveRef) rs
       liftBase $ runOpM o xs
 
@@ -336,13 +336,13 @@ registerRef
     -&gt; BVar s rs a
     -&gt; BP s rs ()
 registerRef bpir = \case
-    BRNode  ix' r' -&gt; BP . liftBase . modifySTRef r' $
+    BVNode  ix' r' -&gt; BP . liftBase . modifySTRef r' $
                         over (bpnOut . indexP ix' . _FRInternal) (bpir :)
-    BRInp   ix'    -&gt; BP $ modifying (bpsSources . indexP ix' . _FRInternal) (bpir :)
-    BRConst _      -&gt; return ()
+    BVInp   ix'    -&gt; BP $ modifying (bpsSources . indexP ix' . _FRInternal) (bpir :)
+    BVConst _      -&gt; return ()
     -- This independently makes a new BPPipe for every usage site of the
-    -- BROp, so it's a bit inefficient.
-    BROp    (rs :: Prod (BVar s rs) ds) (o :: OpM (ST s) ds a) -&gt; do
+    -- BVOp, so it's a bit inefficient.
+    BVOp    (rs :: Prod (BVar s rs) ds) (o :: OpM (ST s) ds a) -&gt; do
       xs :: Tuple ds &lt;- traverse1 (fmap I . BP . resolveRef) rs
       (res, gF) &lt;- BP . liftBase $ runOpM' o xs
       let bpp :: BPPipe s rs ds '[a]
@@ -379,7 +379,7 @@ infixr 1 -$
 o -$ xs = bpOp o ~$ xs
 
 constRef :: a -&gt; BVar s rs a
-constRef = BRConst
+constRef = BVConst
 
 opRef1'
     :: Summer b
@@ -435,10 +435,10 @@ bindRef'
     -&gt; BVar s rs a
     -&gt; BP s rs (BVar s rs a)
 bindRef' s r = case r of
-    BRNode  _  _ -&gt; return r
-    BRInp   _    -&gt; return r
-    BRConst _    -&gt; return r
-    BROp    rs o -&gt; opRef' s rs o
+    BVNode  _  _ -&gt; return r
+    BVInp   _    -&gt; return r
+    BVConst _    -&gt; return r
+    BVOp    rs o -&gt; opRef' s rs o
 
 bindRef
     :: Num a
@@ -547,10 +547,10 @@ closeOff
     -&gt; BVar s rs a
     -&gt; m ()
 closeOff isTerminal gOut = \case
-    BRNode  ix sr -&gt; liftBase $ modifySTRef sr (over (bpnOut . indexP ix) (&lt;&gt; fr))
-    BRInp   ix'   -&gt; modifying (bpsSources . indexP ix') (&lt;&gt; fr)
-    BRConst _     -&gt; return ()
-    BROp    rs o  -&gt; do
+    BVNode  ix sr -&gt; liftBase $ modifySTRef sr (over (bpnOut . indexP ix) (&lt;&gt; fr))
+    BVInp   ix'   -&gt; modifying (bpsSources . indexP ix') (&lt;&gt; fr)
+    BVConst _     -&gt; return ()
+    BVOp    rs o  -&gt; do
       xs &lt;- traverse1 (fmap I . resolveRef) rs
       gs &lt;- liftBase $ gradOpWithM' o xs gOut
       for1_ (gs `zipP` rs) $ \(I g :&amp;: r) -&gt;
@@ -592,7 +592,7 @@ implicitly = implicitly' known
 inpRef
     :: Index rs a
     -&gt; BVar s rs a
-inpRef = BRInp
+inpRef = BVInp
 
 inpRefs
     :: Known Length rs
@@ -620,7 +620,7 @@ liftR
     :: OpB s as a
     -&gt; Prod (BVar s rs) as
     -&gt; BVar s rs a
-liftR = flip BROp
+liftR = flip BVOp
 
 liftR1
     :: OpB s '[a] b

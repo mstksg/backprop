@@ -127,18 +127,18 @@
 </span><a name="line-127"></a><span class="hs-comment">-- force it first.)</span><span>
 </span><a name="line-128"></a><span class="hs-keyword">data</span><span> </span><a name="BVar"><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier">BVar</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Type</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-identifier hs-type">Type</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Type</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Type</span><span> </span><span class="hs-keyword">where</span><span>
 </span><a name="line-129"></a><span>    </span><span class="hs-comment">-- | A BVar referring to a 'BPNode'</span><span>
-</span><a name="line-130"></a><span>    </span><a name="BRNode"><a href="Numeric.Backprop.Internal.html#BRNode"><span class="hs-identifier">BRNode</span></a></a><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="hs-identifier hs-type">Index</span><span> </span><a href="#local-6989586621679149827"><span class="hs-identifier hs-type">bs</span></a><span> </span><a href="#local-6989586621679149828"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
+</span><a name="line-130"></a><span>    </span><a name="BVNode"><a href="Numeric.Backprop.Internal.html#BVNode"><span class="hs-identifier">BVNode</span></a></a><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="hs-identifier hs-type">Index</span><span> </span><a href="#local-6989586621679149827"><span class="hs-identifier hs-type">bs</span></a><span> </span><a href="#local-6989586621679149828"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
 </span><a name="line-131"></a><span>            </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="hs-identifier hs-type">STRef</span><span> </span><a href="#local-6989586621679149829"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BPNode"><span class="hs-identifier hs-type">BPNode</span></a><span> </span><a href="#local-6989586621679149829"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679149830"><span class="hs-identifier hs-type">rs</span></a><span> </span><span class="hs-keyword">as</span><span> </span><a href="#local-6989586621679149827"><span class="hs-identifier hs-type">bs</span></a><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><a name="line-132"></a><span>            </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679149829"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679149830"><span class="hs-identifier hs-type">rs</span></a><span> </span><a href="#local-6989586621679149828"><span class="hs-identifier hs-type">a</span></a><span>
 </span><a name="line-133"></a><span>    </span><span class="hs-comment">-- | A BVar referring to an environment input variable</span><span>
-</span><a name="line-134"></a><span>    </span><a name="BRInp"><a href="Numeric.Backprop.Internal.html#BRInp"><span class="hs-identifier">BRInp</span></a></a><span>   </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="hs-identifier hs-type">Index</span><span> </span><a href="#local-6989586621679149832"><span class="hs-identifier hs-type">rs</span></a><span> </span><a href="#local-6989586621679149833"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
+</span><a name="line-134"></a><span>    </span><a name="BVInp"><a href="Numeric.Backprop.Internal.html#BVInp"><span class="hs-identifier">BVInp</span></a></a><span>   </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="hs-identifier hs-type">Index</span><span> </span><a href="#local-6989586621679149832"><span class="hs-identifier hs-type">rs</span></a><span> </span><a href="#local-6989586621679149833"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
 </span><a name="line-135"></a><span>            </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679149834"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679149832"><span class="hs-identifier hs-type">rs</span></a><span> </span><a href="#local-6989586621679149833"><span class="hs-identifier hs-type">a</span></a><span>
 </span><a name="line-136"></a><span>    </span><span class="hs-comment">-- | A constant BVar that refers to a specific Haskell value</span><span>
-</span><a name="line-137"></a><span>    </span><a name="BRConst"><a href="Numeric.Backprop.Internal.html#BRConst"><span class="hs-identifier">BRConst</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><a href="#local-6989586621679149835"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-137"></a><span>    </span><a name="BVConst"><a href="Numeric.Backprop.Internal.html#BVConst"><span class="hs-identifier">BVConst</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><a href="#local-6989586621679149835"><span class="hs-identifier hs-type">a</span></a><span>
 </span><a name="line-138"></a><span>            </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679149836"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679149837"><span class="hs-identifier hs-type">rs</span></a><span> </span><a href="#local-6989586621679149835"><span class="hs-identifier hs-type">a</span></a><span>
 </span><a name="line-139"></a><span>    </span><span class="hs-comment">-- | A BVar that combines several other BVars using a function (an</span><span>
 </span><a name="line-140"></a><span>    </span><span class="hs-comment">-- 'Op').  Essentially a branch of a tree.</span><span>
-</span><a name="line-141"></a><span>    </span><a name="BROp"><a href="Numeric.Backprop.Internal.html#BROp"><span class="hs-identifier">BROp</span></a></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="hs-identifier hs-type">Prod</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679149838"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679149839"><span class="hs-identifier hs-type">rs</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">as</span><span class="hs-special">)</span><span>
+</span><a name="line-141"></a><span>    </span><a name="BVOp"><a href="Numeric.Backprop.Internal.html#BVOp"><span class="hs-identifier">BVOp</span></a></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="hs-identifier hs-type">Prod</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679149838"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679149839"><span class="hs-identifier hs-type">rs</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">as</span><span class="hs-special">)</span><span>
 </span><a name="line-142"></a><span>            </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#OpB"><span class="hs-identifier hs-type">OpB</span></a><span> </span><a href="#local-6989586621679149838"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-keyword">as</span><span> </span><a href="#local-6989586621679149841"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
 </span><a name="line-143"></a><span>            </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679149838"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679149839"><span class="hs-identifier hs-type">rs</span></a><span> </span><a href="#local-6989586621679149841"><span class="hs-identifier hs-type">a</span></a><span>
 </span><a name="line-144"></a><span>
@@ -173,7 +173,7 @@
 </span><a name="line-173"></a><span>
 </span><a name="line-174"></a><span class="hs-comment">-- | Essentially a &quot;single-usage&quot; 'BPNode'.  It's a stateful node, but only</span><span>
 </span><a name="line-175"></a><span class="hs-comment">-- ever has a single consumer (and so its total derivative comes from</span><span>
-</span><a name="line-176"></a><span class="hs-comment">-- a single partial derivative).  Used when keeping track of 'BROp's.</span><span>
+</span><a name="line-176"></a><span class="hs-comment">-- a single partial derivative).  Used when keeping track of 'BVOp's.</span><span>
 </span><a name="line-177"></a><span class="hs-keyword">data</span><span> </span><a name="BPPipe"><a href="Numeric.Backprop.Internal.html#BPPipe"><span class="hs-identifier">BPPipe</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Type</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-identifier hs-type">Type</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-identifier hs-type">Type</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-identifier hs-type">Type</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Type</span><span> </span><span class="hs-keyword">where</span><span>
 </span><a name="line-178"></a><span>    </span><a name="BPP"><a href="Numeric.Backprop.Internal.html#BPP"><span class="hs-identifier">BPP</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">{</span><span> </span><a name="_bppOut"><a href="Numeric.Backprop.Internal.html#_bppOut"><span class="hs-identifier">_bppOut</span></a></a><span>       </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="hs-identifier hs-type">Prod</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BPInpRef"><span class="hs-identifier hs-type">BPInpRef</span></a><span> </span><a href="#local-6989586621679149806"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679149807"><span class="hs-identifier hs-type">rs</span></a><span class="hs-special">)</span><span> </span><a href="#local-6989586621679149808"><span class="hs-identifier hs-type">bs</span></a><span class="hs-special">)</span><span>
 </span><a name="line-179"></a><span>           </span><span class="hs-special">,</span><span> </span><a name="_bppRes"><a href="Numeric.Backprop.Internal.html#_bppRes"><span class="hs-identifier">_bppRes</span></a></a><span>       </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="hs-identifier hs-type">Tuple</span><span> </span><a href="#local-6989586621679149808"><span class="hs-identifier hs-type">bs</span></a><span class="hs-special">)</span><span>
@@ -204,39 +204,39 @@ _FRInternal f = \case
 -- are using a 'BVar' you made with the 'Num' instance in multiple
 -- locations, use 'bindRef' first to force it and prevent recomputation.
 instance Num a =&gt; Num (BVar s rs a) where
-    r1 + r2       = BROp (r1 :&lt; r2 :&lt; &#216;) $ op2 (+)
-    r1 - r2       = BROp (r1 :&lt; r2 :&lt; &#216;) $ op2 (-)
-    r1 * r2       = BROp (r1 :&lt; r2 :&lt; &#216;) $ op2 (*)
-    negate r      = BROp (r :&lt; &#216;)        $ op1 negate
-    signum r      = BROp (r :&lt; &#216;)        $ op1 negate
-    abs r         = BROp (r :&lt; &#216;)        $ op1 abs
-    fromInteger x = BRConst (fromInteger x)
+    r1 + r2       = BVOp (r1 :&lt; r2 :&lt; &#216;) $ op2 (+)
+    r1 - r2       = BVOp (r1 :&lt; r2 :&lt; &#216;) $ op2 (-)
+    r1 * r2       = BVOp (r1 :&lt; r2 :&lt; &#216;) $ op2 (*)
+    negate r      = BVOp (r :&lt; &#216;)        $ op1 negate
+    signum r      = BVOp (r :&lt; &#216;)        $ op1 negate
+    abs r         = BVOp (r :&lt; &#216;)        $ op1 abs
+    fromInteger x = BVConst (fromInteger x)
 
 -- | See note for 'Num' instance.
 instance Fractional a =&gt; Fractional (BVar s rs a) where
-    r1 / r2        = BROp (r1 :&lt; r2 :&lt; &#216;) $ op2 (/)
-    recip r        = BROp (r :&lt; &#216;)        $ op1 recip
-    fromRational x = BRConst (fromRational x)
+    r1 / r2        = BVOp (r1 :&lt; r2 :&lt; &#216;) $ op2 (/)
+    recip r        = BVOp (r :&lt; &#216;)        $ op1 recip
+    fromRational x = BVConst (fromRational x)
 
 -- | See note for 'Num' instance.
 instance Floating a =&gt; Floating (BVar s rs a) where
-    pi            = BRConst pi
-    exp   r       = BROp (r :&lt; &#216;)        $ op1 exp
-    log   r       = BROp (r :&lt; &#216;)        $ op1 log
-    sqrt  r       = BROp (r :&lt; &#216;)        $ op1 sqrt
-    r1 ** r2      = BROp (r1 :&lt; r2 :&lt; &#216;) $ op2 (**)
-    logBase r1 r2 = BROp (r1 :&lt; r2 :&lt; &#216;) $ op2 logBase
-    sin   r       = BROp (r :&lt; &#216;)        $ op1 sin
-    cos   r       = BROp (r :&lt; &#216;)        $ op1 cos
-    tan   r       = BROp (r :&lt; &#216;)        $ op1 tan
-    asin  r       = BROp (r :&lt; &#216;)        $ op1 asin
-    acos  r       = BROp (r :&lt; &#216;)        $ op1 acos
-    atan  r       = BROp (r :&lt; &#216;)        $ op1 atan
-    sinh  r       = BROp (r :&lt; &#216;)        $ op1 sinh
-    cosh  r       = BROp (r :&lt; &#216;)        $ op1 cosh
-    tanh  r       = BROp (r :&lt; &#216;)        $ op1 tanh
-    asinh r       = BROp (r :&lt; &#216;)        $ op1 asinh
-    acosh r       = BROp (r :&lt; &#216;)        $ op1 acosh
-    atanh r       = BROp (r :&lt; &#216;)        $ op1 atanh
+    pi            = BVConst pi
+    exp   r       = BVOp (r :&lt; &#216;)        $ op1 exp
+    log   r       = BVOp (r :&lt; &#216;)        $ op1 log
+    sqrt  r       = BVOp (r :&lt; &#216;)        $ op1 sqrt
+    r1 ** r2      = BVOp (r1 :&lt; r2 :&lt; &#216;) $ op2 (**)
+    logBase r1 r2 = BVOp (r1 :&lt; r2 :&lt; &#216;) $ op2 logBase
+    sin   r       = BVOp (r :&lt; &#216;)        $ op1 sin
+    cos   r       = BVOp (r :&lt; &#216;)        $ op1 cos
+    tan   r       = BVOp (r :&lt; &#216;)        $ op1 tan
+    asin  r       = BVOp (r :&lt; &#216;)        $ op1 asin
+    acos  r       = BVOp (r :&lt; &#216;)        $ op1 acos
+    atan  r       = BVOp (r :&lt; &#216;)        $ op1 atan
+    sinh  r       = BVOp (r :&lt; &#216;)        $ op1 sinh
+    cosh  r       = BVOp (r :&lt; &#216;)        $ op1 cosh
+    tanh  r       = BVOp (r :&lt; &#216;)        $ op1 tanh
+    asinh r       = BVOp (r :&lt; &#216;)        $ op1 asinh
+    acosh r       = BVOp (r :&lt; &#216;)        $ op1 acosh
+    atanh r       = BVOp (r :&lt; &#216;)        $ op1 atanh
 
 </span></pre></body></html>
