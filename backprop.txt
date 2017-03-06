@@ -51,6 +51,14 @@ module Numeric.Backprop.Op
 --   And, if your function is a numeric function, they can even be created
 --   automatically using <a>op1</a>, <a>op2</a>, <a>op3</a>, and <a>opN</a>
 --   with a little help from <a>Numeric.AD</a> from the <i>ad</i> library.
+--   
+--   Note that this type is a subset/subtype of <a>OpM</a>. So, if a
+--   function ever expects an <tt><a>OpM</a> m as a</tt>, you can always
+--   provide an <tt><a>Op</a> as a</tt> instead.
+--   
+--   Many functions in this library will expect an <tt><a>OpM</a> m as
+--   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
+--   you can provide an <tt><a>Op</a> as a</tt>.
 type Op as a = forall m. Monad m => OpM m as a
 
 -- | An <tt><a>OpM</a> m as a</tt> represents a <i>differentiable</i>
@@ -99,19 +107,49 @@ OpM :: (Tuple as -> m (a, Maybe a -> m (Tuple as))) -> OpM m as a
 --   15
 --   </pre>
 runOp :: Op as a -> Tuple as -> a
+
+-- | Run the function that an <a>Op</a> encodes, and get its gradient with
+--   respect to the result.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp (op2 (*)) (3 ::&lt; 5 ::&lt; Ø)
+--   5 ::&lt; 3 ::&lt; Ø
+--   -- the gradient of x*y is (y, x)
+--   </pre>
 gradOp :: Op as a -> Tuple as -> Tuple as
+
+-- | Run the function that an <a>Op</a> encodes, and get its gradient with
+--   respect to the total derivative of the result.
+--   
+--   See <a>gradOp</a> and the module documentaiton for
+--   <a>Numeric.Backprop.Op</a> for more information.
 gradOpWith :: Op as a -> Tuple as -> a -> Tuple as
+
+-- | A combination of <a>gradOp</a> and <a>gradOpWith</a>. The third
+--   argument is (optionally) the total derivative the result. Give
+--   <a>Nothing</a> and it is assumed that the result is the final result
+--   (and the total derivative is 1), and this behaves the same as
+--   <a>gradOp</a>. Give <tt><a>Just</a> d</tt> and it uses the <tt>d</tt>
+--   as the total derivative of the result, and this behaves like
+--   <a>gradOpWith</a>.
+--   
+--   See <a>gradOp</a> and the module documentaiton for
+--   <a>Numeric.Backprop.Op</a> for more information.
 gradOpWith' :: Op as a -> Tuple as -> Maybe a -> Tuple as
 runOp' :: Op as a -> Tuple as -> (a, Maybe a -> Tuple as)
 
--- | <a>Run</a> the function that an <a>OpM</a> encodes, to get the result.
+-- | The monadic version of <a>runOp</a>, for <a>OpM</a>s.
 --   
 --   <pre>
 --   &gt;&gt;&gt; runOpM (op2 (*)) (3 ::&lt; 5 ::&lt; Ø) :: IO Int
 --   15
 --   </pre>
 runOpM :: Functor m => OpM m as a -> Tuple as -> m a
+
+-- | The monadic version of <a>gradOpWith</a>, for <a>OpM</a>s.
 gradOpWithM :: Monad m => OpM m as a -> Tuple as -> a -> m (Tuple as)
+
+-- | The monadic version of <a>gradOpWith'</a>, for <a>OpM</a>s.
 gradOpWithM' :: Monad m => OpM m as a -> Tuple as -> Maybe a -> m (Tuple as)
 
 -- | Compose <a>OpM</a>s together, similar to <a>.</a>. But, because all
@@ -309,6 +347,14 @@ data BVar :: Type -> [Type] -> Type -> Type
 --   And, if your function is a numeric function, they can even be created
 --   automatically using <a>op1</a>, <a>op2</a>, <a>op3</a>, and <a>opN</a>
 --   with a little help from <a>Numeric.AD</a> from the <i>ad</i> library.
+--   
+--   Note that this type is a subset/subtype of <a>OpM</a>. So, if a
+--   function ever expects an <tt><a>OpM</a> m as a</tt>, you can always
+--   provide an <tt><a>Op</a> as a</tt> instead.
+--   
+--   Many functions in this library will expect an <tt><a>OpM</a> m as
+--   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
+--   you can provide an <tt><a>Op</a> as a</tt>.
 type Op as a = forall m. Monad m => OpM m as a
 
 -- | A type synonym for <a>OpM</a> specialized to what the <i>backprop</i>
@@ -540,6 +586,14 @@ type BPOp rs a = forall s. Prod (BVar s rs) rs -> BVar s rs a
 --   And, if your function is a numeric function, they can even be created
 --   automatically using <a>op1</a>, <a>op2</a>, <a>op3</a>, and <a>opN</a>
 --   with a little help from <a>Numeric.AD</a> from the <i>ad</i> library.
+--   
+--   Note that this type is a subset/subtype of <a>OpM</a>. So, if a
+--   function ever expects an <tt><a>OpM</a> m as a</tt>, you can always
+--   provide an <tt><a>Op</a> as a</tt> instead.
+--   
+--   Many functions in this library will expect an <tt><a>OpM</a> m as
+--   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
+--   you can provide an <tt><a>Op</a> as a</tt>.
 type Op as a = forall m. Monad m => OpM m as a
 
 -- | A type synonym for <a>OpM</a> specialized to what the <i>backprop</i>
