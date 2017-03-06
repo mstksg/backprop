@@ -20,7 +20,7 @@
 </span><a name="line-20"></a><span class="hs-comment">--</span><span>
 </span><a name="line-21"></a><span class="hs-comment">-- If you also import lens, you should only use this module for the</span><span>
 </span><a name="line-22"></a><span class="hs-comment">-- 'Iso's it exports, and not import the redefined 'Iso' type synonym or</span><span>
-</span><a name="line-23"></a><span class="hs-comment">-- 're'/'iso'/'review'.</span><span>
+</span><a name="line-23"></a><span class="hs-comment">-- 'from'/'iso'/'review'.</span><span>
 </span><a name="line-24"></a><span class="hs-comment">--</span><span>
 </span><a name="line-25"></a><span>
 </span><a name="line-26"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">Backprop</span><span class="hs-operator">.</span><span class="hs-identifier">Iso</span><span> </span><span class="hs-special">(</span><span>
@@ -28,7 +28,7 @@
 </span><a name="line-28"></a><span>    </span><a href="Numeric.Backprop.Iso.html#Iso"><span class="hs-identifier hs-type">Iso</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Iso.html#Iso%27"><span class="hs-identifier hs-type">Iso'</span></a><span>
 </span><a name="line-29"></a><span>  </span><span class="hs-comment">-- ** Construction and usage</span><span>
 </span><a name="line-30"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Iso.html#iso"><span class="hs-identifier hs-var">iso</span></a><span>
-</span><a name="line-31"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Iso.html#re"><span class="hs-identifier hs-var">re</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Iso.html#review"><span class="hs-identifier hs-var">review</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">view</span><span>
+</span><a name="line-31"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Iso.html#from"><span class="hs-identifier hs-var">from</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Iso.html#review"><span class="hs-identifier hs-var">review</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">view</span><span>
 </span><a name="line-32"></a><span>  </span><span class="hs-comment">-- * Useful Isos</span><span>
 </span><a name="line-33"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Iso.html#coerced"><span class="hs-identifier hs-var">coerced</span></a><span>
 </span><a name="line-34"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Iso.html#gTuple"><span class="hs-identifier hs-var">gTuple</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Iso.html#gSOP"><span class="hs-identifier hs-var">gSOP</span></a><span>
@@ -168,8 +168,8 @@ resum1 = iso InL
 -- This is basically provided here so that this package doesn't incurr
 -- a /lens/ dependecy, but if you already depend on /lens/, you should use
 -- the version from &quot;Control.Lens.Review&quot; instead.
-re :: Iso' s a -&gt; Iso' a s
-re i = iso (review i) (view i)
+from :: Iso' s a -&gt; Iso' a s
+from i = iso (review i) (view i)
 
 sop :: SOP.Generic a =&gt; Iso' a (SOP.SOP SOP.I (SOP.Code a))
 sop = iso SOP.from SOP.to

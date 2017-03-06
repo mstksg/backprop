@@ -16,7 +16,7 @@
 --   
 --   If you also import lens, you should only use this module for the
 --   <a>Iso</a>s it exports, and not import the redefined <a>Iso</a> type
---   synonym or 're'/'iso'/'review'.
+--   synonym or 'from'/'iso'/'review'.
 module Numeric.Backprop.Iso
 
 -- | A family of isomorphisms. See <a>Iso'</a>.
@@ -93,7 +93,7 @@ iso :: (s -> a) -> (b -> t) -> Iso s t a b
 --   This is basically provided here so that this package doesn't incurr a
 --   <i>lens</i> dependecy, but if you already depend on <i>lens</i>, you
 --   should use the version from <a>Control.Lens.Review</a> instead.
-re :: Iso' s a -> Iso' a s
+from :: Iso' s a -> Iso' a s
 
 -- | Get the "reverse" direction function from an <a>Iso</a>.
 --   
