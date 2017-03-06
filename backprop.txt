@@ -99,6 +99,9 @@ gradOpWith' :: Op as a -> Tuple as -> Maybe a -> Tuple as
 runOpM :: Functor m => OpM m as a -> Tuple as -> m a
 gradOpWithM :: Monad m => OpM m as a -> Tuple as -> a -> m (Tuple as)
 gradOpWithM' :: Monad m => OpM m as a -> Tuple as -> Maybe a -> m (Tuple as)
+
+-- | Compose <a>OpM</a>s together, similar to <a>.</a>. But, because all
+--   <a>OpM</a>s are &lt;math&gt;, this is more like
 composeOp :: (Monad m, Known Length as, Every Num as) => Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
 
 -- | <a>composeOp</a>, but taking explicit <a>Summer</a>s, for the
