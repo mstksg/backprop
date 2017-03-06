@@ -1,6 +1,8 @@
 backprop
 ========
 
+[![Build Status](https://travis-ci.org/mstksg/backprop.svg?branch=master)](https://travis-ci.org/mstksg/backprop)
+
 Automatic *heterogeneous* back-propagation that can be used either *implicitly*
 (in the style of the [ad][] library) or using *explicit* graphs built in
 monadic style.  Implements reverse-mode automatic differentiation.  Differs
