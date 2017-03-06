@@ -21,10 +21,75 @@ gSOP :: Generic a => Iso' a (Sum Tuple (Code a))
 sum1 :: Iso' (Sum f '[a]) (f a)
 resum1 :: Iso' (f a) (Sum f '[a])
 
+
+-- | Provides the <a>Op</a> (and <a>OpM</a>) type and combinators, which
+--   represent differentiable functions/operations on values, and are used
+--   by the library to perform backpropagation.
 module Numeric.Backprop.Op
+
+-- | An <tt><a>Op</a> as a</tt> is a type synonym over <a>OpM</a> that
+--   describes a differentiable function from <tt>as</tt> to <tt>a</tt>.
+--   
+--   For example, an
+--   
+--   <pre>
+--   <a>Op</a> '[Int, Bool] Double
+--   </pre>
+--   
+--   is a function from an <a>Int</a> and a <a>Bool</a>, returning a
+--   <a>Double</a>. It can be differentiated to give a <i>gradient</i> of
+--   an <a>Int</a> and a <a>Bool</a> if given a total derivative for
+--   <tt>a</tt>.
+--   
+--   See <a>runOp</a>, <a>gradOp</a>, and <a>gradOpWith</a> for examples on
+--   how to run it, and <a>Op</a> for instructions on creating it.
+--   
+--   This type is abstracted over using the pattern synonym with
+--   constructor <a>Op</a>, so you can create one from scratch with it.
+--   However, it's simplest to create it using <a>op2'</a>, <a>op1'</a>,
+--   <a>op2'</a>, <a>op3'</a>, and <a>opN'</a> helper smart constructors
+--   And, if your function is a numeric function, they can even be created
+--   automatically using <a>op1</a>, <a>op2</a>, <a>op3</a>, and <a>opN</a>
+--   with a little help from <a>Numeric.AD</a> from the <i>ad</i> library.
 type Op as a = forall m. Monad m => OpM m as a
+
+-- | An <tt><a>OpM</a> m as a</tt> represents a <i>differentiable</i>
+--   (monadic) function from <tt>as</tt> to <tt>a</tt>, in the context of a
+--   <a>Monad</a> <tt>m</tt>.
+--   
+--   For example, an
+--   
+--   <pre>
+--   <a>OpM</a> IO '[Int, Bool] Double
+--   </pre>
+--   
+--   would be a function that takes an <a>Int</a> and a <a>Bool</a> and
+--   returns a <a>Double</a> (in <a>IO</a>). It can be differentiated to
+--   give a <i>gradient</i> of an <a>Int</a> and a <a>Bool</a> (in
+--   <a>IO</a>) if given the total derivative for <tt>a</tt>.
+--   
+--   See <a>runOpM</a>, <tt>gradOpM</tt>, and <a>gradOpWithM</a> for
+--   examples on how to run it.
 newtype OpM m as a
+
+-- | Create an <a>OpM</a> by giving a function creating the result, and
+--   also a continuation on how to create the gradient, given the total
+--   derivative of <tt>a</tt>.
+--   
+--   For example, the function is
+--   
+--   &lt;math&gt;
+--   
+--   Then the first item in the result tuple is the result of $f$.
 OpM :: (Tuple as -> m (a, Maybe a -> m (Tuple as))) -> OpM m as a
+
+-- | <a>runOpM'</a> takes the input tuple, and returns a tuple containing
+--   the result and a continuation to produce the gradient, when given the
+--   total derivative <tt>a</tt>.
+--   
+--   If the continuation is given <a>Nothing</a>, then the <tt>a</tt> is
+--   taken to be the final result you want to take the gradient with
+--   respect to.
 [runOpM'] :: OpM m as a -> Tuple as -> m (a, Maybe a -> m (Tuple as))
 runOp' :: Op as a -> Tuple as -> (a, Maybe a -> Tuple as)
 runOp :: Op as a -> Tuple as -> a
@@ -192,6 +257,31 @@ type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 --   you want to re-use a <a>BVar</a> you created using '(+)' or '(-)' or
 --   <tt>liftR</tt>, use <tt>bindRef</tt> to force it first.)
 data BVar :: Type -> [Type] -> Type -> Type
+
+-- | An <tt><a>Op</a> as a</tt> is a type synonym over <a>OpM</a> that
+--   describes a differentiable function from <tt>as</tt> to <tt>a</tt>.
+--   
+--   For example, an
+--   
+--   <pre>
+--   <a>Op</a> '[Int, Bool] Double
+--   </pre>
+--   
+--   is a function from an <a>Int</a> and a <a>Bool</a>, returning a
+--   <a>Double</a>. It can be differentiated to give a <i>gradient</i> of
+--   an <a>Int</a> and a <a>Bool</a> if given a total derivative for
+--   <tt>a</tt>.
+--   
+--   See <a>runOp</a>, <a>gradOp</a>, and <a>gradOpWith</a> for examples on
+--   how to run it, and <a>Op</a> for instructions on creating it.
+--   
+--   This type is abstracted over using the pattern synonym with
+--   constructor <a>Op</a>, so you can create one from scratch with it.
+--   However, it's simplest to create it using <a>op2'</a>, <a>op1'</a>,
+--   <a>op2'</a>, <a>op3'</a>, and <a>opN'</a> helper smart constructors
+--   And, if your function is a numeric function, they can even be created
+--   automatically using <a>op1</a>, <a>op2</a>, <a>op3</a>, and <a>opN</a>
+--   with a little help from <a>Numeric.AD</a> from the <i>ad</i> library.
 type Op as a = forall m. Monad m => OpM m as a
 
 -- | A type synonym for <a>OpM</a> specialized to what the <i>backprop</i>
@@ -398,6 +488,31 @@ module Numeric.Backprop.Implicit
 --   <tt>liftR</tt>, use <tt>bindRef</tt> to force it first.)
 data BVar :: Type -> [Type] -> Type -> Type
 type BPOp rs a = forall s. Prod (BVar s rs) rs -> BVar s rs a
+
+-- | An <tt><a>Op</a> as a</tt> is a type synonym over <a>OpM</a> that
+--   describes a differentiable function from <tt>as</tt> to <tt>a</tt>.
+--   
+--   For example, an
+--   
+--   <pre>
+--   <a>Op</a> '[Int, Bool] Double
+--   </pre>
+--   
+--   is a function from an <a>Int</a> and a <a>Bool</a>, returning a
+--   <a>Double</a>. It can be differentiated to give a <i>gradient</i> of
+--   an <a>Int</a> and a <a>Bool</a> if given a total derivative for
+--   <tt>a</tt>.
+--   
+--   See <a>runOp</a>, <a>gradOp</a>, and <a>gradOpWith</a> for examples on
+--   how to run it, and <a>Op</a> for instructions on creating it.
+--   
+--   This type is abstracted over using the pattern synonym with
+--   constructor <a>Op</a>, so you can create one from scratch with it.
+--   However, it's simplest to create it using <a>op2'</a>, <a>op1'</a>,
+--   <a>op2'</a>, <a>op3'</a>, and <a>opN'</a> helper smart constructors
+--   And, if your function is a numeric function, they can even be created
+--   automatically using <a>op1</a>, <a>op2</a>, <a>op3</a>, and <a>opN</a>
+--   with a little help from <a>Numeric.AD</a> from the <i>ad</i> library.
 type Op as a = forall m. Monad m => OpM m as a
 
 -- | A type synonym for <a>OpM</a> specialized to what the <i>backprop</i>
