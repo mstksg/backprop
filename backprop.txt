@@ -103,6 +103,36 @@ newtype OpM m as a
 --   See the module documentation for <a>Numeric.Backprop.Op</a> for more
 --   details on the function that this constructor and <a>Op</a> expect.
 OpM :: (Tuple as -> m (a, Maybe a -> m (Tuple as))) -> OpM m as a
+data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
+[Ø] :: Prod k f ([] k)
+[:<] :: Prod k f ((:) k a1 as)
+
+-- | Construct a two element Prod. Since the precedence of (:&gt;) is
+--   higher than (:&lt;), we can conveniently write lists like:
+--   
+--   <pre>
+--   &gt;&gt;&gt; a :&lt; b :&gt; c
+--   </pre>
+--   
+--   Which is identical to:
+--   
+--   <pre>
+--   &gt;&gt;&gt; a :&lt; b :&lt; c :&lt; Ø
+--   </pre>
+infix 6 :>
+
+-- | Build a singleton Prod.
+only :: f a -> Prod k f ((:) k a ([] k))
+head' :: Prod k f ((:<) k a as) -> f a
+
+-- | A Prod of simple Haskell types.
+type Tuple = Prod * I
+
+-- | Cons onto a Tuple.
+infixr 5 ::<
+
+-- | Singleton Tuple.
+only_ :: a -> Tuple ((:) * a ([] *))
 
 -- | Run the function that an <a>Op</a> encodes, to get the result.
 --   
@@ -389,36 +419,6 @@ opTup' :: Prod Unity as -> Op as (Tuple as)
 -- | A version of <a>opIso</a> that takes an explicit <a>Unity</a>, so can
 --   be run on values of types that aren't <a>Num</a> instances.
 opIso' :: Unity a -> Iso' a b -> Op '[a] b
-data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
-[Ø] :: Prod k f ([] k)
-[:<] :: Prod k f ((:) k a1 as)
-
--- | Construct a two element Prod. Since the precedence of (:&gt;) is
---   higher than (:&lt;), we can conveniently write lists like:
---   
---   <pre>
---   &gt;&gt;&gt; a :&lt; b :&gt; c
---   </pre>
---   
---   Which is identical to:
---   
---   <pre>
---   &gt;&gt;&gt; a :&lt; b :&lt; c :&lt; Ø
---   </pre>
-infix 6 :>
-
--- | Build a singleton Prod.
-only :: f a -> Prod k f ((:) k a ([] k))
-head' :: Prod k f ((:<) k a as) -> f a
-
--- | A Prod of simple Haskell types.
-type Tuple = Prod * I
-
--- | Cons onto a Tuple.
-infixr 5 ::<
-
--- | Singleton Tuple.
-only_ :: a -> Tuple ((:) * a ([] *))
 instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Num.Num as, GHC.Num.Num a) => GHC.Num.Num (Numeric.Backprop.Op.OpM m as a)
 instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Real.Fractional as, Data.Type.Index.Every GHC.Num.Num as, GHC.Real.Fractional a) => GHC.Real.Fractional (Numeric.Backprop.Op.OpM m as a)
 instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Float.Floating as, Data.Type.Index.Every GHC.Real.Fractional as, Data.Type.Index.Every GHC.Num.Num as, GHC.Float.Floating a) => GHC.Float.Floating (Numeric.Backprop.Op.OpM m as a)
