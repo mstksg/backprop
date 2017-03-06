@@ -500,7 +500,7 @@ op0 x = Op $ \case
 --
 -- @
 -- square :: Num a =&gt; 'Op' '[a] a
--- square = 'op1'' $ \x -&gt; (x*x, \case Nothing -&gt; 2 * x
+-- square = 'op1'' $ \\x -&gt; (x*x, \\case Nothing -&gt; 2 * x
 --                                   Just d  -&gt; 2 * d * x
 --                       )
 -- @
@@ -552,7 +552,7 @@ op1' f = Op $ \case
 --
 -- @
 -- mul :: Num a =&gt; 'Op' '[a, a] a
--- mul = 'op2'' $ \x y -&gt; (x*y, \case Nothing -&gt; (y  , x  )
+-- mul = 'op2'' $ \\x y -&gt; (x*y, \\case Nothing -&gt; (y  , x  )
 --                                  Just d  -&gt; (d*y, x*d)
 --                      )
 -- @

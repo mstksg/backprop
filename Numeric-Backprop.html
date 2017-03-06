@@ -84,7 +84,7 @@ Haskell</p></div><div id="content"><div id="module-header"><table class="info"><
  can be run with types that aren't instances of <code><a href="../base-4.9.1.0/Prelude.html#t:Num">Num</a></code>.</p></div></div><div class="top"><p class="src"><a id="v:evalBPOp-39-" class="def">evalBPOp'</a> <a href="src/Numeric.Backprop.html#evalBPOp%27" class="link">Source</a> <a href="#v:evalBPOp-39-" class="selflink">#</a></p><div class="subs arguments"><p class="caption">Arguments</p><table><tr><td class="src">:: <a href="Numeric-Backprop.html#t:Prod">Prod</a> <a href="Numeric-Backprop.html#t:Summer">Summer</a> rs</td><td class="doc empty">&nbsp;</td></tr><tr><td class="src">-&gt; <a href="Numeric-Backprop.html#t:Prod">Prod</a> <a href="Numeric-Backprop.html#t:Unity">Unity</a> rs</td><td class="doc empty">&nbsp;</td></tr><tr><td class="src">-&gt; (<span class="keyword">forall</span> s. <a href="Numeric-Backprop.html#t:BPOp">BPOp</a> s rs a)</td><td class="doc"><p><code><a href="Numeric-Backprop.html#t:BPOp">BPOp</a></code> to run</p></td></tr><tr><td class="src">-&gt; <a href="Numeric-Backprop.html#t:Tuple">Tuple</a> rs</td><td class="doc"><p>input</p></td></tr><tr><td class="src">-&gt; a</td><td class="doc"><p>output</p></td></tr></table></div><div class="doc"><p>A version of <code><a href="Numeric-Backprop.html#v:evalBPOp">evalBPOp</a></code> taking explicit <code><a href="Numeric-Backprop.html#t:Summer">Summer</a></code>s and <code><a href="Numeric-Backprop.html#t:Unity">Unity</a></code>s, so it
  can be run with types that aren't instances of <code><a href="../base-4.9.1.0/Prelude.html#t:Num">Num</a></code>.</p></div></div><div class="top"><p class="src"><a id="v:gradBPOp-39-" class="def">gradBPOp'</a> <a href="src/Numeric.Backprop.html#gradBPOp%27" class="link">Source</a> <a href="#v:gradBPOp-39-" class="selflink">#</a></p><div class="subs arguments"><p class="caption">Arguments</p><table><tr><td class="src">:: <a href="Numeric-Backprop.html#t:Prod">Prod</a> <a href="Numeric-Backprop.html#t:Summer">Summer</a> rs</td><td class="doc empty">&nbsp;</td></tr><tr><td class="src">-&gt; <a href="Numeric-Backprop.html#t:Prod">Prod</a> <a href="Numeric-Backprop.html#t:Unity">Unity</a> rs</td><td class="doc empty">&nbsp;</td></tr><tr><td class="src">-&gt; (<span class="keyword">forall</span> s. <a href="Numeric-Backprop.html#t:BPOp">BPOp</a> s rs a)</td><td class="doc"><p><code><a href="Numeric-Backprop.html#t:BPOp">BPOp</a></code> to differentiate'</p></td></tr><tr><td class="src">-&gt; <a href="Numeric-Backprop.html#t:Tuple">Tuple</a> rs</td><td class="doc"><p>input</p></td></tr><tr><td class="src">-&gt; <a href="Numeric-Backprop.html#t:Tuple">Tuple</a> rs</td><td class="doc"><p>gradient</p></td></tr></table></div><div class="doc"><p>A version of <code><a href="Numeric-Backprop.html#v:gradBPOp">gradBPOp</a></code> taking explicit <code><a href="Numeric-Backprop.html#t:Summer">Summer</a></code>s and <code><a href="Numeric-Backprop.html#t:Unity">Unity</a></code>s, so it
  can be run with types that aren't instances of <code><a href="../base-4.9.1.0/Prelude.html#t:Num">Num</a></code>.</p></div></div><h2 id="g:6">Utility combinators</h2><div class="top"><p class="src"><a id="v:withInps" class="def">withInps</a> :: <a href="../type-combinators-0.2.4.3/Type-Class-Known.html#t:Known">Known</a> <a href="../type-combinators-0.2.4.3/Data-Type-Length.html#t:Length">Length</a> rs =&gt; (<a href="Numeric-Backprop.html#t:Prod">Prod</a> (<a href="Numeric-Backprop.html#t:BVar">BVar</a> s rs) rs -&gt; <a href="Numeric-Backprop.html#t:BP">BP</a> s rs a) -&gt; <a href="Numeric-Backprop.html#t:BP">BP</a> s rs a <a href="src/Numeric.Backprop.html#withInps" class="link">Source</a> <a href="#v:withInps" class="selflink">#</a></p><div class="doc"><p>Runs a continuation on a <code><a href="Numeric-Backprop.html#t:Prod">Prod</a></code> of all of the input <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code>s.</p><p>Handy for bringing the environment into scope and doing stuff with it:</p><pre>foo :: <code><a href="Numeric-Backprop.html#t:BPOp">BPOp</a></code> '[Double, Int] a
-foo = <code><a href="Numeric-Backprop.html#v:withInps">withInps</a></code> $ (x :<a href="y">:&lt; &#216;) -</a> do
+foo = <code><a href="Numeric-Backprop.html#v:withInps">withInps</a></code> $ \(x :<a href="y">:&lt; &#216;) -</a> do
     -- do stuff with inputs
 </pre><p>Looks kinda like <code>foo (x :&lt; y :&lt; &#216;) = -- ...</code>, don't it?</p><p>Note that the above is the same as</p><pre>foo :: <code><a href="Numeric-Backprop.html#t:BPOp">BPOp</a></code> '[Double, Int] a
 foo = do
@@ -129,20 +129,20 @@ y :: <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> s '[Int, Doubl
  and all of its usage sites will create a separate graph node.</p><p>Use <code><a href="Numeric-Backprop.html#v:bindVar">bindVar</a></code> if you ever intend to use a <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> in more than one
  location.</p><pre>-- bad
 errSquared :: Num a =&gt; <code><a href="Numeric-Backprop.html#t:BP">BP</a></code> s '[a, a] a
-errSquared = <code>withInp</code> $ (r :<a href="t">:&lt; &#216;) -</a> do
+errSquared = <code>withInp</code> $ \(r :<a href="t">:&lt; &#216;) -</a> do
     let err = r - t
     <code><a href="../base-4.9.1.0/Control-Monad.html#v:return">return</a></code> (err * err)   -- err is used twice!
 
 -- good
 errSquared :: Num a =&gt; <code><a href="Numeric-Backprop.html#t:BP">BP</a></code> s '[a, a] a
-errSquared = <code>withInp</code> $ (r :<a href="t">:&lt; &#216;) -</a> do
+errSquared = <code><a href="Numeric-Backprop.html#v:withInps">withInps</a></code> $ \(r :<a href="t">:&lt; &#216;) -</a> do
     let err = r - t
     e &lt;- <code><a href="Numeric-Backprop.html#v:bindVar">bindVar</a></code> err     -- force e, so that it's safe to use twice!
     <code><a href="../base-4.9.1.0/Control-Monad.html#v:return">return</a></code> (e * e)
 
 -- better
 errSquared :: Num a =&gt; <code><a href="Numeric-Backprop.html#t:BP">BP</a></code> s '[a, a] a
-errSquared = withInps $ (r :<a href="t">:&lt; &#216;) -</a> do
+errSquared = <code><a href="Numeric-Backprop.html#v:withInps">withInps</a></code> $ \(r :<a href="t">:&lt; &#216;) -</a> do
     let err = r - t
     e &lt;- <code><a href="Numeric-Backprop.html#v:bindVar">bindVar</a></code> err
     <code><a href="Numeric-Backprop.html#v:bindVar">bindVar</a></code> (e * e)      -- result is forced so user doesn't have to worry
@@ -252,7 +252,7 @@ z    :: <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> s rs c
  tuple should be a function that takes \(\frac{dz}{dy}\) and returns
  \(\frac{dz}{dx}\).</p><p>If the input is <code><a href="../base-4.9.1.0/Data-Maybe.html#v:Nothing">Nothing</a></code>, then \(\frac{dz}{dy}\) should be taken to be
  \(1\).</p><p>As an example, here is an <code><a href="Numeric-Backprop.html#t:Op">Op</a></code> that squares its input:</p><pre>square :: Num a =&gt; <code><a href="Numeric-Backprop.html#t:Op">Op</a></code> '[a] a
-square = <code><a href="Numeric-Backprop.html#v:op1-39-">op1'</a></code> $ x -&gt; (x*x, case Nothing -&gt; 2 * x
+square = <code><a href="Numeric-Backprop.html#v:op1-39-">op1'</a></code> $ \x -&gt; (x*x, \case Nothing -&gt; 2 * x
                                   Just d  -&gt; 2 * d * x
                       )
 </pre><p>Remember that, generally, end users shouldn't directly construct <code><a href="Numeric-Backprop.html#t:Op">Op</a></code>s;
@@ -274,7 +274,7 @@ square = <code><a href="Numeric-Backprop.html#v:op1-39-">op1'</a></code> $ x -&g
  tuple should be a function that takes \(\frac{dk}{dz}\) and returns
  \( \left&lt; \frac{\partial k}{dx}, \frac{\partial k}{dx} \right&gt; \).</p><p>If the input is <code><a href="../base-4.9.1.0/Data-Maybe.html#v:Nothing">Nothing</a></code>, then \(\frac{dk}{dz}\) should be taken to be
  \(1\).</p><p>As an example, here is an <code><a href="Numeric-Backprop.html#t:Op">Op</a></code> that multiplies its inputs:</p><pre>mul :: Num a =&gt; <code><a href="Numeric-Backprop.html#t:Op">Op</a></code> '[a, a] a
-mul = <code><a href="Numeric-Backprop.html#v:op2-39-">op2'</a></code> $ x y -&gt; (x*y, case Nothing -&gt; (y  , x  )
+mul = <code><a href="Numeric-Backprop.html#v:op2-39-">op2'</a></code> $ \x y -&gt; (x*y, \case Nothing -&gt; (y  , x  )
                                  Just d  -&gt; (d*y, x*d)
                      )
 </pre><p>Remember that, generally, end users shouldn't directly construct <code><a href="Numeric-Backprop.html#t:Op">Op</a></code>s;

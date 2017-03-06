@@ -418,7 +418,7 @@ opConst' :: Prod Summer as -> a -> Op as a
 --   
 --   <pre>
 --   square :: Num a =&gt; <a>Op</a> '[a] a
---   square = <a>op1'</a> $ x -&gt; (x*x, case Nothing -&gt; 2 * x
+--   square = <a>op1'</a> $ \x -&gt; (x*x, \case Nothing -&gt; 2 * x
 --                                     Just d  -&gt; 2 * d * x
 --                         )
 --   </pre>
@@ -455,7 +455,7 @@ op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
 --   
 --   <pre>
 --   mul :: Num a =&gt; <a>Op</a> '[a, a] a
---   mul = <a>op2'</a> $ x y -&gt; (x*y, case Nothing -&gt; (y  , x  )
+--   mul = <a>op2'</a> $ \x y -&gt; (x*y, \case Nothing -&gt; (y  , x  )
 --                                    Just d  -&gt; (d*y, x*d)
 --                        )
 --   </pre>
@@ -791,7 +791,7 @@ gradBPOp' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple
 --   
 --   <pre>
 --   foo :: <a>BPOp</a> '[Double, Int] a
---   foo = <a>withInps</a> $ (x :<a>:&lt; Ø) -</a> do
+--   foo = <a>withInps</a> $ \(x :<a>:&lt; Ø) -</a> do
 --       -- do stuff with inputs
 --   </pre>
 --   
@@ -904,20 +904,20 @@ bpOp :: (Every Num rs, Known Length rs) => BPOp s rs a -> OpB s rs a
 --   <pre>
 --   -- bad
 --   errSquared :: Num a =&gt; <a>BP</a> s '[a, a] a
---   errSquared = <tt>withInp</tt> $ (r :<a>:&lt; Ø) -</a> do
+--   errSquared = <tt>withInp</tt> $ \(r :<a>:&lt; Ø) -</a> do
 --       let err = r - t
 --       <a>return</a> (err * err)   -- err is used twice!
 --   
 --   -- good
 --   errSquared :: Num a =&gt; <a>BP</a> s '[a, a] a
---   errSquared = <tt>withInp</tt> $ (r :<a>:&lt; Ø) -</a> do
+--   errSquared = <a>withInps</a> $ \(r :<a>:&lt; Ø) -</a> do
 --       let err = r - t
 --       e &lt;- <a>bindVar</a> err     -- force e, so that it's safe to use twice!
 --       <a>return</a> (e * e)
 --   
 --   -- better
 --   errSquared :: Num a =&gt; <a>BP</a> s '[a, a] a
---   errSquared = withInps $ (r :<a>:&lt; Ø) -</a> do
+--   errSquared = <a>withInps</a> $ \(r :<a>:&lt; Ø) -</a> do
 --       let err = r - t
 --       e &lt;- <a>bindVar</a> err
 --       <a>bindVar</a> (e * e)      -- result is forced so user doesn't have to worry
@@ -1197,7 +1197,7 @@ opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) 
 --   
 --   <pre>
 --   square :: Num a =&gt; <a>Op</a> '[a] a
---   square = <a>op1'</a> $ x -&gt; (x*x, case Nothing -&gt; 2 * x
+--   square = <a>op1'</a> $ \x -&gt; (x*x, \case Nothing -&gt; 2 * x
 --                                     Just d  -&gt; 2 * d * x
 --                         )
 --   </pre>
@@ -1234,7 +1234,7 @@ op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
 --   
 --   <pre>
 --   mul :: Num a =&gt; <a>Op</a> '[a, a] a
---   mul = <a>op2'</a> $ x y -&gt; (x*y, case Nothing -&gt; (y  , x  )
+--   mul = <a>op2'</a> $ \x y -&gt; (x*y, \case Nothing -&gt; (y  , x  )
 --                                    Just d  -&gt; (d*y, x*d)
 --                        )
 --   </pre>
@@ -1510,7 +1510,7 @@ opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) 
 --   
 --   <pre>
 --   square :: Num a =&gt; <a>Op</a> '[a] a
---   square = <a>op1'</a> $ x -&gt; (x*x, case Nothing -&gt; 2 * x
+--   square = <a>op1'</a> $ \x -&gt; (x*x, \case Nothing -&gt; 2 * x
 --                                     Just d  -&gt; 2 * d * x
 --                         )
 --   </pre>
@@ -1547,7 +1547,7 @@ op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
 --   
 --   <pre>
 --   mul :: Num a =&gt; <a>Op</a> '[a, a] a
---   mul = <a>op2'</a> $ x y -&gt; (x*y, case Nothing -&gt; (y  , x  )
+--   mul = <a>op2'</a> $ \x y -&gt; (x*y, \case Nothing -&gt; (y  , x  )
 --                                    Just d  -&gt; (d*y, x*d)
 --                        )
 --   </pre>

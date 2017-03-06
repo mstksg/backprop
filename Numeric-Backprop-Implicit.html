@@ -78,7 +78,7 @@ Haskell</p></div><div id="content"><div id="module-header"><table class="info"><
  tuple should be a function that takes \(\frac{dz}{dy}\) and returns
  \(\frac{dz}{dx}\).</p><p>If the input is <code><a href="../base-4.9.1.0/Data-Maybe.html#v:Nothing">Nothing</a></code>, then \(\frac{dz}{dy}\) should be taken to be
  \(1\).</p><p>As an example, here is an <code><a href="Numeric-Backprop-Implicit.html#t:Op">Op</a></code> that squares its input:</p><pre>square :: Num a =&gt; <code><a href="Numeric-Backprop-Implicit.html#t:Op">Op</a></code> '[a] a
-square = <code><a href="Numeric-Backprop-Implicit.html#v:op1-39-">op1'</a></code> $ x -&gt; (x*x, case Nothing -&gt; 2 * x
+square = <code><a href="Numeric-Backprop-Implicit.html#v:op1-39-">op1'</a></code> $ \x -&gt; (x*x, \case Nothing -&gt; 2 * x
                                   Just d  -&gt; 2 * d * x
                       )
 </pre><p>Remember that, generally, end users shouldn't directly construct <code><a href="Numeric-Backprop-Implicit.html#t:Op">Op</a></code>s;
@@ -100,7 +100,7 @@ square = <code><a href="Numeric-Backprop-Implicit.html#v:op1-39-">op1'</a></code
  tuple should be a function that takes \(\frac{dk}{dz}\) and returns
  \( \left&lt; \frac{\partial k}{dx}, \frac{\partial k}{dx} \right&gt; \).</p><p>If the input is <code><a href="../base-4.9.1.0/Data-Maybe.html#v:Nothing">Nothing</a></code>, then \(\frac{dk}{dz}\) should be taken to be
  \(1\).</p><p>As an example, here is an <code><a href="Numeric-Backprop-Implicit.html#t:Op">Op</a></code> that multiplies its inputs:</p><pre>mul :: Num a =&gt; <code><a href="Numeric-Backprop-Implicit.html#t:Op">Op</a></code> '[a, a] a
-mul = <code><a href="Numeric-Backprop-Implicit.html#v:op2-39-">op2'</a></code> $ x y -&gt; (x*y, case Nothing -&gt; (y  , x  )
+mul = <code><a href="Numeric-Backprop-Implicit.html#v:op2-39-">op2'</a></code> $ \x y -&gt; (x*y, \case Nothing -&gt; (y  , x  )
                                  Just d  -&gt; (d*y, x*d)
                      )
 </pre><p>Remember that, generally, end users shouldn't directly construct <code><a href="Numeric-Backprop-Implicit.html#t:Op">Op</a></code>s;
