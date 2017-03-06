@@ -33,7 +33,7 @@ module Numeric.Backprop (
   -- ** From Ops
   , opVar, (~$)
   , opVar1, opVar2, opVar3
-  , (-$), (-&)
+  , (-$)
   , opVar'
   , opVar1', opVar2', opVar3'
   -- ** Var manipulation
@@ -127,6 +127,9 @@ type BPOp s rs a  = BP s rs (BVar s rs a)
 -- into an "explicit" graph backprop function, a @'BPOp' s rs a@.
 type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 
+
+-- | A version of 'opVar'' taking an explicit 'Summer', so can be used on
+-- values of types that aren't instances of 'Num'.
 opVar'
     :: forall s rs as a. ()
     => Summer a
@@ -402,13 +405,13 @@ registerVar bpir = \case
 -- result will be a @'BVar' s rs d@:
 --
 -- @
--- myOp :: OpB s '[a, b, c] d
--- x    :: BVar s rs a
--- y    :: BVar s rs b
--- z    :: BVar s rs c
+-- myOp :: 'OpB' s '[a, b, c] d
+-- x    :: 'BVar' s rs a
+-- y    :: 'BVar' s rs b
+-- z    :: 'BVar' s rs c
 --
--- x :< y :< z :< Ø              :: Prod (BVar s rs) '[a, b, c]
--- opVar myOp (x :< y :< z :< Ø) :: BP s rs (BVar s rs d)
+-- x :< y :< z :< Ø           :: 'Prod' ('BVar' s rs) '[a, b, c]
+-- 'opVar' myOp (x :< y :< z :< Ø) :: 'BP' s rs ('BVar' s rs d)
 -- @
 --
 -- Note that 'OpB' is a superclass of 'Op', so you can provide any 'Op'
@@ -419,7 +422,7 @@ registerVar bpir = \case
 -- written as:
 --
 -- @
--- myOp ~$ (x :< y :< z :< Ø) :: BP s rs (BVar s rs d)
+-- myOp '~$' (x :< y :< z :< Ø) :: 'BP' s rs ('BVar' s rs d)
 -- @
 --
 -- to let you pretend that you're applying the 'myOp' function to three
@@ -441,13 +444,13 @@ opVar = opVar' known
 -- 'OpB's as if they were functions:
 --
 -- @
--- myOp :: OpB s '[a, b, c] d
--- x    :: BVar s rs a
--- y    :: BVar s rs b
--- z    :: BVar s rs c
+-- myOp :: 'OpB' s '[a, b, c] d
+-- x    :: 'BVar' s rs a
+-- y    :: 'BVar' s rs b
+-- z    :: 'BVar' s rs c
 --
--- x :< y :< z :< Ø           :: Prod (BVar s rs) '[a, b, c]
--- myOp ~$ (x :< y :< z :< Ø) :: BP s rs (BVar s rs d)
+-- x :< y :< z :< Ø           :: 'Prod' ('BVar' s rs) '[a, b, c]
+-- myOp '~$' (x :< y :< z :< Ø) :: 'BP' s rs ('BVar' s rs d)
 -- @
 infixr 1 ~$
 (~$)
@@ -457,8 +460,23 @@ infixr 1 ~$
     -> BP s rs (BVar s rs a)
 (~$) = opVar
 
--- | Infix synonym
 infixr 1 -$
+
+-- | Lets you treat a @'BPOp s as b@ as an @'Op' as b@, and "apply"
+-- arguments to it just like you would with an 'Op' and '~$' / 'opVar'.
+--
+-- Basically a convenient wrapper over 'bpOp':
+--
+-- @
+-- o '-$' xs = bpOp o '~$' xs
+-- @
+--
+-- So for a @'BPOp' s as b@, you can "plug in" 'BVar's to @as@, and get
+-- a @b@ as a result.
+--
+-- Useful for running a @'BPOp' s rs a@ that you got from a different function, and
+-- "plugging in" its @rs@ inputs with 'BVar's from your current
+-- environment.
 (-$)
     :: (Every Num as, Known Length as, Num a)
     => BPOp s as a
@@ -466,19 +484,13 @@ infixr 1 -$
     -> BPOp s rs a
 o -$ xs = bpOp o ~$ xs
 
-infixr 1 -&
-(-&)
-    :: (Every Num as, Known Length as, Num a)
-    => Prod (BVar s rs) as
-    -> (Prod (BVar s as) as -> BPOp s as a)
-    -> BPOp s rs a
-xs -& f = bpOp (withInps f) ~$ xs
-
 -- | Create a 'BVar' that represents just a specific value, that doesn't
 -- depend on any other 'BVar's.
 constVar :: a -> BVar s rs a
 constVar = BVConst
 
+-- | A version of 'opVar1' taking an explicit 'Summer', so can be used on
+-- values of types that aren't instances of 'Num'.
 opVar1'
     :: Summer b
     -> OpB s '[a] b
@@ -486,6 +498,21 @@ opVar1'
     -> BP s rs (BVar s rs b)
 opVar1' s o = opVar' s o . only
 
+-- | Convenient wrapper over 'opVar' that takes an 'OpB' with one argument
+-- and a single 'BVar' argument.  Lets you not have to type out the entire
+-- 'Prod'.
+--
+-- @
+-- 'opVar1' o x = 'opVar' o (x ':<' 'Ø')
+--
+-- myOp :: 'Op' '[a] b
+-- x    :: 'BVar' s rs a
+--
+-- 'opVar1' myOp x :: 'BP' s rs ('BVar' s rs b)
+-- @
+--
+-- Note that 'OpB' is a superclass of 'Op', so you can pass in an 'Op' here
+-- (like one made with 'op1') as well.
 opVar1
     :: Num b
     => OpB s '[a] b
@@ -493,6 +520,8 @@ opVar1
     -> BP s rs (BVar s rs b)
 opVar1 = opVar1' known
 
+-- | A version of 'opVar2' taking an explicit 'Summer', so can be used on
+-- values of types that aren't instances of 'Num'.
 opVar2'
     :: Summer c
     -> OpB s '[a,b] c
@@ -501,6 +530,22 @@ opVar2'
     -> BP s rs (BVar s rs c)
 opVar2' s o rx ry = opVar' s o (rx :< ry :< Ø)
 
+-- | Convenient wrapper over 'opVar' that takes an 'Op' with two arguments
+-- and two 'BVar' arguments.  Lets you not have to type out the entire
+-- 'Prod'.
+--
+-- @
+-- 'opVar2' o x y = 'opVar' o (x ':<' y ':<' 'Ø')
+--
+-- myOp :: 'Op' '[a, b] c
+-- x    :: 'BVar' s rs a
+-- y    :: 'BVar' s rs b
+--
+-- 'opVar2' myOp x y :: 'BP' s rs ('BVar' s rs c)
+-- @
+--
+-- Note that 'OpB' is a superclass of 'Op', so you can pass in an 'Op' here
+-- (like one made with 'op2') as well.
 opVar2
     :: Num c
     => OpB s '[a,b] c
@@ -509,6 +554,8 @@ opVar2
     -> BP s rs (BVar s rs c)
 opVar2 = opVar2' known
 
+-- | A version of 'opVar3' taking an explicit 'Summer', so can be used on
+-- values of types that aren't instances of 'Num'.
 opVar3'
     :: Summer d
     -> OpB s '[a,b,c] d
@@ -518,6 +565,23 @@ opVar3'
     -> BP s rs (BVar s rs d)
 opVar3' s o rx ry rz = opVar' s o (rx :< ry :< rz :< Ø)
 
+-- | Convenient wrapper over 'opVar' that takes an 'Op' with three arguments
+-- and three 'BVar' arguments.  Lets you not have to type out the entire
+-- 'Prod'.
+--
+-- @
+-- 'opVar3' o x y z = 'opVar' o (x ':<' y ':<' z ':<' 'Ø')
+--
+-- myOp :: 'Op' '[a, b, c] d
+-- x    :: 'BVar' s rs a
+-- y    :: 'BVar' s rs b
+-- z    :: 'BVar' s rs c
+--
+-- 'opVar3' myOp x y z :: 'BP' s rs ('BVar' s rs d)
+-- @
+--
+-- Note that 'OpB' is a superclass of 'Op', so you can pass in an 'Op' here
+-- (like one made with 'op3') as well.
 opVar3
     :: Num d
     => OpB s '[a,b,c] d
@@ -578,6 +642,8 @@ bindVar' s r = case r of
 --
 -- So you can avoid 'bindVar' altogether if you use the explicitly binding
 -- '~$' and 'opVar' etc.
+--
+-- Note that 'bindVar' on 'BVar's that are already forced is a no-op.
 bindVar
     :: Num a
     => BVar s rs a
@@ -639,11 +705,13 @@ backprop bp xs = backprop' (summers' l) (unities' l) bp xs
     l :: Length rs
     l = prodLength xs
 
+-- | 'bpOp', but taking explicit 'Summer's and 'Unity's, for the situation
+-- where the @rs@ are not instance of 'Num'.
 bpOp'
-    :: Prod Summer as
-    -> Prod Unity as
-    -> BPOp s as a
-    -> OpB s as a
+    :: Prod Summer rs
+    -> Prod Unity rs
+    -> BPOp s rs a
+    -> OpB s rs a
 bpOp' ss us bp = OpM $ backpropWith ss us bp
 
 -- | Turn a 'BPOp' into an 'OpB'.  Basically converts a 'BP' taking an @rs@
@@ -654,9 +722,9 @@ bpOp' ss us bp = OpM $ backpropWith ss us bp
 -- Handy because an 'OpB' can be used with almost all of
 -- the 'Op'-related functions in this moduel, including 'opVar', '~$', etc.
 bpOp
-    :: (Every Num as, Known Length as)
-    => BPOp s as a
-    -> OpB s as a
+    :: (Every Num rs, Known Length rs)
+    => BPOp s rs a
+    -> OpB s rs a
 bpOp = bpOp' summers unities
 
 -- | A version of 'evalBPOp' taking explicit 'Summer's and 'Unity's, so it

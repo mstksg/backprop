@@ -145,8 +145,6 @@ newtype BP s rs b = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s
                , Monad
                )
 
--- TODO: change BVar to BVal
-
 -- | The basic unit of manipulation inside 'BP'.  Instead of directly
 -- working with values, you work with 'BVar's contating those values.  When
 -- you work with a 'BVar', the /backprop/ library can keep track of what
