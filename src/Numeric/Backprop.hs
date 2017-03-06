@@ -84,7 +84,42 @@ import           Type.Class.Known
 import           Type.Class.Witness
 import qualified Generics.SOP              as SOP
 
+-- | A handy type synonym representing a 'BP' action that returns a 'BVar'.
+-- This is handy because this is the form of 'BP' actions that
+-- 'backprop' and 'gradBPOp' (etc.) expects.
+--
+-- A value of type:
+--
+-- @
+-- 'BPOp' s rs a
+-- @
+--
+-- is an action that takes an input environment of @rs@ and produces
+-- a 'BVar' containing a value of type @a@.  Because it returns a 'BVar',
+-- the library can track the data dependencies between the 'BVar' and the
+-- input environment and perform backpropagation.
+--
+-- See documentation for 'BP' for an explanation of the phantom type
+-- parameter @s@.
 type BPOp s rs a  = BP s rs (BVar s rs a)
+
+-- | An "implicit" operation on 'BVar's that can be backpropagated.
+-- A value of type:
+--
+-- @
+-- 'BPOpI' s rs a
+-- @
+--
+-- takes a bunch of 'BVar's containg @rs@ and uses them to (purely) produce
+-- a 'BVar' containing an @a@.
+--
+-- If you are exclusively doing implicit backpropagation by combining
+-- 'BVar's and using 'BPOpI's, you are probably better off just importing
+-- "Numeric.Backprop.Implicit", which provides better tools.  This type
+-- synonym exists in "Numeric.Backprop" just for the 'implicitly' function,
+-- which can convert "implicit" backprop functions like a @'BPOpI' s rs a@
+-- into an "explicit" graph backprop function, a @'BPOp' s rs a@.
+--
 type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 
 opRef'

@@ -52,6 +52,26 @@ import           Lens.Micro.TH
 import           Numeric.Backprop.Internal.Helper
 import           Numeric.Backprop.Op
 
+-- | A type synonym for 'OpM' specialized to what the /backprop/ library
+-- uses to perform backpropagation.
+--
+-- An
+--
+-- @
+-- 'OpB' s rs a
+-- @
+--
+-- represents a differentiable function that takes a tuple of @rs@ and
+-- produces an a @a@, which can be run on @'BVar' s@ and also inside @'BP'
+-- s@s.  For example, an @'OpB' s '[ Int, Double ] Bool@ takes an 'Int' and
+-- a 'Double' and produces a 'Bool', and does it in a differentiable way.
+--
+-- Note that 'OpB' is a /superset/ of 'Op', so, if you see any function
+-- that expects an 'OpB' (like 'Numeric.Backprop.opRef'' and
+-- 'Numeric.Backprop.~$', for example), you can give them an 'Op', as well.
+--
+-- You can think of 'OpB' as a superclass/parent class of 'Op' in this
+-- sense, and of 'Op' as a subclass of 'OpB'.
 type OpB s as a = OpM (ST s) as a
 
 -- | Reference to /usage sites/ for a given entity, used to get partial or
@@ -86,17 +106,39 @@ data BPState :: Type -> [Type] -> Type where
 -- dependency graphs and that the library can perform backpropagation on.
 --
 -- A @'BP' s rs b@ is a 'BP' action that uses an environment of @rs@
--- returning a @b@.  The @s@ parameter is used the same way that 'ST' uses
--- it, basically to enforce that nothing important "leaks" out of the
--- monad.  When "run", it will compute a gradient that is a tuple of @rs@.
+-- returning a @b@.  When "run", it will compute a gradient that is a tuple
+-- of @rs@.  (The phantom parameter @s@ is used to ensure that any 'BVar's
+-- aren't leaked out of the monad)
+--
+-- Note that you can only "run" a @'BP' s rs@ that produces a 'BVar' --
+-- that is, things of the form
+--
+-- @
+-- 'BP' s rs ('BVar' rs a)
+-- @
+--
+-- The above is a 'BP' action that returns a 'BVar' containing an @a@.
+-- When this is run, it'll produce a result of type @a@ and a gradient of
+-- that is a tuple of @rs@.  (This form has a type synonym,
+-- 'Numeric.Backprop.BPOp', for convenience)
 --
 -- For example, a @'BP' s '[ Int, Double, Double ]@ is a monad that
 -- represents a computation with an 'Int', 'Double', and 'Double' as
--- inputs.
+-- inputs.   And, if you ran a
 --
--- When run with 'backprop' or 'gradBPOp', it would return a /gradient/ on
--- the inputs.  So in the above example, the gradient would be a tuple of
--- an 'Int', 'Double', and 'Double'.
+-- @
+-- 'BP' s '[ Int, Double, Double ] ('BVar' '[ Int, Double, Double ] Double)
+-- @
+--
+-- Or, using the 'BPOp' type synonym:
+--
+-- @
+-- 'Numeric.Backprop.BPOp' s '[ Int, Double, Double ] ('BVar' rs Double)
+-- @
+--
+-- with 'Numeric.Backprop.backprop' or 'Numeric.Backprop.gradBPOp', it'll
+-- return a gradient on the inputs ('Int', 'Double', and 'Double') and
+-- produce a value of type 'Double'.
 newtype BP s rs b = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s)) b }
       deriving ( Functor
                , Applicative
@@ -111,9 +153,14 @@ newtype BP s rs b = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s
 -- values refer to which other values, and so can perform backpropagation
 -- to compute gradients.
 --
--- A @'BVar' s rs a@ lives inside a @'BP' s rs@ monad, and refers to
--- a value of type @a@.  (The @rs@ refers to the environment of the 'BP'
--- action that the 'BVar' lives inside.)
+-- A @'BVar' s rs a@ refers to a value of type @a@, with an environment
+-- of values of the types @rs@.  The phantom parameter @s@ is used to
+-- ensure that stray 'BVar's don't leak outside of the backprop process.
+--
+-- (That is, if you're using implicit backprop, it ensures that you interact
+-- with 'BVar's in a polymorphic way.  And, if you're using implicit
+-- backprop, it ensures that a @'BVar' s rs a@ never leaves the @'BP' s rs@
+-- that it was created in.)
 --
 -- 'BVar's have 'Num', 'Fractional', 'Floating', etc. instances, so they
 -- can be manipulated using polymorphic functions and numeric functions in
