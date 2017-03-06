@@ -261,32 +261,8 @@ data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
 [Ø] :: Prod k f ([] k)
 [:<] :: Prod k f ((:) k a1 as)
 
--- | Construct a two element Prod. Since the precedence of (:&gt;) is
---   higher than (:&lt;), we can conveniently write lists like:
---   
---   <pre>
---   &gt;&gt;&gt; a :&lt; b :&gt; c
---   </pre>
---   
---   Which is identical to:
---   
---   <pre>
---   &gt;&gt;&gt; a :&lt; b :&lt; c :&lt; Ø
---   </pre>
-infix 6 :>
-
--- | Build a singleton Prod.
-only :: f a -> Prod k f ((:) k a ([] k))
-head' :: Prod k f ((:<) k a as) -> f a
-
 -- | A Prod of simple Haskell types.
 type Tuple = Prod * I
-
--- | Cons onto a Tuple.
-infixr 5 ::<
-
--- | Singleton Tuple.
-only_ :: a -> Tuple ((:) * a ([] *))
 
 -- | Run the function that an <a>Op</a> encodes, to get the result.
 --   
@@ -579,6 +555,30 @@ opTup' :: Prod Unity as -> Op as (Tuple as)
 -- | A version of <a>opIso</a> that takes an explicit <a>Unity</a>, so can
 --   be run on values of types that aren't <a>Num</a> instances.
 opIso' :: Unity a -> Iso' a b -> Op '[a] b
+
+-- | Construct a two element Prod. Since the precedence of (:&gt;) is
+--   higher than (:&lt;), we can conveniently write lists like:
+--   
+--   <pre>
+--   &gt;&gt;&gt; a :&lt; b :&gt; c
+--   </pre>
+--   
+--   Which is identical to:
+--   
+--   <pre>
+--   &gt;&gt;&gt; a :&lt; b :&lt; c :&lt; Ø
+--   </pre>
+infix 6 :>
+
+-- | Build a singleton Prod.
+only :: f a -> Prod k f ((:) k a ([] k))
+head' :: Prod k f ((:<) k a as) -> f a
+
+-- | Cons onto a Tuple.
+infixr 5 ::<
+
+-- | Singleton Tuple.
+only_ :: a -> Tuple ((:) * a ([] *))
 instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Num.Num as, GHC.Num.Num a) => GHC.Num.Num (Numeric.Backprop.Op.OpM m as a)
 instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Real.Fractional as, Data.Type.Index.Every GHC.Num.Num as, GHC.Real.Fractional a) => GHC.Real.Fractional (Numeric.Backprop.Op.OpM m as a)
 instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Float.Floating as, Data.Type.Index.Every GHC.Real.Fractional as, Data.Type.Index.Every GHC.Num.Num as, GHC.Float.Floating a) => GHC.Float.Floating (Numeric.Backprop.Op.OpM m as a)
@@ -749,6 +749,52 @@ type Op as a = forall m. Monad m => OpM m as a
 --   You can think of <a>OpB</a> as a superclass/parent class of <a>Op</a>
 --   in this sense, and of <a>Op</a> as a subclass of <a>OpB</a>.
 type OpB s as a = OpM (ST s) as a
+data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
+[Ø] :: Prod k f ([] k)
+[:<] :: Prod k f ((:) k a1 as)
+
+-- | A Prod of simple Haskell types.
+type Tuple = Prod * I
+
+-- | Instructions on how to "sum" a list of values of a given type.
+--   Basically used as an explicit witness for a <a>Num</a> instance.
+--   
+--   For most types, the only meaningful value of type <tt><a>Summer</a>
+--   a</tt> is <tt><a>Summer</a> <a>sum</a></tt>. However, using
+--   <a>Summer</a> lets us use <tt>BP</tt> with types that are <i>not</i>
+--   instances of <a>Num</a>. Any type can be used, as long as you provide
+--   a way to "sum" it!
+--   
+--   For most of the functions in this library, you can completely ignore
+--   this, as they will be generated automatically. You only need to work
+--   with this directly if you want to use custom types that <i>aren't</i>
+--   instances of <a>Num</a> with this library.
+--   
+--   If 'Num a' is satisfied, one can create the canonical <a>Summer</a>
+--   using <tt><a>known</a> :: <a>Num</a> a =&gt; <a>Summer</a> a</tt>.
+newtype Summer a
+Summer :: ([a] -> a) -> Summer a
+[runSummer] :: Summer a -> [a] -> a
+
+-- | A canonical "unity" (the multiplicative identity) for a given type.
+--   Basically used as an explicit witness for a <a>Num</a> instance.
+--   
+--   For most types, the only meaningful value of type <tt><a>Unity</a>
+--   a</tt> is <tt><a>Unity</a> 1'</tt>. However, using <a>Unity</a> lets
+--   us use <tt>BP</tt> with types that are <i>not</i> instances of
+--   <a>Num</a>. Any type can be used, as long as you provide a way to get
+--   a multiplicative identity in it!
+--   
+--   For most of the functions in this library, you can completely ignore
+--   this, as they will be generated automatically. You only need to work
+--   with this directly if you want to use custom types that <i>aren't</i>
+--   instances of <a>Num</a> with this library.
+--   
+--   If 'Num a' is satisfied, one can create the canonical <a>Unity</a>
+--   using <tt><a>known</a> :: <a>Num</a> a =&gt; <a>Unity</a> a</tt>.
+newtype Unity a
+Unity :: a -> Unity a
+[getUnity] :: Unity a -> a
 
 -- | Perform backpropagation on the given <a>BPOp</a>. Returns the result
 --   of the operation it represents, as well as the gradient of the result
@@ -1026,9 +1072,6 @@ op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a, b] c
 -- | Create an <a>Op</a> of a function taking three inputs, by giving its
 --   explicit gradient. See documentation for <a>op2'</a> for more details.
 op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a, b, c] d
-data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
-[Ø] :: Prod k f ([] k)
-[:<] :: Prod k f ((:) k a1 as)
 
 -- | Construct a two element Prod. Since the precedence of (:&gt;) is
 --   higher than (:&lt;), we can conveniently write lists like:
@@ -1048,68 +1091,25 @@ infix 6 :>
 only :: f a -> Prod k f ((:) k a ([] k))
 head' :: Prod k f ((:<) k a as) -> f a
 
--- | A Prod of simple Haskell types.
-type Tuple = Prod * I
-
 -- | Cons onto a Tuple.
 infixr 5 ::<
 
 -- | Singleton Tuple.
 only_ :: a -> Tuple ((:) * a ([] *))
 
--- | Instructions on how to "sum" a list of values of a given type.
---   Basically used as an explicit witness for a <a>Num</a> instance.
---   
---   For most types, the only meaningful value of type <tt><a>Summer</a>
---   a</tt> is <tt><a>Summer</a> <a>sum</a></tt>. However, using
---   <a>Summer</a> lets us use <tt>BP</tt> with types that are <i>not</i>
---   instances of <a>Num</a>. Any type can be used, as long as you provide
---   a way to "sum" it!
---   
---   For most of the functions in this library, you can completely ignore
---   this, as they will be generated automatically. You only need to work
---   with this directly if you want to use custom types that <i>aren't</i>
---   instances of <a>Num</a> with this library.
---   
---   If 'Num a' is satisfied, one can create the canonical <a>Summer</a>
---   using <tt><a>known</a> :: <a>Num</a> a =&gt; <a>Summer</a> a</tt>.
-newtype Summer a
-Summer :: ([a] -> a) -> Summer a
-[runSummer] :: Summer a -> [a] -> a
-
 -- | If all the types in <tt>as</tt> are instances of <a>Num</a>, generate
 --   a <tt><a>Prod</a> <a>Summer</a> as</tt>, or a tuple of <a>Summer</a>s
 --   for every type in <tt>as</tt>.
 summers :: (Every Num as, Known Length as) => Prod Summer as
 
--- | Like <a>summers</a>, but requiring an explicit witness for the number
---   of types in the list <tt>as</tt>.
-summers' :: Every Num as => Length as -> Prod Summer as
-
--- | A canonical "unity" (the multiplicative identity) for a given type.
---   Basically used as an explicit witness for a <a>Num</a> instance.
---   
---   For most types, the only meaningful value of type <tt><a>Unity</a>
---   a</tt> is <tt><a>Unity</a> 1'</tt>. However, using <a>Unity</a> lets
---   us use <tt>BP</tt> with types that are <i>not</i> instances of
---   <a>Num</a>. Any type can be used, as long as you provide a way to get
---   a multiplicative identity in it!
---   
---   For most of the functions in this library, you can completely ignore
---   this, as they will be generated automatically. You only need to work
---   with this directly if you want to use custom types that <i>aren't</i>
---   instances of <a>Num</a> with this library.
---   
---   If 'Num a' is satisfied, one can create the canonical <a>Unity</a>
---   using <tt><a>known</a> :: <a>Num</a> a =&gt; <a>Unity</a> a</tt>.
-newtype Unity a
-Unity :: a -> Unity a
-[getUnity] :: Unity a -> a
-
 -- | If all the types in <tt>as</tt> are instances of <a>Num</a>, generate
 --   a <tt><a>Prod</a> <a>Unity</a> as</tt>, or a tuple of <a>Unity</a>s
 --   for every type in <tt>as</tt>.
 unities :: (Every Num as, Known Length as) => Prod Unity as
+
+-- | Like <a>summers</a>, but requiring an explicit witness for the number
+--   of types in the list <tt>as</tt>.
+summers' :: Every Num as => Length as -> Prod Summer as
 
 -- | Like <a>unities</a>, but requiring an explicit witness for the number
 --   of types in the list <tt>as</tt>.
