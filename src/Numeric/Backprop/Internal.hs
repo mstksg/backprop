@@ -24,8 +24,8 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- Provides the types used for the graph building/backpropagation for the
--- library.
+-- Provides the types and instances used for the graph
+-- building/backpropagation for the library.
 
 module Numeric.Backprop.Internal
   ( Summer(..), summers, summers'

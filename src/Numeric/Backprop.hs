@@ -52,7 +52,7 @@ module Numeric.Backprop (
   , liftR, liftR1, liftR2, liftR3
   -- * Op
   , op1, op2, op3, opN
-  , op1', op2', op3', opN'
+  , op1', op2', op3'
   -- * Utility
   , Prod(..), pattern (:>), only, head'
   , Tuple, pattern (::<), only_
@@ -75,7 +75,7 @@ import           Data.Type.Product
 import           Data.Type.Sum hiding      (index)
 import           Data.Type.Util
 import           Lens.Micro hiding         (ix)
-import           Lens.Micro.Mtl
+import           Lens.Micro.Mtl hiding     (view)
 import           Numeric.Backprop.Internal
 import           Numeric.Backprop.Iso
 import           Numeric.Backprop.Op
@@ -119,7 +119,6 @@ type BPOp s rs a  = BP s rs (BVar s rs a)
 -- synonym exists in "Numeric.Backprop" just for the 'implicitly' function,
 -- which can convert "implicit" backprop functions like a @'BPOpI' s rs a@
 -- into an "explicit" graph backprop function, a @'BPOp' s rs a@.
---
 type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 
 opRef'

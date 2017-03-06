@@ -21,7 +21,7 @@ module Numeric.Backprop.Implicit (
   , splitRefs', gSplit'
   -- * Op
   , BP.op1, BP.op2, BP.op3, BP.opN
-  , BP.op1', BP.op2', BP.op3', BP.opN'
+  , BP.op1', BP.op2', BP.op3'
   -- * Utility
   , Prod(..), pattern (:>), only, head'
   , Tuple, pattern (::<), only_
