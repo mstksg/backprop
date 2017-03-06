@@ -10,13 +10,14 @@
 @version 0.1.0.0
 
 
--- | A poor substitute for the <a>Iso</a> module in <i>lens</i>, providing
---   the <a>Iso</a> type synonym and some sample useful <a>Iso</a>s for
---   usage with <i>backprop</i>, without incuring a lens dependency.
+-- | A poor substitute for the <a>Control.Lens.Iso</a> module in
+--   <i>lens</i>, providing the <a>Iso</a> type synonym and some sample
+--   useful <a>Iso</a>s for usage with <i>backprop</i>, without incuring a
+--   lens dependency.
 --   
 --   If you also import lens, you should only use this module for the
 --   <a>Iso</a>s it exports, and not import the redefined <a>Iso</a> type
---   synonym or 'from'/'iso'/'review'.
+--   synonym or <a>from</a> <i> <a>iso</a> </i> <a>review</a>.
 module Numeric.Backprop.Iso
 
 -- | A family of isomorphisms. See <a>Iso'</a>.
@@ -295,8 +296,8 @@ only_ :: a -> Tuple ((:) * a ([] *))
 --   </pre>
 runOp :: Op as a -> Tuple as -> a
 
--- | Run the function that an <a>Op</a> encodes, and get its gradient with
---   respect to the result.
+-- | Run the function that an <a>Op</a> encodes, and get the gradient of
+--   the output with respect to the inputs.
 --   
 --   <pre>
 --   &gt;&gt;&gt; gradOp (op2 (*)) (3 ::&lt; 5 ::&lt; Ø)
@@ -305,8 +306,8 @@ runOp :: Op as a -> Tuple as -> a
 --   </pre>
 gradOp :: Op as a -> Tuple as -> Tuple as
 
--- | Run the function that an <a>Op</a> encodes, to get the result and also
---   the gradient with respect to the result.
+-- | Run the function that an <a>Op</a> encodes, to get the resulting
+--   output and also its gradient with respect to the inputs.
 --   
 --   <pre>
 --   &gt;&gt;&gt; gradOpM' (op2 (*)) (3 ::&lt; 5 ::&lt; Ø) :: IO (Int, Tuple '[Int, Int])
@@ -314,8 +315,9 @@ gradOp :: Op as a -> Tuple as -> Tuple as
 --   </pre>
 gradOp' :: Op as a -> Tuple as -> (a, Tuple as)
 
--- | Run the function that an <a>Op</a> encodes, and get its gradient with
---   respect to the total derivative of the result.
+-- | Run the function that an <a>Op</a> encodes, and get the gradient of a
+--   "final result" with respect to the inputs, given the total derivative
+--   of the output with the final result.
 --   
 --   See <a>gradOp</a> and the module documentaiton for
 --   <a>Numeric.Backprop.Op</a> for more information.
@@ -747,23 +749,145 @@ type Op as a = forall m. Monad m => OpM m as a
 --   You can think of <a>OpB</a> as a superclass/parent class of <a>Op</a>
 --   in this sense, and of <a>Op</a> as a subclass of <a>OpB</a>.
 type OpB s as a = OpM (ST s) as a
+
+-- | Perform backpropagation on the given <a>BPOp</a>. Returns the result
+--   of the operation it represents, as well as the gradient of the result
+--   with respect to its inputs.
 backprop :: forall rs a. Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> (a, Tuple rs)
-evalBPOp :: Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> a
+
+-- | Simply run the <a>BPOp</a> on an input tuple, getting the result
+--   without bothering with the gradient or with backpropagation.
+evalBPOp :: forall rs a. Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> a
+
+-- | Run the <a>BPOp</a> on an input tuple and return the gradient of the
+--   result with respect to the input tuple.
 gradBPOp :: Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> Tuple rs
-bpOp :: (Every Num as, Known Length as) => BPOp s as a -> OpB s as a
-backprop' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple rs -> (a, Tuple rs)
-evalBPOp' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple rs -> a
-gradBPOp' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple rs -> Tuple rs
-bpOp' :: Prod Summer as -> Prod Unity as -> BPOp s as a -> OpB s as a
-withInps :: Known Length rs => (Prod (BVar s rs) rs -> BP s rs a) -> BP s rs a
+
+-- | Convert a <a>BPOpI</a> into a <a>BPOp</a>. That is, convert a function
+--   on a bundle of <a>BVar</a>s (generating an implicit graph) into a
+--   fully fledged <a>BPOp</a> that you can run <a>backprop</a> on. See
+--   <a>BPOpI</a> for more information.
+--   
+--   If you are going to write exclusively using implicit <a>BVar</a>
+--   operations, it might be more convenient to use
+--   <a>Numeric.Backprop.Implicit</a> instead, which is geared around that
+--   use case.
 implicitly :: Known Length rs => BPOpI s rs a -> BPOp s rs a
-withInps' :: Length rs -> (Prod (BVar s rs) rs -> BP s rs a) -> BP s rs a
+
+-- | A version of <a>backprop</a> taking explicit <a>Summer</a>s and
+--   <a>Unity</a>s, so it can be run with types that aren't instances of
+--   <a>Num</a>.
+backprop' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple rs -> (a, Tuple rs)
+
+-- | A version of <a>evalBPOp</a> taking explicit <a>Summer</a>s and
+--   <a>Unity</a>s, so it can be run with types that aren't instances of
+--   <a>Num</a>.
+evalBPOp' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple rs -> a
+
+-- | A version of <a>gradBPOp</a> taking explicit <a>Summer</a>s and
+--   <a>Unity</a>s, so it can be run with types that aren't instances of
+--   <a>Num</a>.
+gradBPOp' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple rs -> Tuple rs
+
+-- | A version of <a>implicitly</a> taking explicit <a>Length</a>,
+--   indicating the number of inputs required and their types.
+--   
+--   Mostly useful for rare "extremely polymorphic" situations. If you ever
+--   actually explicitly write down <tt>rs</tt> as a list of types, you
+--   should be able to just use <a>implicitly</a>.
 implicitly' :: Length rs -> BPOpI s rs a -> BPOp s rs a
+
+-- | Runs a continuation on a <a>Prod</a> of all of the input <a>BVar</a>s.
+--   
+--   Handy for bringing the environment into scope and doing stuff with it:
+--   
+--   <pre>
+--   foo :: <a>BPOp</a> '[Double, Int] a
+--   foo = <a>withInps</a> $ (x :<a>:&lt; Ø) -</a> do
+--       -- do stuff with inputs
+--   </pre>
+--   
+--   Looks kinda like <tt>foo (x :&lt; y :&lt; Ø) = -- ...</tt>, don't it?
+--   
+--   Note that the above is the same as
+--   
+--   <pre>
+--   foo :: <a>BPOp</a> '[Double, Int] a
+--   foo = do
+--       x :&lt; y :&lt; Ø &lt;- <a>inpRefs</a>
+--       -- do stuff with inputs
+--   </pre>
+--   
+--   But just a little nicer!
+withInps :: Known Length rs => (Prod (BVar s rs) rs -> BP s rs a) -> BP s rs a
+
+-- | Convert a <a>BPOpI</a> into a <a>BPOp</a>. That is, convert a function
+--   on a bundle of <a>BVar</a>s (generating an implicit graph) into a
+--   fully fledged <a>BPOp</a> that you can run <a>backprop</a> on. See
+--   <a>BPOpI</a> for more information.
+--   
+--   If you are going to write exclusively using implicit <a>BVar</a>
+--   operations, it might be more convenient to use
+--   <a>Numeric.Backprop.Implicit</a> instead, which is geared around that
+--   use case.
+implicitly :: Known Length rs => BPOpI s rs a -> BPOp s rs a
+
+-- | A version of <a>withInps</a> taking explicit <a>Length</a>, indicating
+--   the number of inputs required and their types.
+--   
+--   Mostly useful for rare "extremely polymorphic" situations. If you ever
+--   actually explicitly write down <tt>rs</tt> as a list of types, you
+--   should be able to just use <a>withInps</a>.
+withInps' :: Length rs -> (Prod (BVar s rs) rs -> BP s rs a) -> BP s rs a
+
+-- | A version of <a>implicitly</a> taking explicit <a>Length</a>,
+--   indicating the number of inputs required and their types.
+--   
+--   Mostly useful for rare "extremely polymorphic" situations. If you ever
+--   actually explicitly write down <tt>rs</tt> as a list of types, you
+--   should be able to just use <a>implicitly</a>.
+implicitly' :: Length rs -> BPOpI s rs a -> BPOp s rs a
+
+-- | Create a <a>BVar</a> that represents just a specific value, that
+--   doesn't depend on any other <a>BVar</a>s.
 constRef :: a -> BVar s rs a
+
+-- | Create a <a>BVar</a> given an index into the input environment. For an
+--   example,
+--   
+--   <pre>
+--   <a>inpRef</a> <a>IZ</a>
+--   </pre>
+--   
+--   would refer to the <i>first</i> input variable (the <a>Int</a> in a
+--   <tt><a>BP</a> s '[Int, Bool]</tt>), and
+--   
+--   <pre>
+--   <a>inpRef</a> (<a>IS</a> <a>IZ</a>)
+--   </pre>
+--   
+--   Would refer to the <i>second</i> input variable (the <a>Bool</a> in a
+--   <tt><a>BP</a> s '[Int, Bool]</tt>)
+--   
+--   Typically, there shouldn't be any reason to use <a>inpRef</a>
+--   directly. It's cleaner to get all of your input <a>BVar</a>s together
+--   using <a>withInps</a> or <a>inpRefs</a>.
 inpRef :: Index rs a -> BVar s rs a
 inpRefs :: Known Length rs => Prod (BVar s rs) rs
+
+-- | Turn a <a>BPOp</a> into an <a>OpB</a>. Basically converts a <a>BP</a>
+--   taking an <tt>rs</tt> and producing an <tt>a</tt> into an <a>Op</a>
+--   taking an <tt>rs</tt> and returning an <tt>a</tt>, with all of the
+--   powers and utility of an <a>Op</a>, including all of its
+--   gradient-finding glory.
+--   
+--   Handy because an <a>OpB</a> can be used with almost all of the
+--   <a>Op</a>-related functions in this moduel, including <a>opRef</a>,
+--   <a>~$</a>, etc.
+bpOp :: (Every Num as, Known Length as) => BPOp s as a -> OpB s as a
 bindRef :: Num a => BVar s rs a -> BP s rs (BVar s rs a)
 inpRefs' :: Length rs -> Prod (BVar s rs) rs
+bpOp' :: Prod Summer as -> Prod Unity as -> BPOp s as a -> OpB s as a
 bindRef' :: Summer a -> BVar s rs a -> BP s rs (BVar s rs a)
 opRef :: Num a => Prod (BVar s rs) as -> OpB s as a -> BP s rs (BVar s rs a)
 (~$) :: Num a => OpB s as a -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
@@ -773,6 +897,8 @@ opRef2 :: Num c => BVar s rs a -> BVar s rs b -> OpB s '[a, b] c -> BP s rs (BVa
 opRef3 :: Num d => BVar s rs a -> BVar s rs b -> BVar s rs c -> OpB s '[a, b, c] d -> BP s rs (BVar s rs d)
 (-$) :: (Every Num as, Known Length as, Num a) => BPOp s as a -> Prod (BVar s rs) as -> BPOp s rs a
 infixr 1 -$
+(-&) :: (Every Num as, Known Length as, Num a) => Prod (BVar s rs) as -> (Prod (BVar s as) as -> BPOp s as a) -> BPOp s rs a
+infixr 1 -&
 opRef' :: forall s rs as a. Summer a -> Prod (BVar s rs) as -> OpB s as a -> BP s rs (BVar s rs a)
 opRef1' :: Summer b -> BVar s rs a -> OpB s '[a] b -> BP s rs (BVar s rs b)
 opRef2' :: Summer c -> BVar s rs a -> BVar s rs b -> OpB s '[a, b] c -> BP s rs (BVar s rs c)
@@ -1102,6 +1228,9 @@ eval :: (Known Length rs, Every Num rs) => BPOp rs a -> Tuple rs -> a
 backprop' :: Prod Summer rs -> Prod Unity rs -> BPOp rs a -> Tuple rs -> (a, Tuple rs)
 grad' :: Prod Summer rs -> Prod Unity rs -> BPOp rs a -> Tuple rs -> Tuple rs
 eval' :: Prod Summer rs -> Prod Unity rs -> BPOp rs a -> Tuple rs -> a
+
+-- | Create a <a>BVar</a> that represents just a specific value, that
+--   doesn't depend on any other <a>BVar</a>s.
 constRef :: a -> BVar s rs a
 liftR :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
 liftR1 :: OpB s '[a] b -> BVar s rs a -> BVar s rs b
