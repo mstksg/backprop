@@ -1004,6 +1004,7 @@ generically :: forall s rs bs b a. (Num a, Every Num bs, Known Length bs, Generi
 internally' :: forall s rs bs b a. Prod Summer bs -> Prod Unity bs -> Summer a -> Iso' b (Tuple bs) -> BVar s rs b -> BP s bs (BVar s bs a) -> BP s rs (BVar s rs a)
 generically' :: forall s rs bs b a. (Generic b, Code b ~ '[bs]) => Prod Summer bs -> Prod Unity bs -> Summer a -> BVar s rs b -> BP s bs (BVar s bs a) -> BP s rs (BVar s rs a)
 liftB :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
+(.$) :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
 liftB1 :: OpB s '[a] b -> BVar s rs a -> BVar s rs b
 liftB2 :: OpB s '[a, b] c -> BVar s rs a -> BVar s rs b -> BVar s rs c
 liftB3 :: OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar s rs c -> BVar s rs d
@@ -1267,6 +1268,7 @@ eval' :: Prod Summer rs -> Prod Unity rs -> BPOp rs a -> Tuple rs -> a
 --   doesn't depend on any other <a>BVar</a>s.
 constVar :: a -> BVar s rs a
 liftB :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
+(.$) :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
 liftB1 :: OpB s '[a] b -> BVar s rs a -> BVar s rs b
 liftB2 :: OpB s '[a, b] c -> BVar s rs a -> BVar s rs b -> BVar s rs c
 liftB3 :: OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar s rs c -> BVar s rs d
@@ -1542,7 +1544,8 @@ opVar2 :: forall s n a b. Num b => OpB s N2 a b -> BVar s n a a -> BVar s n a a 
 opVar3 :: forall s n a b. Num b => OpB s N3 a b -> BVar s n a a -> BVar s n a a -> BVar s n a a -> BP s n a (BVar s n a b)
 (-$) :: forall s m n a b. Num b => BPOp s m a b -> VecT m (BVar s n a) a -> BP s n a (BVar s n a b)
 infixr 1 -$
-liftB :: OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
+liftB :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
+(.$) :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
 liftB1 :: OpB s N1 a a -> BVar s n r a -> BVar s n r a
 liftB2 :: OpB s N2 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a
 liftB3 :: OpB s N3 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BVar s n r a
@@ -1582,7 +1585,8 @@ backprop :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> (b, V
 grad :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> Vec n a
 eval :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> b
 constVar :: b -> BVar s n a b
-liftB :: OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
+liftB :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
+(.$) :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
 liftB1 :: OpB s N1 a a -> BVar s n r a -> BVar s n r a
 liftB2 :: OpB s N2 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a
 liftB3 :: OpB s N3 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BVar s n r a
