@@ -88,16 +88,13 @@ newtype OpM m as a
 --   details on the function that this constructor and <a>Op</a> expect.
 OpM :: (Tuple as -> m (a, Maybe a -> m (Tuple as))) -> OpM m as a
 
--- | <a>runOpM'</a> takes the input tuple, and returns a tuple containing
---   the result and a continuation to produce the gradient, when given the
---   total derivative <tt>a</tt>.
+-- | A combination of <a>runOpM</a> and <a>gradOpWithM'</a>. Given an
+--   <a>OpM</a> and inputs, returns the result of the <a>Op</a> and a
+--   continuation that gives its gradient.
 --   
---   If the continuation is given <a>Nothing</a>, then the <tt>a</tt> is
---   taken to be the final result you want to take the gradient with
---   respect to.
---   
---   See module documentation for <a>Numeric.Backprop.Op</a> for more
---   details.
+--   The continuation takes the total derivative of the result as input.
+--   See documenation for <a>gradOpWithM'</a> and module documentation for
+--   <a>Numeric.Backprop.Op</a> for more information.
 [runOpM'] :: OpM m as a -> Tuple as -> m (a, Maybe a -> m (Tuple as))
 
 -- | <a>Run</a> the function that an <a>Op</a> encodes, to get the result.
