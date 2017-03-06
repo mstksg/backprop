@@ -130,10 +130,10 @@ type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 opVar'
     :: forall s rs as a. ()
     => Summer a
-    -> Prod (BVar s rs) as
     -> OpB s as a
+    -> Prod (BVar s rs) as
     -> BP s rs (BVar s rs a)
-opVar' s i o = do
+opVar' s o i = do
     xs <- traverse1 (fmap I . BP . resolveVar) i
     (res, gf) <- BP . liftBase $ runOpM' o xs
     let bp = BPN { _bpnOut       = only $ FRInternal []
@@ -395,10 +395,11 @@ registerVar bpir = \case
       ifor1_ rs $ \ix' (bpr :: BVar s rs d) ->
         registerVar (IRPipe ix' r') bpr
 
+-- | Apply several 
 opVar
     :: Num a
-    => Prod (BVar s rs) as
-    -> OpB s as a
+    => OpB s as a
+    -> Prod (BVar s rs) as
     -> BP s rs (BVar s rs a)
 opVar = opVar' known
 
@@ -408,7 +409,7 @@ infixr 1 ~$
     => OpB s as a
     -> Prod (BVar s rs) as
     -> BP s rs (BVar s rs a)
-(~$) = flip opVar
+(~$) = opVar
 
 infixr 1 -$
 (-$)
@@ -433,49 +434,49 @@ constVar = BVConst
 
 opVar1'
     :: Summer b
-    -> BVar s rs a
     -> OpB s '[a] b
+    -> BVar s rs a
     -> BP s rs (BVar s rs b)
-opVar1' s r = opVar' s (r :< Ø)
+opVar1' s o = opVar' s o . only
 
 opVar1
     :: Num b
-    => BVar s rs a
-    -> OpB s '[a] b
+    => OpB s '[a] b
+    -> BVar s rs a
     -> BP s rs (BVar s rs b)
 opVar1 = opVar1' known
 
 opVar2'
     :: Summer c
+    -> OpB s '[a,b] c
     -> BVar s rs a
     -> BVar s rs b
-    -> OpB s '[a,b] c
     -> BP s rs (BVar s rs c)
-opVar2' s rx ry = opVar' s (rx :< ry :< Ø)
+opVar2' s o rx ry = opVar' s o (rx :< ry :< Ø)
 
 opVar2
     :: Num c
-    => BVar s rs a
+    => OpB s '[a,b] c
+    -> BVar s rs a
     -> BVar s rs b
-    -> OpB s '[a,b] c
     -> BP s rs (BVar s rs c)
 opVar2 = opVar2' known
 
 opVar3'
     :: Summer d
+    -> OpB s '[a,b,c] d
     -> BVar s rs a
     -> BVar s rs b
     -> BVar s rs c
-    -> OpB s '[a,b,c] d
     -> BP s rs (BVar s rs d)
-opVar3' s rx ry rz = opVar' s (rx :< ry :< rz :< Ø)
+opVar3' s o rx ry rz = opVar' s o (rx :< ry :< rz :< Ø)
 
 opVar3
     :: Num d
-    => BVar s rs a
+    => OpB s '[a,b,c] d
+    -> BVar s rs a
     -> BVar s rs b
     -> BVar s rs c
-    -> OpB s '[a,b,c] d
     -> BP s rs (BVar s rs d)
 opVar3 = opVar3' known
 
@@ -488,7 +489,7 @@ bindVar' s r = case r of
     BVNode  _  _ -> return r
     BVInp   _    -> return r
     BVConst _    -> return r
-    BVOp    rs o -> opVar' s rs o
+    BVOp    rs o -> opVar' s o rs
 
 bindVar
     :: Num a

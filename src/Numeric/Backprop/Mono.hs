@@ -60,10 +60,10 @@ type OpB s n a b   = BP.OpB s (Replicate n a) b
 
 opVar
     :: forall s m n a b. Num b
-    => VecT m (BVar s n a) a
-    -> OpB s m a b
+    => OpB s m a b
+    -> VecT m (BVar s n a) a
     -> BP s n a (BVar s n a b)
-opVar i o = BP.opVar (vecToProd i) o
+opVar o = BP.opVar o . vecToProd
 
 infixr 1 ~$
 (~$)
@@ -71,7 +71,7 @@ infixr 1 ~$
     => OpB s m a b
     -> VecT m (BVar s n a) a
     -> BP s n a (BVar s n a b)
-(~$) = flip opVar
+(~$) = opVar
 
 infixr 1 -$
 (-$)
@@ -88,27 +88,27 @@ constVar = BP.constVar
 
 opVar1
     :: forall s n a b. Num b
-    => BVar s n a a
-    -> OpB s N1 a b
+    => OpB s N1 a b
+    -> BVar s n a a
     -> BP s n a (BVar s n a b)
-opVar1 x o = opVar @_ @_ @n (x :* ØV) o
+opVar1 o x = opVar @_ @_ @n o (x :* ØV)
 
 opVar2
     :: forall s n a b. Num b
-    => BVar s n a a
+    => OpB s N2 a b
     -> BVar s n a a
-    -> OpB s N2 a b
+    -> BVar s n a a
     -> BP s n a (BVar s n a b)
-opVar2 x y o = opVar @_ @_ @n (x :* y :* ØV) o
+opVar2 o x y = opVar @_ @_ @n o (x :* y :* ØV)
 
 opVar3
     :: forall s n a b. Num b
-    => BVar s n a a
+    => OpB s N3 a b
     -> BVar s n a a
     -> BVar s n a a
-    -> OpB s N3 a b
+    -> BVar s n a a
     -> BP s n a (BVar s n a b)
-opVar3 x y z o = opVar @_ @_ @n (x :* y :* z :* ØV) o
+opVar3 o x y z = opVar @_ @_ @n o (x :* y :* z :* ØV)
 
 backprop
     :: forall n a b. Num a
