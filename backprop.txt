@@ -118,12 +118,12 @@ module Numeric.Backprop
 --   Or, using the <tt>BPOp</tt> type synonym:
 --   
 --   <pre>
---   <tt>BPOp</tt> s '[ Int, Double, Double ] (<a>BVar</a> rs Double)
+--   <a>BPOp</a> s '[ Int, Double, Double ] (<a>BVar</a> rs Double)
 --   </pre>
 --   
---   with <tt>backprop</tt> or <tt>gradBPOp</tt>, it'll return a gradient
---   on the inputs (<a>Int</a>, <a>Double</a>, and <a>Double</a>) and
---   produce a value of type <a>Double</a>.
+--   with <a>backprop</a> or <a>gradBPOp</a>, it'll return a gradient on
+--   the inputs (<a>Int</a>, <a>Double</a>, and <a>Double</a>) and produce
+--   a value of type <a>Double</a>.
 data BP s rs b
 
 -- | A handy type synonym representing an action
@@ -136,11 +136,15 @@ type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 --   can keep track of what values refer to which other values, and so can
 --   perform backpropagation to compute gradients.
 --   
---   A <tt><a>BVar</a> s rs a</tt> lives inside a <tt><a>BP</a> s rs</tt>
---   monad, and refers to a value of type <tt>a</tt>. (The <tt>rs</tt>
---   refers to the environment of the <a>BP</a> action that the <a>BVar</a>
---   lives inside.) The phantom parameter <tt>s</tt> is used to ensure that
---   <a>BVar</a>s can only exist in the <a>BP</a> that they originate in.
+--   A <tt><a>BVar</a> s rs a</tt> refers to a value of type <tt>a</tt>,
+--   with an environment of values of the types <tt>rs</tt>. The phantom
+--   parameter <tt>s</tt> is used to ensure that stray <a>BVar</a>s don't
+--   leak outside of the backprop process.
+--   
+--   (That is, if you're using implicit backprop, it ensures that you
+--   interact with <a>BVar</a>s in a polymorphic way. And, if you're using
+--   implicit backprop, it ensures that a <tt><a>BVar</a> s rs a</tt> never
+--   leaves the <tt><a>BP</a> s rs</tt> that it was created in.)
 --   
 --   <a>BVar</a>s have <a>Num</a>, <a>Fractional</a>, <a>Floating</a>, etc.
 --   instances, so they can be manipulated using polymorphic functions and
@@ -314,11 +318,15 @@ module Numeric.Backprop.Implicit
 --   can keep track of what values refer to which other values, and so can
 --   perform backpropagation to compute gradients.
 --   
---   A <tt><a>BVar</a> s rs a</tt> lives inside a <tt><a>BP</a> s rs</tt>
---   monad, and refers to a value of type <tt>a</tt>. (The <tt>rs</tt>
---   refers to the environment of the <a>BP</a> action that the <a>BVar</a>
---   lives inside.) The phantom parameter <tt>s</tt> is used to ensure that
---   <a>BVar</a>s can only exist in the <a>BP</a> that they originate in.
+--   A <tt><a>BVar</a> s rs a</tt> refers to a value of type <tt>a</tt>,
+--   with an environment of values of the types <tt>rs</tt>. The phantom
+--   parameter <tt>s</tt> is used to ensure that stray <a>BVar</a>s don't
+--   leak outside of the backprop process.
+--   
+--   (That is, if you're using implicit backprop, it ensures that you
+--   interact with <a>BVar</a>s in a polymorphic way. And, if you're using
+--   implicit backprop, it ensures that a <tt><a>BVar</a> s rs a</tt> never
+--   leaves the <tt><a>BP</a> s rs</tt> that it was created in.)
 --   
 --   <a>BVar</a>s have <a>Num</a>, <a>Fractional</a>, <a>Floating</a>, etc.
 --   instances, so they can be manipulated using polymorphic functions and
