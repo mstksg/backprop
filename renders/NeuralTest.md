@@ -109,7 +109,7 @@ simpleOp inp = implicitly $ \(w1 :< b1 :< w2 :< b2 :< Ø) ->
     let z = logistic $ liftR2 matVec w1 x + b1
     in  logistic $ liftR2 matVec w2 z + b2
   where
-    x = constRef inp
+    x = constVar inp
 ```
 
 Here, `simpleOp` is defined in implicit (non-monadic) style, given a
@@ -142,7 +142,7 @@ simpleOpExplicit inp = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
     y2  <- matVec ~$ (w2 :< x2 :< Ø)
     return $ logistic (y2 + b2)
   where
-    x1 = constRef inp
+    x1 = constVar inp
 ```
 
 Now, for the magic of *backprop*: the library can now take advantage of
@@ -161,10 +161,10 @@ simpleGrad inp targ params = gradBPOp opError params
     opError = do
         res <- simpleOp inp
         -- we explicitly bind err to prevent recomputation
-        err <- bindRef $ res - t
+        err <- bindVar $ res - t
         dot ~$ (err :< err :< Ø)
       where
-        t = constRef targ
+        t = constVar targ
 ```
 
 The result is the gradient of the input tuple’s components, with respect
@@ -294,10 +294,10 @@ errOp
     -> BVar s rs (R m)
     -> BPOp s rs Double
 errOp targ r = do
-    err <- bindRef $ r - t
+    err <- bindVar $ r - t
     dot ~$ (err :< err :< Ø)
   where
-    t = constRef targ
+    t = constVar targ
 ```
 
 And now, we can use `backprop` to generate the gradient, and shift the

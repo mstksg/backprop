@@ -92,7 +92,7 @@ neural network:
 >     let z = logistic $ liftR2 matVec w1 x + b1
 >     in  logistic $ liftR2 matVec w2 z + b2
 >   where
->     x = constRef inp
+>     x = constVar inp
 
 Here, `simpleOp` is defined in implicit (non-monadic) style, given a tuple
 of inputs and returning outputs.  Now `simpleOp` can be "run" with the
@@ -121,7 +121,7 @@ specify our graph nodes explicitly.  The results should be the same.
 >     y2  <- matVec ~$ (w2 :< x2 :< Ø)
 >     return $ logistic (y2 + b2)
 >   where
->     x1 = constRef inp
+>     x1 = constVar inp
 
 Now, for the magic of *backprop*:  the library can now take advantage of
 the implicit (or explicit) graph and use it to do backpropagation, too!
@@ -138,10 +138,10 @@ the implicit (or explicit) graph and use it to do backpropagation, too!
 >     opError = do
 >         res <- simpleOp inp
 >         -- we explicitly bind err to prevent recomputation
->         err <- bindRef $ res - t
+>         err <- bindVar $ res - t
 >         dot ~$ (err :< err :< Ø)
 >       where
->         t = constRef targ
+>         t = constVar targ
 
 The result is the gradient of the input tuple's components, with respect
 to the `Double` result of `opError` (the squared error).  We can then use
@@ -260,10 +260,10 @@ Now we can do simple gradient descent.  Defining an error function:
 >     -> BVar s rs (R m)
 >     -> BPOp s rs Double
 > errOp targ r = do
->     err <- bindRef $ r - t
+>     err <- bindVar $ r - t
 >     dot ~$ (err :< err :< Ø)
 >   where
->     t = constRef targ
+>     t = constVar targ
 
 And now, we can use `backprop` to generate the gradient, and shift the
 `Network`!  Things are made a bit cleaner from the fact that `Network a bs c`

@@ -67,7 +67,7 @@ import           Numeric.Backprop.Op
 -- a 'Double' and produces a 'Bool', and does it in a differentiable way.
 --
 -- Note that 'OpB' is a /superset/ of 'Op', so, if you see any function
--- that expects an 'OpB' (like 'Numeric.Backprop.opRef'' and
+-- that expects an 'OpB' (like 'Numeric.Backprop.opVar'' and
 -- 'Numeric.Backprop.~$', for example), you can give them an 'Op', as well.
 --
 -- You can think of 'OpB' as a superclass/parent class of 'Op' in this
@@ -170,7 +170,7 @@ newtype BP s rs b = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s
 -- (However, note that if you directly manipulate 'BVar's using those
 -- instances or using 'liftR', it delays evaluation, so every usage site
 -- has to re-compute the result/create a new node.  If you want to re-use
--- a 'BVar' you created using '(+)' or '(-)' or 'liftR', use 'bindRef' to
+-- a 'BVar' you created using '(+)' or '(-)' or 'liftR', use 'bindVar' to
 -- force it first.)
 data BVar :: Type -> [Type] -> Type -> Type where
     -- | A BVar referring to a 'BPNode'
@@ -249,7 +249,7 @@ _FRInternal f = \case
 -- resulting 'BVar' is deferred/delayed.  At every location you use it, it
 -- will be recomputed, and a separate graph node will be created.  If you
 -- are using a 'BVar' you made with the 'Num' instance in multiple
--- locations, use 'bindRef' first to force it and prevent recomputation.
+-- locations, use 'bindVar' first to force it and prevent recomputation.
 instance Num a => Num (BVar s rs a) where
     r1 + r2       = BVOp (r1 :< r2 :< Ø) $ op2 (+)
     r1 - r2       = BVOp (r1 :< r2 :< Ø) $ op2 (-)

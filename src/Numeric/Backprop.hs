@@ -23,32 +23,32 @@ module Numeric.Backprop (
   -- ** Utility combinators
   , withInps, implicitly
   , withInps', implicitly'
-  -- * Refs
-  , constRef
-  , inpRef, inpRefs
+  -- * Vars
+  , constVar
+  , inpVar, inpVars
   , bpOp
-  , bindRef
-  , inpRefs'
+  , bindVar
+  , inpVars'
   , bpOp'
-  , bindRef'
+  , bindVar'
   -- ** From Ops
-  , opRef, (~$)
-  , opRef1, opRef2, opRef3
+  , opVar, (~$)
+  , opVar1, opVar2, opVar3
   , (-$), (-&)
-  , opRef'
-  , opRef1', opRef2', opRef3'
-  -- ** Ref manipulation
+  , opVar'
+  , opVar1', opVar2', opVar3'
+  -- ** Var manipulation
   -- *** As parts
-  , partsRef, (#<~), withParts
-  , splitRefs, gSplit
-  , partsRef', withParts'
-  , splitRefs', gSplit'
+  , partsVar, (#<~), withParts
+  , splitVars, gSplit
+  , partsVar', withParts'
+  , splitVars', gSplit'
   -- *** As sums
-  , choicesRef
-  , choicesRef'
+  , choicesVar
+  , choicesVar'
   -- *** As sums of products
-  , sopRef, gSplits
-  , sopRef', gSplits'
+  , sopVar, gSplits
+  , sopVar', gSplits'
   -- ** Transforming BP
   , internally
   , generically
@@ -127,14 +127,14 @@ type BPOp s rs a  = BP s rs (BVar s rs a)
 -- into an "explicit" graph backprop function, a @'BPOp' s rs a@.
 type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 
-opRef'
+opVar'
     :: forall s rs as a. ()
     => Summer a
     -> Prod (BVar s rs) as
     -> OpB s as a
     -> BP s rs (BVar s rs a)
-opRef' s i o = do
-    xs <- traverse1 (fmap I . BP . resolveRef) i
+opVar' s i o = do
+    xs <- traverse1 (fmap I . BP . resolveVar) i
     (res, gf) <- BP . liftBase $ runOpM' o xs
     let bp = BPN { _bpnOut       = only $ FRInternal []
                  , _bpnRes       = only_ res
@@ -143,39 +143,39 @@ opRef' s i o = do
                  , _bpnSummer    = only s
                  }
     r <- BP . liftBase $ newSTRef bp
-    itraverse1_ (registerRef . flip IRNode r) i
+    itraverse1_ (registerVar . flip IRNode r) i
     return (BVNode IZ r)
 
-splitRefs'
+splitVars'
     :: forall s rs as. ()
     => Prod Summer as
     -> Prod Unity as
     -> BVar s rs (Tuple as)
     -> BP s rs (Prod (BVar s rs) as)
-splitRefs' ss us = partsRef' ss us id
+splitVars' ss us = partsVar' ss us id
 
-splitRefs
+splitVars
     :: forall s rs as. (Every Num as, Known Length as)
     => BVar s rs (Tuple as)
     -> BP s rs (Prod (BVar s rs) as)
-splitRefs = partsRef id
+splitVars = partsVar id
 
-partsRef'
+partsVar'
     :: forall s rs bs b. ()
     => Prod Summer bs
     -> Prod Unity bs
     -> Iso' b (Tuple bs)
     -> BVar s rs b
     -> BP s rs (Prod (BVar s rs) bs)
-partsRef' ss us i =
-    fmap (view sum1) . sopRef' (only ss) (only us) (i . resum1)
+partsVar' ss us i =
+    fmap (view sum1) . sopVar' (only ss) (only us) (i . resum1)
 
-partsRef
+partsVar
     :: forall s rs bs b. (Every Num bs, Known Length bs)
     => Iso' b (Tuple bs)
     -> BVar s rs b
     -> BP s rs (Prod (BVar s rs) bs)
-partsRef = partsRef' summers unities
+partsVar = partsVar' summers unities
 
 infixr 1 #<~
 (#<~)
@@ -183,7 +183,7 @@ infixr 1 #<~
     => Iso' b (Tuple bs)
     -> BVar s rs b
     -> BP s rs (Prod (BVar s rs) bs)
-(#<~) = partsRef
+(#<~) = partsVar
 
 withParts'
     :: Prod Summer bs
@@ -193,7 +193,7 @@ withParts'
     -> (Prod (BVar s rs) bs -> BP s rs a)
     -> BP s rs a
 withParts' ss us i r f = do
-    p <- partsRef' ss us i r
+    p <- partsVar' ss us i r
     f p
 
 withParts
@@ -203,7 +203,7 @@ withParts
     -> (Prod (BVar s rs) bs -> BP s rs a)
     -> BP s rs a
 withParts i r f = do
-    p <- partsRef i r
+    p <- partsVar i r
     f p
 
 gSplit'
@@ -212,7 +212,7 @@ gSplit'
     -> Prod Unity bs
     -> BVar s rs b
     -> BP s rs (Prod (BVar s rs) bs)
-gSplit' ss us = partsRef' ss us gTuple
+gSplit' ss us = partsVar' ss us gTuple
 
 gSplit
     :: (Every Num bs, Known Length bs, SOP.Generic b, SOP.Code b ~ '[bs])
@@ -230,7 +230,7 @@ internally'
     -> BP s bs (BVar s bs a)
     -> BP s rs (BVar s rs a)
 internally' ss us sa l r bp = do
-    xs <- view l <$> BP (resolveRef r)
+    xs <- view l <$> BP (resolveVar r)
     (res, gFunc) <- BP . liftBase $ backpropWith ss us bp xs
     let bpn :: BPNode s rs '[ b ] '[ a ]
         bpn = BPN { _bpnOut       = only $ FRInternal []
@@ -240,7 +240,7 @@ internally' ss us sa l r bp = do
                   , _bpnSummer    = only sa
                   }
     r' <- BP . liftBase $ newSTRef bpn
-    registerRef (IRNode IZ r') r
+    registerVar (IRNode IZ r') r
     return (BVNode IZ r')
 
 internally
@@ -268,15 +268,15 @@ generically
     -> BP s rs (BVar s rs a)
 generically = internally gTuple
 
-choicesRef'
+choicesVar'
     :: forall s rs bs b. ()
     => Prod Summer bs
     -> Prod Unity bs
     -> Iso' b (Sum I bs)
     -> BVar s rs b
     -> BP s rs (Sum (BVar s rs) bs)
-choicesRef' ss us i r = do
-    x <- BP $ resolveRef r
+choicesVar' ss us i r = do
+    x <- BP $ resolveVar r
     let xs :: Sum I bs
         xs = view i x
     ifor1 ((ss `zipP` us) `tagSum` xs) $ \ix ((s :&: u) :&: I (y :: c)) -> do
@@ -291,26 +291,26 @@ choicesRef' ss us i r = do
                    , _bpnSummer    = only s
                    }
       r' <- BP . liftBase $ newSTRef bp
-      registerRef (IRNode IZ r') r
+      registerVar (IRNode IZ r') r
       return $ BVNode IZ r'
--- TODO: cannot implement via sopRef?  oh well.
+-- TODO: cannot implement via sopVar?  oh well.
 
-choicesRef
+choicesVar
     :: forall s rs bs b. (Every Num bs, Known Length bs)
     => Iso' b (Sum I bs)
     -> BVar s rs b
     -> BP s rs (Sum (BVar s rs) bs)
-choicesRef = choicesRef' summers unities
+choicesVar = choicesVar' summers unities
 
-sopRef'
+sopVar'
     :: forall s rs bss b. ()
     => Prod (Prod Summer) bss
     -> Prod (Prod Unity) bss
     -> Iso' b (Sum Tuple bss)
     -> BVar s rs b
     -> BP s rs (Sum (Prod (BVar s rs)) bss)
-sopRef' sss uss i r = do
-    x <- BP $ resolveRef r
+sopVar' sss uss i r = do
+    x <- BP $ resolveVar r
     let xs :: Sum Tuple bss
         xs = view i x
     ifor1 ((sss `zipP` uss) `tagSum` xs) $ \ix ((ss :&: us) :&: (ys :: Tuple bs)) -> do
@@ -327,15 +327,15 @@ sopRef' sss uss i r = do
                    , _bpnSummer    = ss
                    }
       r' <- BP . liftBase $ newSTRef bp
-      registerRef (IRNode IZ r') r
+      registerVar (IRNode IZ r') r
       return $ imap1 (\ix' _ -> BVNode ix' r') ys
 
-sopRef
+sopVar
     :: forall s rs bss b. (Known Length bss, Every (Every Num ∧ Known Length) bss)
     => Iso' b (Sum Tuple bss)
     -> BVar s rs b
     -> BP s rs (Sum (Prod (BVar s rs)) bss)
-sopRef = sopRef' (withEvery @(Every Num ∧ Known Length) summers)
+sopVar = sopVar' (withEvery @(Every Num ∧ Known Length) summers)
                  (withEvery @(Every Num ∧ Known Length) unities)
 
 gSplits'
@@ -344,7 +344,7 @@ gSplits'
     -> Prod (Prod Unity) (SOP.Code b)
     -> BVar s rs b
     -> BP s rs (Sum (Prod (BVar s rs)) (SOP.Code b))
-gSplits' sss uss = sopRef' sss uss gSOP
+gSplits' sss uss = sopVar' sss uss gSOP
 
 gSplits
     :: forall s rs b.
@@ -354,28 +354,28 @@ gSplits
       )
     => BVar s rs b
     -> BP s rs (Sum (Prod (BVar s rs)) (SOP.Code b))
-gSplits = sopRef gSOP
+gSplits = sopVar gSOP
 
 
 -- TODO: pull summers too
-resolveRef
+resolveVar
     :: (MonadReader (Tuple rs) m, MonadBase (ST s) m)
     => BVar s rs a
     -> m a
-resolveRef = \case
+resolveVar = \case
     BVNode  ix r -> getI . index ix . _bpnRes <$> liftBase (readSTRef r)
     BVInp   ix   -> getI . index ix <$> ask
     BVConst    x -> return x
     BVOp    rs o -> do
-      xs <- traverse1 (fmap I . resolveRef) rs
+      xs <- traverse1 (fmap I . resolveVar) rs
       liftBase $ runOpM o xs
 
-registerRef
+registerVar
     :: forall s rs a. ()
     => BPInpRef s rs a
     -> BVar s rs a
     -> BP s rs ()
-registerRef bpir = \case
+registerVar bpir = \case
     BVNode  ix' r' -> BP . liftBase . modifySTRef r' $
                         over (bpnOut . indexP ix' . _FRInternal) (bpir :)
     BVInp   ix'    -> BP $ modifying (bpsSources . indexP ix' . _FRInternal) (bpir :)
@@ -383,7 +383,7 @@ registerRef bpir = \case
     -- This independently makes a new BPPipe for every usage site of the
     -- BVOp, so it's a bit inefficient.
     BVOp    (rs :: Prod (BVar s rs) ds) (o :: OpM (ST s) ds a) -> do
-      xs :: Tuple ds <- traverse1 (fmap I . BP . resolveRef) rs
+      xs :: Tuple ds <- traverse1 (fmap I . BP . resolveVar) rs
       (res, gF) <- BP . liftBase $ runOpM' o xs
       let bpp :: BPPipe s rs ds '[a]
           bpp = BPP { _bppOut       = only bpir
@@ -393,14 +393,14 @@ registerRef bpir = \case
                     }
       r' <- BP . liftBase $ newSTRef bpp
       ifor1_ rs $ \ix' (bpr :: BVar s rs d) ->
-        registerRef (IRPipe ix' r') bpr
+        registerVar (IRPipe ix' r') bpr
 
-opRef
+opVar
     :: Num a
     => Prod (BVar s rs) as
     -> OpB s as a
     -> BP s rs (BVar s rs a)
-opRef = opRef' known
+opVar = opVar' known
 
 infixr 1 ~$
 (~$)
@@ -408,7 +408,7 @@ infixr 1 ~$
     => OpB s as a
     -> Prod (BVar s rs) as
     -> BP s rs (BVar s rs a)
-(~$) = flip opRef
+(~$) = flip opVar
 
 infixr 1 -$
 (-$)
@@ -428,73 +428,73 @@ xs -& f = bpOp (withInps f) ~$ xs
 
 -- | Create a 'BVar' that represents just a specific value, that doesn't
 -- depend on any other 'BVar's.
-constRef :: a -> BVar s rs a
-constRef = BVConst
+constVar :: a -> BVar s rs a
+constVar = BVConst
 
-opRef1'
+opVar1'
     :: Summer b
     -> BVar s rs a
     -> OpB s '[a] b
     -> BP s rs (BVar s rs b)
-opRef1' s r = opRef' s (r :< Ø)
+opVar1' s r = opVar' s (r :< Ø)
 
-opRef1
+opVar1
     :: Num b
     => BVar s rs a
     -> OpB s '[a] b
     -> BP s rs (BVar s rs b)
-opRef1 = opRef1' known
+opVar1 = opVar1' known
 
-opRef2'
+opVar2'
     :: Summer c
     -> BVar s rs a
     -> BVar s rs b
     -> OpB s '[a,b] c
     -> BP s rs (BVar s rs c)
-opRef2' s rx ry = opRef' s (rx :< ry :< Ø)
+opVar2' s rx ry = opVar' s (rx :< ry :< Ø)
 
-opRef2
+opVar2
     :: Num c
     => BVar s rs a
     -> BVar s rs b
     -> OpB s '[a,b] c
     -> BP s rs (BVar s rs c)
-opRef2 = opRef2' known
+opVar2 = opVar2' known
 
-opRef3'
+opVar3'
     :: Summer d
     -> BVar s rs a
     -> BVar s rs b
     -> BVar s rs c
     -> OpB s '[a,b,c] d
     -> BP s rs (BVar s rs d)
-opRef3' s rx ry rz = opRef' s (rx :< ry :< rz :< Ø)
+opVar3' s rx ry rz = opVar' s (rx :< ry :< rz :< Ø)
 
-opRef3
+opVar3
     :: Num d
     => BVar s rs a
     -> BVar s rs b
     -> BVar s rs c
     -> OpB s '[a,b,c] d
     -> BP s rs (BVar s rs d)
-opRef3 = opRef3' known
+opVar3 = opVar3' known
 
--- can be recursive too?  would have to have resolveRef also pull summers
-bindRef'
+-- can be recursive too?  would have to have resolveVar also pull summers
+bindVar'
     :: Summer a
     -> BVar s rs a
     -> BP s rs (BVar s rs a)
-bindRef' s r = case r of
+bindVar' s r = case r of
     BVNode  _  _ -> return r
     BVInp   _    -> return r
     BVConst _    -> return r
-    BVOp    rs o -> opRef' s rs o
+    BVOp    rs o -> opVar' s rs o
 
-bindRef
+bindVar
     :: Num a
     => BVar s rs a
     -> BP s rs (BVar s rs a)
-bindRef = bindRef' known
+bindVar = bindVar' known
 
 
 
@@ -564,7 +564,7 @@ bpOp' ss us bp = OpM $ backpropWith ss us bp
 -- gradient-finding glory.
 --
 -- Handy because an 'OpB' can be used with almost all of
--- the 'Op'-related functions in this moduel, including 'opRef', '~$', etc.
+-- the 'Op'-related functions in this moduel, including 'opVar', '~$', etc.
 bpOp
     :: (Every Num as, Known Length as)
     => BPOp s as a
@@ -625,7 +625,7 @@ closeOff isTerminal gOut = \case
     BVInp   ix'   -> modifying (bpsSources . indexP ix') (<> fr)
     BVConst _     -> return ()
     BVOp    rs o  -> do
-      xs <- traverse1 (fmap I . resolveRef) rs
+      xs <- traverse1 (fmap I . resolveVar) rs
       gs <- liftBase $ gradOpWithM' o xs gOut
       for1_ (gs `zipP` rs) $ \(I g :&: r) ->
         closeOff False (Just g) r
@@ -642,7 +642,7 @@ backpropWith
 backpropWith ss us bp env = do
     (r, bps0) <- runStateT (runReaderT (bpST bp) env)
                            (BPS (map1 (\_ -> FRInternal []) env))
-    res <- runReaderT (resolveRef r) env
+    res <- runReaderT (resolveVar r) env
     let gradFunc gradOut = do
           BPS{..} <- execStateT (runReaderT (closeOff True gradOut r) env) bps0
           for1 (ss `zipP` us `zipP` _bpsSources) $ \((s :&: u) :&: rs) -> do
@@ -681,36 +681,36 @@ implicitly = implicitly' known
 -- example,
 --
 -- @
--- 'inpRef' 'IZ'
+-- 'inpVar' 'IZ'
 -- @
 --
 -- would refer to the /first/ input variable (the 'Int' in a
 -- @'BP' s '[Int, Bool]@), and
 --
 -- @
--- 'inpRef' ('IS' 'IZ')
+-- 'inpVar' ('IS' 'IZ')
 -- @
 --
 -- Would refer to the /second/ input variable (the 'Bool' in a
 -- @'BP' s '[Int, Bool]@)
 --
--- Typically, there shouldn't be any reason to use 'inpRef' directly.  It's
+-- Typically, there shouldn't be any reason to use 'inpVar' directly.  It's
 -- cleaner to get all of your input 'BVar's together using 'withInps' or
--- 'inpRefs'.
-inpRef
+-- 'inpVars'.
+inpVar
     :: Index rs a
     -> BVar s rs a
-inpRef = BVInp
+inpVar = BVInp
 
-inpRefs
+inpVars
     :: Known Length rs
     => Prod (BVar s rs) rs
-inpRefs = inpRefs' known
+inpVars = inpVars' known
 
-inpRefs'
+inpVars'
     :: Length rs
     -> Prod (BVar s rs) rs
-inpRefs' = map1 inpRef . indices'
+inpVars' = map1 inpVar . indices'
 
 -- | A version of 'withInps' taking explicit 'Length', indicating the
 -- number of inputs required and their types.
@@ -722,7 +722,7 @@ withInps'
     :: Length rs
     -> (Prod (BVar s rs) rs -> BP s rs a)
     -> BP s rs a
-withInps' l f = f (inpRefs' l)
+withInps' l f = f (inpVars' l)
 
 -- | Runs a continuation on a 'Prod' of all of the input 'BVar's.
 --
@@ -741,7 +741,7 @@ withInps' l f = f (inpRefs' l)
 -- @
 -- foo :: 'BPOp' '[Double, Int] a
 -- foo = do
---     x :< y :< Ø <- 'inpRefs'
+--     x :< y :< Ø <- 'inpVars'
 --     -- do stuff with inputs
 -- @
 --

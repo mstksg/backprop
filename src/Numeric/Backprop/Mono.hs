@@ -24,12 +24,12 @@ module Numeric.Backprop.Mono (
   , bpOp
   -- ** Inputs
   , withInps, implicitly
-  -- * Refs
-  , constRef
-  , inpRef, inpRefs
+  -- * Vars
+  , constVar
+  , inpVar, inpVars
   -- ** From Ops
-  , opRef, (~$)
-  , opRef1, opRef2, opRef3
+  , opVar, (~$)
+  , opVar1, opVar2, opVar3
   , (-$)
   -- ** Combining
   , liftR, liftR1, liftR2, liftR3
@@ -58,12 +58,12 @@ type BPOpI s n a b = VecT n (BVar s n a) a -> BVar s n a b
 
 type OpB s n a b   = BP.OpB s (Replicate n a) b
 
-opRef
+opVar
     :: forall s m n a b. Num b
     => VecT m (BVar s n a) a
     -> OpB s m a b
     -> BP s n a (BVar s n a b)
-opRef i o = BP.opRef (vecToProd i) o
+opVar i o = BP.opVar (vecToProd i) o
 
 infixr 1 ~$
 (~$)
@@ -71,7 +71,7 @@ infixr 1 ~$
     => OpB s m a b
     -> VecT m (BVar s n a) a
     -> BP s n a (BVar s n a b)
-(~$) = flip opRef
+(~$) = flip opVar
 
 infixr 1 -$
 (-$)
@@ -81,34 +81,34 @@ infixr 1 -$
     -> BP s n a (BVar s n a b)
 o -$ xs = bpOp @_ @_ @a o ~$ xs
 
-constRef
+constVar
     :: b
     -> BVar s n a b
-constRef = BP.constRef
+constVar = BP.constVar
 
-opRef1
+opVar1
     :: forall s n a b. Num b
     => BVar s n a a
     -> OpB s N1 a b
     -> BP s n a (BVar s n a b)
-opRef1 x o = opRef @_ @_ @n (x :* ØV) o
+opVar1 x o = opVar @_ @_ @n (x :* ØV) o
 
-opRef2
+opVar2
     :: forall s n a b. Num b
     => BVar s n a a
     -> BVar s n a a
     -> OpB s N2 a b
     -> BP s n a (BVar s n a b)
-opRef2 x y o = opRef @_ @_ @n (x :* y :* ØV) o
+opVar2 x y o = opVar @_ @_ @n (x :* y :* ØV) o
 
-opRef3
+opVar3
     :: forall s n a b. Num b
     => BVar s n a a
     -> BVar s n a a
     -> BVar s n a a
     -> OpB s N3 a b
     -> BP s n a (BVar s n a b)
-opRef3 x y z o = opRef @_ @_ @n (x :* y :* z :* ØV) o
+opVar3 x y z o = opVar @_ @_ @n (x :* y :* z :* ØV) o
 
 backprop
     :: forall n a b. Num a
@@ -140,21 +140,21 @@ bpOp
 bpOp = undefined
 
 
-inpRef
+inpVar
     :: Fin n
     -> BVar s n a a
-inpRef = BP.inpRef . finIndex
+inpVar = BP.inpVar . finIndex
 
-inpRefs
+inpVars
     :: Known Nat n
     => VecT n (BVar s n a) a
-inpRefs = vgen_ inpRef
+inpVars = vgen_ inpVar
 
 withInps
     :: Known Nat n
     => (VecT n (BVar s n a) a -> BP s n a b)
     -> BP s n a b
-withInps f = f inpRefs
+withInps f = f inpVars
 
 implicitly
     :: Known Nat n

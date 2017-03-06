@@ -12,13 +12,13 @@ module Numeric.Backprop.Implicit (
   -- * Backpropagation
   , backprop, grad, eval
   , backprop', grad', eval'
-  -- * Ref manipulation
-  , BP.constRef, BP.liftR, BP.liftR1, BP.liftR2, BP.liftR3
+  -- * Var manipulation
+  , BP.constVar, BP.liftR, BP.liftR1, BP.liftR2, BP.liftR3
   -- ** As Parts
-  , partsRef, withParts
-  , splitRefs, gSplit
-  , partsRef', withParts'
-  , splitRefs', gSplit'
+  , partsVar, withParts
+  , splitVars, gSplit
+  , partsVar', withParts'
+  , splitVars', gSplit'
   -- * Op
   , BP.op1, BP.op2, BP.op3, BP.opN
   , BP.op1', BP.op2', BP.op3'
@@ -92,14 +92,14 @@ eval
     -> a
 eval f = fst . backprop f
 
-partsRef'
+partsVar'
     :: forall s rs bs a. ()
     => Prod Summer bs
     -> Prod Unity bs
     -> Iso' a (Tuple bs)
     -> BVar s rs a
     -> Prod (BVar s rs) bs
-partsRef' ss us i r = imap1 (\ix u -> BP.liftR1 (BP.op1' (f ix u)) r) us
+partsVar' ss us i r = imap1 (\ix u -> BP.liftR1 (BP.op1' (f ix u)) r) us
   where
     f :: Index bs b
       -> Unity b
@@ -113,12 +113,12 @@ partsRef' ss us i r = imap1 (\ix u -> BP.liftR1 (BP.op1' (f ix u)) r) us
     zeroes :: Tuple bs
     zeroes = map1 (\s -> I $ runSummer s []) ss
 
-partsRef
+partsVar
     :: forall s rs bs a. (Known Length bs, Every Num bs)
     => Iso' a (Tuple bs)
     -> BVar s rs a
     -> Prod (BVar s rs) bs
-partsRef = partsRef' summers unities
+partsVar = partsVar' summers unities
 
 withParts'
     :: forall s rs bs a r. ()
@@ -128,7 +128,7 @@ withParts'
     -> BVar s rs a
     -> (Prod (BVar s rs) bs -> r)
     -> r
-withParts' ss us i r f = f (partsRef' ss us i r)
+withParts' ss us i r f = f (partsVar' ss us i r)
 
 withParts
     :: forall s rs bs a r. (Known Length bs, Every Num bs)
@@ -136,21 +136,21 @@ withParts
     -> BVar s rs a
     -> (Prod (BVar s rs) bs -> r)
     -> r
-withParts i r f = f (partsRef i r)
+withParts i r f = f (partsVar i r)
 
-splitRefs'
+splitVars'
     :: forall s rs as. ()
     => Prod Summer as
     -> Prod Unity as
     -> BVar s rs (Tuple as)
     -> Prod (BVar s rs) as
-splitRefs' ss us = partsRef' ss us id
+splitVars' ss us = partsVar' ss us id
 
-splitRefs
+splitVars
     :: forall s rs as. (Known Length as, Every Num as)
     => BVar s rs (Tuple as)
     -> Prod (BVar s rs) as
-splitRefs = partsRef id
+splitVars = partsVar id
 
 gSplit'
     :: forall s rs as a. (SOP.Generic a, SOP.Code a ~ '[as])
@@ -158,12 +158,12 @@ gSplit'
     -> Prod Unity as
     -> BVar s rs a
     -> Prod (BVar s rs) as
-gSplit' ss us = partsRef' ss us gTuple
+gSplit' ss us = partsVar' ss us gTuple
 
 gSplit
     :: forall s rs as a. (SOP.Generic a, SOP.Code a ~ '[as], Known Length as, Every Num as)
     => BVar s rs a
     -> Prod (BVar s rs) as
-gSplit = partsRef gTuple
+gSplit = partsVar gTuple
 
 -- TODO: figure out how to split sums

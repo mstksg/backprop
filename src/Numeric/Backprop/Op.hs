@@ -96,7 +96,8 @@ import           Type.Class.Witness
 -- f : \mathbb{R}^n \rightarrow \mathbb{R}
 -- \]
 --
--- We might want to apply it:
+-- We might want to apply a function \(g\) to the result we get, to get
+-- our "final" result:
 --
 -- \[
 -- \eqalign{
@@ -112,8 +113,9 @@ import           Type.Class.Witness
 -- \nabla_\mathbf{x} z = \left< \frac{\partial z}{\partial x_1}, \frac{\partial z}{\partial x_2}, \ldots \right>
 -- \]
 --
--- We can compute that by multipling the total derivative of \(z\) with
--- respect to \(y\) (that is, \(\frac{dz}{dy}\) with the gradient of \(f\)):
+-- We can compute that by multiplying the total derivative of \(z\) with
+-- respect to \(y\) (that is, \(\frac{dz}{dy}\)) with the gradient of
+-- \(f\)) itself:
 --
 -- \[
 -- \eqalign{
