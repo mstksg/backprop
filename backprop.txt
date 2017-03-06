@@ -76,11 +76,8 @@ newtype OpM m as a
 --   also a continuation on how to create the gradient, given the total
 --   derivative of <tt>a</tt>.
 --   
---   For example, the function is
---   
---   &lt;math&gt;
---   
---   Then the first item in the result tuple is the result of $f$.
+--   See the module documentation for <a>Numeric.Backprop.Op</a> for more
+--   details on the function that this constructor and <a>Op</a> expect.
 OpM :: (Tuple as -> m (a, Maybe a -> m (Tuple as))) -> OpM m as a
 
 -- | <a>runOpM'</a> takes the input tuple, and returns a tuple containing
@@ -90,6 +87,9 @@ OpM :: (Tuple as -> m (a, Maybe a -> m (Tuple as))) -> OpM m as a
 --   If the continuation is given <a>Nothing</a>, then the <tt>a</tt> is
 --   taken to be the final result you want to take the gradient with
 --   respect to.
+--   
+--   See module documentation for <a>Numeric.Backprop.Op</a> for more
+--   details.
 [runOpM'] :: OpM m as a -> Tuple as -> m (a, Maybe a -> m (Tuple as))
 runOp' :: Op as a -> Tuple as -> (a, Maybe a -> Tuple as)
 runOp :: Op as a -> Tuple as -> a
@@ -99,7 +99,11 @@ gradOpWith' :: Op as a -> Tuple as -> Maybe a -> Tuple as
 runOpM :: Functor m => OpM m as a -> Tuple as -> m a
 gradOpWithM :: Monad m => OpM m as a -> Tuple as -> a -> m (Tuple as)
 gradOpWithM' :: Monad m => OpM m as a -> Tuple as -> Maybe a -> m (Tuple as)
-composeOp :: Monad m => Prod Summer as -> Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
+composeOp :: (Monad m, Known Length as, Every Num as) => Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
+
+-- | <a>composeOp</a>, but taking explicit <a>Summer</a>s, for the
+--   situation where the <tt>as</tt> are not instance of <a>Num</a>.
+composeOp' :: Monad m => Prod Summer as -> Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
 op0 :: a -> Op '[] a
 op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
 op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
