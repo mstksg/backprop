@@ -26,9 +26,10 @@ resum1 :: Iso' (f a) (Sum f '[a])
 --   represent differentiable functions/operations on values, and are used
 --   by the library to perform backpropagation.
 --   
---   Markdown ========
---   
---   Does it work?
+--   Note that <a>Op</a> is a <i>subset</i> or <i>subtype</i> of
+--   <a>OpM</a>, and so, any function that expects an <tt><a>OpM</a> m as
+--   a</tt> (or an <tt><a>OpB</a> s as a</tt>) can be given an
+--   <tt><a>Op</a> as a</tt> and it'll work just fine.
 module Numeric.Backprop.Op
 
 -- | An <tt><a>Op</a> as a</tt> is a type synonym over <a>OpM</a> that
@@ -56,14 +57,21 @@ module Numeric.Backprop.Op
 --   using <a>op1</a>, <a>op2</a>, <a>op3</a>, and <a>opN</a> with a little
 --   help from <a>Numeric.AD</a> from the <i>ad</i> library.
 --   
---   Note that this type is a subset/subtype of <a>OpM</a>. So, if a
---   function ever expects an <tt><a>OpM</a> m as a</tt>, you can always
---   provide an <tt><a>Op</a> as a</tt> instead.
+--   Note that this type is a <i>subset</i> or <i>subtype</i> of
+--   <a>OpM</a>. So, if a function ever expects an <tt><a>OpM</a> m as
+--   a</tt>, you can always provide an <tt><a>Op</a> as a</tt> instead.
 --   
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
 --   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
 --   you can provide an <tt><a>Op</a> as a</tt>.
 type Op as a = forall m. Monad m => OpM m as a
+
+-- | Construct an <a>Op</a> by giving a function creating the result, and
+--   also a continuation on how to create the gradient, given the total
+--   derivative of <tt>a</tt>.
+--   
+--   See the module documentation for <a>Numeric.Backprop.Op</a> for more
+--   details on the function that this constructor and <a>OpM</a> expect.
 
 -- | An <tt><a>OpM</a> m as a</tt> represents a <i>differentiable</i>
 --   (monadic) function from <tt>as</tt> to <tt>a</tt>, in the context of a
@@ -80,6 +88,10 @@ type Op as a = forall m. Monad m => OpM m as a
 --   give a <i>gradient</i> of an <a>Int</a> and a <a>Bool</a> (in
 --   <a>IO</a>) if given the total derivative for <tt>a</tt>.
 --   
+--   Note that an <a>OpM</a> is a <i>superclass</i> of <a>Op</a>, so any
+--   function that expects an <tt><a>OpM</a> m as a</tt> can also accept an
+--   <tt><a>Op</a> as a</tt>.
+--   
 --   See <a>runOpM</a>, <a>gradOpM</a>, and <a>gradOpWithM</a> for examples
 --   on how to run it.
 newtype OpM m as a
@@ -91,13 +103,6 @@ newtype OpM m as a
 --   See the module documentation for <a>Numeric.Backprop.Op</a> for more
 --   details on the function that this constructor and <a>Op</a> expect.
 OpM :: (Tuple as -> m (a, Maybe a -> m (Tuple as))) -> OpM m as a
-
--- | Construct an <a>Op</a> by giving a function creating the result, and
---   also a continuation on how to create the gradient, given the total
---   derivative of <tt>a</tt>.
---   
---   See the module documentation for <a>Numeric.Backprop.Op</a> for more
---   details on the function that this constructor and <a>OpM</a> expect.
 
 -- | Run the function that an <a>Op</a> encodes, to get the result.
 --   
@@ -552,9 +557,9 @@ data BVar :: Type -> [Type] -> Type -> Type
 --   using <a>op1</a>, <a>op2</a>, <a>op3</a>, and <a>opN</a> with a little
 --   help from <a>Numeric.AD</a> from the <i>ad</i> library.
 --   
---   Note that this type is a subset/subtype of <a>OpM</a>. So, if a
---   function ever expects an <tt><a>OpM</a> m as a</tt>, you can always
---   provide an <tt><a>Op</a> as a</tt> instead.
+--   Note that this type is a <i>subset</i> or <i>subtype</i> of
+--   <a>OpM</a>. So, if a function ever expects an <tt><a>OpM</a> m as
+--   a</tt>, you can always provide an <tt><a>Op</a> as a</tt> instead.
 --   
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
 --   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
@@ -901,9 +906,9 @@ type BPOp rs a = forall s. Prod (BVar s rs) rs -> BVar s rs a
 --   using <a>op1</a>, <a>op2</a>, <a>op3</a>, and <a>opN</a> with a little
 --   help from <a>Numeric.AD</a> from the <i>ad</i> library.
 --   
---   Note that this type is a subset/subtype of <a>OpM</a>. So, if a
---   function ever expects an <tt><a>OpM</a> m as a</tt>, you can always
---   provide an <tt><a>Op</a> as a</tt> instead.
+--   Note that this type is a <i>subset</i> or <i>subtype</i> of
+--   <a>OpM</a>. So, if a function ever expects an <tt><a>OpM</a> m as
+--   a</tt>, you can always provide an <tt><a>Op</a> as a</tt> instead.
 --   
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
 --   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
