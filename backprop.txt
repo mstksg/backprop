@@ -101,7 +101,13 @@ gradOpWithM :: Monad m => OpM m as a -> Tuple as -> a -> m (Tuple as)
 gradOpWithM' :: Monad m => OpM m as a -> Tuple as -> Maybe a -> m (Tuple as)
 
 -- | Compose <a>OpM</a>s together, similar to <a>.</a>. But, because all
---   <a>OpM</a>s are &lt;math&gt;, this is more like
+--   <a>OpM</a>s are &lt;math&gt;, this is more like <a>sequence</a> for
+--   functions, or <tt>liftAN</tt>.
+--   
+--   That is, given an <tt><a>OpM</a> m as b1</tt>, an <tt><a>OpM</a> m as
+--   b2</tt>, and an <tt><a>OpM</a> m as b3</tt>, it can compose them in
+--   parallel with an <tt><a>OpM</a> m '[b1,b2,b3] c</tt> to create an
+--   <tt><a>OpM</a> as c</tt>.
 composeOp :: (Monad m, Known Length as, Every Num as) => Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
 
 -- | <a>composeOp</a>, but taking explicit <a>Summer</a>s, for the
