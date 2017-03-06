@@ -18,7 +18,7 @@ Haskell</p></div><div id="content"><div id="module-header"><table class="info"><
  \(\mathbf{x}\), or \(\nabla_\mathbf{x} z\).  Explicitly, this is:</p><p>\[
  \nabla_\mathbf{x} z = \left&lt; \frac{\partial z}{\partial x_1}, \frac{\partial z}{\partial x_2}, \ldots \right&gt;
  \]</p><p>We can compute that by multipling the total derivative of \(z\) with
- respect to \(y\) (that is, \(\frac{dz}{dy}\) with the gradient of \(f\):</p><p>\[
+ respect to \(y\) (that is, \(\frac{dz}{dy}\) with the gradient of \(f\)):</p><p>\[
  \eqalign{
  \nabla_\mathbf{x} z &amp;= \frac{dz}{dy} \left&lt; \frac{\partial y}{\partial x_1}, \frac{\partial y}{\partial x_2}, \ldots \right&gt;\cr
  \nabla_\mathbf{x} z &amp;= \frac{dz}{dy} \nabla_\mathbf{x} y
@@ -26,10 +26,10 @@ Haskell</p></div><div id="content"><div id="module-header"><table class="info"><
  \]</p><p>So, to create an <code><a href="Numeric-Backprop-Op.html#t:Op">Op</a></code> with the <code><a href="Numeric-Backprop-Op.html#t:Op">Op</a></code> constructor (or an <code><a href="Numeric-Backprop-Op.html#t:OpM">OpM</a></code> with the
  <code><a href="Numeric-Backprop-Op.html#t:OpM">OpM</a></code> constructor), you give a function that returns a tuple,
  containing:</p><ol><li>The result of the function</li><li>A function that, when given \(\frac{dz}{dy}\) (in a <code><a href="../base-4.9.1.0/Data-Maybe.html#v:Just">Just</a></code>),
-     returns the total gradient \(\nabla_z \mathbf{x}\).</li></ol><p>If the function is given is given <code><a href="../base-4.9.1.0/Data-Maybe.html#v:Nothing">Nothing</a></code>, then \(\frac{dz}{dy}\)
-     is taken to be 1.  In other words, you simply need to return
-     \(\nabla_y \mathbf{x}\), unchanged.  The &quot;final result&quot; is just
-     \(f(\mathbf{x})\), and not \(g(f(\mathbf{x}))\).</p><p>This is done so that <code><a href="Numeric-Backprop-Op.html#t:Op">Op</a></code>s can easily be &quot;chained&quot; together, one after
+      returns the total gradient \(\nabla_z \mathbf{x}\).</li></ol><p>If the function is given is given <code><a href="../base-4.9.1.0/Data-Maybe.html#v:Nothing">Nothing</a></code>, then \(\frac{dz}{dy}\)
+      is taken to be 1.  In other words, you simply need to return
+      \(\nabla_y \mathbf{x}\), unchanged.  The &quot;final result&quot; is just
+      \(f(\mathbf{x})\), and not \(g(f(\mathbf{x}))\).</p><p>This is done so that <code><a href="Numeric-Backprop-Op.html#t:Op">Op</a></code>s can easily be &quot;chained&quot; together, one after
  the other.  If you have an <code><a href="Numeric-Backprop-Op.html#t:Op">Op</a></code> for \(f\) and an <code><a href="Numeric-Backprop-Op.html#t:Op">Op</a></code> for \(g\), you can
  compute the gradient of \(f\) knowing that the result target is
  \(g \circ f\).</p><p>Note that end users should probably never be required to construct an
