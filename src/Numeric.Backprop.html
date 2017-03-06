@@ -55,7 +55,7 @@
 </span><a name="line-55"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#internally%27"><span class="hs-identifier hs-var">internally'</span></a><span>
 </span><a name="line-56"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#generically%27"><span class="hs-identifier hs-var">generically'</span></a><span>
 </span><a name="line-57"></a><span>  </span><span class="hs-comment">-- ** Combining</span><span>
-</span><a name="line-58"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#liftR"><span class="hs-identifier hs-var">liftR</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#liftR1"><span class="hs-identifier hs-var">liftR1</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#liftR2"><span class="hs-identifier hs-var">liftR2</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#liftR3"><span class="hs-identifier hs-var">liftR3</span></a><span>
+</span><a name="line-58"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#liftB"><span class="hs-identifier hs-var">liftB</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#liftB1"><span class="hs-identifier hs-var">liftB1</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#liftB2"><span class="hs-identifier hs-var">liftB2</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.html#liftB3"><span class="hs-identifier hs-var">liftB3</span></a><span>
 </span><a name="line-59"></a><span>  </span><span class="hs-comment">-- * Op</span><span>
 </span><a name="line-60"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#op1"><span class="hs-identifier hs-var">op1</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#op2"><span class="hs-identifier hs-var">op2</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#op3"><span class="hs-identifier hs-var">op3</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#opN"><span class="hs-identifier hs-var">opN</span></a><span>
 </span><a name="line-61"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#op1%27"><span class="hs-identifier hs-var">op1'</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#op2%27"><span class="hs-identifier hs-var">op2'</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#op3%27"><span class="hs-identifier hs-var">op3'</span></a><span>
@@ -753,32 +753,32 @@ withInps
     -&gt; BP s rs a
 withInps = withInps' known
 
-liftR
+liftB
     :: OpB s as a
     -&gt; Prod (BVar s rs) as
     -&gt; BVar s rs a
-liftR = flip BVOp
+liftB = flip BVOp
 
-liftR1
+liftB1
     :: OpB s '[a] b
     -&gt; BVar s rs a
     -&gt; BVar s rs b
-liftR1 o = liftR o . only
+liftB1 o = liftB o . only
 
-liftR2
+liftB2
     :: OpB s '[a,b] c
     -&gt; BVar s rs a
     -&gt; BVar s rs b
     -&gt; BVar s rs c
-liftR2 o x y = liftR o (x :&lt; y :&lt; &#216;)
+liftB2 o x y = liftB o (x :&lt; y :&lt; &#216;)
 
-liftR3
+liftB3
     :: OpB s '[a,b,c] d
     -&gt; BVar s rs a
     -&gt; BVar s rs b
     -&gt; BVar s rs c
     -&gt; BVar s rs d
-liftR3 o x y z = liftR o (x :&lt; y :&lt; z :&lt; &#216;)
+liftB3 o x y z = liftB o (x :&lt; y :&lt; z :&lt; &#216;)
 
 
 
