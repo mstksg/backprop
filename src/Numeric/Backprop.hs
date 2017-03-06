@@ -11,11 +11,10 @@
 
 module Numeric.Backprop (
   -- * Types
-  -- ** Backprop Types
+  -- ** Backprop types
     BP, BPOp, BPOpI, BVar, Op, OpB
-  -- ** Utility types
+  -- ** Tuple types
   , Prod(..), Tuple
-  , Summer(..), Unity(..)
   -- * BP
   -- ** Backprop
   , backprop, evalBPOp, gradBPOp
@@ -62,6 +61,7 @@ module Numeric.Backprop (
   -- * Utility
   , pattern (:>), only, head'
   , pattern (::<), only_
+  , Summer(..), Unity(..)
   , summers, unities
   , summers', unities'
   ) where
@@ -527,7 +527,8 @@ opVar3
     -> BP s rs (BVar s rs d)
 opVar3 = opVar3' known
 
--- can be recursive too?  would have to have resolveVar also pull summers
+-- | A version of 'bindVar' that requires an explicit 'Summer', so that you
+-- can use it on values whose types aren't instances of 'Num'.
 bindVar'
     :: Summer a
     -> BVar s rs a
@@ -538,6 +539,45 @@ bindVar' s r = case r of
     BVConst _    -> return r
     BVOp    rs o -> opVar' s o rs
 
+-- | Concretizes a delayed 'BVar'.  If you build up a 'BVar' using numeric
+-- functions like '+' or '*' or using 'liftR', it'll defer the evaluation,
+-- and all of its usage sites will create a separate graph node.
+--
+-- Use 'bindVar' if you ever intend to use a 'BVar' in more than one
+-- location.
+--
+-- @
+-- -- bad
+-- errSquared :: Num a => BP s '[a, a] a
+-- errSquared = withInp $ \(r :< t :< Ø) -> do
+--     let err = r - t
+--     return (err * err)   -- err is used twice!
+--
+-- -- good
+-- errSquared :: Num a => BP s '[a, a] a
+-- errSquared = withInp $ \(r :< t :< Ø) -> do
+--     let err = r - t
+--     e <- bindVar err     -- force e, so that it's safe to use twice!
+--     return (e * e)
+--
+-- -- better
+-- errSquared :: Num a => BP s '[a, a] a
+-- errSquared = withInp $ \(r :< t :< Ø) -> do
+--     let err = r - t
+--     e <- bindVar err
+--     bindVar (e * e)      -- result is forced so user doesn't have to worry
+-- @
+--
+-- Note the relation to 'opVar' / '~$' / 'liftR' / '.$':
+--
+-- @
+-- 'opVar' o xs    = 'bindVar' ('liftR' o xs)
+-- o '~$' xs       = 'bindVar' (o '.$' xs)
+-- 'op2' (*) '~$' (x :< y :< Ø) = 'bindVar' (x * y)
+-- @
+--
+-- So you can avoid 'bindVar' altogether if you use the explicitly binding
+-- '~$' and 'opVar' etc.
 bindVar
     :: Num a
     => BVar s rs a
@@ -702,7 +742,8 @@ backpropWith ss us bp env = do
 -- | A version of 'implicitly' taking explicit 'Length', indicating the
 -- number of inputs required and their types.
 --
--- Mostly useful for rare "extremely polymorphic" situations.  If you ever
+-- Mostly useful for rare "extremely polymorphic" situations, where GHC
+-- can't infer the type and length of the list of inputs.  If you ever
 -- actually explicitly write down @rs@ as a list of types, you should be
 -- able to just use 'implicitly'.
 implicitly'
@@ -750,11 +791,33 @@ inpVar
     -> BVar s rs a
 inpVar = BVInp
 
+-- | Get a 'Prod' (tupling) of 'BVar's for all of the input environment
+-- (@rs@) of the @'BP' s rs@
+--
+-- For example, if your 'BP' has an 'Int' and 'Double' in its input
+-- environment (a @'BP' s '[Int, Double]@), this would return a 'BVar'
+-- pointing to the 'Int' and a 'BVar' pointing to the 'Double'.
+--
+-- @
+-- let x :< y :< Ø = 'inpVars' :: 'Prod' ('BVar' s '[Int, Double]) '[Int, Double]
+--
+-- -- the first item, x, is a var to the input 'Int'
+-- x :: 'BVar' s '[Int, Double] Int
+-- -- the second item, y, is a var to the input 'Double'
+-- y :: 'BVar' s '[Int, Double] Double
+-- @
 inpVars
     :: Known Length rs
     => Prod (BVar s rs) rs
 inpVars = inpVars' known
 
+-- | A version of 'inpVars' taking explicit 'Length', indicating the
+-- number of inputs required and their types.
+--
+-- Mostly useful for rare "extremely polymorphic" situations, where GHC
+-- can't infer the type and length of the list of inputs.  If you ever
+-- actually explicitly write down @rs@ as a list of types, you should be
+-- able to just use 'inpVars'.
 inpVars'
     :: Length rs
     -> Prod (BVar s rs) rs
@@ -763,7 +826,8 @@ inpVars' = map1 inpVar . indices'
 -- | A version of 'withInps' taking explicit 'Length', indicating the
 -- number of inputs required and their types.
 --
--- Mostly useful for rare "extremely polymorphic" situations.  If you ever
+-- Mostly useful for rare "extremely polymorphic" situations, where GHC
+-- can't infer the type and length of the list of inputs.  If you ever
 -- actually explicitly write down @rs@ as a list of types, you should be
 -- able to just use 'withInps'.
 withInps'
