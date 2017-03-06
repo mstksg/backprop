@@ -76,8 +76,8 @@ type Op as a = forall m. Monad m => OpM m as a
 --   give a <i>gradient</i> of an <a>Int</a> and a <a>Bool</a> (in
 --   <a>IO</a>) if given the total derivative for <tt>a</tt>.
 --   
---   See <a>runOpM</a>, <tt>gradOpM</tt>, and <a>gradOpWithM</a> for
---   examples on how to run it.
+--   See <a>runOpM</a>, <a>gradOpM</a>, and <a>gradOpWithM</a> for examples
+--   on how to run it.
 newtype OpM m as a
 
 -- | Construct an <a>OpM</a> by giving a function creating the result, and
@@ -88,9 +88,14 @@ newtype OpM m as a
 --   details on the function that this constructor and <a>Op</a> expect.
 OpM :: (Tuple as -> m (a, Maybe a -> m (Tuple as))) -> OpM m as a
 
--- | Hey sup
+-- | Construct an <a>Op</a> by giving a function creating the result, and
+--   also a continuation on how to create the gradient, given the total
+--   derivative of <tt>a</tt>.
+--   
+--   See the module documentation for <a>Numeric.Backprop.Op</a> for more
+--   details on the function that this constructor and <a>OpM</a> expect.
 
--- | <a>Run</a> the function that an <a>Op</a> encodes, to get the result.
+-- | Run the function that an <a>Op</a> encodes, to get the result.
 --   
 --   <pre>
 --   &gt;&gt;&gt; runOp (op2 (*)) (3 ::&lt; 5 ::&lt; Ø)
@@ -107,6 +112,15 @@ runOp :: Op as a -> Tuple as -> a
 --   -- the gradient of x*y is (y, x)
 --   </pre>
 gradOp :: Op as a -> Tuple as -> Tuple as
+
+-- | Run the function that an <a>Op</a> encodes, to get the result and also
+--   the gradient with respect to the result.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOpM' (op2 (*)) (3 ::&lt; 5 ::&lt; Ø) :: IO (Int, Tuple '[Int, Int])
+--   (15, 5 ::&lt; 3 ::&lt; Ø)
+--   </pre>
+gradOp' :: Op as a -> Tuple as -> (a, Tuple as)
 
 -- | Run the function that an <a>Op</a> encodes, and get its gradient with
 --   respect to the total derivative of the result.
@@ -144,6 +158,12 @@ runOp' :: Op as a -> Tuple as -> (a, Maybe a -> Tuple as)
 --   </pre>
 runOpM :: Functor m => OpM m as a -> Tuple as -> m a
 
+-- | The monadic version of <a>gradOp</a>, for <a>OpM</a>s.
+gradOpM :: Monad m => OpM m as a -> Tuple as -> m (Tuple as)
+
+-- | The monadic version of <a>gradOp'</a>, for <a>OpM</a>s.
+gradOpM' :: Monad m => OpM m as a -> Tuple as -> m (a, Tuple as)
+
 -- | The monadic version of <a>gradOpWith</a>, for <a>OpM</a>s.
 gradOpWithM :: Monad m => OpM m as a -> Tuple as -> a -> m (Tuple as)
 
@@ -172,7 +192,98 @@ composeOp :: (Monad m, Known Length as, Every Num as) => Prod (OpM m as) bs -> O
 -- | <a>composeOp</a>, but taking explicit <a>Summer</a>s, for the
 --   situation where the <tt>as</tt> are not instance of <a>Num</a>.
 composeOp' :: Monad m => Prod Summer as -> Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
+
+-- | Create an <a>Op</a> that takes no inputs and always returns the given
+--   value.
+--   
+--   There is no gradient, of course (using <a>gradOp</a> will give you an
+--   empty tuple), because there is no input to have a gradient of.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op0 10) Ø
+--   (10, Ø)
+--   </pre>
+--   
+--   For a constant <a>Op</a> that takes input and ignores it, see
+--   <a>opConst</a> and <a>opConst'</a>.
+--   
+--   Note that because this returns an <a>Op</a>, it can be used with any
+--   function that expects an <a>OpM</a>, as well.
 op0 :: a -> Op '[] a
+opConst :: (Every Num as, Known Length as) => a -> Op as a
+opConst' :: Prod Summer as -> a -> Op as a
+
+-- | Create an <a>Op</a> of a function taking one input, by giving its
+--   explicit derivative. The function should return a tuple containing the
+--   result of the function, and also a function taking the derivative of
+--   the result and return the derivative of the input.
+--   
+--   If we have
+--   
+--   &lt;math&gt;
+--   
+--   And with &lt;math&gt; and &lt;math&gt;, and we wanted to find the
+--   derivative &lt;math&gt;, it would be:
+--   
+--   &lt;math&gt;
+--   
+--   If our <a>Op</a> represents &lt;math&gt;, then the second item in the
+--   resulting tuple should be a function that takes &lt;math&gt; and
+--   returns &lt;math&gt;.
+--   
+--   If the input is <a>Nothing</a>, then &lt;math&gt; should be taken to
+--   be &lt;math&gt;.
+--   
+--   As an example, here is an <a>Op</a> that squares its input:
+--   
+--   <pre>
+--   square :: Num a =&gt; <a>Op</a> '[a] a
+--   square = <a>op1'</a> $ x -&gt; (x*x, case Nothing -&gt; 2 * x
+--                                     Just d  -&gt; 2 * d * x
+--                         )
+--   </pre>
+--   
+--   Note that <a>Op</a> is a subset of <a>OpM</a> so any function that
+--   expects an <tt><a>OpM</a> m</tt> (or an <tt><a>OpB</a> m</tt>) can
+--   take an <a>Op</a>.
+op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
+
+-- | Create an <a>Op</a> of a function taking two inputs, by giving its
+--   explicit gradient The function should return a tuple containing the
+--   result of the function, and also a function taking the derivative of
+--   the result and return the derivative of the input.
+--   
+--   If we have
+--   
+--   &lt;math&gt;
+--   
+--   And with &lt;math&gt; and &lt;math&gt;, and we wanted to find the
+--   gradient of &lt;math&gt;, it would be:
+--   
+--   &lt;math&gt;
+--   
+--   If our <a>Op</a> represents &lt;math&gt;, then the second item in the
+--   resulting tuple should be a function that takes &lt;math&gt; and
+--   returns &lt;math&gt;.
+--   
+--   If the input is <a>Nothing</a>, then &lt;math&gt; should be taken to
+--   be &lt;math&gt;.
+--   
+--   As an example, here is an <a>Op</a> that squares its input:
+--   
+--   <pre>
+--   square :: Num a =&gt; <a>Op</a> '[a] a
+--   square = <a>op1'</a> $ x -&gt; (x*x, case Nothing -&gt; 2 * x
+--                                     Just d  -&gt; 2 * d * x
+--                         )
+--   </pre>
+--   
+--   Note that <a>Op</a> is a subset of <a>OpM</a> so any function that
+--   expects an <tt><a>OpM</a> m</tt> (or an <tt><a>OpB</a> m</tt>) can
+--   take an <a>Op</a>.
+op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a, b] c
+op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a, b, c] d
+opN' :: (Known Nat n) => (Vec n a -> (b, Maybe b -> Vec n a)) -> Op (Replicate n a) b
 op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
 op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
 op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
@@ -180,10 +291,6 @@ opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) 
 opCoerce :: (Coercible a b, Num a) => Op '[a] b
 opTup :: (Every Num as, Known Length as) => Op as (Tuple as)
 opIso :: Num a => Iso' a b -> Op '[a] b
-op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
-op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a, b] c
-op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a, b, c] d
-opN' :: (Known Nat n) => (Vec n a -> (b, Maybe b -> Vec n a)) -> Op (Replicate n a) b
 opCoerce' :: Coercible a b => Unity a -> Op '[a] b
 opTup' :: Prod Unity as -> Op as (Tuple as)
 opIso' :: Unity a -> Iso' a b -> Op '[a] b
@@ -445,7 +552,75 @@ op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
 op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
 op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
 opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
+
+-- | Create an <a>Op</a> of a function taking one input, by giving its
+--   explicit derivative. The function should return a tuple containing the
+--   result of the function, and also a function taking the derivative of
+--   the result and return the derivative of the input.
+--   
+--   If we have
+--   
+--   &lt;math&gt;
+--   
+--   And with &lt;math&gt; and &lt;math&gt;, and we wanted to find the
+--   derivative &lt;math&gt;, it would be:
+--   
+--   &lt;math&gt;
+--   
+--   If our <a>Op</a> represents &lt;math&gt;, then the second item in the
+--   resulting tuple should be a function that takes &lt;math&gt; and
+--   returns &lt;math&gt;.
+--   
+--   If the input is <a>Nothing</a>, then &lt;math&gt; should be taken to
+--   be &lt;math&gt;.
+--   
+--   As an example, here is an <a>Op</a> that squares its input:
+--   
+--   <pre>
+--   square :: Num a =&gt; <a>Op</a> '[a] a
+--   square = <a>op1'</a> $ x -&gt; (x*x, case Nothing -&gt; 2 * x
+--                                     Just d  -&gt; 2 * d * x
+--                         )
+--   </pre>
+--   
+--   Note that <a>Op</a> is a subset of <a>OpM</a> so any function that
+--   expects an <tt><a>OpM</a> m</tt> (or an <tt><a>OpB</a> m</tt>) can
+--   take an <a>Op</a>.
 op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
+
+-- | Create an <a>Op</a> of a function taking two inputs, by giving its
+--   explicit gradient The function should return a tuple containing the
+--   result of the function, and also a function taking the derivative of
+--   the result and return the derivative of the input.
+--   
+--   If we have
+--   
+--   &lt;math&gt;
+--   
+--   And with &lt;math&gt; and &lt;math&gt;, and we wanted to find the
+--   gradient of &lt;math&gt;, it would be:
+--   
+--   &lt;math&gt;
+--   
+--   If our <a>Op</a> represents &lt;math&gt;, then the second item in the
+--   resulting tuple should be a function that takes &lt;math&gt; and
+--   returns &lt;math&gt;.
+--   
+--   If the input is <a>Nothing</a>, then &lt;math&gt; should be taken to
+--   be &lt;math&gt;.
+--   
+--   As an example, here is an <a>Op</a> that squares its input:
+--   
+--   <pre>
+--   square :: Num a =&gt; <a>Op</a> '[a] a
+--   square = <a>op1'</a> $ x -&gt; (x*x, case Nothing -&gt; 2 * x
+--                                     Just d  -&gt; 2 * d * x
+--                         )
+--   </pre>
+--   
+--   Note that <a>Op</a> is a subset of <a>OpM</a> so any function that
+--   expects an <tt><a>OpM</a> m</tt> (or an <tt><a>OpB</a> m</tt>) can
+--   take an <a>Op</a>.
 op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a, b] c
 op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a, b, c] d
 opN' :: (Known Nat n) => (Vec n a -> (b, Maybe b -> Vec n a)) -> Op (Replicate n a) b
@@ -649,7 +824,75 @@ op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
 op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
 op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
 opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
+
+-- | Create an <a>Op</a> of a function taking one input, by giving its
+--   explicit derivative. The function should return a tuple containing the
+--   result of the function, and also a function taking the derivative of
+--   the result and return the derivative of the input.
+--   
+--   If we have
+--   
+--   &lt;math&gt;
+--   
+--   And with &lt;math&gt; and &lt;math&gt;, and we wanted to find the
+--   derivative &lt;math&gt;, it would be:
+--   
+--   &lt;math&gt;
+--   
+--   If our <a>Op</a> represents &lt;math&gt;, then the second item in the
+--   resulting tuple should be a function that takes &lt;math&gt; and
+--   returns &lt;math&gt;.
+--   
+--   If the input is <a>Nothing</a>, then &lt;math&gt; should be taken to
+--   be &lt;math&gt;.
+--   
+--   As an example, here is an <a>Op</a> that squares its input:
+--   
+--   <pre>
+--   square :: Num a =&gt; <a>Op</a> '[a] a
+--   square = <a>op1'</a> $ x -&gt; (x*x, case Nothing -&gt; 2 * x
+--                                     Just d  -&gt; 2 * d * x
+--                         )
+--   </pre>
+--   
+--   Note that <a>Op</a> is a subset of <a>OpM</a> so any function that
+--   expects an <tt><a>OpM</a> m</tt> (or an <tt><a>OpB</a> m</tt>) can
+--   take an <a>Op</a>.
 op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
+
+-- | Create an <a>Op</a> of a function taking two inputs, by giving its
+--   explicit gradient The function should return a tuple containing the
+--   result of the function, and also a function taking the derivative of
+--   the result and return the derivative of the input.
+--   
+--   If we have
+--   
+--   &lt;math&gt;
+--   
+--   And with &lt;math&gt; and &lt;math&gt;, and we wanted to find the
+--   gradient of &lt;math&gt;, it would be:
+--   
+--   &lt;math&gt;
+--   
+--   If our <a>Op</a> represents &lt;math&gt;, then the second item in the
+--   resulting tuple should be a function that takes &lt;math&gt; and
+--   returns &lt;math&gt;.
+--   
+--   If the input is <a>Nothing</a>, then &lt;math&gt; should be taken to
+--   be &lt;math&gt;.
+--   
+--   As an example, here is an <a>Op</a> that squares its input:
+--   
+--   <pre>
+--   square :: Num a =&gt; <a>Op</a> '[a] a
+--   square = <a>op1'</a> $ x -&gt; (x*x, case Nothing -&gt; 2 * x
+--                                     Just d  -&gt; 2 * d * x
+--                         )
+--   </pre>
+--   
+--   Note that <a>Op</a> is a subset of <a>OpM</a> so any function that
+--   expects an <tt><a>OpM</a> m</tt> (or an <tt><a>OpB</a> m</tt>) can
+--   take an <a>Op</a>.
 op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a, b] c
 op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a, b, c] d
 opN' :: (Known Nat n) => (Vec n a -> (b, Maybe b -> Vec n a)) -> Op (Replicate n a) b
