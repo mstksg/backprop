@@ -103,31 +103,31 @@ module Numeric.Backprop
 --   a <i>gradient</i> on the inputs. So in the above example, the gradient
 --   would be a tuple of an <a>Int</a>, <a>Double</a>, and <a>Double</a>.
 data BP s rs b
-type BPOp s rs a = BP s rs (BRef s rs a)
-type BPOpI s rs a = Prod (BRef s rs) rs -> BRef s rs a
+type BPOp s rs a = BP s rs (BVar s rs a)
+type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 
 -- | The basic unit of manipulation inside <a>BP</a>. Instead of directly
---   working with values, you work with <i>references</i> to those values.
---   When you work with a <a>BRef</a>, the <i>backprop</i> library can keep
---   track of what values refer to which other values, and so can perform
---   backpropagation to compute gradients.
+--   working with values, you work with <a>BVar</a>s contating those
+--   values. When you work with a <a>BVar</a>, the <i>backprop</i> library
+--   can keep track of what values refer to which other values, and so can
+--   perform backpropagation to compute gradients.
 --   
---   A <tt><a>BRef</a> s rs a</tt> lives inside a <tt><a>BP</a> s rs</tt>
+--   A <tt><a>BVar</a> s rs a</tt> lives inside a <tt><a>BP</a> s rs</tt>
 --   monad, and refers to a value of type <tt>a</tt>. (The <tt>rs</tt>
---   refers to the environment of the <a>BP</a> action that the
---   <tt>BPRef</tt> lives inside.)
+--   refers to the environment of the <a>BP</a> action that the <a>BVar</a>
+--   lives inside.)
 --   
---   <tt>BPRef</tt>s have <a>Num</a>, <a>Fractional</a>, <a>Floating</a>,
---   etc. instances, so they can be manipulated using polymorphic functions
---   and numeric functions in Haskell. You can add them, subtract them,
---   etc., in "implicit" backprop style.
+--   <a>BVar</a>s have <a>Num</a>, <a>Fractional</a>, <a>Floating</a>, etc.
+--   instances, so they can be manipulated using polymorphic functions and
+--   numeric functions in Haskell. You can add them, subtract them, etc.,
+--   in "implicit" backprop style.
 --   
---   (However, note that if you directly manipulate <tt>BPRef</tt>s using
+--   (However, note that if you directly manipulate <a>BVar</a>s using
 --   those instances or using <tt>liftR</tt>, it delays evaluation, so
 --   every usage site has to re-compute the result/create a new node. If
---   you want to re-use a <tt>BPRef</tt> you created using '(+)' or '(-)'
---   or <tt>liftR</tt>, use <tt>bindRef</tt> to force it first.)
-data BRef :: Type -> [Type] -> Type -> Type
+--   you want to re-use a <a>BVar</a> you created using '(+)' or '(-)' or
+--   <tt>liftR</tt>, use <tt>bindRef</tt> to force it first.)
+data BVar :: Type -> [Type] -> Type -> Type
 type Op as a = forall m. Monad m => OpM m as a
 type OpB s as a = OpM (ST s) as a
 backprop :: forall rs a. Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> (a, Tuple rs)
@@ -138,52 +138,52 @@ backprop' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple
 evalBPOp' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple rs -> a
 gradBPOp' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple rs -> Tuple rs
 bpOp' :: Prod Summer as -> Prod Unity as -> BPOp s as a -> OpB s as a
-withInps :: Known Length rs => (Prod (BRef s rs) rs -> BP s rs a) -> BP s rs a
+withInps :: Known Length rs => (Prod (BVar s rs) rs -> BP s rs a) -> BP s rs a
 implicitly :: Known Length rs => BPOpI s rs a -> BPOp s rs a
-withInps' :: Length rs -> (Prod (BRef s rs) rs -> BP s rs a) -> BP s rs a
+withInps' :: Length rs -> (Prod (BVar s rs) rs -> BP s rs a) -> BP s rs a
 implicitly' :: Length rs -> BPOpI s rs a -> BPOp s rs a
-constRef :: a -> BRef s rs a
-inpRef :: Index rs a -> BRef s rs a
-inpRefs :: Known Length rs => Prod (BRef s rs) rs
-bindRef :: Num a => BRef s rs a -> BP s rs (BRef s rs a)
-inpRefs' :: Length rs -> Prod (BRef s rs) rs
-bindRef' :: Summer a -> BRef s rs a -> BP s rs (BRef s rs a)
-opRef :: Num a => Prod (BRef s rs) as -> OpB s as a -> BP s rs (BRef s rs a)
-(~$) :: Num a => OpB s as a -> Prod (BRef s rs) as -> BP s rs (BRef s rs a)
+constRef :: a -> BVar s rs a
+inpRef :: Index rs a -> BVar s rs a
+inpRefs :: Known Length rs => Prod (BVar s rs) rs
+bindRef :: Num a => BVar s rs a -> BP s rs (BVar s rs a)
+inpRefs' :: Length rs -> Prod (BVar s rs) rs
+bindRef' :: Summer a -> BVar s rs a -> BP s rs (BVar s rs a)
+opRef :: Num a => Prod (BVar s rs) as -> OpB s as a -> BP s rs (BVar s rs a)
+(~$) :: Num a => OpB s as a -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
 infixr 1 ~$
-opRef1 :: Num b => BRef s rs a -> OpB s '[a] b -> BP s rs (BRef s rs b)
-opRef2 :: Num c => BRef s rs a -> BRef s rs b -> OpB s '[a, b] c -> BP s rs (BRef s rs c)
-opRef3 :: Num d => BRef s rs a -> BRef s rs b -> BRef s rs c -> OpB s '[a, b, c] d -> BP s rs (BRef s rs d)
-(-$) :: (Every Num as, Known Length as, Num a) => BPOp s as a -> Prod (BRef s rs) as -> BPOp s rs a
+opRef1 :: Num b => BVar s rs a -> OpB s '[a] b -> BP s rs (BVar s rs b)
+opRef2 :: Num c => BVar s rs a -> BVar s rs b -> OpB s '[a, b] c -> BP s rs (BVar s rs c)
+opRef3 :: Num d => BVar s rs a -> BVar s rs b -> BVar s rs c -> OpB s '[a, b, c] d -> BP s rs (BVar s rs d)
+(-$) :: (Every Num as, Known Length as, Num a) => BPOp s as a -> Prod (BVar s rs) as -> BPOp s rs a
 infixr 1 -$
-opRef' :: forall s rs as a. Summer a -> Prod (BRef s rs) as -> OpB s as a -> BP s rs (BRef s rs a)
-opRef1' :: Summer b -> BRef s rs a -> OpB s '[a] b -> BP s rs (BRef s rs b)
-opRef2' :: Summer c -> BRef s rs a -> BRef s rs b -> OpB s '[a, b] c -> BP s rs (BRef s rs c)
-opRef3' :: Summer d -> BRef s rs a -> BRef s rs b -> BRef s rs c -> OpB s '[a, b, c] d -> BP s rs (BRef s rs d)
-partsRef :: forall s rs bs b. (Every Num bs, Known Length bs) => Iso' b (Tuple bs) -> BRef s rs b -> BP s rs (Prod (BRef s rs) bs)
-(#<~) :: (Every Num bs, Known Length bs) => Iso' b (Tuple bs) -> BRef s rs b -> BP s rs (Prod (BRef s rs) bs)
+opRef' :: forall s rs as a. Summer a -> Prod (BVar s rs) as -> OpB s as a -> BP s rs (BVar s rs a)
+opRef1' :: Summer b -> BVar s rs a -> OpB s '[a] b -> BP s rs (BVar s rs b)
+opRef2' :: Summer c -> BVar s rs a -> BVar s rs b -> OpB s '[a, b] c -> BP s rs (BVar s rs c)
+opRef3' :: Summer d -> BVar s rs a -> BVar s rs b -> BVar s rs c -> OpB s '[a, b, c] d -> BP s rs (BVar s rs d)
+partsRef :: forall s rs bs b. (Every Num bs, Known Length bs) => Iso' b (Tuple bs) -> BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
+(#<~) :: (Every Num bs, Known Length bs) => Iso' b (Tuple bs) -> BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
 infixr 1 #<~
-withParts :: (Every Num bs, Known Length bs) => Iso' b (Tuple bs) -> BRef s rs b -> (Prod (BRef s rs) bs -> BP s rs a) -> BP s rs a
-splitRefs :: forall s rs as. (Every Num as, Known Length as) => BRef s rs (Tuple as) -> BP s rs (Prod (BRef s rs) as)
-gSplit :: (Every Num bs, Known Length bs, Generic b, Code b ~ '[bs]) => BRef s rs b -> BP s rs (Prod (BRef s rs) bs)
-partsRef' :: forall s rs bs b. Prod Summer bs -> Prod Unity bs -> Iso' b (Tuple bs) -> BRef s rs b -> BP s rs (Prod (BRef s rs) bs)
-withParts' :: Prod Summer bs -> Prod Unity bs -> Iso' b (Tuple bs) -> BRef s rs b -> (Prod (BRef s rs) bs -> BP s rs a) -> BP s rs a
-splitRefs' :: forall s rs as. Prod Summer as -> Prod Unity as -> BRef s rs (Tuple as) -> BP s rs (Prod (BRef s rs) as)
-gSplit' :: (Generic b, Code b ~ '[bs]) => Prod Summer bs -> Prod Unity bs -> BRef s rs b -> BP s rs (Prod (BRef s rs) bs)
-choicesRef :: forall s rs bs b. (Every Num bs, Known Length bs) => Iso' b (Sum I bs) -> BRef s rs b -> BP s rs (Sum (BRef s rs) bs)
-choicesRef' :: forall s rs bs b. Prod Summer bs -> Prod Unity bs -> Iso' b (Sum I bs) -> BRef s rs b -> BP s rs (Sum (BRef s rs) bs)
-sopRef :: forall s rs bss b. (Known Length bss, Every (Every Num ∧ Known Length) bss) => Iso' b (Sum Tuple bss) -> BRef s rs b -> BP s rs (Sum (Prod (BRef s rs)) bss)
-gSplits :: forall s rs b. (Generic b, Known Length (Code b), Every (Every Num ∧ Known Length) (Code b)) => BRef s rs b -> BP s rs (Sum (Prod (BRef s rs)) (Code b))
-sopRef' :: forall s rs bss b. Prod (Prod Summer) bss -> Prod (Prod Unity) bss -> Iso' b (Sum Tuple bss) -> BRef s rs b -> BP s rs (Sum (Prod (BRef s rs)) bss)
-gSplits' :: forall s rs b. Generic b => Prod (Prod Summer) (Code b) -> Prod (Prod Unity) (Code b) -> BRef s rs b -> BP s rs (Sum (Prod (BRef s rs)) (Code b))
-internally :: forall s rs bs b a. (Every Num bs, Known Length bs, Num a) => Iso' b (Tuple bs) -> BRef s rs b -> BP s bs (BRef s bs a) -> BP s rs (BRef s rs a)
-generically :: forall s rs bs b a. (Num a, Every Num bs, Known Length bs, Generic b, Code b ~ '[bs]) => BRef s rs b -> BP s bs (BRef s bs a) -> BP s rs (BRef s rs a)
-internally' :: forall s rs bs b a. Prod Summer bs -> Prod Unity bs -> Summer a -> Iso' b (Tuple bs) -> BRef s rs b -> BP s bs (BRef s bs a) -> BP s rs (BRef s rs a)
-generically' :: forall s rs bs b a. (Generic b, Code b ~ '[bs]) => Prod Summer bs -> Prod Unity bs -> Summer a -> BRef s rs b -> BP s bs (BRef s bs a) -> BP s rs (BRef s rs a)
-liftR :: OpB s as a -> Prod (BRef s rs) as -> BRef s rs a
-liftR1 :: OpB s '[a] b -> BRef s rs a -> BRef s rs b
-liftR2 :: OpB s '[a, b] c -> BRef s rs a -> BRef s rs b -> BRef s rs c
-liftR3 :: OpB s '[a, b, c] d -> BRef s rs a -> BRef s rs b -> BRef s rs c -> BRef s rs d
+withParts :: (Every Num bs, Known Length bs) => Iso' b (Tuple bs) -> BVar s rs b -> (Prod (BVar s rs) bs -> BP s rs a) -> BP s rs a
+splitRefs :: forall s rs as. (Every Num as, Known Length as) => BVar s rs (Tuple as) -> BP s rs (Prod (BVar s rs) as)
+gSplit :: (Every Num bs, Known Length bs, Generic b, Code b ~ '[bs]) => BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
+partsRef' :: forall s rs bs b. Prod Summer bs -> Prod Unity bs -> Iso' b (Tuple bs) -> BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
+withParts' :: Prod Summer bs -> Prod Unity bs -> Iso' b (Tuple bs) -> BVar s rs b -> (Prod (BVar s rs) bs -> BP s rs a) -> BP s rs a
+splitRefs' :: forall s rs as. Prod Summer as -> Prod Unity as -> BVar s rs (Tuple as) -> BP s rs (Prod (BVar s rs) as)
+gSplit' :: (Generic b, Code b ~ '[bs]) => Prod Summer bs -> Prod Unity bs -> BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
+choicesRef :: forall s rs bs b. (Every Num bs, Known Length bs) => Iso' b (Sum I bs) -> BVar s rs b -> BP s rs (Sum (BVar s rs) bs)
+choicesRef' :: forall s rs bs b. Prod Summer bs -> Prod Unity bs -> Iso' b (Sum I bs) -> BVar s rs b -> BP s rs (Sum (BVar s rs) bs)
+sopRef :: forall s rs bss b. (Known Length bss, Every (Every Num ∧ Known Length) bss) => Iso' b (Sum Tuple bss) -> BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) bss)
+gSplits :: forall s rs b. (Generic b, Known Length (Code b), Every (Every Num ∧ Known Length) (Code b)) => BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) (Code b))
+sopRef' :: forall s rs bss b. Prod (Prod Summer) bss -> Prod (Prod Unity) bss -> Iso' b (Sum Tuple bss) -> BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) bss)
+gSplits' :: forall s rs b. Generic b => Prod (Prod Summer) (Code b) -> Prod (Prod Unity) (Code b) -> BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) (Code b))
+internally :: forall s rs bs b a. (Every Num bs, Known Length bs, Num a) => Iso' b (Tuple bs) -> BVar s rs b -> BP s bs (BVar s bs a) -> BP s rs (BVar s rs a)
+generically :: forall s rs bs b a. (Num a, Every Num bs, Known Length bs, Generic b, Code b ~ '[bs]) => BVar s rs b -> BP s bs (BVar s bs a) -> BP s rs (BVar s rs a)
+internally' :: forall s rs bs b a. Prod Summer bs -> Prod Unity bs -> Summer a -> Iso' b (Tuple bs) -> BVar s rs b -> BP s bs (BVar s bs a) -> BP s rs (BVar s rs a)
+generically' :: forall s rs bs b a. (Generic b, Code b ~ '[bs]) => Prod Summer bs -> Prod Unity bs -> Summer a -> BVar s rs b -> BP s bs (BVar s bs a) -> BP s rs (BVar s rs a)
+liftR :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
+liftR1 :: OpB s '[a] b -> BVar s rs a -> BVar s rs b
+liftR2 :: OpB s '[a, b] c -> BVar s rs a -> BVar s rs b -> BVar s rs c
+liftR3 :: OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar s rs c -> BVar s rs d
 op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
 op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
 op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
@@ -284,30 +284,87 @@ unities' :: Every Num as => Length as -> Prod Unity as
 module Numeric.Backprop.Implicit
 
 -- | The basic unit of manipulation inside <a>BP</a>. Instead of directly
---   working with values, you work with <i>references</i> to those values.
---   When you work with a <a>BRef</a>, the <i>backprop</i> library can keep
---   track of what values refer to which other values, and so can perform
---   backpropagation to compute gradients.
+--   working with values, you work with <a>BVar</a>s contating those
+--   values. When you work with a <a>BVar</a>, the <i>backprop</i> library
+--   can keep track of what values refer to which other values, and so can
+--   perform backpropagation to compute gradients.
 --   
---   A <tt><a>BRef</a> s rs a</tt> lives inside a <tt><a>BP</a> s rs</tt>
+--   A <tt><a>BVar</a> s rs a</tt> lives inside a <tt><a>BP</a> s rs</tt>
 --   monad, and refers to a value of type <tt>a</tt>. (The <tt>rs</tt>
---   refers to the environment of the <a>BP</a> action that the
---   <tt>BPRef</tt> lives inside.)
+--   refers to the environment of the <a>BP</a> action that the <a>BVar</a>
+--   lives inside.)
 --   
---   <tt>BPRef</tt>s have <a>Num</a>, <a>Fractional</a>, <a>Floating</a>,
---   etc. instances, so they can be manipulated using polymorphic functions
---   and numeric functions in Haskell. You can add them, subtract them,
---   etc., in "implicit" backprop style.
+--   <a>BVar</a>s have <a>Num</a>, <a>Fractional</a>, <a>Floating</a>, etc.
+--   instances, so they can be manipulated using polymorphic functions and
+--   numeric functions in Haskell. You can add them, subtract them, etc.,
+--   in "implicit" backprop style.
 --   
---   (However, note that if you directly manipulate <tt>BPRef</tt>s using
+--   (However, note that if you directly manipulate <a>BVar</a>s using
 --   those instances or using <tt>liftR</tt>, it delays evaluation, so
 --   every usage site has to re-compute the result/create a new node. If
---   you want to re-use a <tt>BPRef</tt> you created using '(+)' or '(-)'
---   or <tt>liftR</tt>, use <tt>bindRef</tt> to force it first.)
-data BRef :: Type -> [Type] -> Type -> Type
-type BPOp rs a = forall s. Prod (BRef s rs) rs -> BRef s rs a
+--   you want to re-use a <a>BVar</a> you created using '(+)' or '(-)' or
+--   <tt>liftR</tt>, use <tt>bindRef</tt> to force it first.)
+data BVar :: Type -> [Type] -> Type -> Type
+type BPOp rs a = forall s. Prod (BVar s rs) rs -> BVar s rs a
 type Op as a = forall m. Monad m => OpM m as a
 type OpB s as a = OpM (ST s) as a
+backprop :: (Known Length rs, Every Num rs) => BPOp rs a -> Tuple rs -> (a, Tuple rs)
+grad :: (Known Length rs, Every Num rs) => BPOp rs a -> Tuple rs -> Tuple rs
+eval :: (Known Length rs, Every Num rs) => BPOp rs a -> Tuple rs -> a
+backprop' :: Prod Summer rs -> Prod Unity rs -> BPOp rs a -> Tuple rs -> (a, Tuple rs)
+grad' :: Prod Summer rs -> Prod Unity rs -> BPOp rs a -> Tuple rs -> Tuple rs
+eval' :: Prod Summer rs -> Prod Unity rs -> BPOp rs a -> Tuple rs -> a
+constRef :: a -> BVar s rs a
+liftR :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
+liftR1 :: OpB s '[a] b -> BVar s rs a -> BVar s rs b
+liftR2 :: OpB s '[a, b] c -> BVar s rs a -> BVar s rs b -> BVar s rs c
+liftR3 :: OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar s rs c -> BVar s rs d
+partsRef :: forall s rs bs a. (Known Length bs, Every Num bs) => Iso' a (Tuple bs) -> BVar s rs a -> Prod (BVar s rs) bs
+withParts :: forall s rs bs a r. (Known Length bs, Every Num bs) => Iso' a (Tuple bs) -> BVar s rs a -> (Prod (BVar s rs) bs -> r) -> r
+splitRefs :: forall s rs as. (Known Length as, Every Num as) => BVar s rs (Tuple as) -> Prod (BVar s rs) as
+gSplit :: forall s rs as a. (Generic a, Code a ~ '[as], Known Length as, Every Num as) => BVar s rs a -> Prod (BVar s rs) as
+partsRef' :: forall s rs bs a. Prod Summer bs -> Prod Unity bs -> Iso' a (Tuple bs) -> BVar s rs a -> Prod (BVar s rs) bs
+withParts' :: forall s rs bs a r. Prod Summer bs -> Prod Unity bs -> Iso' a (Tuple bs) -> BVar s rs a -> (Prod (BVar s rs) bs -> r) -> r
+splitRefs' :: forall s rs as. Prod Summer as -> Prod Unity as -> BVar s rs (Tuple as) -> Prod (BVar s rs) as
+gSplit' :: forall s rs as a. (Generic a, Code a ~ '[as]) => Prod Summer as -> Prod Unity as -> BVar s rs a -> Prod (BVar s rs) as
+op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
+op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
+op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
+opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
+op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
+op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a, b] c
+op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a, b, c] d
+opN' :: (Known Nat n) => (Vec n a -> (b, Maybe b -> Vec n a)) -> Op (Replicate n a) b
+data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
+[Ø] :: Prod k f ([] k)
+[:<] :: Prod k f ((:) k a1 as)
+
+-- | Construct a two element Prod. Since the precedence of (:&gt;) is
+--   higher than (:&lt;), we can conveniently write lists like:
+--   
+--   <pre>
+--   &gt;&gt;&gt; a :&lt; b :&gt; c
+--   </pre>
+--   
+--   Which is identical to:
+--   
+--   <pre>
+--   &gt;&gt;&gt; a :&lt; b :&lt; c :&lt; Ø
+--   </pre>
+infix 6 :>
+
+-- | Build a singleton Prod.
+only :: f a -> Prod k f ((:) k a ([] k))
+head' :: Prod k f ((:<) k a as) -> f a
+
+-- | A Prod of simple Haskell types.
+type Tuple = Prod * I
+
+-- | Cons onto a Tuple.
+infixr 5 ::<
+
+-- | Singleton Tuple.
+only_ :: a -> Tuple ((:) * a ([] *))
 
 -- | Instructions on how to "sum" a list of values of a given type.
 --   Basically used as an explicit witness for a <a>Num</a> instance.
@@ -348,33 +405,6 @@ Summer :: ([a] -> a) -> Summer a
 newtype Unity a
 Unity :: a -> Unity a
 [getUnity] :: Unity a -> a
-backprop :: (Known Length rs, Every Num rs) => BPOp rs a -> Tuple rs -> (a, Tuple rs)
-grad :: (Known Length rs, Every Num rs) => BPOp rs a -> Tuple rs -> Tuple rs
-eval :: (Known Length rs, Every Num rs) => BPOp rs a -> Tuple rs -> a
-backprop' :: Prod Summer rs -> Prod Unity rs -> BPOp rs a -> Tuple rs -> (a, Tuple rs)
-grad' :: Prod Summer rs -> Prod Unity rs -> BPOp rs a -> Tuple rs -> Tuple rs
-eval' :: Prod Summer rs -> Prod Unity rs -> BPOp rs a -> Tuple rs -> a
-constRef :: a -> BRef s rs a
-liftR :: OpB s as a -> Prod (BRef s rs) as -> BRef s rs a
-liftR1 :: OpB s '[a] b -> BRef s rs a -> BRef s rs b
-liftR2 :: OpB s '[a, b] c -> BRef s rs a -> BRef s rs b -> BRef s rs c
-liftR3 :: OpB s '[a, b, c] d -> BRef s rs a -> BRef s rs b -> BRef s rs c -> BRef s rs d
-partsRef :: forall s rs bs a. (Known Length bs, Every Num bs) => Iso' a (Tuple bs) -> BRef s rs a -> Prod (BRef s rs) bs
-withParts :: forall s rs bs a r. (Known Length bs, Every Num bs) => Iso' a (Tuple bs) -> BRef s rs a -> (Prod (BRef s rs) bs -> r) -> r
-splitRefs :: forall s rs as. (Known Length as, Every Num as) => BRef s rs (Tuple as) -> Prod (BRef s rs) as
-gSplit :: forall s rs as a. (Generic a, Code a ~ '[as], Known Length as, Every Num as) => BRef s rs a -> Prod (BRef s rs) as
-partsRef' :: forall s rs bs a. Prod Summer bs -> Prod Unity bs -> Iso' a (Tuple bs) -> BRef s rs a -> Prod (BRef s rs) bs
-withParts' :: forall s rs bs a r. Prod Summer bs -> Prod Unity bs -> Iso' a (Tuple bs) -> BRef s rs a -> (Prod (BRef s rs) bs -> r) -> r
-splitRefs' :: forall s rs as. Prod Summer as -> Prod Unity as -> BRef s rs (Tuple as) -> Prod (BRef s rs) as
-gSplit' :: forall s rs as a. (Generic a, Code a ~ '[as]) => Prod Summer as -> Prod Unity as -> BRef s rs a -> Prod (BRef s rs) as
-op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
-op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
-op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
-opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
-op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
-op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a, b] c
-op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a, b, c] d
-opN' :: (Known Nat n) => (Vec n a -> (b, Maybe b -> Vec n a)) -> Op (Replicate n a) b
 
 -- | If all the types in <tt>as</tt> are instances of <a>Num</a>, generate
 --   a <tt><a>Prod</a> <a>Summer</a> as</tt>, or a tuple of <a>Summer</a>s
@@ -385,36 +415,14 @@ summers :: (Every Num as, Known Length as) => Prod Summer as
 --   a <tt><a>Prod</a> <a>Unity</a> as</tt>, or a tuple of <a>Unity</a>s
 --   for every type in <tt>as</tt>.
 unities :: (Every Num as, Known Length as) => Prod Unity as
-data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
-[Ø] :: Prod k f ([] k)
-[:<] :: Prod k f ((:) k a1 as)
 
--- | Construct a two element Prod. Since the precedence of (:&gt;) is
---   higher than (:&lt;), we can conveniently write lists like:
---   
---   <pre>
---   &gt;&gt;&gt; a :&lt; b :&gt; c
---   </pre>
---   
---   Which is identical to:
---   
---   <pre>
---   &gt;&gt;&gt; a :&lt; b :&lt; c :&lt; Ø
---   </pre>
-infix 6 :>
+-- | Like <a>summers</a>, but requiring an explicit witness for the number
+--   of types in the list <tt>as</tt>.
+summers' :: Every Num as => Length as -> Prod Summer as
 
--- | Build a singleton Prod.
-only :: f a -> Prod k f ((:) k a ([] k))
-head' :: Prod k f ((:<) k a as) -> f a
-
--- | A Prod of simple Haskell types.
-type Tuple = Prod * I
-
--- | Cons onto a Tuple.
-infixr 5 ::<
-
--- | Singleton Tuple.
-only_ :: a -> Tuple ((:) * a ([] *))
+-- | Like <a>unities</a>, but requiring an explicit witness for the number
+--   of types in the list <tt>as</tt>.
+unities' :: Every Num as => Length as -> Prod Unity as
 
 module Numeric.Backprop.Op.Mono
 type Op n a b = Op (Replicate n a) b
@@ -453,30 +461,30 @@ head' :: VecT k (S n) f a -> f a
 
 module Numeric.Backprop.Mono
 type BP s n a = BP s (Replicate n a)
-type BPOp s n a b = BP s n a (BRef s n a b)
-type BRef s n a = BRef s (Replicate n a)
+type BPOp s n a b = BP s n a (BVar s n a b)
+type BVar s n a = BVar s (Replicate n a)
 type Op n a b = Op (Replicate n a) b
 backprop :: forall n a b. Num a => (forall s. BPOp s n a b) -> Vec n a -> (b, Vec n a)
 evalBPOp :: forall n a b. Num a => (forall s. BPOp s n a b) -> Vec n a -> b
 gradBPOp :: forall n a b. Num a => (forall s. BPOp s n a b) -> Vec n a -> Vec n a
 bpOp :: forall s n a b. BPOp s n a b -> OpB s n a b
-withInps :: Known Nat n => (VecT n (BRef s n a) a -> BP s n a b) -> BP s n a b
+withInps :: Known Nat n => (VecT n (BVar s n a) a -> BP s n a b) -> BP s n a b
 implicitly :: Known Nat n => BPOpI s n a b -> BPOp s n a b
-constRef :: b -> BRef s n a b
-inpRef :: Fin n -> BRef s n a a
-inpRefs :: Known Nat n => VecT n (BRef s n a) a
-opRef :: forall s m n a b. Num b => VecT m (BRef s n a) a -> OpB s m a b -> BP s n a (BRef s n a b)
-(~$) :: Num b => OpB s m a b -> VecT m (BRef s n a) a -> BP s n a (BRef s n a b)
+constRef :: b -> BVar s n a b
+inpRef :: Fin n -> BVar s n a a
+inpRefs :: Known Nat n => VecT n (BVar s n a) a
+opRef :: forall s m n a b. Num b => VecT m (BVar s n a) a -> OpB s m a b -> BP s n a (BVar s n a b)
+(~$) :: Num b => OpB s m a b -> VecT m (BVar s n a) a -> BP s n a (BVar s n a b)
 infixr 1 ~$
-opRef1 :: forall s n a b. Num b => BRef s n a a -> OpB s N1 a b -> BP s n a (BRef s n a b)
-opRef2 :: forall s n a b. Num b => BRef s n a a -> BRef s n a a -> OpB s N2 a b -> BP s n a (BRef s n a b)
-opRef3 :: forall s n a b. Num b => BRef s n a a -> BRef s n a a -> BRef s n a a -> OpB s N3 a b -> BP s n a (BRef s n a b)
-(-$) :: forall s m n a b. Num b => BPOp s m a b -> VecT m (BRef s n a) a -> BP s n a (BRef s n a b)
+opRef1 :: forall s n a b. Num b => BVar s n a a -> OpB s N1 a b -> BP s n a (BVar s n a b)
+opRef2 :: forall s n a b. Num b => BVar s n a a -> BVar s n a a -> OpB s N2 a b -> BP s n a (BVar s n a b)
+opRef3 :: forall s n a b. Num b => BVar s n a a -> BVar s n a a -> BVar s n a a -> OpB s N3 a b -> BP s n a (BVar s n a b)
+(-$) :: forall s m n a b. Num b => BPOp s m a b -> VecT m (BVar s n a) a -> BP s n a (BVar s n a b)
 infixr 1 -$
-liftR :: OpB s m a b -> VecT m (BRef s n r) a -> BRef s n r b
-liftR1 :: OpB s N1 a a -> BRef s n r a -> BRef s n r a
-liftR2 :: OpB s N2 a a -> BRef s n r a -> BRef s n r a -> BRef s n r a
-liftR3 :: OpB s N3 a a -> BRef s n r a -> BRef s n r a -> BRef s n r a -> BRef s n r a
+liftR :: OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
+liftR1 :: OpB s N1 a a -> BVar s n r a -> BVar s n r a
+liftR2 :: OpB s N2 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a
+liftR3 :: OpB s N3 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BVar s n r a
 op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op N1 a a
 op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op N2 a a
 op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op N3 a a
@@ -506,17 +514,17 @@ infix 5 +:
 head' :: VecT k (S n) f a -> f a
 
 module Numeric.Backprop.Mono.Implicit
-type BRef s n a = BRef s (Replicate n a)
-type BPOp n a b = forall s. VecT n (BRef s n a) a -> BRef s n a b
+type BVar s n a = BVar s (Replicate n a)
+type BPOp n a b = forall s. VecT n (BVar s n a) a -> BVar s n a b
 type Op n a b = Op (Replicate n a) b
 backprop :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> (b, Vec n a)
 grad :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> Vec n a
 eval :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> b
-constRef :: b -> BRef s n a b
-liftR :: OpB s m a b -> VecT m (BRef s n r) a -> BRef s n r b
-liftR1 :: OpB s N1 a a -> BRef s n r a -> BRef s n r a
-liftR2 :: OpB s N2 a a -> BRef s n r a -> BRef s n r a -> BRef s n r a
-liftR3 :: OpB s N3 a a -> BRef s n r a -> BRef s n r a -> BRef s n r a -> BRef s n r a
+constRef :: b -> BVar s n a b
+liftR :: OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
+liftR1 :: OpB s N1 a a -> BVar s n r a -> BVar s n r a
+liftR2 :: OpB s N2 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a
+liftR3 :: OpB s N3 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BVar s n r a
 op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op N1 a a
 op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op N2 a a
 op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op N3 a a
