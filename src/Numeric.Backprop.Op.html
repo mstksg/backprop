@@ -327,7 +327,7 @@ opCoerce :: (Coercible a b, Num a) =&gt; Op '[a] b
 opCoerce = opIso coercible
 
 -- | A version of 'opTup' that takes explicit 'Unity's, so can be run on
--- values that aren't 'Num' instances.
+-- values of types that aren't 'Num' instances.
 opTup'
     :: Prod Unity as
     -&gt; Op as (Tuple as)
@@ -336,12 +336,14 @@ opTup' u = Op $ \xs -&gt; (xs, fromMaybe (map1 (I . getUnity) u))
 -- | An 'Op' that takes @as@ and returns exactly the input tuple.
 --
 -- &gt;&gt;&gt; gradOp' opTup (1 ::&lt; 2 ::&lt; 3 ::&lt; &#216;)
--- (1 ::&lt; 2 ::&lt; 3 ::&lt; &#216;, 1 ::&lt; 1 ::&lt; 1 ::&lt; 1 ::&lt; &#216;)
+-- (1 ::&lt; 2 ::&lt; 3 ::&lt; &#216;, 1 ::&lt; 1 ::&lt; 1 ::&lt; &#216;)
 opTup
     :: (Every Num as, Known Length as)
     =&gt; Op as (Tuple as)
 opTup = opTup' (map1 ((// known) . every @_ @Num) indices)
 
+-- | A version of 'opIso' that takes an explicit 'Unity', so can be run on
+-- values of types that aren't 'Num' instances.
 opIso' :: Unity a -&gt; Iso' a b -&gt; Op '[ a ] b
 opIso' u i = op1' $ \x -&gt; (view i x, maybe (getUnity u) (review i))
 
@@ -350,14 +352,22 @@ opIso' u i = op1' $ \x -&gt; (view i x, maybe (getUnity u) (review i))
 --
 -- Warning: This is unsafe!  It assumes that the isomorphisms themselves
 -- have derivative 1, so will break for things like
--- 'Control.Lens.exponenting'.
+-- 'Numeric.Lens.exponentiating'.  Basically, don't use this for any
+-- &quot;numeric&quot; isomorphisms.
 opIso :: Num a =&gt; Iso' a b -&gt; Op '[ a ] b
 opIso = opIso' known
 
+-- | A version of 'opConst' that takes explicit 'Summer's, so can be run on
+-- values of types that aren't 'Num' instances.
 opConst' :: Prod Summer as -&gt; a -&gt; Op as a
 opConst' ss x = Op $ \_ -&gt;
     (x , const $ map1 (\s -&gt; I $ runSummer s []) ss)
 
+-- | An 'Op' that ignores all of its inputs and returns a given constant
+-- value.
+--
+-- &gt;&gt;&gt; gradOp' (opConst 10) (1 ::&lt; 2 ::&lt; 3 ::&lt; &#216;)
+-- (10, 0 ::&lt; 0 ::&lt; 0 ::&lt; &#216;)
 opConst :: (Every Num as, Known Length as) =&gt; a -&gt; Op as a
 opConst = opConst' summers
 

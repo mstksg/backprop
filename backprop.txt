@@ -210,7 +210,18 @@ composeOp' :: Monad m => Prod Summer as -> Prod (OpM m as) bs -> OpM m bs c -> O
 --   Note that because this returns an <a>Op</a>, it can be used with any
 --   function that expects an <a>OpM</a>, as well.
 op0 :: a -> Op '[] a
+
+-- | An <a>Op</a> that ignores all of its inputs and returns a given
+--   constant value.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (opConst 10) (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø)
+--   (10, 0 ::&lt; 0 ::&lt; 0 ::&lt; Ø)
+--   </pre>
 opConst :: (Every Num as, Known Length as) => a -> Op as a
+
+-- | A version of <a>opConst</a> that takes explicit <a>Summer</a>s, so can
+--   be run on values of types that aren't <a>Num</a> instances.
 opConst' :: Prod Summer as -> a -> Op as a
 
 -- | Create an <a>Op</a> of a function taking one input, by giving its
@@ -303,7 +314,7 @@ opCoerce :: (Coercible a b, Num a) => Op '[a] b
 --   
 --   <pre>
 --   &gt;&gt;&gt; gradOp' opTup (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø)
---   (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø, 1 ::&lt; 1 ::&lt; 1 ::&lt; 1 ::&lt; Ø)
+--   (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø, 1 ::&lt; 1 ::&lt; 1 ::&lt; Ø)
 --   </pre>
 opTup :: (Every Num as, Known Length as) => Op as (Tuple as)
 
@@ -311,7 +322,9 @@ opTup :: (Every Num as, Known Length as) => Op as (Tuple as)
 --   in the <a>Iso</a>. Requires the input to be an instance of <a>Num</a>.
 --   
 --   Warning: This is unsafe! It assumes that the isomorphisms themselves
---   have derivative 1, so will break for things like <a>exponenting</a>.
+--   have derivative 1, so will break for things like
+--   <a>exponentiating</a>. Basically, don't use this for any "numeric"
+--   isomorphisms.
 opIso :: Num a => Iso' a b -> Op '[a] b
 
 -- | A version of <a>opCoerce</a> that takes an explicit <a>Unity</a>, so
@@ -319,8 +332,11 @@ opIso :: Num a => Iso' a b -> Op '[a] b
 opCoerce' :: Coercible a b => Unity a -> Op '[a] b
 
 -- | A version of <a>opTup</a> that takes explicit <a>Unity</a>s, so can be
---   run on values that aren't <a>Num</a> instances.
+--   run on values of types that aren't <a>Num</a> instances.
 opTup' :: Prod Unity as -> Op as (Tuple as)
+
+-- | A version of <a>opIso</a> that takes an explicit <a>Unity</a>, so can
+--   be run on values of types that aren't <a>Num</a> instances.
 opIso' :: Unity a -> Iso' a b -> Op '[a] b
 data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
 [Ø] :: Prod k f ([] k)
