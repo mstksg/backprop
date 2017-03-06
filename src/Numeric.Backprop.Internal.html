@@ -166,10 +166,10 @@
 </span><a name="line-166"></a><span class="hs-comment">-- style.</span><span>
 </span><a name="line-167"></a><span class="hs-comment">--</span><span>
 </span><a name="line-168"></a><span class="hs-comment">-- (However, note that if you directly manipulate 'BVar's using those</span><span>
-</span><a name="line-169"></a><span class="hs-comment">-- instances or using 'liftR', it delays evaluation, so every usage site</span><span>
+</span><a name="line-169"></a><span class="hs-comment">-- instances or using 'Numeric.Backprop.liftB', it delays evaluation, so every usage site</span><span>
 </span><a name="line-170"></a><span class="hs-comment">-- has to re-compute the result/create a new node.  If you want to re-use</span><span>
-</span><a name="line-171"></a><span class="hs-comment">-- a 'BVar' you created using '(+)' or '(-)' or 'liftR', use 'bindVar' to</span><span>
-</span><a name="line-172"></a><span class="hs-comment">-- force it first.)</span><span>
+</span><a name="line-171"></a><span class="hs-comment">-- a 'BVar' you created using '+' or '-' or 'Numeric.Backprop.liftB', use</span><span>
+</span><a name="line-172"></a><span class="hs-comment">-- 'Numeric.Backprop.bindVar' to force it first.)</span><span>
 </span><a name="line-173"></a><span class="hs-keyword">data</span><span> </span><a name="BVar"><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier">BVar</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Type</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-identifier hs-type">Type</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Type</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Type</span><span> </span><span class="hs-keyword">where</span><span>
 </span><a name="line-174"></a><span>    </span><span class="hs-comment">-- | A BVar referring to a 'BPNode'</span><span>
 </span><a name="line-175"></a><span>    </span><a name="BVNode"><a href="Numeric.Backprop.Internal.html#BVNode"><span class="hs-identifier">BVNode</span></a></a><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="hs-identifier hs-type">Index</span><span> </span><a href="#local-6989586621679150031"><span class="hs-identifier hs-type">bs</span></a><span> </span><a href="#local-6989586621679150032"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
@@ -247,7 +247,8 @@ _FRInternal f = \case
 -- resulting 'BVar' is deferred/delayed.  At every location you use it, it
 -- will be recomputed, and a separate graph node will be created.  If you
 -- are using a 'BVar' you made with the 'Num' instance in multiple
--- locations, use 'bindVar' first to force it and prevent recomputation.
+-- locations, use 'Numeric.Backprop.bindVar' first to force it and prevent
+-- recomputation.
 instance Num a =&gt; Num (BVar s rs a) where
     r1 + r2       = BVOp (r1 :&lt; r2 :&lt; &#216;) $ op2 (+)
     r1 - r2       = BVOp (r1 :&lt; r2 :&lt; &#216;) $ op2 (-)

@@ -399,6 +399,10 @@ opVar = opVar' known
 -- x :&lt; y :&lt; z :&lt; &#216;           :: 'Prod' ('BVar' s rs) '[a, b, c]
 -- myOp '~$' (x :&lt; y :&lt; z :&lt; &#216;) :: 'BP' s rs ('BVar' s rs d)
 -- @
+--
+-- Note that 'OpB' is a superclass of 'Op', so you can pass in any 'Op'
+-- here, as well (like those created by 'op1', 'op2', 'constOp', 'op0'
+-- etc.)
 infixr 1 ~$
 (~$)
     :: Num a

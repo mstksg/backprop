@@ -686,10 +686,10 @@ type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 --   in "implicit" backprop style.
 --   
 --   (However, note that if you directly manipulate <a>BVar</a>s using
---   those instances or using <tt>liftR</tt>, it delays evaluation, so
---   every usage site has to re-compute the result/create a new node. If
---   you want to re-use a <a>BVar</a> you created using '(+)' or '(-)' or
---   <tt>liftR</tt>, use <tt>bindVar</tt> to force it first.)
+--   those instances or using <a>liftB</a>, it delays evaluation, so every
+--   usage site has to re-compute the result/create a new node. If you want
+--   to re-use a <a>BVar</a> you created using <a>+</a> or <a>-</a> or
+--   <a>liftB</a>, use <a>bindVar</a> to force it first.)
 data BVar :: Type -> [Type] -> Type -> Type
 
 -- | An <tt><a>Op</a> as a</tt> is a type synonym over <a>OpM</a> that
@@ -1007,6 +1007,10 @@ opVar :: Num a => OpB s as a -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
 --   x :&lt; y :&lt; z :&lt; Ø           :: <a>Prod</a> (<a>BVar</a> s rs) '[a, b, c]
 --   myOp <a>~$</a> (x :&lt; y :&lt; z :&lt; Ø) :: <a>BP</a> s rs (<a>BVar</a> s rs d)
 --   </pre>
+--   
+--   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
+--   any <a>Op</a> here, as well (like those created by <a>op1</a>,
+--   <a>op2</a>, <tt>constOp</tt>, <a>op0</a> etc.)
 (~$) :: Num a => OpB s as a -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
 infixr 1 ~$
 
@@ -1344,10 +1348,10 @@ module Numeric.Backprop.Implicit
 --   in "implicit" backprop style.
 --   
 --   (However, note that if you directly manipulate <a>BVar</a>s using
---   those instances or using <tt>liftR</tt>, it delays evaluation, so
---   every usage site has to re-compute the result/create a new node. If
---   you want to re-use a <a>BVar</a> you created using '(+)' or '(-)' or
---   <tt>liftR</tt>, use <tt>bindVar</tt> to force it first.)
+--   those instances or using <a>liftB</a>, it delays evaluation, so every
+--   usage site has to re-compute the result/create a new node. If you want
+--   to re-use a <a>BVar</a> you created using <a>+</a> or <a>-</a> or
+--   <a>liftB</a>, use <a>bindVar</a> to force it first.)
 data BVar :: Type -> [Type] -> Type -> Type
 type BPOp rs a = forall s. Prod (BVar s rs) rs -> BVar s rs a
 
