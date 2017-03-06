@@ -372,7 +372,7 @@ resolveVar = \case
 
 registerVar
     :: forall s rs a. ()
-    =&gt; BPInpVar s rs a
+    =&gt; BPInpRef s rs a
     -&gt; BVar s rs a
     -&gt; BP s rs ()
 registerVar bpir = \case
@@ -500,7 +500,7 @@ bindVar = bindVar' known
 
 backwardPass
     :: forall s rs a. ()
-    =&gt; BPInpVar s rs a
+    =&gt; BPInpRef s rs a
     -&gt; ST s a
 backwardPass = \case
     IRNode  ix r' -&gt; getI . index ix &lt;$&gt; pullNode r'
