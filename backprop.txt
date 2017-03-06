@@ -182,7 +182,7 @@ resum1 :: Iso' (f a) (Sum f '[a])
 --   
 --   Note that <a>Op</a> is a <i>subset</i> or <i>subtype</i> of
 --   <a>OpM</a>, and so, any function that expects an <tt><a>OpM</a> m as
---   a</tt> (or an <tt><a>OpB</a> s as a</tt>) can be given an
+--   a</tt> (or an <tt><tt>OpB</tt> s as a</tt>) can be given an
 --   <tt><a>Op</a> as a</tt> and it'll work just fine.
 module Numeric.Backprop.Op
 
@@ -216,8 +216,8 @@ module Numeric.Backprop.Op
 --   a</tt>, you can always provide an <tt><a>Op</a> as a</tt> instead.
 --   
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
---   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
---   you can provide an <tt><a>Op</a> as a</tt>.
+--   a</tt> (or an <tt><tt>OpB</tt> s as a</tt>), and in all of these
+--   cases, you can provide an <tt><a>Op</a> as a</tt>.
 type Op as a = forall m. Monad m => OpM m as a
 
 -- | Construct an <a>Op</a> by giving a function creating the result, and
@@ -722,8 +722,8 @@ data BVar :: Type -> [Type] -> Type -> Type
 --   a</tt>, you can always provide an <tt><a>Op</a> as a</tt> instead.
 --   
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
---   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
---   you can provide an <tt><a>Op</a> as a</tt>.
+--   a</tt> (or an <tt><tt>OpB</tt> s as a</tt>), and in all of these
+--   cases, you can provide an <tt><a>Op</a> as a</tt>.
 type Op as a = forall m. Monad m => OpM m as a
 
 -- | A type synonym for <a>OpM</a> specialized to what the <i>backprop</i>
@@ -1176,8 +1176,8 @@ type BPOp rs a = forall s. Prod (BVar s rs) rs -> BVar s rs a
 --   a</tt>, you can always provide an <tt><a>Op</a> as a</tt> instead.
 --   
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
---   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
---   you can provide an <tt><a>Op</a> as a</tt>.
+--   a</tt> (or an <tt><tt>OpB</tt> s as a</tt>), and in all of these
+--   cases, you can provide an <tt><a>Op</a> as a</tt>.
 type Op as a = forall m. Monad m => OpM m as a
 
 -- | A type synonym for <a>OpM</a> specialized to what the <i>backprop</i>
