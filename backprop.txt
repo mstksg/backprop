@@ -126,8 +126,43 @@ module Numeric.Backprop
 --   a value of type <a>Double</a>.
 data BP s rs b
 
--- | A handy type synonym representing an action
+-- | A handy type synonym representing a <a>BP</a> action that returns a
+--   <a>BVar</a>. This is handy because this is the form of <a>BP</a>
+--   actions that <a>backprop</a> and <a>gradBPOp</a> (etc.) expects.
+--   
+--   A value of type:
+--   
+--   <pre>
+--   <a>BPOp</a> s rs a
+--   </pre>
+--   
+--   is an action that takes an input environment of <tt>rs</tt> and
+--   produces a <a>BVar</a> containing a value of type <tt>a</tt>. Because
+--   it returns a <a>BVar</a>, the library can track the data dependencies
+--   between the <a>BVar</a> and the input environment and perform
+--   backpropagation.
+--   
+--   See documentation for <a>BP</a> for an explanation of the phantom type
+--   parameter <tt>s</tt>.
 type BPOp s rs a = BP s rs (BVar s rs a)
+
+-- | An "implicit" operation on <a>BVar</a>s that can be backpropagated. A
+--   value of type:
+--   
+--   <pre>
+--   <a>BPOpI</a> s rs a
+--   </pre>
+--   
+--   takes a bunch of <a>BVar</a>s containg <tt>rs</tt> and uses them to
+--   (purely) produce a <a>BVar</a> containing an <tt>a</tt>.
+--   
+--   If you are exclusively doing implicit backpropagation by combining
+--   <a>BVar</a>s and using <a>BPOpI</a>s, you are probably better off just
+--   importing <a>Numeric.Backprop.Implicit</a>, which provides better
+--   tools. This type synonym exists in <a>Numeric.Backprop</a> just for
+--   the <a>implicitly</a> function, which can convert "implicit" backprop
+--   functions like a <tt><a>BPOpI</a> s rs a</tt> into an "explicit" graph
+--   backprop function, a <tt><a>BPOp</a> s rs a</tt>.
 type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 
 -- | The basic unit of manipulation inside <a>BP</a>. Instead of directly
@@ -158,6 +193,29 @@ type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 --   <tt>liftR</tt>, use <tt>bindRef</tt> to force it first.)
 data BVar :: Type -> [Type] -> Type -> Type
 type Op as a = forall m. Monad m => OpM m as a
+
+-- | A type synonym for <a>OpM</a> specialized to what the <i>backprop</i>
+--   library uses to perform backpropagation.
+--   
+--   An
+--   
+--   <pre>
+--   <a>OpB</a> s rs a
+--   </pre>
+--   
+--   represents a differentiable function that takes a tuple of <tt>rs</tt>
+--   and produces an a <tt>a</tt>, which can be run on <tt><a>BVar</a>
+--   s</tt> and also inside <tt><a>BP</a> s</tt>s. For example, an
+--   <tt><a>OpB</a> s '[ Int, Double ] Bool</tt> takes an <a>Int</a> and a
+--   <a>Double</a> and produces a <a>Bool</a>, and does it in a
+--   differentiable way.
+--   
+--   Note that <a>OpB</a> is a <i>superset</i> of <a>Op</a>, so, if you see
+--   any function that expects an <a>OpB</a> (like <a>opRef'</a> and
+--   <a>~$</a>, for example), you can give them an <a>Op</a>, as well.
+--   
+--   You can think of <a>OpB</a> as a superclass/parent class of <a>Op</a>
+--   in this sense, and of <a>Op</a> as a subclass of <a>OpB</a>.
 type OpB s as a = OpM (ST s) as a
 backprop :: forall rs a. Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> (a, Tuple rs)
 evalBPOp :: Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> a
@@ -341,6 +399,29 @@ module Numeric.Backprop.Implicit
 data BVar :: Type -> [Type] -> Type -> Type
 type BPOp rs a = forall s. Prod (BVar s rs) rs -> BVar s rs a
 type Op as a = forall m. Monad m => OpM m as a
+
+-- | A type synonym for <a>OpM</a> specialized to what the <i>backprop</i>
+--   library uses to perform backpropagation.
+--   
+--   An
+--   
+--   <pre>
+--   <a>OpB</a> s rs a
+--   </pre>
+--   
+--   represents a differentiable function that takes a tuple of <tt>rs</tt>
+--   and produces an a <tt>a</tt>, which can be run on <tt><a>BVar</a>
+--   s</tt> and also inside <tt><a>BP</a> s</tt>s. For example, an
+--   <tt><a>OpB</a> s '[ Int, Double ] Bool</tt> takes an <a>Int</a> and a
+--   <a>Double</a> and produces a <a>Bool</a>, and does it in a
+--   differentiable way.
+--   
+--   Note that <a>OpB</a> is a <i>superset</i> of <a>Op</a>, so, if you see
+--   any function that expects an <a>OpB</a> (like <a>opRef'</a> and
+--   <a>~$</a>, for example), you can give them an <a>Op</a>, as well.
+--   
+--   You can think of <a>OpB</a> as a superclass/parent class of <a>Op</a>
+--   in this sense, and of <a>Op</a> as a subclass of <a>OpB</a>.
 type OpB s as a = OpM (ST s) as a
 backprop :: (Known Length rs, Every Num rs) => BPOp rs a -> Tuple rs -> (a, Tuple rs)
 grad :: (Known Length rs, Every Num rs) => BPOp rs a -> Tuple rs -> Tuple rs
