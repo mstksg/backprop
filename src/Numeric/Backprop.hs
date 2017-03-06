@@ -55,7 +55,7 @@ module Numeric.Backprop (
   , internally'
   , generically'
   -- ** Combining
-  , liftR, liftR1, liftR2, liftR3
+  , liftB, liftB1, liftB2, liftB3
   -- * Op
   , op1, op2, op3, opN
   , op1', op2', op3'
@@ -753,32 +753,32 @@ withInps
     -> BP s rs a
 withInps = withInps' known
 
-liftR
+liftB
     :: OpB s as a
     -> Prod (BVar s rs) as
     -> BVar s rs a
-liftR = flip BVOp
+liftB = flip BVOp
 
-liftR1
+liftB1
     :: OpB s '[a] b
     -> BVar s rs a
     -> BVar s rs b
-liftR1 o = liftR o . only
+liftB1 o = liftB o . only
 
-liftR2
+liftB2
     :: OpB s '[a,b] c
     -> BVar s rs a
     -> BVar s rs b
     -> BVar s rs c
-liftR2 o x y = liftR o (x :< y :< Ø)
+liftB2 o x y = liftB o (x :< y :< Ø)
 
-liftR3
+liftB3
     :: OpB s '[a,b,c] d
     -> BVar s rs a
     -> BVar s rs b
     -> BVar s rs c
     -> BVar s rs d
-liftR3 o x y z = liftR o (x :< y :< z :< Ø)
+liftB3 o x y z = liftB o (x :< y :< z :< Ø)
 
 
 

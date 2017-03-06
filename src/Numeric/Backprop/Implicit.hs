@@ -13,7 +13,7 @@ module Numeric.Backprop.Implicit (
   , backprop, grad, eval
   , backprop', grad', eval'
   -- * Var manipulation
-  , BP.constVar, BP.liftR, BP.liftR1, BP.liftR2, BP.liftR3
+  , BP.constVar, BP.liftB, BP.liftB1, BP.liftB2, BP.liftB3
   -- ** As Parts
   , partsVar, withParts
   , splitVars, gSplit
@@ -99,7 +99,7 @@ partsVar'
     -> Iso' a (Tuple bs)
     -> BVar s rs a
     -> Prod (BVar s rs) bs
-partsVar' ss us i r = imap1 (\ix u -> BP.liftR1 (BP.op1' (f ix u)) r) us
+partsVar' ss us i r = imap1 (\ix u -> BP.liftB1 (BP.op1' (f ix u)) r) us
   where
     f :: Index bs b
       -> Unity b

@@ -8,7 +8,7 @@ module Numeric.Backprop.Mono.Implicit (
   -- * Backpropagation
   , backprop, grad, eval
   -- * Var manipulation
-  , constVar, liftR, liftR1, liftR2, liftR3
+  , constVar, liftB, liftB1, liftB2, liftB3
   -- * Op
   , op1, op2, op3, opN
   -- * Utility
