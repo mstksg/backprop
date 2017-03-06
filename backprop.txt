@@ -88,6 +88,8 @@ newtype OpM m as a
 --   details on the function that this constructor and <a>Op</a> expect.
 OpM :: (Tuple as -> m (a, Maybe a -> m (Tuple as))) -> OpM m as a
 
+-- | Hey sup
+
 -- | <a>Run</a> the function that an <a>Op</a> encodes, to get the result.
 --   
 --   <pre>
