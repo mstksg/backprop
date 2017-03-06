@@ -36,7 +36,7 @@ module Numeric.Backprop.Internal
   , BPInpRef(..)
   , BPNode(..), bpnOut, bpnRes, bpnGradFunc, bpnGradCache, bpnSummer
   , BPPipe(..), bppOut, bppRes, bppGradFunc, bppGradCache
-  , BRef(..)
+  , BVar(..)
   , ForwardRefs(..), _FRInternal
   ) where
 
@@ -103,44 +103,44 @@ newtype BP s rs b = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s
                , Monad
                )
 
--- TODO: change BRef to BVal
+-- TODO: change BVar to BVal
 
 -- | The basic unit of manipulation inside 'BP'.  Instead of directly
--- working with values, you work with /references/ to those values.  When
--- you work with a 'BRef', the /backprop/ library can keep track of what
+-- working with values, you work with 'BVar's contating those values.  When
+-- you work with a 'BVar', the /backprop/ library can keep track of what
 -- values refer to which other values, and so can perform backpropagation
 -- to compute gradients.
 --
--- A @'BRef' s rs a@ lives inside a @'BP' s rs@ monad, and refers to
+-- A @'BVar' s rs a@ lives inside a @'BP' s rs@ monad, and refers to
 -- a value of type @a@.  (The @rs@ refers to the environment of the 'BP'
--- action that the 'BPRef' lives inside.)
+-- action that the 'BVar' lives inside.)
 --
--- 'BPRef's have 'Num', 'Fractional', 'Floating', etc. instances, so they
+-- 'BVar's have 'Num', 'Fractional', 'Floating', etc. instances, so they
 -- can be manipulated using polymorphic functions and numeric functions in
 -- Haskell.  You can add them, subtract them, etc., in "implicit" backprop
 -- style.
 --
--- (However, note that if you directly manipulate 'BPRef's using those
+-- (However, note that if you directly manipulate 'BVar's using those
 -- instances or using 'liftR', it delays evaluation, so every usage site
 -- has to re-compute the result/create a new node.  If you want to re-use
--- a 'BPRef' you created using '(+)' or '(-)' or 'liftR', use 'bindRef' to
+-- a 'BVar' you created using '(+)' or '(-)' or 'liftR', use 'bindRef' to
 -- force it first.)
-data BRef :: Type -> [Type] -> Type -> Type where
-    -- | A BRef referring to a 'BPNode'
-    BRNode  :: !(Index bs a)
+data BVar :: Type -> [Type] -> Type -> Type where
+    -- | A BVar referring to a 'BPNode'
+    BVNode  :: !(Index bs a)
             -> !(STRef s (BPNode s rs as bs))
-            -> BRef s rs a
-    -- | A BRef referring to an environment input variable
-    BRInp   :: !(Index rs a)
-            -> BRef s rs a
-    -- | A constant BRef that refers to a specific Haskell value
-    BRConst :: !a
-            -> BRef s rs a
-    -- | A BRef that combines several other BRefs using a function (an
+            -> BVar s rs a
+    -- | A BVar referring to an environment input variable
+    BVInp   :: !(Index rs a)
+            -> BVar s rs a
+    -- | A constant BVar that refers to a specific Haskell value
+    BVConst :: !a
+            -> BVar s rs a
+    -- | A BVar that combines several other BVars using a function (an
     -- 'Op').  Essentially a branch of a tree.
-    BROp    :: !(Prod (BRef s rs) as)
+    BVOp    :: !(Prod (BVar s rs) as)
             -> !(OpB s as a)
-            -> BRef s rs a
+            -> BVar s rs a
 
 -- | Used exclusively by 'ForwardRefs' to specify "where" and "how" to look
 -- for partial derivatives at usage sites of a given entity.
@@ -159,7 +159,7 @@ data BPInpRef :: Type -> [Type] -> Type -> Type where
             -> BPInpRef s rs a
 
 -- | A (stateful) node in the graph of operations/data dependencies in 'BP'
--- that the library uses.  'BRef's can refer to these to get results from
+-- that the library uses.  'BVar's can refer to these to get results from
 -- them, and 'BPInpRef's can refer to these to get partial derivatives from
 -- them.
 data BPNode :: Type -> [Type] -> [Type] -> [Type] -> Type where
@@ -173,7 +173,7 @@ data BPNode :: Type -> [Type] -> [Type] -> [Type] -> Type where
 
 -- | Essentially a "single-usage" 'BPNode'.  It's a stateful node, but only
 -- ever has a single consumer (and so its total derivative comes from
--- a single partial derivative).  Used when keeping track of 'BROp's.
+-- a single partial derivative).  Used when keeping track of 'BVOp's.
 data BPPipe :: Type -> [Type] -> [Type] -> [Type] -> Type where
     BPP :: { _bppOut       :: !(Prod (BPInpRef s rs) bs)
            , _bppRes       :: !(Tuple bs)
@@ -198,44 +198,44 @@ _FRInternal f = \case
 
 
 
--- | Note that if you use the 'Num' instance to create 'BRef's, the
--- resulting 'BRef' is deferred/delayed.  At every location you use it, it
+-- | Note that if you use the 'Num' instance to create 'BVar's, the
+-- resulting 'BVar' is deferred/delayed.  At every location you use it, it
 -- will be recomputed, and a separate graph node will be created.  If you
--- are using a 'BRef' you made with the 'Num' instance in multiple
+-- are using a 'BVar' you made with the 'Num' instance in multiple
 -- locations, use 'bindRef' first to force it and prevent recomputation.
-instance Num a => Num (BRef s rs a) where
-    r1 + r2       = BROp (r1 :< r2 :< Ø) $ op2 (+)
-    r1 - r2       = BROp (r1 :< r2 :< Ø) $ op2 (-)
-    r1 * r2       = BROp (r1 :< r2 :< Ø) $ op2 (*)
-    negate r      = BROp (r :< Ø)        $ op1 negate
-    signum r      = BROp (r :< Ø)        $ op1 negate
-    abs r         = BROp (r :< Ø)        $ op1 abs
-    fromInteger x = BRConst (fromInteger x)
+instance Num a => Num (BVar s rs a) where
+    r1 + r2       = BVOp (r1 :< r2 :< Ø) $ op2 (+)
+    r1 - r2       = BVOp (r1 :< r2 :< Ø) $ op2 (-)
+    r1 * r2       = BVOp (r1 :< r2 :< Ø) $ op2 (*)
+    negate r      = BVOp (r :< Ø)        $ op1 negate
+    signum r      = BVOp (r :< Ø)        $ op1 negate
+    abs r         = BVOp (r :< Ø)        $ op1 abs
+    fromInteger x = BVConst (fromInteger x)
 
 -- | See note for 'Num' instance.
-instance Fractional a => Fractional (BRef s rs a) where
-    r1 / r2        = BROp (r1 :< r2 :< Ø) $ op2 (/)
-    recip r        = BROp (r :< Ø)        $ op1 recip
-    fromRational x = BRConst (fromRational x)
+instance Fractional a => Fractional (BVar s rs a) where
+    r1 / r2        = BVOp (r1 :< r2 :< Ø) $ op2 (/)
+    recip r        = BVOp (r :< Ø)        $ op1 recip
+    fromRational x = BVConst (fromRational x)
 
 -- | See note for 'Num' instance.
-instance Floating a => Floating (BRef s rs a) where
-    pi            = BRConst pi
-    exp   r       = BROp (r :< Ø)        $ op1 exp
-    log   r       = BROp (r :< Ø)        $ op1 log
-    sqrt  r       = BROp (r :< Ø)        $ op1 sqrt
-    r1 ** r2      = BROp (r1 :< r2 :< Ø) $ op2 (**)
-    logBase r1 r2 = BROp (r1 :< r2 :< Ø) $ op2 logBase
-    sin   r       = BROp (r :< Ø)        $ op1 sin
-    cos   r       = BROp (r :< Ø)        $ op1 cos
-    tan   r       = BROp (r :< Ø)        $ op1 tan
-    asin  r       = BROp (r :< Ø)        $ op1 asin
-    acos  r       = BROp (r :< Ø)        $ op1 acos
-    atan  r       = BROp (r :< Ø)        $ op1 atan
-    sinh  r       = BROp (r :< Ø)        $ op1 sinh
-    cosh  r       = BROp (r :< Ø)        $ op1 cosh
-    tanh  r       = BROp (r :< Ø)        $ op1 tanh
-    asinh r       = BROp (r :< Ø)        $ op1 asinh
-    acosh r       = BROp (r :< Ø)        $ op1 acosh
-    atanh r       = BROp (r :< Ø)        $ op1 atanh
+instance Floating a => Floating (BVar s rs a) where
+    pi            = BVConst pi
+    exp   r       = BVOp (r :< Ø)        $ op1 exp
+    log   r       = BVOp (r :< Ø)        $ op1 log
+    sqrt  r       = BVOp (r :< Ø)        $ op1 sqrt
+    r1 ** r2      = BVOp (r1 :< r2 :< Ø) $ op2 (**)
+    logBase r1 r2 = BVOp (r1 :< r2 :< Ø) $ op2 logBase
+    sin   r       = BVOp (r :< Ø)        $ op1 sin
+    cos   r       = BVOp (r :< Ø)        $ op1 cos
+    tan   r       = BVOp (r :< Ø)        $ op1 tan
+    asin  r       = BVOp (r :< Ø)        $ op1 asin
+    acos  r       = BVOp (r :< Ø)        $ op1 acos
+    atan  r       = BVOp (r :< Ø)        $ op1 atan
+    sinh  r       = BVOp (r :< Ø)        $ op1 sinh
+    cosh  r       = BVOp (r :< Ø)        $ op1 cosh
+    tanh  r       = BVOp (r :< Ø)        $ op1 tanh
+    asinh r       = BVOp (r :< Ø)        $ op1 asinh
+    acosh r       = BVOp (r :< Ø)        $ op1 acosh
+    atanh r       = BVOp (r :< Ø)        $ op1 atanh
 

@@ -66,10 +66,14 @@ newtype Summer a = Summer { runSummer :: [a] -> a }
 newtype Unity  a = Unity  { getUnity  :: a        }
     deriving (Functor, Show)
 
+-- | If @a@ is an instance of 'Num', then the canonical @'Summer' a@ is
+-- @'Summer' 'sum'@.
 instance Num a => Known Summer a where
     type KnownC Summer a = Num a
     known = Summer sum
 
+-- | If @a@ is an instance of 'Num', then the canonical @'Unity' a@ is
+-- @'Unity' 1@.
 instance Num a => Known Unity a where
     type KnownC Unity a = Num a
     known = Unity 1

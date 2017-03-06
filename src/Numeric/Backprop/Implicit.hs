@@ -8,8 +8,7 @@
 
 module Numeric.Backprop.Implicit (
   -- * Types
-    BRef, BPOp, Op, OpB
-  , Summer(..), Unity(..)
+    BVar, BPOp, Op, OpB
   -- * Backpropagation
   , backprop, grad, eval
   , backprop', grad', eval'
@@ -24,9 +23,11 @@ module Numeric.Backprop.Implicit (
   , BP.op1, BP.op2, BP.op3, BP.opN
   , BP.op1', BP.op2', BP.op3', BP.opN'
   -- * Utility
-  , summers, unities
   , Prod(..), pattern (:>), only, head'
   , Tuple, pattern (::<), only_
+  , Summer(..), Unity(..)
+  , summers, unities
+  , summers', unities'
   ) where
 
 import           Data.Type.Combinator
@@ -44,7 +45,7 @@ import           Type.Class.Known
 import qualified Generics.SOP              as SOP
 import qualified Numeric.Backprop          as BP
 
-type BPOp rs a = forall s. Prod (BRef s rs) rs -> BRef s rs a
+type BPOp rs a = forall s. Prod (BVar s rs) rs -> BVar s rs a
 
 backprop'
     :: Prod Summer rs
@@ -96,8 +97,8 @@ partsRef'
     => Prod Summer bs
     -> Prod Unity bs
     -> Iso' a (Tuple bs)
-    -> BRef s rs a
-    -> Prod (BRef s rs) bs
+    -> BVar s rs a
+    -> Prod (BVar s rs) bs
 partsRef' ss us i r = imap1 (\ix u -> BP.liftR1 (BP.op1' (f ix u)) r) us
   where
     f :: Index bs b
@@ -115,8 +116,8 @@ partsRef' ss us i r = imap1 (\ix u -> BP.liftR1 (BP.op1' (f ix u)) r) us
 partsRef
     :: forall s rs bs a. (Known Length bs, Every Num bs)
     => Iso' a (Tuple bs)
-    -> BRef s rs a
-    -> Prod (BRef s rs) bs
+    -> BVar s rs a
+    -> Prod (BVar s rs) bs
 partsRef = partsRef' summers unities
 
 withParts'
@@ -124,16 +125,16 @@ withParts'
     => Prod Summer bs
     -> Prod Unity bs
     -> Iso' a (Tuple bs)
-    -> BRef s rs a
-    -> (Prod (BRef s rs) bs -> r)
+    -> BVar s rs a
+    -> (Prod (BVar s rs) bs -> r)
     -> r
 withParts' ss us i r f = f (partsRef' ss us i r)
 
 withParts
     :: forall s rs bs a r. (Known Length bs, Every Num bs)
     => Iso' a (Tuple bs)
-    -> BRef s rs a
-    -> (Prod (BRef s rs) bs -> r)
+    -> BVar s rs a
+    -> (Prod (BVar s rs) bs -> r)
     -> r
 withParts i r f = f (partsRef i r)
 
@@ -141,28 +142,28 @@ splitRefs'
     :: forall s rs as. ()
     => Prod Summer as
     -> Prod Unity as
-    -> BRef s rs (Tuple as)
-    -> Prod (BRef s rs) as
+    -> BVar s rs (Tuple as)
+    -> Prod (BVar s rs) as
 splitRefs' ss us = partsRef' ss us id
 
 splitRefs
     :: forall s rs as. (Known Length as, Every Num as)
-    => BRef s rs (Tuple as)
-    -> Prod (BRef s rs) as
+    => BVar s rs (Tuple as)
+    -> Prod (BVar s rs) as
 splitRefs = partsRef id
 
 gSplit'
     :: forall s rs as a. (SOP.Generic a, SOP.Code a ~ '[as])
     => Prod Summer as
     -> Prod Unity as
-    -> BRef s rs a
-    -> Prod (BRef s rs) as
+    -> BVar s rs a
+    -> Prod (BVar s rs) as
 gSplit' ss us = partsRef' ss us gTuple
 
 gSplit
     :: forall s rs as a. (SOP.Generic a, SOP.Code a ~ '[as], Known Length as, Every Num as)
-    => BRef s rs a
-    -> Prod (BRef s rs) as
+    => BVar s rs a
+    -> Prod (BVar s rs) as
 gSplit = partsRef gTuple
 
 -- TODO: figure out how to split sums

@@ -16,7 +16,7 @@
 
 module Numeric.Backprop.Mono (
   -- * Types
-    BP, BPOp, BRef
+    BP, BPOp, BVar
   , Op
   -- * BP
   -- ** Backprop
@@ -50,65 +50,64 @@ import           Data.Type.Vector
 import           Numeric.Backprop.Op.Mono
 import           Type.Class.Known
 import qualified Numeric.Backprop          as BP
-import qualified Numeric.Backprop.Internal as BP
 
 type BP s n a      = BP.BP s (Replicate n a)
-type BRef s n a    = BP.BRef s (Replicate n a)
-type BPOp s n a b  = BP s n a (BRef s n a b)
-type BPOpI s n a b = VecT n (BRef s n a) a -> BRef s n a b
+type BVar s n a    = BP.BVar s (Replicate n a)
+type BPOp s n a b  = BP s n a (BVar s n a b)
+type BPOpI s n a b = VecT n (BVar s n a) a -> BVar s n a b
 
 type OpB s n a b   = BP.OpB s (Replicate n a) b
 
 opRef
     :: forall s m n a b. Num b
-    => VecT m (BRef s n a) a
+    => VecT m (BVar s n a) a
     -> OpB s m a b
-    -> BP s n a (BRef s n a b)
+    -> BP s n a (BVar s n a b)
 opRef i o = BP.opRef (vecToProd i) o
 
 infixr 1 ~$
 (~$)
     :: Num b
     => OpB s m a b
-    -> VecT m (BRef s n a) a
-    -> BP s n a (BRef s n a b)
+    -> VecT m (BVar s n a) a
+    -> BP s n a (BVar s n a b)
 (~$) = flip opRef
 
 infixr 1 -$
 (-$)
     :: forall s m n a b. Num b
     => BPOp s m a b
-    -> VecT m (BRef s n a) a
-    -> BP s n a (BRef s n a b)
+    -> VecT m (BVar s n a) a
+    -> BP s n a (BVar s n a b)
 o -$ xs = bpOp @_ @_ @a o ~$ xs
 
 constRef
     :: b
-    -> BRef s n a b
+    -> BVar s n a b
 constRef = BP.constRef
 
 opRef1
     :: forall s n a b. Num b
-    => BRef s n a a
+    => BVar s n a a
     -> OpB s N1 a b
-    -> BP s n a (BRef s n a b)
+    -> BP s n a (BVar s n a b)
 opRef1 x o = opRef @_ @_ @n (x :* ØV) o
 
 opRef2
     :: forall s n a b. Num b
-    => BRef s n a a
-    -> BRef s n a a
+    => BVar s n a a
+    -> BVar s n a a
     -> OpB s N2 a b
-    -> BP s n a (BRef s n a b)
+    -> BP s n a (BVar s n a b)
 opRef2 x y o = opRef @_ @_ @n (x :* y :* ØV) o
 
 opRef3
     :: forall s n a b. Num b
-    => BRef s n a a
-    -> BRef s n a a
-    -> BRef s n a a
+    => BVar s n a a
+    -> BVar s n a a
+    -> BVar s n a a
     -> OpB s N3 a b
-    -> BP s n a (BRef s n a b)
+    -> BP s n a (BVar s n a b)
 opRef3 x y z o = opRef @_ @_ @n (x :* y :* z :* ØV) o
 
 backprop
@@ -143,17 +142,17 @@ bpOp = undefined
 
 inpRef
     :: Fin n
-    -> BRef s n a a
-inpRef = BP.BRInp . finIndex
+    -> BVar s n a a
+inpRef = BP.inpRef . finIndex
 
 inpRefs
     :: Known Nat n
-    => VecT n (BRef s n a) a
+    => VecT n (BVar s n a) a
 inpRefs = vgen_ inpRef
 
 withInps
     :: Known Nat n
-    => (VecT n (BRef s n a) a -> BP s n a b)
+    => (VecT n (BVar s n a) a -> BP s n a b)
     -> BP s n a b
 withInps f = f inpRefs
 
@@ -165,29 +164,29 @@ implicitly f = withInps (return . f)
 
 liftR
     :: OpB s m a b
-    -> VecT m (BRef s n r) a
-    -> BRef s n r b
+    -> VecT m (BVar s n r) a
+    -> BVar s n r b
 liftR o = BP.liftR o . vecToProd
 
 liftR1
     :: OpB s N1 a a
-    -> BRef s n r a
-    -> BRef s n r a
+    -> BVar s n r a
+    -> BVar s n r a
 liftR1 = BP.liftR1
 
 liftR2
     :: OpB s N2 a a
-    -> BRef s n r a
-    -> BRef s n r a
-    -> BRef s n r a
+    -> BVar s n r a
+    -> BVar s n r a
+    -> BVar s n r a
 liftR2 = BP.liftR2
 
 liftR3
     :: OpB s N3 a a
-    -> BRef s n r a
-    -> BRef s n r a
-    -> BRef s n r a
-    -> BRef s n r a
+    -> BVar s n r a
+    -> BVar s n r a
+    -> BVar s n r a
+    -> BVar s n r a
 liftR3 = BP.liftR3
 
 

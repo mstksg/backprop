@@ -4,7 +4,7 @@
 
 module Numeric.Backprop.Mono.Implicit (
   -- * Types
-    BRef, BPOp, Op
+    BVar, BPOp, Op
   -- * Backpropagation
   , backprop, grad, eval
   -- * Ref manipulation
@@ -24,7 +24,7 @@ import           Numeric.Backprop.Mono hiding (backprop, BPOp)
 import           Type.Class.Known
 import qualified Numeric.Backprop.Mono        as BP
 
-type BPOp n a b = forall s. VecT n (BRef s n a) a -> BRef s n a b
+type BPOp n a b = forall s. VecT n (BVar s n a) a -> BVar s n a b
 
 backprop
     :: forall n a b. (Num a, Known Nat n)
