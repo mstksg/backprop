@@ -30,18 +30,19 @@
 --
 
 module Numeric.Backprop.Op (
-  -- * Op
+  -- * Implementation
   -- $opdoc
   -- * Types
+  -- ** Op and Synonyms
     Op, pattern Op, OpM(..)
-  , Prod(..), pattern (:>), only, head'
-  , Tuple, pattern (::<), only_
-  -- ** Running
-  -- *** Pure
+  -- ** Tuple Types
+  , Prod(..), Tuple
+  -- * Running
+  -- ** Pure
   , runOp, gradOp, gradOp', gradOpWith, gradOpWith', runOp'
-  -- *** Monadic
+  -- ** Monadic
   , runOpM, gradOpM, gradOpM', gradOpWithM, gradOpWithM', runOpM'
-  -- ** Manipulation
+  -- * Manipulation
   , composeOp
   , composeOp'
   -- * Creation
@@ -51,11 +52,13 @@ module Numeric.Backprop.Op (
   , op1', op2', op3'
   -- ** Automatic creation using the /ad/ library
   , op1, op2, op3, opN
+  , Replicate
   -- ** From Isomorphisms
   , opCoerce, opTup, opIso
   , opCoerce', opTup', opIso'
   -- * Utility
-  , Replicate
+  , pattern (:>), only, head'
+  , pattern (::<), only_
   ) where
 
 import           Data.Bifunctor

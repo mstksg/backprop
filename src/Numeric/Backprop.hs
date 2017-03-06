@@ -11,7 +11,11 @@
 
 module Numeric.Backprop (
   -- * Types
+  -- ** Backprop Types
     BP, BPOp, BPOpI, BVar, Op, OpB
+  -- ** Utility types
+  , Prod(..), Tuple
+  , Summer(..), Unity(..)
   -- * BP
   -- ** Backprop
   , backprop, evalBPOp, gradBPOp
@@ -56,10 +60,10 @@ module Numeric.Backprop (
   , op1, op2, op3, opN
   , op1', op2', op3'
   -- * Utility
-  , Prod(..), pattern (:>), only, head'
-  , Tuple, pattern (::<), only_
-  , Summer(..), summers, summers'
-  , Unity(..), unities, unities'
+  , pattern (:>), only, head'
+  , pattern (::<), only_
+  , summers, unities
+  , summers', unities'
   ) where
 
 import           Control.Monad.Base
