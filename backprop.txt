@@ -917,13 +917,64 @@ inpVars' :: Length rs -> Prod (BVar s rs) rs
 bpOp' :: Prod Summer as -> Prod Unity as -> BPOp s as a -> OpB s as a
 bindVar' :: Summer a -> BVar s rs a -> BP s rs (BVar s rs a)
 
--- | Apply several
+-- | Apply an <a>OpB</a> to a <a>Prod</a> (tupling) of <a>BVar</a>s.
+--   
+--   If you had an <tt><a>OpB</a> s '[a, b, c] d</tt>, this function will
+--   expect a 3-Prod of a <tt><a>BVar</a> s rs a</tt>, a <tt><a>BVar</a> s
+--   rs b</tt>, and a <tt><a>BVar</a> s rs c</tt>, and the result will be a
+--   <tt><a>BVar</a> s rs d</tt>:
+--   
+--   <pre>
+--   myOp :: OpB s '[a, b, c] d
+--   x    :: BVar s rs a
+--   y    :: BVar s rs b
+--   z    :: BVar s rs c
+--   
+--   x :&lt; y :&lt; z :&lt; Ø              :: Prod (BVar s rs) '[a, b, c]
+--   opVar myOp (x :&lt; y :&lt; z :&lt; Ø) :: BP s rs (BVar s rs d)
+--   </pre>
+--   
+--   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can provide
+--   any <a>Op</a> here, as well (like those created by <a>op1</a>,
+--   <a>op2</a>, <tt>constOp</tt>, <a>op0</a> etc.)
+--   
+--   <a>opVar</a> has an infix alias, <a>~$</a>, so the above example can
+--   also be written as:
+--   
+--   <pre>
+--   myOp ~$ (x :&lt; y :&lt; z :&lt; Ø) :: BP s rs (BVar s rs d)
+--   </pre>
+--   
+--   to let you pretend that you're applying the <tt>myOp</tt> function to
+--   three inputs.
+--   
+--   Also note the relation between <a>opVar</a> and <a>liftB</a> and
+--   <a>bindVar</a>:
+--   
+--   <pre>
+--   <a>opVar</a> o xs = <a>bindVar</a> (<a>liftB</a> o xs)
+--   </pre>
 opVar :: Num a => OpB s as a -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
+
+-- | Infix synonym for <a>opVar</a>, which lets you pretend that you're
+--   applying <a>OpB</a>s as if they were functions:
+--   
+--   <pre>
+--   myOp :: OpB s '[a, b, c] d
+--   x    :: BVar s rs a
+--   y    :: BVar s rs b
+--   z    :: BVar s rs c
+--   
+--   x :&lt; y :&lt; z :&lt; Ø           :: Prod (BVar s rs) '[a, b, c]
+--   myOp ~$ (x :&lt; y :&lt; z :&lt; Ø) :: BP s rs (BVar s rs d)
+--   </pre>
 (~$) :: Num a => OpB s as a -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
 infixr 1 ~$
 opVar1 :: Num b => OpB s '[a] b -> BVar s rs a -> BP s rs (BVar s rs b)
 opVar2 :: Num c => OpB s '[a, b] c -> BVar s rs a -> BVar s rs b -> BP s rs (BVar s rs c)
 opVar3 :: Num d => OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar s rs c -> BP s rs (BVar s rs d)
+
+-- | Infix synonym
 (-$) :: (Every Num as, Known Length as, Num a) => BPOp s as a -> Prod (BVar s rs) as -> BPOp s rs a
 infixr 1 -$
 (-&) :: (Every Num as, Known Length as, Num a) => Prod (BVar s rs) as -> (Prod (BVar s as) as -> BPOp s as a) -> BPOp s rs a
