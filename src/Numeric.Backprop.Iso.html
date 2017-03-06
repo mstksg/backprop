@@ -101,7 +101,7 @@
 </span><a name="line-101"></a><span class="hs-comment">-- a /lens/ dependecy, but if you already depend on /lens/, you should use</span><span>
 </span><a name="line-102"></a><span class="hs-comment">-- the version from &quot;Control.Lens.Iso&quot; instead.</span><span>
 </span><a name="line-103"></a><span class="hs-identifier">iso</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><a href="#local-6989586621679087276"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679087277"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><a href="#local-6989586621679087278"><span class="hs-identifier hs-type">b</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679087279"><span class="hs-identifier hs-type">t</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Iso.html#Iso"><span class="hs-identifier hs-type">Iso</span></a><span> </span><a href="#local-6989586621679087276"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679087279"><span class="hs-identifier hs-type">t</span></a><span> </span><a href="#local-6989586621679087277"><span class="hs-identifier hs-type">a</span></a><span> </span><a href="#local-6989586621679087278"><span class="hs-identifier hs-type">b</span></a><span>
-</span><a name="line-104"></a><a name="iso"><a href="Numeric.Backprop.Iso.html#iso"><span class="hs-identifier">iso</span></a></a><span> </span><a name="local-6989586621679087280"><a href="#local-6989586621679087280"><span class="hs-identifier">to</span></a></a><span> </span><a name="local-6989586621679087281"><a href="#local-6989586621679087281"><span class="hs-identifier">from</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">dimap</span><span> </span><a href="#local-6989586621679087280"><span class="hs-identifier hs-var">to</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">fmap</span><span> </span><a href="#local-6989586621679087281"><span class="hs-identifier hs-var">from</span></a><span class="hs-special">)</span><span>
+</span><a name="line-104"></a><a name="iso"><a href="Numeric.Backprop.Iso.html#iso"><span class="hs-identifier">iso</span></a></a><span> </span><a name="local-6989586621679087280"><a href="#local-6989586621679087280"><span class="hs-identifier">to_</span></a></a><span> </span><a name="local-6989586621679087281"><a href="#local-6989586621679087281"><span class="hs-identifier">from_</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">dimap</span><span> </span><a href="#local-6989586621679087280"><span class="hs-identifier hs-var">to_</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">fmap</span><span> </span><a href="#local-6989586621679087281"><span class="hs-identifier hs-var">from_</span></a><span class="hs-special">)</span><span>
 </span><a name="line-105"></a><span>
 </span><a name="line-106"></a><span class="hs-comment">-- | Get the &quot;reverse&quot; direction function from an 'Iso'.</span><span>
 </span><a name="line-107"></a><span class="hs-comment">--</span><span>
@@ -162,7 +162,7 @@ resum1 = iso InL
                     InR _ -&gt; error &quot;inaccessible?&quot;
              )
 
--- | &quot;Reverse&quot; an 'Iso''.  The forward function becomes the backwards
+-- | Reverse an 'Iso''.  The forward function becomes the backwards
 -- function, and the backwards function becomes the forward function.
 --
 -- This is basically provided here so that this package doesn't incurr
@@ -180,27 +180,27 @@ sopTC = iso SOP.unSOP SOP.SOP
       . iso (map1 (view npProd)) (map1 (review npProd))
 
 npProd :: Iso' (SOP.NP f as) (Prod f as)
-npProd = iso to from
+npProd = iso to_ from_
   where
-    to :: SOP.NP f as -&gt; Prod f as
-    to = \case
+    to_ :: SOP.NP f as -&gt; Prod f as
+    to_ = \case
       SOP.Nil     -&gt; &#216;
-      x SOP.:* xs -&gt; x :&lt; to xs
-    from :: Prod f as -&gt; SOP.NP f as
-    from = \case
+      x SOP.:* xs -&gt; x :&lt; to_ xs
+    from_ :: Prod f as -&gt; SOP.NP f as
+    from_ = \case
       &#216;       -&gt; SOP.Nil
-      x :&lt; xs -&gt; x SOP.:* from xs
+      x :&lt; xs -&gt; x SOP.:* from_ xs
 
 nsSum :: Iso' (SOP.NS f as) (Sum f as)
-nsSum = iso to from
+nsSum = iso to_ from_
   where
-    to :: SOP.NS f as -&gt; Sum f as
-    to = \case
+    to_ :: SOP.NS f as -&gt; Sum f as
+    to_ = \case
       SOP.Z x  -&gt; InL x
-      SOP.S xs -&gt; InR (to xs)
-    from :: Sum f as -&gt; SOP.NS f as
-    from = \case
+      SOP.S xs -&gt; InR (to_ xs)
+    from_ :: Sum f as -&gt; SOP.NS f as
+    from_ = \case
       InL x  -&gt; SOP.Z x
-      InR xs -&gt; SOP.S (from xs)
+      InR xs -&gt; SOP.S (from_ xs)
 
 </span></pre></body></html>

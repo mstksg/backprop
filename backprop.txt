@@ -86,9 +86,8 @@ type Iso' s a = Iso s s a a
 --   should use the version from <a>Control.Lens.Iso</a> instead.
 iso :: (s -> a) -> (b -> t) -> Iso s t a b
 
--- | <a>Reverse</a> an <a>Iso'</a>. The forward function becomes the
---   backwards function, and the backwards function becomes the forward
---   function.
+-- | Reverse an <a>Iso'</a>. The forward function becomes the backwards
+--   function, and the backwards function becomes the forward function.
 --   
 --   This is basically provided here so that this package doesn't incurr a
 --   <i>lens</i> dependecy, but if you already depend on <i>lens</i>, you
