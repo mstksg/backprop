@@ -763,17 +763,6 @@ evalBPOp :: forall rs a. Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> 
 --   result with respect to the input tuple.
 gradBPOp :: Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> Tuple rs
 
--- | Convert a <a>BPOpI</a> into a <a>BPOp</a>. That is, convert a function
---   on a bundle of <a>BVar</a>s (generating an implicit graph) into a
---   fully fledged <a>BPOp</a> that you can run <a>backprop</a> on. See
---   <a>BPOpI</a> for more information.
---   
---   If you are going to write exclusively using implicit <a>BVar</a>
---   operations, it might be more convenient to use
---   <a>Numeric.Backprop.Implicit</a> instead, which is geared around that
---   use case.
-implicitly :: Known Length rs => BPOpI s rs a -> BPOp s rs a
-
 -- | A version of <a>backprop</a> taking explicit <a>Summer</a>s and
 --   <a>Unity</a>s, so it can be run with types that aren't instances of
 --   <a>Num</a>.
@@ -788,14 +777,6 @@ evalBPOp' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple
 --   <a>Unity</a>s, so it can be run with types that aren't instances of
 --   <a>Num</a>.
 gradBPOp' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple rs -> Tuple rs
-
--- | A version of <a>implicitly</a> taking explicit <a>Length</a>,
---   indicating the number of inputs required and their types.
---   
---   Mostly useful for rare "extremely polymorphic" situations. If you ever
---   actually explicitly write down <tt>rs</tt> as a list of types, you
---   should be able to just use <a>implicitly</a>.
-implicitly' :: Length rs -> BPOpI s rs a -> BPOp s rs a
 
 -- | Runs a continuation on a <a>Prod</a> of all of the input <a>BVar</a>s.
 --   
