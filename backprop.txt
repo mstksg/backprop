@@ -9,16 +9,170 @@
 @package backprop
 @version 0.1.0.0
 
+
+-- | A poor substitute for the <a>Iso</a> module in <i>lens</i>, providing
+--   the <a>Iso</a> type synonym and some sample useful <a>Iso</a>s for
+--   usage with <i>backprop</i>, without incuring a lens dependency.
+--   
+--   If you also import lens, you should only use this module for the
+--   <a>Iso</a>s it exports, and not import the redefined <a>Iso</a> type
+--   synonym or 're'/'iso'/'review'.
 module Numeric.Backprop.Iso
+
+-- | A family of isomorphisms. See <a>Iso'</a>.
 type Iso s t a b = forall p f. (Profunctor p, Functor f) => p a (f b) -> p s (f t)
+
+-- | An <tt><a>Iso'</a> s a</tt> encodes an isomorphism between an
+--   <tt>s</tt> and an <tt>a</tt>. It basically lets you go from <tt>s
+--   -&gt; a</tt> and back (from <tt>a -&gt; s</tt>) while preserving
+--   structure. You can basically imagine an <tt><a>Iso'</a> s a</tt> to be
+--   an <tt>(s -&gt; a, a -&gt; s)</tt> tuple.
+--   
+--   You can get the "forward" direction of an <a>Iso'</a> with
+--   <a>view</a>:
+--   
+--   <pre>
+--   <a>view</a> :: Iso'' s a -&gt; (s -&gt; a)
+--   </pre>
+--   
+--   And the "backwards" direction with <a>review</a>:
+--   
+--   <pre>
+--   <a>review</a> :: Iso'' s a -&gt; (a -&gt; s)
+--   </pre>
+--   
+--   You can construct an <a>Iso'</a> using <a>iso</a>, giving the forward
+--   and backwards functions:
+--   
+--   <pre>
+--   &gt;&gt;&gt; myIso :: Iso' (Identity a) a
+--       myIso = iso runIdentity Identity
+--   
+--   &gt;&gt;&gt; view myIso (Identity "hello")
+--   "hello"
+--   
+--   &gt;&gt;&gt; review myIso "hello"
+--   Identity "hello"
+--   </pre>
+--   
+--   One powerful thing about <a>Iso'</a>s is that they're
+--   <i>composable</i> using <a>.</a>:
+--   
+--   <pre>
+--   (<a>.</a>) :: <a>Iso'</a> c b -&gt; <a>Iso'</a> b a -&gt; <a>Iso'</a> c a
+--   </pre>
+--   
+--   This is basically provided here so that this package doesn't incurr a
+--   <i>lens</i> dependecy, but if you already depend on <i>lens</i>, you
+--   should use the version from <a>Control.Lens.Iso</a> instead.
 type Iso' s a = Iso s s a a
+
+-- | Construct an <a>Iso</a> by giving the "forward" and "backward"
+--   direction functions:
+--   
+--   <pre>
+--   &gt;&gt;&gt; myIso :: Iso' (Identity a) a
+--       myIso = iso runIdentity Identity
+--   
+--   &gt;&gt;&gt; view myIso (Identity "hello")
+--   "hello"
+--   
+--   &gt;&gt;&gt; review myIso "hello"
+--   Identity "hello"
+--   </pre>
+--   
+--   This is basically provided here so that this package doesn't incurr a
+--   <i>lens</i> dependecy, but if you already depend on <i>lens</i>, you
+--   should use the version from <a>Control.Lens.Iso</a> instead.
 iso :: (s -> a) -> (b -> t) -> Iso s t a b
+
+-- | <a>Reverse</a> an <a>Iso'</a>. The forward function becomes the
+--   backwards function, and the backwards function becomes the forward
+--   function.
+--   
+--   This is basically provided here so that this package doesn't incurr a
+--   <i>lens</i> dependecy, but if you already depend on <i>lens</i>, you
+--   should use the version from <a>Control.Lens.Review</a> instead.
 re :: Iso' s a -> Iso' a s
+
+-- | Get the "reverse" direction function from an <a>Iso</a>.
+--   
+--   This is basically provided here so that this package doesn't incurr a
+--   <i>lens</i> dependecy, but if you already depend on <i>lens</i>, you
+--   should use the version from <a>Control.Lens.Review</a> instead.
 review :: Iso s t a b -> b -> t
-coercible :: Coercible s a => Iso' s a
+
+-- | <a>view</a> is a synonym for (<a>^.</a>):
+--   
+--   <pre>
+--   &gt;&gt;&gt; view _1 (1, 2)
+--   1
+--   </pre>
+--   
+--   The reason it's not in <a>Lens.Micro</a> is that <tt>view</tt> in lens
+--   has a more general signature:
+--   
+--   <pre>
+--   view :: MonadReader s m =&gt; Getting a s a -&gt; m a
+--   </pre>
+--   
+--   So, you would be able to use this <a>view</a> with functions, but not
+--   in various reader monads. For most people this shouldn't be an issue;
+--   if it is for you, use <tt>view</tt> from <a>microlens-mtl</a>.
+view :: Getting a s a -> s -> a
+
+-- | A useful <a>Iso</a> between two types with the same runtime
+--   representation.
+coerced :: Coercible s a => Iso' s a
+
+-- | An <a>Iso</a> between a type that is a product type, and a tuple that
+--   contains all of its components. Uses <a>Generics.SOP</a> and the
+--   <a>Generic</a> typeclass.
+--   
+--   <pre>
+--   &gt;&gt;&gt; import qualified Generics.SOP as SOP
+--   
+--   &gt;&gt;&gt; data Foo = A Int Bool      deriving Generic
+--   
+--   &gt;&gt;&gt; instance SOP.Generic Foo
+--   
+--   &gt;&gt;&gt; 'view' 'gTuple' (A 10 True)
+--   10 ::&lt; True ::&lt; Ø
+--   
+--   &gt;&gt;&gt; 'review' 'gTuple' (15 ::&lt; False ::&lt; Ø)
+--   A 15 False
+--   </pre>
 gTuple :: (Generic a, Code a ~ '[as]) => Iso' a (Tuple as)
+
+-- | An <a>Iso</a> between a sum type whose constructors are products, and
+--   a sum (<a>Sum</a>) of products (<a>Tuple</a>). Uses
+--   <a>Generics.SOP</a> and the <a>Generic</a> typeclass.
+--   
+--   <pre>
+--   &gt;&gt;&gt; import qualified Generics.SOP as SOP
+--   
+--   &gt;&gt;&gt; data Bar = A Int Bool | B String Double
+--   
+--   &gt;&gt;&gt; instance SOP.Generic Bar
+--   
+--   &gt;&gt;&gt; 'view' 'gSOP' (A 10 True)
+--   'InL' (10 ::&lt; True ::&lt; Ø)
+--   
+--   &gt;&gt;&gt; 'view' 'gSOP' (B "hello" 3.4)
+--   'InR' ('InL' ("hello" ::&lt; 3.4 ::&lt; Ø))
+--   
+--   &gt;&gt;&gt; 'review' 'gTuple' ('InL' (15 ::&lt; False ::&lt; Ø))
+--   A 15 False
+--   
+--   &gt;&gt;&gt; 'review' 'gTuple' ('InR' ('InL' ("bye" ::&lt; 9.8 ::&lt; Ø)))
+--   B "bye" 9.8
+--   </pre>
 gSOP :: Generic a => Iso' a (Sum Tuple (Code a))
+
+-- | An iso between a single-type <a>Sum</a> and the single type.
 sum1 :: Iso' (Sum f '[a]) (f a)
+
+-- | An iso between a single type and a single-type <a>Sum</a>.
 resum1 :: Iso' (f a) (Sum f '[a])
 
 
@@ -381,12 +535,17 @@ op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   </pre>
 opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
 
--- | An <a>Op</a> between two coercibles. Requires the input to be an
---   instance of <a>Num</a>.
+-- | An <a>Op</a> that coerces an item into another item whose type has the
+--   same runtime representation. Requires the input to be an instance of
+--   <a>Num</a>.
 --   
 --   <pre>
 --   &gt;&gt;&gt; gradOp' opCoerce (Identity 5) :: (Int, Identity Int)
 --   (5, Identity 1)
+--   </pre>
+--   
+--   <pre>
+--   <a>opCoerce</a> = <a>opIso</a> <a>coerced</a>
 --   </pre>
 opCoerce :: (Coercible a b, Num a) => Op '[a] b
 

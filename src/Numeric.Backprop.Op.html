@@ -385,15 +385,19 @@
 </span><a name="line-385"></a><span class="hs-comment">-- | A version of 'opCoerce' that takes an explicit 'Unity', so can be run</span><span>
 </span><a name="line-386"></a><span class="hs-comment">-- on values that aren't 'Num' instances.</span><span>
 </span><a name="line-387"></a><span class="hs-identifier">opCoerce'</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Coercible</span><span> </span><a href="#local-6989586621679119271"><span class="hs-identifier hs-type">a</span></a><span> </span><a href="#local-6989586621679119272"><span class="hs-identifier hs-type">b</span></a><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Numeric.Backprop.Internal.Helper.html#Unity"><span class="hs-identifier hs-type">Unity</span></a><span> </span><a href="#local-6989586621679119271"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Op.html#Op"><span class="hs-identifier hs-type">Op</span></a><span> </span><span class="hs-char">'[a] b
-opCoerce' u = opIso' u coercible
+opCoerce' u = opIso' u coerced
 
--- | An 'Op' between two coercibles.  Requires the input to be an instance
--- of 'Num'.
+-- | An 'Op' that coerces an item into another item whose type has the same
+-- runtime representation.  Requires the input to be an instance of 'Num'.
 --
 -- &gt;&gt;&gt; gradOp' opCoerce (Identity 5) :: (Int, Identity Int)
 -- (5, Identity 1)
+--
+-- @
+-- 'opCoerce' = 'opIso' 'coerced'
+-- @
 opCoerce :: (Coercible a b, Num a) =&gt; Op '[a] b
-opCoerce = opIso coercible
+opCoerce = opIso coerced
 
 -- | A version of 'opTup' that takes explicit 'Unity's, so can be run on
 -- values of types that aren't 'Num' instances.
