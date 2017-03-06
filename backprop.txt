@@ -756,46 +756,6 @@ data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
 -- | A Prod of simple Haskell types.
 type Tuple = Prod * I
 
--- | Instructions on how to "sum" a list of values of a given type.
---   Basically used as an explicit witness for a <a>Num</a> instance.
---   
---   For most types, the only meaningful value of type <tt><a>Summer</a>
---   a</tt> is <tt><a>Summer</a> <a>sum</a></tt>. However, using
---   <a>Summer</a> lets us use <tt>BP</tt> with types that are <i>not</i>
---   instances of <a>Num</a>. Any type can be used, as long as you provide
---   a way to "sum" it!
---   
---   For most of the functions in this library, you can completely ignore
---   this, as they will be generated automatically. You only need to work
---   with this directly if you want to use custom types that <i>aren't</i>
---   instances of <a>Num</a> with this library.
---   
---   If 'Num a' is satisfied, one can create the canonical <a>Summer</a>
---   using <tt><a>known</a> :: <a>Num</a> a =&gt; <a>Summer</a> a</tt>.
-newtype Summer a
-Summer :: ([a] -> a) -> Summer a
-[runSummer] :: Summer a -> [a] -> a
-
--- | A canonical "unity" (the multiplicative identity) for a given type.
---   Basically used as an explicit witness for a <a>Num</a> instance.
---   
---   For most types, the only meaningful value of type <tt><a>Unity</a>
---   a</tt> is <tt><a>Unity</a> 1'</tt>. However, using <a>Unity</a> lets
---   us use <tt>BP</tt> with types that are <i>not</i> instances of
---   <a>Num</a>. Any type can be used, as long as you provide a way to get
---   a multiplicative identity in it!
---   
---   For most of the functions in this library, you can completely ignore
---   this, as they will be generated automatically. You only need to work
---   with this directly if you want to use custom types that <i>aren't</i>
---   instances of <a>Num</a> with this library.
---   
---   If 'Num a' is satisfied, one can create the canonical <a>Unity</a>
---   using <tt><a>known</a> :: <a>Num</a> a =&gt; <a>Unity</a> a</tt>.
-newtype Unity a
-Unity :: a -> Unity a
-[getUnity] :: Unity a -> a
-
 -- | Perform backpropagation on the given <a>BPOp</a>. Returns the result
 --   of the operation it represents, as well as the gradient of the result
 --   with respect to its inputs.
@@ -862,7 +822,8 @@ implicitly :: Known Length rs => BPOpI s rs a -> BPOp s rs a
 -- | A version of <a>withInps</a> taking explicit <a>Length</a>, indicating
 --   the number of inputs required and their types.
 --   
---   Mostly useful for rare "extremely polymorphic" situations. If you ever
+--   Mostly useful for rare "extremely polymorphic" situations, where GHC
+--   can't infer the type and length of the list of inputs. If you ever
 --   actually explicitly write down <tt>rs</tt> as a list of types, you
 --   should be able to just use <a>withInps</a>.
 withInps' :: Length rs -> (Prod (BVar s rs) rs -> BP s rs a) -> BP s rs a
@@ -870,7 +831,8 @@ withInps' :: Length rs -> (Prod (BVar s rs) rs -> BP s rs a) -> BP s rs a
 -- | A version of <a>implicitly</a> taking explicit <a>Length</a>,
 --   indicating the number of inputs required and their types.
 --   
---   Mostly useful for rare "extremely polymorphic" situations. If you ever
+--   Mostly useful for rare "extremely polymorphic" situations, where GHC
+--   can't infer the type and length of the list of inputs. If you ever
 --   actually explicitly write down <tt>rs</tt> as a list of types, you
 --   should be able to just use <a>implicitly</a>.
 implicitly' :: Length rs -> BPOpI s rs a -> BPOp s rs a
@@ -900,6 +862,23 @@ constVar :: a -> BVar s rs a
 --   directly. It's cleaner to get all of your input <a>BVar</a>s together
 --   using <a>withInps</a> or <a>inpVars</a>.
 inpVar :: Index rs a -> BVar s rs a
+
+-- | Get a <a>Prod</a> (tupling) of <a>BVar</a>s for all of the input
+--   environment (<tt>rs</tt>) of the <tt><a>BP</a> s rs</tt>
+--   
+--   For example, if your <a>BP</a> has an <a>Int</a> and <a>Double</a> in
+--   its input environment (a <tt><a>BP</a> s '[Int, Double]</tt>), this
+--   would return a <a>BVar</a> pointing to the <a>Int</a> and a
+--   <a>BVar</a> pointing to the <a>Double</a>.
+--   
+--   <pre>
+--   let x :&lt; y :&lt; Ø = <a>inpVars</a> :: <a>Prod</a> (<a>BVar</a> s '[Int, Double]) '[Int, Double]
+--   
+--   -- the first item, x, is a var to the input <a>Int</a>
+--   x :: <a>BVar</a> s '[Int, Double] Int
+--   -- the second item, y, is a var to the input <a>Double</a>
+--   y :: <a>BVar</a> s '[Int, Double] Double
+--   </pre>
 inpVars :: Known Length rs => Prod (BVar s rs) rs
 
 -- | Turn a <a>BPOp</a> into an <a>OpB</a>. Basically converts a <a>BP</a>
@@ -912,9 +891,66 @@ inpVars :: Known Length rs => Prod (BVar s rs) rs
 --   <a>Op</a>-related functions in this moduel, including <a>opVar</a>,
 --   <a>~$</a>, etc.
 bpOp :: (Every Num as, Known Length as) => BPOp s as a -> OpB s as a
+
+-- | Concretizes a delayed <a>BVar</a>. If you build up a <a>BVar</a> using
+--   numeric functions like <a>+</a> or <a>*</a> or using <tt>liftR</tt>,
+--   it'll defer the evaluation, and all of its usage sites will create a
+--   separate graph node.
+--   
+--   Use <a>bindVar</a> if you ever intend to use a <a>BVar</a> in more
+--   than one location.
+--   
+--   <pre>
+--   -- bad
+--   errSquared :: Num a =&gt; BP s '[a, a] a
+--   errSquared = withInp $ (r :<a>:&lt; Ø) -</a> do
+--       let err = r - t
+--       return (err * err)   -- err is used twice!
+--   
+--   -- good
+--   errSquared :: Num a =&gt; BP s '[a, a] a
+--   errSquared = withInp $ (r :<a>:&lt; Ø) -</a> do
+--       let err = r - t
+--       e &lt;- bindVar err     -- force e, so that it's safe to use twice!
+--       return (e * e)
+--   
+--   -- better
+--   errSquared :: Num a =&gt; BP s '[a, a] a
+--   errSquared = withInp $ (r :<a>:&lt; Ø) -</a> do
+--       let err = r - t
+--       e &lt;- bindVar err
+--       bindVar (e * e)      -- result is forced so user doesn't have to worry
+--   </pre>
+--   
+--   Note the relation to <a>opVar</a> <i> <a>~$</a> </i> <tt>liftR</tt> /
+--   <a>.$</a>:
+--   
+--   <pre>
+--   <a>opVar</a> o xs    = <a>bindVar</a> (<tt>liftR</tt> o xs)
+--   o <a>~$</a> xs       = <a>bindVar</a> (o <a>.$</a> xs)
+--   <a>op2</a> (*) <a>~$</a> (x :&lt; y :&lt; Ø) = <a>bindVar</a> (x * y)
+--   </pre>
+--   
+--   So you can avoid <a>bindVar</a> altogether if you use the explicitly
+--   binding <a>~$</a> and <a>opVar</a> etc.
+--   
+--   Note that <a>bindVar</a> on <a>BVar</a>s that are already forced is a
+--   no-op.
 bindVar :: Num a => BVar s rs a -> BP s rs (BVar s rs a)
+
+-- | A version of <a>inpVars</a> taking explicit <a>Length</a>, indicating
+--   the number of inputs required and their types.
+--   
+--   Mostly useful for rare "extremely polymorphic" situations, where GHC
+--   can't infer the type and length of the list of inputs. If you ever
+--   actually explicitly write down <tt>rs</tt> as a list of types, you
+--   should be able to just use <a>inpVars</a>.
 inpVars' :: Length rs -> Prod (BVar s rs) rs
 bpOp' :: Prod Summer as -> Prod Unity as -> BPOp s as a -> OpB s as a
+
+-- | A version of <a>bindVar</a> that requires an explicit <a>Summer</a>,
+--   so that you can use it on values whose types aren't instances of
+--   <a>Num</a>.
 bindVar' :: Summer a -> BVar s rs a -> BP s rs (BVar s rs a)
 
 -- | Apply an <a>OpB</a> to a <a>Prod</a> (tupling) of <a>BVar</a>s.
@@ -1150,6 +1186,46 @@ infixr 5 ::<
 
 -- | Singleton Tuple.
 only_ :: a -> Tuple ((:) * a ([] *))
+
+-- | Instructions on how to "sum" a list of values of a given type.
+--   Basically used as an explicit witness for a <a>Num</a> instance.
+--   
+--   For most types, the only meaningful value of type <tt><a>Summer</a>
+--   a</tt> is <tt><a>Summer</a> <a>sum</a></tt>. However, using
+--   <a>Summer</a> lets us use <tt>BP</tt> with types that are <i>not</i>
+--   instances of <a>Num</a>. Any type can be used, as long as you provide
+--   a way to "sum" it!
+--   
+--   For most of the functions in this library, you can completely ignore
+--   this, as they will be generated automatically. You only need to work
+--   with this directly if you want to use custom types that <i>aren't</i>
+--   instances of <a>Num</a> with this library.
+--   
+--   If 'Num a' is satisfied, one can create the canonical <a>Summer</a>
+--   using <tt><a>known</a> :: <a>Num</a> a =&gt; <a>Summer</a> a</tt>.
+newtype Summer a
+Summer :: ([a] -> a) -> Summer a
+[runSummer] :: Summer a -> [a] -> a
+
+-- | A canonical "unity" (the multiplicative identity) for a given type.
+--   Basically used as an explicit witness for a <a>Num</a> instance.
+--   
+--   For most types, the only meaningful value of type <tt><a>Unity</a>
+--   a</tt> is <tt><a>Unity</a> 1'</tt>. However, using <a>Unity</a> lets
+--   us use <tt>BP</tt> with types that are <i>not</i> instances of
+--   <a>Num</a>. Any type can be used, as long as you provide a way to get
+--   a multiplicative identity in it!
+--   
+--   For most of the functions in this library, you can completely ignore
+--   this, as they will be generated automatically. You only need to work
+--   with this directly if you want to use custom types that <i>aren't</i>
+--   instances of <a>Num</a> with this library.
+--   
+--   If 'Num a' is satisfied, one can create the canonical <a>Unity</a>
+--   using <tt><a>known</a> :: <a>Num</a> a =&gt; <a>Unity</a> a</tt>.
+newtype Unity a
+Unity :: a -> Unity a
+[getUnity] :: Unity a -> a
 
 -- | If all the types in <tt>as</tt> are instances of <a>Num</a>, generate
 --   a <tt><a>Prod</a> <a>Summer</a> as</tt>, or a tuple of <a>Summer</a>s
