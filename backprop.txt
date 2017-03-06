@@ -25,6 +25,10 @@ resum1 :: Iso' (f a) (Sum f '[a])
 -- | Provides the <a>Op</a> (and <a>OpM</a>) type and combinators, which
 --   represent differentiable functions/operations on values, and are used
 --   by the library to perform backpropagation.
+--   
+--   Markdown ========
+--   
+--   Does it work?
 module Numeric.Backprop.Op
 
 -- | An <tt><a>Op</a> as a</tt> is a type synonym over <a>OpM</a> that
