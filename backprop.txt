@@ -91,11 +91,25 @@ OpM :: (Tuple as -> m (a, Maybe a -> m (Tuple as))) -> OpM m as a
 --   See module documentation for <a>Numeric.Backprop.Op</a> for more
 --   details.
 [runOpM'] :: OpM m as a -> Tuple as -> m (a, Maybe a -> m (Tuple as))
-runOp' :: Op as a -> Tuple as -> (a, Maybe a -> Tuple as)
+
+-- | <a>Run</a> the function that an <a>Op</a> encodes, to get the result.
+--   
+--   <pre>
+--   &gt;&gt;&gt; runOp (op2 (*)) (3 ::&lt; 5 ::&lt; Ø)
+--   15
+--   </pre>
 runOp :: Op as a -> Tuple as -> a
 gradOp :: Op as a -> Tuple as -> Tuple as
 gradOpWith :: Op as a -> Tuple as -> a -> Tuple as
 gradOpWith' :: Op as a -> Tuple as -> Maybe a -> Tuple as
+runOp' :: Op as a -> Tuple as -> (a, Maybe a -> Tuple as)
+
+-- | <a>Run</a> the function that an <a>OpM</a> encodes, to get the result.
+--   
+--   <pre>
+--   &gt;&gt;&gt; runOpM (op2 (*)) (3 ::&lt; 5 ::&lt; Ø) :: IO Int
+--   15
+--   </pre>
 runOpM :: Functor m => OpM m as a -> Tuple as -> m a
 gradOpWithM :: Monad m => OpM m as a -> Tuple as -> a -> m (Tuple as)
 gradOpWithM' :: Monad m => OpM m as a -> Tuple as -> Maybe a -> m (Tuple as)
@@ -105,9 +119,9 @@ gradOpWithM' :: Monad m => OpM m as a -> Tuple as -> Maybe a -> m (Tuple as)
 --   functions, or <tt>liftAN</tt>.
 --   
 --   That is, given an <tt><a>OpM</a> m as b1</tt>, an <tt><a>OpM</a> m as
---   b2</tt>, and an <tt><a>OpM</a> m as b3</tt>, it can compose them in
---   parallel with an <tt><a>OpM</a> m '[b1,b2,b3] c</tt> to create an
---   <tt><a>OpM</a> as c</tt>.
+--   b2</tt>, and an <tt><a>OpM</a> m as b3</tt>, it can compose them with
+--   an <tt><a>OpM</a> m '[b1,b2,b3] c</tt> to create an <tt><a>OpM</a> as
+--   c</tt>.
 composeOp :: (Monad m, Known Length as, Every Num as) => Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
 
 -- | <a>composeOp</a>, but taking explicit <a>Summer</a>s, for the
