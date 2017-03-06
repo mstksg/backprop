@@ -380,6 +380,8 @@ registerVar bpir = \case
 -- @
 -- 'opVar' o xs = 'bindVar' ('liftB' o xs)
 -- @
+--
+-- 'opVar' can be thought of as a &quot;binding&quot; version of 'liftB'.
 opVar
     :: Num a
     =&gt; OpB s as a
@@ -403,6 +405,13 @@ opVar = opVar' known
 -- Note that 'OpB' is a superclass of 'Op', so you can pass in any 'Op'
 -- here, as well (like those created by 'op1', 'op2', 'constOp', 'op0'
 -- etc.)
+--
+-- '~$' can also be thought of as a &quot;binding&quot; version of '.$':
+--
+-- @
+-- o '~$' xs = 'bindVar' (o '.$' xs)
+-- @
+--
 infixr 1 ~$
 (~$)
     :: Num a
@@ -563,24 +572,24 @@ bindVar' s r = case r of
 --
 -- @
 -- -- bad
--- errSquared :: Num a =&gt; BP s '[a, a] a
--- errSquared = withInp $ \(r :&lt; t :&lt; &#216;) -&gt; do
+-- errSquared :: Num a =&gt; 'BP' s '[a, a] a
+-- errSquared = 'withInp' $ \(r :&lt; t :&lt; &#216;) -&gt; do
 --     let err = r - t
---     return (err * err)   -- err is used twice!
+--     'return' (err * err)   -- err is used twice!
 --
 -- -- good
--- errSquared :: Num a =&gt; BP s '[a, a] a
--- errSquared = withInp $ \(r :&lt; t :&lt; &#216;) -&gt; do
+-- errSquared :: Num a =&gt; 'BP' s '[a, a] a
+-- errSquared = 'withInp' $ \(r :&lt; t :&lt; &#216;) -&gt; do
 --     let err = r - t
---     e &lt;- bindVar err     -- force e, so that it's safe to use twice!
---     return (e * e)
+--     e &lt;- 'bindVar' err     -- force e, so that it's safe to use twice!
+--     'return' (e * e)
 --
 -- -- better
--- errSquared :: Num a =&gt; BP s '[a, a] a
--- errSquared = withInp $ \(r :&lt; t :&lt; &#216;) -&gt; do
+-- errSquared :: Num a =&gt; 'BP' s '[a, a] a
+-- errSquared = withInps $ \(r :&lt; t :&lt; &#216;) -&gt; do
 --     let err = r - t
---     e &lt;- bindVar err
---     bindVar (e * e)      -- result is forced so user doesn't have to worry
+--     e &lt;- 'bindVar' err
+--     'bindVar' (e * e)      -- result is forced so user doesn't have to worry
 -- @
 --
 -- Note the relation to 'opVar' / '~$' / 'liftR' / '.$':

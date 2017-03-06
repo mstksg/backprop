@@ -689,7 +689,8 @@ type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 --   those instances or using <a>liftB</a>, it delays evaluation, so every
 --   usage site has to re-compute the result/create a new node. If you want
 --   to re-use a <a>BVar</a> you created using <a>+</a> or <a>-</a> or
---   <a>liftB</a>, use <a>bindVar</a> to force it first.)
+--   <a>liftB</a>, use <a>bindVar</a> to force it first. See documentation
+--   for <a>bindVar</a> for more details.)
 data BVar :: Type -> [Type] -> Type -> Type
 
 -- | An <tt><a>Op</a> as a</tt> is a type synonym over <a>OpM</a> that
@@ -902,24 +903,24 @@ bpOp :: (Every Num rs, Known Length rs) => BPOp s rs a -> OpB s rs a
 --   
 --   <pre>
 --   -- bad
---   errSquared :: Num a =&gt; BP s '[a, a] a
---   errSquared = withInp $ (r :<a>:&lt; Ø) -</a> do
+--   errSquared :: Num a =&gt; <a>BP</a> s '[a, a] a
+--   errSquared = <tt>withInp</tt> $ (r :<a>:&lt; Ø) -</a> do
 --       let err = r - t
---       return (err * err)   -- err is used twice!
+--       <a>return</a> (err * err)   -- err is used twice!
 --   
 --   -- good
---   errSquared :: Num a =&gt; BP s '[a, a] a
---   errSquared = withInp $ (r :<a>:&lt; Ø) -</a> do
+--   errSquared :: Num a =&gt; <a>BP</a> s '[a, a] a
+--   errSquared = <tt>withInp</tt> $ (r :<a>:&lt; Ø) -</a> do
 --       let err = r - t
---       e &lt;- bindVar err     -- force e, so that it's safe to use twice!
---       return (e * e)
+--       e &lt;- <a>bindVar</a> err     -- force e, so that it's safe to use twice!
+--       <a>return</a> (e * e)
 --   
 --   -- better
---   errSquared :: Num a =&gt; BP s '[a, a] a
---   errSquared = withInp $ (r :<a>:&lt; Ø) -</a> do
+--   errSquared :: Num a =&gt; <a>BP</a> s '[a, a] a
+--   errSquared = withInps $ (r :<a>:&lt; Ø) -</a> do
 --       let err = r - t
---       e &lt;- bindVar err
---       bindVar (e * e)      -- result is forced so user doesn't have to worry
+--       e &lt;- <a>bindVar</a> err
+--       <a>bindVar</a> (e * e)      -- result is forced so user doesn't have to worry
 --   </pre>
 --   
 --   Note the relation to <a>opVar</a> <i> <a>~$</a> </i> <tt>liftR</tt> /
@@ -993,6 +994,8 @@ bindVar' :: Summer a -> BVar s rs a -> BP s rs (BVar s rs a)
 --   <pre>
 --   <a>opVar</a> o xs = <a>bindVar</a> (<a>liftB</a> o xs)
 --   </pre>
+--   
+--   <a>opVar</a> can be thought of as a "binding" version of <a>liftB</a>.
 opVar :: Num a => OpB s as a -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
 
 -- | Infix synonym for <a>opVar</a>, which lets you pretend that you're
@@ -1011,6 +1014,12 @@ opVar :: Num a => OpB s as a -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
 --   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
 --   any <a>Op</a> here, as well (like those created by <a>op1</a>,
 --   <a>op2</a>, <tt>constOp</tt>, <a>op0</a> etc.)
+--   
+--   <a>~$</a> can also be thought of as a "binding" version of <a>.$</a>:
+--   
+--   <pre>
+--   o <a>~$</a> xs = <a>bindVar</a> (o <a>.$</a> xs)
+--   </pre>
 (~$) :: Num a => OpB s as a -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
 infixr 1 ~$
 
@@ -1351,7 +1360,8 @@ module Numeric.Backprop.Implicit
 --   those instances or using <a>liftB</a>, it delays evaluation, so every
 --   usage site has to re-compute the result/create a new node. If you want
 --   to re-use a <a>BVar</a> you created using <a>+</a> or <a>-</a> or
---   <a>liftB</a>, use <a>bindVar</a> to force it first.)
+--   <a>liftB</a>, use <a>bindVar</a> to force it first. See documentation
+--   for <a>bindVar</a> for more details.)
 data BVar :: Type -> [Type] -> Type -> Type
 type BPOp rs a = forall s. Prod (BVar s rs) rs -> BVar s rs a
 
