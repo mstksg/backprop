@@ -288,10 +288,38 @@ op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
 op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
 op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
 opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
+
+-- | An <a>Op</a> between two coercibles. Requires the input to be an
+--   instance of <a>Num</a>.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' opCoerce (Identity 5) :: (Int, Identity Int)
+--   (5, Identity 1)
+--   </pre>
 opCoerce :: (Coercible a b, Num a) => Op '[a] b
+
+-- | An <a>Op</a> that takes <tt>as</tt> and returns exactly the input
+--   tuple.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' opTup (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø)
+--   (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø, 1 ::&lt; 1 ::&lt; 1 ::&lt; 1 ::&lt; Ø)
+--   </pre>
 opTup :: (Every Num as, Known Length as) => Op as (Tuple as)
+
+-- | An <a>Op</a> that runs the input value through the isomorphism encoded
+--   in the <a>Iso</a>. Requires the input to be an instance of <a>Num</a>.
+--   
+--   Warning: This is unsafe! It assumes that the isomorphisms themselves
+--   have derivative 1, so will break for things like <a>exponenting</a>.
 opIso :: Num a => Iso' a b -> Op '[a] b
+
+-- | A version of <a>opCoerce</a> that takes an explicit <a>Unity</a>, so
+--   can be run on values that aren't <a>Num</a> instances.
 opCoerce' :: Coercible a b => Unity a -> Op '[a] b
+
+-- | A version of <a>opTup</a> that takes explicit <a>Unity</a>s, so can be
+--   run on values that aren't <a>Num</a> instances.
 opTup' :: Prod Unity as -> Op as (Tuple as)
 opIso' :: Unity a -> Iso' a b -> Op '[a] b
 data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *

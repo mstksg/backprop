@@ -304,28 +304,39 @@
 </span><a name="line-304"></a><span class="hs-comment">-- &gt;&gt;&gt; gradOp (op2 (*)) (3 ::&lt; 5 ::&lt; &#216;)</span><span>
 </span><a name="line-305"></a><span class="hs-comment">-- 5 ::&lt; 3 ::&lt; &#216;</span><span>
 </span><a name="line-306"></a><span class="hs-comment">-- -- the gradient of x*y is (y, x)</span><span>
-</span><a name="line-307"></a><span class="hs-comment">--</span><span>
-</span><a name="line-308"></a><span class="hs-identifier">gradOp</span><span> </span><span class="hs-glyph">::</span><span> </span><a href="Numeric.Backprop.Op.html#Op"><span class="hs-identifier hs-type">Op</span></a><span> </span><span class="hs-keyword">as</span><span> </span><a href="#local-6989586621679119281"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Tuple</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Tuple</span><span> </span><span class="hs-keyword">as</span><span>
-</span><a name="line-309"></a><a name="gradOp"><a href="Numeric.Backprop.Op.html#gradOp"><span class="hs-identifier">gradOp</span></a></a><span> </span><a name="local-6989586621679119841"><a href="#local-6989586621679119841"><span class="hs-identifier">o</span></a></a><span> </span><a name="local-6989586621679119842"><a href="#local-6989586621679119842"><span class="hs-identifier">i</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Op.html#gradOpWith%27"><span class="hs-identifier hs-var">gradOpWith'</span></a><span> </span><a href="#local-6989586621679119841"><span class="hs-identifier hs-var">o</span></a><span> </span><a href="#local-6989586621679119842"><span class="hs-identifier hs-var">i</span></a><span> </span><span class="hs-identifier hs-var">Nothing</span><span>
-</span><a name="line-310"></a><span>
-</span><a name="line-311"></a><span class="hs-comment">-- | The monadic version of 'gradOp', for 'OpM's.</span><span>
-</span><a name="line-312"></a><span class="hs-identifier">gradOpM</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Monad</span><span> </span><a href="#local-6989586621679119277"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Numeric.Backprop.Op.html#OpM"><span class="hs-identifier hs-type">OpM</span></a><span> </span><a href="#local-6989586621679119277"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-keyword">as</span><span> </span><a href="#local-6989586621679119279"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Tuple</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679119277"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Tuple</span><span> </span><span class="hs-keyword">as</span><span class="hs-special">)</span><span>
-</span><a name="line-313"></a><a name="gradOpM"><a href="Numeric.Backprop.Op.html#gradOpM"><span class="hs-identifier">gradOpM</span></a></a><span> </span><a name="local-6989586621679119843"><a href="#local-6989586621679119843"><span class="hs-identifier">o</span></a></a><span> </span><a name="local-6989586621679119844"><a href="#local-6989586621679119844"><span class="hs-identifier">i</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><a name="line-314"></a><span>    </span><span class="hs-special">(</span><span class="hs-identifier">_</span><span class="hs-special">,</span><span> </span><a name="local-6989586621679119845"><a href="#local-6989586621679119845"><span class="hs-identifier">gF</span></a></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><a href="Numeric.Backprop.Op.html#runOpM%27"><span class="hs-identifier hs-var">runOpM'</span></a><span> </span><a href="#local-6989586621679119843"><span class="hs-identifier hs-var">o</span></a><span> </span><a href="#local-6989586621679119844"><span class="hs-identifier hs-var">i</span></a><span>
-</span><a name="line-315"></a><span>    </span><a href="#local-6989586621679119845"><span class="hs-identifier hs-var">gF</span></a><span> </span><span class="hs-identifier hs-var">Nothing</span><span>
-</span><a name="line-316"></a><span>
-</span><a name="line-317"></a><span>
+</span><a name="line-307"></a><span class="hs-identifier">gradOp</span><span> </span><span class="hs-glyph">::</span><span> </span><a href="Numeric.Backprop.Op.html#Op"><span class="hs-identifier hs-type">Op</span></a><span> </span><span class="hs-keyword">as</span><span> </span><a href="#local-6989586621679119281"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Tuple</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Tuple</span><span> </span><span class="hs-keyword">as</span><span>
+</span><a name="line-308"></a><a name="gradOp"><a href="Numeric.Backprop.Op.html#gradOp"><span class="hs-identifier">gradOp</span></a></a><span> </span><a name="local-6989586621679119841"><a href="#local-6989586621679119841"><span class="hs-identifier">o</span></a></a><span> </span><a name="local-6989586621679119842"><a href="#local-6989586621679119842"><span class="hs-identifier">i</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Op.html#gradOpWith%27"><span class="hs-identifier hs-var">gradOpWith'</span></a><span> </span><a href="#local-6989586621679119841"><span class="hs-identifier hs-var">o</span></a><span> </span><a href="#local-6989586621679119842"><span class="hs-identifier hs-var">i</span></a><span> </span><span class="hs-identifier hs-var">Nothing</span><span>
+</span><a name="line-309"></a><span>
+</span><a name="line-310"></a><span class="hs-comment">-- | The monadic version of 'gradOp', for 'OpM's.</span><span>
+</span><a name="line-311"></a><span class="hs-identifier">gradOpM</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Monad</span><span> </span><a href="#local-6989586621679119277"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Numeric.Backprop.Op.html#OpM"><span class="hs-identifier hs-type">OpM</span></a><span> </span><a href="#local-6989586621679119277"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-keyword">as</span><span> </span><a href="#local-6989586621679119279"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Tuple</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679119277"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Tuple</span><span> </span><span class="hs-keyword">as</span><span class="hs-special">)</span><span>
+</span><a name="line-312"></a><a name="gradOpM"><a href="Numeric.Backprop.Op.html#gradOpM"><span class="hs-identifier">gradOpM</span></a></a><span> </span><a name="local-6989586621679119843"><a href="#local-6989586621679119843"><span class="hs-identifier">o</span></a></a><span> </span><a name="local-6989586621679119844"><a href="#local-6989586621679119844"><span class="hs-identifier">i</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><a name="line-313"></a><span>    </span><span class="hs-special">(</span><span class="hs-identifier">_</span><span class="hs-special">,</span><span> </span><a name="local-6989586621679119845"><a href="#local-6989586621679119845"><span class="hs-identifier">gF</span></a></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><a href="Numeric.Backprop.Op.html#runOpM%27"><span class="hs-identifier hs-var">runOpM'</span></a><span> </span><a href="#local-6989586621679119843"><span class="hs-identifier hs-var">o</span></a><span> </span><a href="#local-6989586621679119844"><span class="hs-identifier hs-var">i</span></a><span>
+</span><a name="line-314"></a><span>    </span><a href="#local-6989586621679119845"><span class="hs-identifier hs-var">gF</span></a><span> </span><span class="hs-identifier hs-var">Nothing</span><span>
+</span><a name="line-315"></a><span>
+</span><a name="line-316"></a><span class="hs-comment">-- | A version of 'opCoerce' that takes an explicit 'Unity', so can be run</span><span>
+</span><a name="line-317"></a><span class="hs-comment">-- on values that aren't 'Num' instances.</span><span>
 </span><a name="line-318"></a><span class="hs-identifier">opCoerce'</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Coercible</span><span> </span><a href="#local-6989586621679119275"><span class="hs-identifier hs-type">a</span></a><span> </span><a href="#local-6989586621679119276"><span class="hs-identifier hs-type">b</span></a><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Numeric.Backprop.Internal.Helper.html#Unity"><span class="hs-identifier hs-type">Unity</span></a><span> </span><a href="#local-6989586621679119275"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Op.html#Op"><span class="hs-identifier hs-type">Op</span></a><span> </span><span class="hs-char">'[a] b
 opCoerce' u = opIso' u coercible
 
+-- | An 'Op' between two coercibles.  Requires the input to be an instance
+-- of 'Num'.
+--
+-- &gt;&gt;&gt; gradOp' opCoerce (Identity 5) :: (Int, Identity Int)
+-- (5, Identity 1)
 opCoerce :: (Coercible a b, Num a) =&gt; Op '[a] b
 opCoerce = opIso coercible
 
+-- | A version of 'opTup' that takes explicit 'Unity's, so can be run on
+-- values that aren't 'Num' instances.
 opTup'
     :: Prod Unity as
     -&gt; Op as (Tuple as)
 opTup' u = Op $ \xs -&gt; (xs, fromMaybe (map1 (I . getUnity) u))
 
+-- | An 'Op' that takes @as@ and returns exactly the input tuple.
+--
+-- &gt;&gt;&gt; gradOp' opTup (1 ::&lt; 2 ::&lt; 3 ::&lt; &#216;)
+-- (1 ::&lt; 2 ::&lt; 3 ::&lt; &#216;, 1 ::&lt; 1 ::&lt; 1 ::&lt; 1 ::&lt; &#216;)
 opTup
     :: (Every Num as, Known Length as)
     =&gt; Op as (Tuple as)
@@ -334,6 +345,12 @@ opTup = opTup' (map1 ((// known) . every @_ @Num) indices)
 opIso' :: Unity a -&gt; Iso' a b -&gt; Op '[ a ] b
 opIso' u i = op1' $ \x -&gt; (view i x, maybe (getUnity u) (review i))
 
+-- | An 'Op' that runs the input value through the isomorphism encoded in
+-- the 'Iso'.  Requires the input to be an instance of 'Num'.
+--
+-- Warning: This is unsafe!  It assumes that the isomorphisms themselves
+-- have derivative 1, so will break for things like
+-- 'Control.Lens.exponenting'.
 opIso :: Num a =&gt; Iso' a b -&gt; Op '[ a ] b
 opIso = opIso' known
 
