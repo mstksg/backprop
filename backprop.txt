@@ -90,19 +90,43 @@ module Numeric.Backprop
 --   dependency graphs and that the library can perform backpropagation on.
 --   
 --   A <tt><a>BP</a> s rs b</tt> is a <a>BP</a> action that uses an
---   environment of <tt>rs</tt> returning a <tt>b</tt>. The <tt>s</tt>
---   parameter is used the same way that <a>ST</a> uses it, basically to
---   enforce that nothing important "leaks" out of the monad. When "run",
---   it will compute a gradient that is a tuple of <tt>rs</tt>.
+--   environment of <tt>rs</tt> returning a <tt>b</tt>. When "run", it will
+--   compute a gradient that is a tuple of <tt>rs</tt>. (The phantom
+--   parameter <tt>s</tt> is used to ensure that any <a>BVar</a>s aren't
+--   leaked out of the monad)
+--   
+--   Note that you can only "run" a <tt><a>BP</a> s rs</tt> that produces a
+--   <a>BVar</a> -- that is, things of the form
+--   
+--   <pre>
+--   <a>BP</a> s rs (<a>BVar</a> rs a)
+--   </pre>
+--   
+--   The above is a <a>BP</a> action that returns a <a>BVar</a> containing
+--   an <tt>a</tt>. When this is run, it'll produce a result of type
+--   <tt>a</tt> and a gradient of that is a tuple of <tt>rs</tt>. (This
+--   form has a type synonym, <a>BPOp</a>, for convenience)
 --   
 --   For example, a <tt><a>BP</a> s '[ Int, Double, Double ]</tt> is a
 --   monad that represents a computation with an <a>Int</a>, <a>Double</a>,
---   and <a>Double</a> as inputs.
+--   and <a>Double</a> as inputs. And, if you ran a
 --   
---   When run with <tt>backprop</tt> or <tt>gradBPOp</tt>, it would return
---   a <i>gradient</i> on the inputs. So in the above example, the gradient
---   would be a tuple of an <a>Int</a>, <a>Double</a>, and <a>Double</a>.
+--   <pre>
+--   <a>BP</a> s '[ Int, Double, Double ] (<a>BVar</a> '[ Int, Double, Double ] Double)
+--   </pre>
+--   
+--   Or, using the <tt>BPOp</tt> type synonym:
+--   
+--   <pre>
+--   <tt>BPOp</tt> s '[ Int, Double, Double ] (<a>BVar</a> rs Double)
+--   </pre>
+--   
+--   with <tt>backprop</tt> or <tt>gradBPOp</tt>, it'll return a gradient
+--   on the inputs (<a>Int</a>, <a>Double</a>, and <a>Double</a>) and
+--   produce a value of type <a>Double</a>.
 data BP s rs b
+
+-- | A handy type synonym representing an action
 type BPOp s rs a = BP s rs (BVar s rs a)
 type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 
@@ -115,7 +139,8 @@ type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 --   A <tt><a>BVar</a> s rs a</tt> lives inside a <tt><a>BP</a> s rs</tt>
 --   monad, and refers to a value of type <tt>a</tt>. (The <tt>rs</tt>
 --   refers to the environment of the <a>BP</a> action that the <a>BVar</a>
---   lives inside.)
+--   lives inside.) The phantom parameter <tt>s</tt> is used to ensure that
+--   <a>BVar</a>s can only exist in the <a>BP</a> that they originate in.
 --   
 --   <a>BVar</a>s have <a>Num</a>, <a>Fractional</a>, <a>Floating</a>, etc.
 --   instances, so they can be manipulated using polymorphic functions and
@@ -292,7 +317,8 @@ module Numeric.Backprop.Implicit
 --   A <tt><a>BVar</a> s rs a</tt> lives inside a <tt><a>BP</a> s rs</tt>
 --   monad, and refers to a value of type <tt>a</tt>. (The <tt>rs</tt>
 --   refers to the environment of the <a>BP</a> action that the <a>BVar</a>
---   lives inside.)
+--   lives inside.) The phantom parameter <tt>s</tt> is used to ensure that
+--   <a>BVar</a>s can only exist in the <a>BP</a> that they originate in.
 --   
 --   <a>BVar</a>s have <a>Num</a>, <a>Fractional</a>, <a>Floating</a>, etc.
 --   instances, so they can be manipulated using polymorphic functions and
