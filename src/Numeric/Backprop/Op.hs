@@ -293,8 +293,8 @@ composeOp = composeOp' summers
 runOp :: Op as a -> Tuple as -> a
 runOp o = fst . runOp' o
 
--- | Run the function that an 'Op' encodes, to get the result and also the
--- gradient with respect to the result.
+-- | Run the function that an 'Op' encodes, to get the resulting output and
+-- also its gradient with respect to the inputs.
 --
 -- >>> gradOpM' (op2 (*)) (3 ::< 5 ::< Ø) :: IO (Int, Tuple '[Int, Int])
 -- (15, 5 ::< 3 ::< Ø)
@@ -346,8 +346,9 @@ gradOpWithM' o xs g = do
     (_, f) <- runOpM' o xs
     f g
 
--- | Run the function that an 'Op' encodes, and get its gradient with
--- respect to the total derivative of the result.
+-- | Run the function that an 'Op' encodes, and get the gradient of
+-- a "final result" with respect to the inputs, given the total derivative
+-- of the output with the final result.
 --
 -- See 'gradOp' and the module documentaiton for "Numeric.Backprop.Op" for
 -- more information.
@@ -367,8 +368,8 @@ gradOpWithM
     -> m (Tuple as)     -- ^ the gradient
 gradOpWithM o i = gradOpWithM' o i . Just
 
--- | Run the function that an 'Op' encodes, and get its gradient with
--- respect to the result.
+-- | Run the function that an 'Op' encodes, and get the gradient of the
+-- output with respect to the inputs.
 --
 -- >>> gradOp (op2 (*)) (3 ::< 5 ::< Ø)
 -- 5 ::< 3 ::< Ø

@@ -14,13 +14,13 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- A poor substitute for the 'Control.Lens.Iso' module in /lens/, providing
+-- A poor substitute for the "Control.Lens.Iso" module in /lens/, providing
 -- the 'Iso' type synonym and some sample useful 'Iso's for usage with
 -- /backprop/, without incuring a lens dependency.
 --
 -- If you also import lens, you should only use this module for the
 -- 'Iso's it exports, and not import the redefined 'Iso' type synonym or
--- 'from'/'iso'/'review'.
+-- 'from' / 'iso' / 'review'.
 --
 
 module Numeric.Backprop.Iso (

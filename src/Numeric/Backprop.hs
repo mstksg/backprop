@@ -14,21 +14,23 @@ module Numeric.Backprop (
     BP, BPOp, BPOpI, BVar, Op, OpB
   -- * BP
   -- ** Backprop
-  , backprop, evalBPOp, gradBPOp, bpOp
-  , backprop', evalBPOp', gradBPOp', bpOp'
-  -- ** Inputs
+  , backprop, evalBPOp, gradBPOp
+  , backprop', evalBPOp', gradBPOp'
+  -- ** Utility combinators
   , withInps, implicitly
   , withInps', implicitly'
   -- * Refs
   , constRef
   , inpRef, inpRefs
+  , bpOp
   , bindRef
   , inpRefs'
+  , bpOp'
   , bindRef'
   -- ** From Ops
   , opRef, (~$)
   , opRef1, opRef2, opRef3
-  , (-$)
+  , (-$), (-&)
   , opRef'
   , opRef1', opRef2', opRef3'
   -- ** Ref manipulation
@@ -412,6 +414,16 @@ infixr 1 -$
     -> BPOp s rs a
 o -$ xs = bpOp o ~$ xs
 
+infixr 1 -&
+(-&)
+    :: (Every Num as, Known Length as, Num a)
+    => Prod (BVar s rs) as
+    -> (Prod (BVar s as) as -> BPOp s as a)
+    -> BPOp s rs a
+xs -& f = bpOp (withInps f) ~$ xs
+
+-- | Create a 'BVar' that represents just a specific value, that doesn't
+-- depend on any other 'BVar's.
 constRef :: a -> BVar s rs a
 constRef = BVConst
 
@@ -509,6 +521,8 @@ backwardPass = \case
     pullPipe r = caching bppGradCache r $ \BPP{..} ->
         _bppGradFunc =<< traverse1 (fmap I . backwardPass) _bppOut
 
+-- | A version of 'backprop' taking explicit 'Summer's and 'Unity's, so it
+-- can be run with types that aren't instances of 'Num'.
 backprop'
     :: Prod Summer rs
     -> Prod Unity rs
@@ -520,6 +534,9 @@ backprop' ss us bp env = runST $ do
     grad <- gFunc Nothing
     return (res, grad)
 
+-- | Perform backpropagation on the given 'BPOp'.  Returns the result of
+-- the operation it represents, as well as the gradient of the result with
+-- respect to its inputs.
 backprop
     :: forall rs a. Every Num rs
     => (forall s. BPOp s rs a)
@@ -537,40 +554,59 @@ bpOp'
     -> OpB s as a
 bpOp' ss us bp = OpM $ backpropWith ss us bp
 
+-- | Turn a 'BPOp' into an 'OpB'.  Basically converts a 'BP' taking an @rs@
+-- and producing an @a@ into an 'Op' taking an @rs@ and returning an @a@,
+-- with all of the powers and utility of an 'Op', including all of its
+-- gradient-finding glory.
+--
+-- Handy because an 'OpB' can be used with almost all of
+-- the 'Op'-related functions in this moduel, including 'opRef', '~$', etc.
 bpOp
     :: (Every Num as, Known Length as)
     => BPOp s as a
     -> OpB s as a
 bpOp = bpOp' summers unities
 
+-- | A version of 'evalBPOp' taking explicit 'Summer's and 'Unity's, so it
+-- can be run with types that aren't instances of 'Num'.
 evalBPOp'
     :: Prod Summer rs
     -> Prod Unity rs
-    -> (forall s. BPOp s rs a)
-    -> Tuple rs
-    -> a
-evalBPOp' ss us bp = fst . backprop' ss us bp
+    -> (forall s. BPOp s rs a)  -- ^ 'BPOp' to run
+    -> Tuple rs                 -- ^ input
+    -> a                        -- ^ output
+evalBPOp' ss us bp env = runST $
+    fst <$> backpropWith ss us bp env
 
+-- | Simply run the 'BPOp' on an input tuple, getting the result without
+-- bothering with the gradient or with backpropagation.
 evalBPOp
-    :: Every Num rs
-    => (forall s. BPOp s rs a)
-    -> Tuple rs
-    -> a
-evalBPOp bp = fst . backprop bp
+    :: forall rs a. Every Num rs
+    => (forall s. BPOp s rs a)  -- ^ 'BPOp' to run
+    -> Tuple rs                 -- ^ input
+    -> a                        -- ^ output
+evalBPOp o env = evalBPOp' (summers' l) (unities' l) o env
+  where
+    l :: Length rs
+    l = prodLength env
 
+-- | A version of 'gradBPOp' taking explicit 'Summer's and 'Unity's, so it
+-- can be run with types that aren't instances of 'Num'.
 gradBPOp'
     :: Prod Summer rs
     -> Prod Unity rs
-    -> (forall s. BPOp s rs a)
-    -> Tuple rs
-    -> Tuple rs
+    -> (forall s. BPOp s rs a)  -- ^ 'BPOp' to differentiate'
+    -> Tuple rs                 -- ^ input
+    -> Tuple rs                 -- ^ gradient
 gradBPOp' ss us bp = snd . backprop' ss us bp
 
+-- | Run the 'BPOp' on an input tuple and return the gradient of the result
+-- with respect to the input tuple.
 gradBPOp
     :: Every Num rs
-    => (forall s. BPOp s rs a)
-    -> Tuple rs
-    -> Tuple rs
+    => (forall s. BPOp s rs a)  -- ^ 'BPOp' to differentiate
+    -> Tuple rs                 -- ^ input
+    -> Tuple rs                 -- ^ gradient
 gradBPOp bp = snd . backprop bp
 
 
@@ -611,18 +647,52 @@ backpropWith ss us bp env = do
               FRTerminal g   -> return $ fromMaybe (getUnity u) g
     return (res, gradFunc)
 
+-- | A version of 'implicitly' taking explicit 'Length', indicating the
+-- number of inputs required and their types.
+--
+-- Mostly useful for rare "extremely polymorphic" situations.  If you ever
+-- actually explicitly write down @rs@ as a list of types, you should be
+-- able to just use 'implicitly'.
 implicitly'
     :: Length rs
     -> BPOpI s rs a
     -> BPOp s rs a
 implicitly' l f = withInps' l (return . f)
 
+-- | Convert a 'BPOpI' into a 'BPOp'.  That is, convert a function on
+-- a bundle of 'BVar's (generating an implicit graph) into a fully fledged
+-- 'BPOp' that you can run 'backprop' on.  See 'BPOpI' for more
+-- information.
+--
+-- If you are going to write exclusively using implicit 'BVar' operations,
+-- it might be more convenient to use "Numeric.Backprop.Implicit" instead,
+-- which is geared around that use case.
 implicitly
     :: Known Length rs
     => BPOpI s rs a
     -> BPOp s rs a
 implicitly = implicitly' known
 
+-- | Create a 'BVar' given an index into the input environment.  For an
+-- example,
+--
+-- @
+-- 'inpRef' 'IZ'
+-- @
+--
+-- would refer to the /first/ input variable (the 'Int' in a
+-- @'BP' s '[Int, Bool]@), and
+--
+-- @
+-- 'inpRef' ('IS' 'IZ')
+-- @
+--
+-- Would refer to the /second/ input variable (the 'Bool' in a
+-- @'BP' s '[Int, Bool]@)
+--
+-- Typically, there shouldn't be any reason to use 'inpRef' directly.  It's
+-- cleaner to get all of your input 'BVar's together using 'withInps' or
+-- 'inpRefs'.
 inpRef
     :: Index rs a
     -> BVar s rs a
@@ -638,12 +708,40 @@ inpRefs'
     -> Prod (BVar s rs) rs
 inpRefs' = map1 inpRef . indices'
 
+-- | A version of 'withInps' taking explicit 'Length', indicating the
+-- number of inputs required and their types.
+--
+-- Mostly useful for rare "extremely polymorphic" situations.  If you ever
+-- actually explicitly write down @rs@ as a list of types, you should be
+-- able to just use 'withInps'.
 withInps'
     :: Length rs
     -> (Prod (BVar s rs) rs -> BP s rs a)
     -> BP s rs a
 withInps' l f = f (inpRefs' l)
 
+-- | Runs a continuation on a 'Prod' of all of the input 'BVar's.
+--
+-- Handy for bringing the environment into scope and doing stuff with it:
+--
+-- @
+-- foo :: 'BPOp' '[Double, Int] a
+-- foo = 'withInps' $ \(x :< y :< Ø) -> do
+--     -- do stuff with inputs
+-- @
+--
+-- Looks kinda like @foo (x :< y :< Ø) = -- ...@, don't it?
+--
+-- Note that the above is the same as
+--
+-- @
+-- foo :: 'BPOp' '[Double, Int] a
+-- foo = do
+--     x :< y :< Ø <- 'inpRefs'
+--     -- do stuff with inputs
+-- @
+--
+-- But just a little nicer!
 withInps
     :: Known Length rs
     => (Prod (BVar s rs) rs -> BP s rs a)
