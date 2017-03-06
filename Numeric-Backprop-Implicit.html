@@ -35,7 +35,7 @@ Haskell</p></div><div id="content"><div id="module-header"><table class="info"><
  with a little help from <a href="../ad-4.3.2.1/Numeric-AD.html">Numeric.AD</a> from the <em>ad</em> library.</p><p>Note that this type is a <em>subset</em> or <em>subtype</em> of <code><a href="Numeric-Backprop-Op.html#t:OpM">OpM</a></code>.  So, if a function
  ever expects an <code><code><a href="Numeric-Backprop-Op.html#t:OpM">OpM</a></code> m as a</code>, you can always provide an <code><code><a href="Numeric-Backprop-Implicit.html#t:Op">Op</a></code> as a</code>
  instead.</p><p>Many functions in this library will expect an <code><code><a href="Numeric-Backprop-Op.html#t:OpM">OpM</a></code> m as a</code> (or
- an <code><code>OpB</code> s as a</code>), and in all of these cases, you can
+ an <code><code><a href="Numeric-Backprop.html#v:OpB">OpB</a></code> s as a</code>), and in all of these cases, you can
  provide an <code><code><a href="Numeric-Backprop-Implicit.html#t:Op">Op</a></code> as a</code>.</p></div></div><div class="top"><p class="src"><span class="keyword">type</span> <a id="t:OpB" class="def">OpB</a> s as a = <a href="Numeric-Backprop-Op.html#t:OpM">OpM</a> (<a href="../base-4.9.1.0/Control-Monad-ST.html#t:ST">ST</a> s) as a <a href="src/Numeric.Backprop.Internal.html#OpB" class="link">Source</a> <a href="#t:OpB" class="selflink">#</a></p><div class="doc"><p>A type synonym for <code><a href="Numeric-Backprop-Op.html#t:OpM">OpM</a></code> specialized to what the <em>backprop</em> library
  uses to perform backpropagation.</p><p>An</p><pre><code><a href="Numeric-Backprop-Implicit.html#t:OpB">OpB</a></code> s rs a
 </pre><p>represents a differentiable function that takes a tuple of <code>rs</code> and

@@ -25,7 +25,7 @@
 </span><a name="line-25"></a><span class="hs-comment">-- library to perform backpropagation.</span><span>
 </span><a name="line-26"></a><span class="hs-comment">--</span><span>
 </span><a name="line-27"></a><span class="hs-comment">-- Note that 'Op' is a /subset/ or /subtype/ of 'OpM', and so, any function</span><span>
-</span><a name="line-28"></a><span class="hs-comment">-- that expects an @'OpM' m as a@ (or an @'OpB' s as a@)</span><span>
+</span><a name="line-28"></a><span class="hs-comment">-- that expects an @'OpM' m as a@ (or an @'Numeric.Backprop.OpB' s as a@)</span><span>
 </span><a name="line-29"></a><span class="hs-comment">-- can be given an @'Op' as a@ and it'll work just fine.</span><span>
 </span><a name="line-30"></a><span class="hs-comment">--</span><span>
 </span><a name="line-31"></a><span>
@@ -97,7 +97,7 @@
 </span><a name="line-97"></a><span class="hs-comment">-- \]</span><span>
 </span><a name="line-98"></a><span class="hs-comment">--</span><span>
 </span><a name="line-99"></a><span class="hs-comment">-- We might want to apply a function \(g\) to the result we get, to get</span><span>
-</span><a name="line-100"></a><span class="hs-comment">-- a more &quot;final&quot; result:</span><span>
+</span><a name="line-100"></a><span class="hs-comment">-- our &quot;final&quot; result:</span><span>
 </span><a name="line-101"></a><span class="hs-comment">--</span><span>
 </span><a name="line-102"></a><span class="hs-comment">-- \[</span><span>
 </span><a name="line-103"></a><span class="hs-comment">-- \eqalign{</span><span>
@@ -202,7 +202,7 @@
 </span><a name="line-202"></a><span class="hs-comment">-- instead.</span><span>
 </span><a name="line-203"></a><span class="hs-comment">--</span><span>
 </span><a name="line-204"></a><span class="hs-comment">-- Many functions in this library will expect an @'OpM' m as a@ (or</span><span>
-</span><a name="line-205"></a><span class="hs-comment">-- an @'OpB' s as a@), and in all of these cases, you can</span><span>
+</span><a name="line-205"></a><span class="hs-comment">-- an @'Numeric.Backprop.OpB' s as a@), and in all of these cases, you can</span><span>
 </span><a name="line-206"></a><span class="hs-comment">-- provide an @'Op' as a@.</span><span>
 </span><a name="line-207"></a><span class="hs-keyword">type</span><span> </span><a name="Op"><a href="Numeric.Backprop.Op.html#Op"><span class="hs-identifier">Op</span></a></a><span> </span><span class="hs-keyword">as</span><span> </span><a name="local-6989586621679119235"><a href="#local-6989586621679119235"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679119236"><a href="#local-6989586621679119236"><span class="hs-identifier">m</span></a></a><span class="hs-operator">.</span><span> </span><span class="hs-identifier hs-type">Monad</span><span> </span><a href="#local-6989586621679119236"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Numeric.Backprop.Op.html#OpM"><span class="hs-identifier hs-type">OpM</span></a><span> </span><a href="#local-6989586621679119236"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-keyword">as</span><span> </span><a href="#local-6989586621679119235"><span class="hs-identifier hs-type">a</span></a><span>
 </span><a name="line-208"></a><span>
