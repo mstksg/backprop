@@ -48,11 +48,6 @@ module Numeric.Backprop (
   -- *** As sums of products
   , sopVar, gSplits
   , sopVar', gSplits'
-  -- ** Transforming BP
-  , internally
-  , generically
-  , internally'
-  , generically'
   -- ** Combining
   , liftB, (.$), liftB1, liftB2, liftB3
   -- * Op
@@ -222,54 +217,6 @@ gSplit
     => BVar s rs b
     -> BP s rs (Prod (BVar s rs) bs)
 gSplit = gSplit' summers unities
-
-internally'
-    :: forall s rs bs b a. ()
-    => Prod Summer bs
-    -> Prod Unity bs
-    -> Summer a
-    -> Iso' b (Tuple bs)
-    -> BVar s rs b
-    -> BP s bs (BVar s bs a)
-    -> BP s rs (BVar s rs a)
-internally' ss us sa l r bp = do
-    xs <- view l <$> BP (resolveVar r)
-    (res, gFunc) <- BP . liftBase $ backpropWith ss us bp xs
-    let bpn :: BPNode s rs '[ b ] '[ a ]
-        bpn = BPN { _bpnOut       = only $ FRInternal []
-                  , _bpnRes       = only_ res
-                  , _bpnGradFunc  = fmap (only_ . review l) . gFunc . head'
-                  , _bpnGradCache = Nothing
-                  , _bpnSummer    = only sa
-                  }
-    r' <- BP . liftBase $ newSTRef bpn
-    registerVar (IRNode IZ r') r
-    return (BVNode IZ r')
-
-internally
-    :: forall s rs bs b a. (Every Num bs, Known Length bs, Num a)
-    => Iso' b (Tuple bs)
-    -> BVar s rs b
-    -> BP s bs (BVar s bs a)
-    -> BP s rs (BVar s rs a)
-internally = internally' summers unities known
-
-generically'
-    :: forall s rs bs b a. (SOP.Generic b, SOP.Code b ~ '[bs])
-    => Prod Summer bs
-    -> Prod Unity bs
-    -> Summer a
-    -> BVar s rs b
-    -> BP s bs (BVar s bs a)
-    -> BP s rs (BVar s rs a)
-generically' ss us sa = internally' ss us sa gTuple
-
-generically
-    :: forall s rs bs b a. (Num a, Every Num bs, Known Length bs, SOP.Generic b, SOP.Code b ~ '[bs])
-    => BVar s rs b
-    -> BP s bs (BVar s bs a)
-    -> BP s rs (BVar s rs a)
-generically = internally gTuple
 
 choicesVar'
     :: forall s rs bs b. ()
