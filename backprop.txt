@@ -233,8 +233,7 @@ opConst' :: Prod Summer as -> a -> Op as a
 --   
 --   &lt;math&gt;
 --   
---   And with &lt;math&gt; and &lt;math&gt;, and we wanted to find the
---   derivative &lt;math&gt;, it would be:
+--   Then the derivative &lt;math&gt;, it would be:
 --   
 --   &lt;math&gt;
 --   
@@ -606,8 +605,7 @@ opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) 
 --   
 --   &lt;math&gt;
 --   
---   And with &lt;math&gt; and &lt;math&gt;, and we wanted to find the
---   derivative &lt;math&gt;, it would be:
+--   Then the derivative &lt;math&gt;, it would be:
 --   
 --   &lt;math&gt;
 --   
@@ -878,8 +876,7 @@ opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) 
 --   
 --   &lt;math&gt;
 --   
---   And with &lt;math&gt; and &lt;math&gt;, and we wanted to find the
---   derivative &lt;math&gt;, it would be:
+--   Then the derivative &lt;math&gt;, it would be:
 --   
 --   &lt;math&gt;
 --   

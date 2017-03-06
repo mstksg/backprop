@@ -78,11 +78,10 @@ Haskell</p></div><div id="content"><div id="module-header"><table class="info"><
  derivative.  The function should return a tuple containing the result of
  the function, and also a function taking the derivative of the result
  and return the derivative of the input.</p><p>If we have</p><p>\[
- f : \mathbb{R} \rightarrow \mathbb{R}\cf
- y = f(x)\cf
+ f : \mathbb{R} \rightarrow \mathbb{R}\cr
+ y = f(x)\cr
  z = g(y)
- \]</p><p>And with \(y = f(x)\) and \(z = g(y)\), and we wanted to find the
- derivative \( \frac{dz}{dx} \), it would be:</p><p>\[
+ \]</p><p>Then the derivative \( \frac{dz}{dx} \), it would be:</p><p>\[
  \frac{dz}{dx} = \frac{dz}{dy} \frac{dy}{dx}
  \]</p><p>If our <code><a href="Numeric-Backprop.html#t:Op">Op</a></code> represents \(f\), then the second item in the resulting
  tuple should be a function that takes \(\frac{dz}{dy}\) and returns
