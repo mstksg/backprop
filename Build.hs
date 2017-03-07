@@ -20,7 +20,7 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>=
     want ["all"]
 
     "all" ~>
-      need ["pdf", "md", "build", "haddocks"]
+      need ["pdf", "md", "build", "haddocks", "gentags"]
 
     "pdf" ~>
       need (map (\f -> "renders" </> takeFileName f -<.> "pdf") allSrc)
@@ -33,6 +33,9 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>=
 
     "haddocks" ~>
       cmd "jle-git-haddocks"
+
+    "gentags" ~>
+      need ["tags", "TAGS"]
 
     ["renders/*.pdf", "renders/*.md"] |%> \f -> do
       let src = "samples" </> takeFileName f -<.> "lhs"
@@ -47,6 +50,9 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>=
                    "--reference-location block"
                    "-o" f
                    src
+
+    ["tags","TAGS"] &%> \_ ->
+      cmd "hasktags" "src/"
 
     "clean" ~> do
       unit $ cmd "stack clean"

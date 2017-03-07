@@ -2,18 +2,36 @@
 {-# LANGUAGE PatternSynonyms  #-}
 {-# LANGUAGE RankNTypes       #-}
 
+-- |
+-- Module      : Numeric.Backprop.Op.Mono
+-- Copyright   : (c) Justin Le 2017
+-- License     : BSD3
+--
+-- Maintainer  : justin@jle.im
+-- Stability   : experimental
+-- Portability : non-portable
+--
+-- Provides monomorphic versions of the types and combinators in
+-- "Numeric.Backprop.Op", for usage with "Numeric.Backprop.Mono" and
+-- "Numeric.Backprop.Mono.Implicit".
+--
+-- Note that 'Op' is a /subset/ or /subtype/ of 'OpM', and so, any function
+-- that expects an @'OpM' m as a@ (or an @'Numeric.Backprop.OpB' s as a@)
+-- can be given an @'Op' as a@ and it'll work just fine.
+--
+
 module Numeric.Backprop.Op.Mono (
   -- * Types
-    Op
+    Op, OpM, VecT(..), Vec
   -- * Running
   , runOp', runOp, gradOp, gradOpWith, gradOpWith'
   -- * Creation
   , op1, op2, op3, opN
   -- * Utility
+  -- ** Vectors
+  , pattern (:+), (*:), (+:), head'
   -- ** Type synonyms
   , N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10
-  -- ** Vectors
-  , VecT(..), Vec, pattern (:+), (*:), (+:), head'
  ) where
 
 import           Data.Bifunctor
@@ -27,7 +45,8 @@ import           Type.Class.Known
 import           Type.Family.Nat
 import qualified Numeric.Backprop.Op         as BP
 
-type Op n a b = BP.Op (Replicate n a) b
+type Op n a b  = BP.Op (Replicate n a) b
+type OpM m n a = BP.OpM m (Replicate n a)
 
 op1 :: Num a
     => (forall s. AD s (Forward a) -> AD s (Forward a))

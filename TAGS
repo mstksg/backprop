@@ -1,0 +1,308 @@
+
+src/Numeric/Backprop.hs,1591
+module Numeric.Backprop Numeric.Backprop11,12
+type BPOp BPOp104,105
+type BPOp s s104,105
+type BPOpI BPOpI127,128
+opVar' opVar'138,139
+splitVars' splitVars'159,160
+splitVars splitVars182,183
+partsVar' partsVar'193,194
+partsVar partsVar237,238
+(#(266,267
+withParts' withParts'277,278
+withParts withParts311,312
+gSplit' gSplit'323,324
+gSplit gSplit374,375
+choicesVar' choicesVar'385,386
+choicesVar choicesVar452,453
+withChoices' withChoices'464,465
+withChoices withChoices514,515
+sopVar' sopVar'566,567
+sopVar sopVar635,636
+gSplits' gSplits'646,647
+gSplits gSplits695,696
+resolveVar resolveVar702,703
+registerVar registerVar715,716
+opVar opVar777,778
+o o831,832
+constVar constVar835,836
+constVar constVar836,837
+opVar1' opVar1'845,846
+opVar1 opVar1867,868
+opVar2' opVar2'877,878
+opVar2 opVar2901,902
+opVar3' opVar3'912,913
+opVar3 opVar3938,939
+bindVar' bindVar'946,947
+bindVar bindVar997,998
+backwardPass backwardPass1005,1006
+backprop' backprop'1036,1037
+backprop backprop1050,1051
+bpOp' bpOp'1062,1063
+bpOp bpOp1075,1076
+evalBPOp evalBPOp1083,1084
+gradBPOp' gradBPOp'1096,1097
+gradBPOp gradBPOp1105,1106
+closeOff closeOff1114,1115
+backpropWith backpropWith1133,1134
+implicitly' implicitly'1156,1157
+implicitly implicitly1170,1171
+inpVar inpVar1195,1196
+inpVars inpVars1215,1216
+inpVars' inpVars'1227,1228
+withInps' withInps'1240,1241
+withInps withInps1268,1269
+liftB liftB1316,1317
+liftB1 liftB11374,1375
+liftB2 liftB21400,1401
+liftB3 liftB31428,1429
+caching caching1448,1449
+
+src/Numeric/Backprop/Mono.hs,724
+module Numeric.Backprop.Mono Numeric.Backprop.Mono16,17
+type BP BP53,54
+type BP s s53,54
+type BVar BVar54,55
+type BPOp BPOp55,56
+type BPOpI BPOpI56,57
+type OpB OpB58,59
+opVar opVar65,66
+(~(73,74
+o o81,82
+constVar constVar86,87
+opVar1 opVar193,94
+opVar2 opVar2101,102
+opVar3 opVar3110,111
+backprop backprop117,118
+evalBPOp evalBPOp126,127
+gradBPOp gradBPOp133,134
+bpOp bpOp139,140
+inpVar inpVar148,149
+inpVars inpVars153,154
+withInps withInps159,160
+implicitly implicitly165,166
+liftB liftB172,173
+liftB1 liftB1185,186
+liftB2 liftB2192,193
+liftB3 liftB3200,201
+toSummers toSummers213,214
+toUnities toUnities221,222
+nSummers nSummers229,230
+nUnities nUnities237,238
+
+src/Numeric/Backprop/Internal.hs,1200
+module Numeric.Backprop.InternalNumeric.Backprop.Internal29,30
+type OpB OpB74,75
+type OpB s s74,75
+data ForwardRefs ForwardRefs78,79
+    = FRInternal FRInternal81,82
+    | FRTerminal FRTerminal84,85
+instance instance89,90
+data BPState BPState99,100
+    BPS BPS100,101
+    BPS :: { _bpsSources _bpsSources100,101
+newtype BP BP141,142
+newtype BP s rs b = BP BP141,142
+newtype BP s rs b = BP { bpST bpST141,142
+data BVar BVar173,174
+    BVNode BVNode175,176
+    BVInp BVInp179,180
+    BVConst BVConst182,183
+    BVOp BVOp186,187
+data BPInpRef BPInpRef192,193
+    IRNode IRNode194,195
+    IRPipe IRPipe198,199
+    IRConst IRConst203,204
+data BPNode BPNode210,211
+    BPN BPN211,212
+    BPN :: { _bpnOut _bpnOut211,212
+           , _bpnRes _bpnRes212,213
+           , _bpnGradFunc _bpnGradFunc213,214
+           , _bpnGradCache _bpnGradCache214,215
+           , _bpnSummer _bpnSummer215,216
+data BPPipe BPPipe222,223
+    BPP BPP223,224
+    BPP :: { _bppOut _bppOut223,224
+           , _bppRes _bppRes224,225
+           , _bppGradFunc _bppGradFunc225,226
+           , _bppGradCache _bppGradCache226,227
+_FRInternal _FRInternal239,240
+
+src/Numeric/Backprop/Mono/Implicit.hs,176
+module Numeric.Backprop.Mono.Implicit Numeric.Backprop.Mono.Implicit4,5
+type BPOp BPOp26,27
+type BPOp n n26,27
+backprop backprop33,34
+grad grad40,41
+eval eval47,48
+
+src/Numeric/Backprop/Implicit.hs,450
+module Numeric.Backprop.Implicit Numeric.Backprop.Implicit39,40
+type BPOp BPOp96,97
+type BPOp rs rs96,97
+backprop' backprop'106,107
+backprop backprop125,126
+grad' grad'135,136
+grad grad154,155
+eval eval173,174
+partsVar' partsVar'184,185
+partsVar partsVar240,241
+withParts' withParts'252,253
+withParts withParts282,283
+splitVars' splitVars'292,293
+splitVars splitVars316,317
+gSplit' gSplit'326,327
+gSplit gSplit366,367
+
+src/Numeric/Backprop/Op.hs,1426
+module Numeric.Backprop.Op Numeric.Backprop.Op31,32
+newtype OpM OpM167,168
+    OpM OpM174,175
+type Op Op206,207
+type Op as as206,207
+newtype OpCont OpCont209,210
+newtype OpCont m as a = OC OC209,210
+newtype OpCont m as a = OC { runOpCont runOpCont209,210
+pattern pattern218,219
+runOpM' runOpM'234,235
+runOp' runOp'248,249
+composeOp' composeOp'260,261
+composeOp composeOp291,292
+runOp runOp297,298
+runOp runOp298,299
+gradOp' gradOp'305,306
+gradOp' gradOp'306,307
+runOpM runOpM312,313
+runOpM runOpM313,314
+gradOpM' gradOpM'316,317
+gradOpM' gradOpM'317,318
+gradOpWith' gradOpWith'338,339
+gradOpWithM' gradOpWithM'349,350
+gradOpWith gradOpWith364,365
+gradOpWithM gradOpWithM373,374
+gradOp gradOp381,382
+gradOp gradOp382,383
+gradOpM gradOpM385,386
+gradOpM gradOpM386,387
+opCoerce' opCoerce'392,393
+opCoerce' opCoerce'393,394
+opCoerce opCoerce404,405
+opCoerce opCoerce405,406
+opTup' opTup'412,413
+opTup opTup421,422
+opIso' opIso'425,426
+opIso' opIso'426,427
+opIso opIso435,436
+opIso opIso436,437
+opConst' opConst'440,441
+opConst' opConst'441,442
+opConst opConst449,450
+opConst opConst450,451
+op0 op0466,467
+op0 op0467,468
+op1' op1'515,516
+op2' op2'567,568
+op3' op3'577,578
+op1 op1588,589
+op1 op1591,592
+op2 op2601,602
+op2 op2604,605
+op3 op3612,613
+op3 op3615,616
+opN opN623,624
+opN opN626,627
+instance instance630,631
+
+src/Numeric/Backprop/Internal/Helper.hs,447
+module Numeric.Backprop.Internal.Helper Numeric.Backprop.Internal.Helper20,21
+newtype Summer Summer48,49
+newtype Summer a = Summer Summer48,49
+newtype Summer a = Summer { runSummer runSummer48,49
+newtype Unity Unity65,66
+newtype Unity  a = Unity Unity65,66
+newtype Unity  a = Unity  { getUnity getUnity65,66
+instance instance70,71
+summers summers85,86
+summers' summers'93,94
+unities unities100,101
+unities' unities'108,109
+
+src/Numeric/Backprop/Op/Mono.hs,503
+module Numeric.Backprop.Op.Mono Numeric.Backprop.Op.Mono22,23
+type Op Op47,48
+type Op n n47,48
+type OpM OpM48,49
+type OpM m m48,49
+op1 op150,51
+op1 op153,54
+op2 op255,56
+op2 op258,59
+op3 op360,61
+op3 op363,64
+opN opN65,66
+opN opN68,69
+runOp' runOp'70,71
+runOp' runOp'71,72
+runOp runOp76,77
+runOp runOp77,78
+gradOpWith' gradOpWith'79,80
+gradOpWith' gradOpWith'80,81
+gradOpWith gradOpWith82,83
+gradOpWith gradOpWith83,84
+gradOp gradOp85,86
+gradOp gradOp86,87
+
+src/Numeric/Backprop/Iso.hs,618
+module Numeric.Backprop.Iso Numeric.Backprop.Iso25,26
+type Iso Iso49,50
+type Iso s s49,50
+type Iso' Iso'87,88
+iso iso102,103
+iso iso103,104
+review review110,111
+review review111,112
+coerced coerced114,115
+coerced coerced115,116
+gTuple gTuple129,130
+gTuple gTuple130,131
+gSOP gSOP147,148
+gSOP gSOP148,149
+sum1 sum1152,153
+sum1 sum1153,154
+resum1 resum1158,159
+resum1 resum1159,160
+from from170,171
+from from171,172
+sop sop173,174
+sop sop174,175
+sopTC sopTC176,177
+sopTC sopTC177,178
+npProd npProd181,182
+npProd npProd182,183
+nsSum nsSum193,194
+nsSum nsSum194,195
+
+src/Data/Type/Util.hs,588
+module Data.Type.Util Data.Type.Util16,17
+type family family37,38
+type family Replicate Replicate37,38
+vecToProd vecToProd44,45
+prodToVec' prodToVec'52,53
+prodAlong prodAlong62,63
+finIndex finIndex71,72
+traverse1_ traverse1_80,81
+itraverse1_ itraverse1_90,91
+for1 for1100,101
+for1_ for1_107,108
+ifor1 ifor1114,115
+ifor1_ ifor1_121,122
+zipP zipP127,128
+unzipP unzipP136,137
+indexP indexP140,141
+indexP indexP141,142
+reIndex reIndex151,152
+prodLength prodLength156,157
+withEvery withEvery164,165
+withEvery' withEvery'171,172
+tagSum tagSum177,178
