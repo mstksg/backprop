@@ -186,10 +186,10 @@ resum1 :: Iso' (f a) (Sum f '[a])
 --   <tt><a>Op</a> as a</tt> and it'll work just fine.
 module Numeric.Backprop.Op
 
--- | An <tt><a>Op</a> as a</tt> is a type synonym over <a>OpM</a> that
---   describes a differentiable function from <tt>as</tt> to <tt>a</tt>.
+-- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
+--   <tt>as</tt> to <tt>a</tt>.
 --   
---   For example, an
+--   For example, a value of type
 --   
 --   <pre>
 --   <a>Op</a> '[Int, Bool] Double
@@ -198,7 +198,9 @@ module Numeric.Backprop.Op
 --   is a function from an <a>Int</a> and a <a>Bool</a>, returning a
 --   <a>Double</a>. It can be differentiated to give a <i>gradient</i> of
 --   an <a>Int</a> and a <a>Bool</a> if given a total derivative for the
---   <tt>Double</tt>.
+--   <tt>Double</tt>. Mathematically, it is akin to a:
+--   
+--   &lt;math&gt;
 --   
 --   See <a>runOp</a>, <a>gradOp</a>, and <a>gradOpWith</a> for examples on
 --   how to run it, and <a>Op</a> for instructions on creating it.
@@ -211,9 +213,10 @@ module Numeric.Backprop.Op
 --   using <a>op1</a>, <a>op2</a>, <a>op3</a>, and <a>opN</a> with a little
 --   help from <a>Numeric.AD</a> from the <i>ad</i> library.
 --   
---   Note that this type is a <i>subset</i> or <i>subtype</i> of
---   <a>OpM</a>. So, if a function ever expects an <tt><a>OpM</a> m as
---   a</tt>, you can always provide an <tt><a>Op</a> as a</tt> instead.
+--   Note that this type is a <i>subset</i> or <i>subtype</i> of <a>OpM</a>
+--   (and also of <a>OpB</a>). So, if a function ever expects an
+--   <tt><a>OpM</a> m as a</tt> (or a <a>OpB</a>), you can always provide
+--   an <tt><a>Op</a> as a</tt> instead.
 --   
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
 --   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
@@ -709,10 +712,10 @@ type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 --   for <a>bindVar</a> for more details.)
 data BVar :: Type -> [Type] -> Type -> Type
 
--- | An <tt><a>Op</a> as a</tt> is a type synonym over <a>OpM</a> that
---   describes a differentiable function from <tt>as</tt> to <tt>a</tt>.
+-- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
+--   <tt>as</tt> to <tt>a</tt>.
 --   
---   For example, an
+--   For example, a value of type
 --   
 --   <pre>
 --   <a>Op</a> '[Int, Bool] Double
@@ -721,7 +724,9 @@ data BVar :: Type -> [Type] -> Type -> Type
 --   is a function from an <a>Int</a> and a <a>Bool</a>, returning a
 --   <a>Double</a>. It can be differentiated to give a <i>gradient</i> of
 --   an <a>Int</a> and a <a>Bool</a> if given a total derivative for the
---   <tt>Double</tt>.
+--   <tt>Double</tt>. Mathematically, it is akin to a:
+--   
+--   &lt;math&gt;
 --   
 --   See <a>runOp</a>, <a>gradOp</a>, and <a>gradOpWith</a> for examples on
 --   how to run it, and <a>Op</a> for instructions on creating it.
@@ -734,9 +739,10 @@ data BVar :: Type -> [Type] -> Type -> Type
 --   using <a>op1</a>, <a>op2</a>, <a>op3</a>, and <a>opN</a> with a little
 --   help from <a>Numeric.AD</a> from the <i>ad</i> library.
 --   
---   Note that this type is a <i>subset</i> or <i>subtype</i> of
---   <a>OpM</a>. So, if a function ever expects an <tt><a>OpM</a> m as
---   a</tt>, you can always provide an <tt><a>Op</a> as a</tt> instead.
+--   Note that this type is a <i>subset</i> or <i>subtype</i> of <a>OpM</a>
+--   (and also of <a>OpB</a>). So, if a function ever expects an
+--   <tt><a>OpM</a> m as a</tt> (or a <a>OpB</a>), you can always provide
+--   an <tt><a>Op</a> as a</tt> instead.
 --   
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
 --   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
@@ -1986,10 +1992,10 @@ data BVar :: Type -> [Type] -> Type -> Type
 --   explicit-graph backprop module <a>Numeric.Backprop</a>.
 type BPOp rs a = forall s. Prod (BVar s rs) rs -> BVar s rs a
 
--- | An <tt><a>Op</a> as a</tt> is a type synonym over <a>OpM</a> that
---   describes a differentiable function from <tt>as</tt> to <tt>a</tt>.
+-- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
+--   <tt>as</tt> to <tt>a</tt>.
 --   
---   For example, an
+--   For example, a value of type
 --   
 --   <pre>
 --   <a>Op</a> '[Int, Bool] Double
@@ -1998,7 +2004,9 @@ type BPOp rs a = forall s. Prod (BVar s rs) rs -> BVar s rs a
 --   is a function from an <a>Int</a> and a <a>Bool</a>, returning a
 --   <a>Double</a>. It can be differentiated to give a <i>gradient</i> of
 --   an <a>Int</a> and a <a>Bool</a> if given a total derivative for the
---   <tt>Double</tt>.
+--   <tt>Double</tt>. Mathematically, it is akin to a:
+--   
+--   &lt;math&gt;
 --   
 --   See <a>runOp</a>, <a>gradOp</a>, and <a>gradOpWith</a> for examples on
 --   how to run it, and <a>Op</a> for instructions on creating it.
@@ -2011,9 +2019,10 @@ type BPOp rs a = forall s. Prod (BVar s rs) rs -> BVar s rs a
 --   using <a>op1</a>, <a>op2</a>, <a>op3</a>, and <a>opN</a> with a little
 --   help from <a>Numeric.AD</a> from the <i>ad</i> library.
 --   
---   Note that this type is a <i>subset</i> or <i>subtype</i> of
---   <a>OpM</a>. So, if a function ever expects an <tt><a>OpM</a> m as
---   a</tt>, you can always provide an <tt><a>Op</a> as a</tt> instead.
+--   Note that this type is a <i>subset</i> or <i>subtype</i> of <a>OpM</a>
+--   (and also of <a>OpB</a>). So, if a function ever expects an
+--   <tt><a>OpM</a> m as a</tt> (or a <a>OpB</a>), you can always provide
+--   an <tt><a>Op</a> as a</tt> instead.
 --   
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
 --   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
@@ -2640,11 +2649,10 @@ unities' :: Every Num as => Length as -> Prod Unity as
 --   <tt><a>Op</a> as a</tt> and it'll work just fine.
 module Numeric.Backprop.Op.Mono
 
--- | An <tt><a>Op</a> n a b</tt> is a type synonym over <a>OpM</a> that
---   describes a differentiable function from <tt>n</tt> values of type
---   <tt>a</tt> to a value of type <tt>b</tt>.
+-- | An <tt><a>Op</a> n a b</tt> describes a differentiable function from
+--   <tt>n</tt> values of type <tt>a</tt> to a value of type <tt>b</tt>.
 --   
---   For example, an
+--   For example, a value of type
 --   
 --   <pre>
 --   <a>Op</a> N2 Int Double
@@ -2652,7 +2660,10 @@ module Numeric.Backprop.Op.Mono
 --   
 --   is a function that takes two <a>Int</a>s and returns a <a>Double</a>.
 --   It can be differentiated to give a <i>gradient</i> of two <a>Int</a>s,
---   if given a total derivative for the <a>Double</a>.
+--   if given a total derivative for the <a>Double</a>. Mathematically, it
+--   is akin to a:
+--   
+--   &lt;math&gt;
 --   
 --   See <a>runOp</a>, <a>gradOp</a>, and <a>gradOpWith</a> for examples on
 --   how to run it, and <a>Op</a> for instructions on creating it.
@@ -2665,9 +2676,10 @@ module Numeric.Backprop.Op.Mono
 --   using <a>op1</a>, <a>op2</a>, <a>op3</a>, and <a>opN</a> with a little
 --   help from <a>Numeric.AD</a> from the <i>ad</i> library.
 --   
---   Note that this type is a <i>subset</i> or <i>subtype</i> of
---   <a>OpM</a>. So, if a function ever expects an <tt><a>OpM</a> m as
---   a</tt>, you can always provide an <tt><a>Op</a> as a</tt> instead.
+--   Note that this type is a <i>subset</i> or <i>subtype</i> of <a>OpM</a>
+--   (and also of <a>OpB</a>). So, if a function ever expects an
+--   <tt><a>OpM</a> m as a</tt> (or a <a>OpB</a>), you can always provide
+--   an <tt><a>Op</a> as a</tt> instead.
 --   
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
 --   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
@@ -2681,9 +2693,9 @@ type Op n a b = Op (Replicate n a) b
 --   See the module documentation for <a>Numeric.Backprop.Op</a> for more
 --   details on the function that this constructor and <a>OpM</a> expect.
 
--- | An <tt><a>Op</a> m n a b</tt> is a type synonym over <a>OpM</a> that
---   describes a differentiable (monadic) function from <tt>n</tt> values
---   of type <tt>a</tt> to a value of type <tt>b</tt>.
+-- | An <tt><a>OpM</a> m n a b</tt> represents a differentiable (monadic)
+--   function from <tt>n</tt> values of type <tt>a</tt> to a value of type
+--   <tt>b</tt>.
 --   
 --   For example, an
 --   
@@ -2989,11 +3001,10 @@ type BPOp s n a b = BP s n a (BVar s n a b)
 type BPOpI s n a b = VecT n (BVar s n a) a -> BVar s n a b
 type BVar s n a = BVar s (Replicate n a)
 
--- | An <tt><a>Op</a> n a b</tt> is a type synonym over <a>OpM</a> that
---   describes a differentiable function from <tt>n</tt> values of type
---   <tt>a</tt> to a value of type <tt>b</tt>.
+-- | An <tt><a>Op</a> n a b</tt> describes a differentiable function from
+--   <tt>n</tt> values of type <tt>a</tt> to a value of type <tt>b</tt>.
 --   
---   For example, an
+--   For example, a value of type
 --   
 --   <pre>
 --   <a>Op</a> N2 Int Double
@@ -3001,7 +3012,10 @@ type BVar s n a = BVar s (Replicate n a)
 --   
 --   is a function that takes two <a>Int</a>s and returns a <a>Double</a>.
 --   It can be differentiated to give a <i>gradient</i> of two <a>Int</a>s,
---   if given a total derivative for the <a>Double</a>.
+--   if given a total derivative for the <a>Double</a>. Mathematically, it
+--   is akin to a:
+--   
+--   &lt;math&gt;
 --   
 --   See <a>runOp</a>, <a>gradOp</a>, and <a>gradOpWith</a> for examples on
 --   how to run it, and <a>Op</a> for instructions on creating it.
@@ -3014,9 +3028,10 @@ type BVar s n a = BVar s (Replicate n a)
 --   using <a>op1</a>, <a>op2</a>, <a>op3</a>, and <a>opN</a> with a little
 --   help from <a>Numeric.AD</a> from the <i>ad</i> library.
 --   
---   Note that this type is a <i>subset</i> or <i>subtype</i> of
---   <a>OpM</a>. So, if a function ever expects an <tt><a>OpM</a> m as
---   a</tt>, you can always provide an <tt><a>Op</a> as a</tt> instead.
+--   Note that this type is a <i>subset</i> or <i>subtype</i> of <a>OpM</a>
+--   (and also of <a>OpB</a>). So, if a function ever expects an
+--   <tt><a>OpM</a> m as a</tt> (or a <a>OpB</a>), you can always provide
+--   an <tt><a>Op</a> as a</tt> instead.
 --   
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
 --   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
@@ -3113,11 +3128,10 @@ module Numeric.Backprop.Mono.Implicit
 type BVar s n a = BVar s (Replicate n a)
 type BPOp n a b = forall s. VecT n (BVar s n a) a -> BVar s n a b
 
--- | An <tt><a>Op</a> n a b</tt> is a type synonym over <a>OpM</a> that
---   describes a differentiable function from <tt>n</tt> values of type
---   <tt>a</tt> to a value of type <tt>b</tt>.
+-- | An <tt><a>Op</a> n a b</tt> describes a differentiable function from
+--   <tt>n</tt> values of type <tt>a</tt> to a value of type <tt>b</tt>.
 --   
---   For example, an
+--   For example, a value of type
 --   
 --   <pre>
 --   <a>Op</a> N2 Int Double
@@ -3125,7 +3139,10 @@ type BPOp n a b = forall s. VecT n (BVar s n a) a -> BVar s n a b
 --   
 --   is a function that takes two <a>Int</a>s and returns a <a>Double</a>.
 --   It can be differentiated to give a <i>gradient</i> of two <a>Int</a>s,
---   if given a total derivative for the <a>Double</a>.
+--   if given a total derivative for the <a>Double</a>. Mathematically, it
+--   is akin to a:
+--   
+--   &lt;math&gt;
 --   
 --   See <a>runOp</a>, <a>gradOp</a>, and <a>gradOpWith</a> for examples on
 --   how to run it, and <a>Op</a> for instructions on creating it.
@@ -3138,9 +3155,10 @@ type BPOp n a b = forall s. VecT n (BVar s n a) a -> BVar s n a b
 --   using <a>op1</a>, <a>op2</a>, <a>op3</a>, and <a>opN</a> with a little
 --   help from <a>Numeric.AD</a> from the <i>ad</i> library.
 --   
---   Note that this type is a <i>subset</i> or <i>subtype</i> of
---   <a>OpM</a>. So, if a function ever expects an <tt><a>OpM</a> m as
---   a</tt>, you can always provide an <tt><a>Op</a> as a</tt> instead.
+--   Note that this type is a <i>subset</i> or <i>subtype</i> of <a>OpM</a>
+--   (and also of <a>OpB</a>). So, if a function ever expects an
+--   <tt><a>OpM</a> m as a</tt> (or a <a>OpB</a>), you can always provide
+--   an <tt><a>Op</a> as a</tt> instead.
 --   
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
 --   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
