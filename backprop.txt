@@ -1125,8 +1125,8 @@ opVar3' :: Summer d -> OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar 
 --   data Foo = F Int Bool
 --   
 --   fooIso :: <a>Iso'</a> Foo (Tuple '[Int, Bool])
---   fooIso = <a>iso</a> ((F i b)         -&gt; i ::&lt; b ::&lt; Ø)
---                ((i ::<a>::&lt; Ø) -</a> F i b        )
+--   fooIso = <a>iso</a> (\(F i b)         -&gt; i ::&lt; b ::&lt; Ø)
+--                (\(i ::&lt; b ::&lt; Ø) -&gt; F i b        )
 --   
 --   partsVar fooIso :: BVar rs Foo -&gt; BP s rs (Prod (BVar s rs) '[Int, Bool])
 --   
@@ -1159,8 +1159,8 @@ partsVar :: forall s rs bs b. (Every Num bs, Known Length bs) => Iso' b (Tuple b
 --   data Foo = F Int Bool
 --   
 --   fooIso :: <a>Iso'</a> Foo (Tuple '[Int, Bool])
---   fooIso = <a>iso</a> ((F i b)         -&gt; i ::&lt; b ::&lt; Ø)
---                ((i ::<a>::&lt; Ø) -</a> F i b        )
+--   fooIso = <a>iso</a> (\(F i b)         -&gt; i ::&lt; b ::&lt; Ø)
+--                (\(i ::&lt; b ::&lt; Ø) -&gt; F i b        )
 --   
 --   stuff :: <a>BP</a> s '[Foo] a
 --   stuff = <a>withInps</a> $ \(foo :&lt; Ø) -&gt; do
@@ -1186,8 +1186,8 @@ infixr 1 #<~
 --   data Foo = F Int Bool
 --   
 --   fooIso :: <a>Iso'</a> Foo (Tuple '[Int, Bool])
---   fooIso = <a>iso</a> ((F i b)         -&gt; i ::&lt; b ::&lt; Ø)
---                ((i ::<a>::&lt; Ø) -</a> F i b        )
+--   fooIso = <a>iso</a> (\(F i b)         -&gt; i ::&lt; b ::&lt; Ø)
+--                (\(i ::&lt; b ::&lt; Ø) -&gt; F i b        )
 --   
 --   stuff :: <a>BP</a> s '[Foo] a
 --   stuff = <a>withInps</a> $ \(foo :&lt; Ø) -&gt; do
@@ -1285,6 +1285,57 @@ splitVars' :: forall s rs as. Prod Summer as -> Prod Unity as -> BVar s rs (Tupl
 --   <a>Unity</a>s, so it can be run with internal types that aren't
 --   instances of <a>Num</a>.
 gSplit' :: (Generic b, Code b ~ '[bs]) => Prod Summer bs -> Prod Unity bs -> BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
+
+-- | Use an <a>Iso</a> (or compatible <a>Iso</a> from the lens library) to
+--   "pull out" the different constructors of a sum type and return the
+--   <a>BVar</a>
+--   
+--   If there is an isomorphism between a <tt>b</tt> and a <tt><a>Sum</a>
+--   <a>I</a> as</tt> (that is, if an <tt>a</tt> is just a sum type for
+--   every type in <tt>as</tt>), then it lets you <i>branch</i> on which
+--   constructor is used inside the <tt>b</tt>.
+--   
+--   <pre>
+--   data Bar = A Int | B Bool | C String
+--   
+--   barIso :: <a>Iso'</a> Foo (<a>Sum</a> I '[Int, Bool, String])
+--   barIso = <a>iso</a> (case A i -&gt; <a>InL</a> i
+--                         B b -&gt; <a>InR</a> (<a>InL</a> b)
+--                         C s -&gt; <a>InR</a> (<a>InR</a> (<a>InL</a> s))
+--                  )
+--                  (case <a>InL</a> i              -&gt; A i
+--                         <a>InR</a> (<a>InL</a> b)        -&gt; B b
+--                         <a>InR</a> (<a>InR</a> (<a>InL</a> s))) -&gt; C s
+--                  )
+--   
+--   choicesVar barIso :: BVar rs Bar -&gt; BP s rs (SUm I (BVar s rs) '[Int, Bool, String])
+--   
+--   stuff :: <a>BP</a> s '[Bar] a
+--   stuff = <a>withInps</a> $ \(bar :&lt; Ø) -&gt; do
+--       c &lt;- choicesVar barIso bar
+--       case c of
+--         <a>InL</a> i -&gt; do
+--            -- in this branch, bar was made with the A constructor
+--            -- i is the Int inside it
+--         <a>InR</a> (<a>InL</a> b) -&gt; do
+--            -- in this branch, bar was made with the B constructor
+--            -- b is the Bool inside it
+--         <a>InR</a> (<a>InR</a> (<a>InL</a> s)) -&gt; do
+--            -- in this branch, bar was made with the B constructor
+--            -- s is the String inside it
+--   </pre>
+--   
+--   You can use this to pass in product types as the environment to a
+--   <a>BP</a>, and then break out the type into its constituent products.
+--   
+--   Note that for a type like <tt>Foo</tt>, <tt>fooIso</tt> can be
+--   generated automatically with <a>Generic</a> from <a>GHC.Generics</a>
+--   and <a>Generic</a> from <a>Generics.SOP</a> and <i>generics-sop</i>.
+--   See <a>gSplit</a> for more information.
+--   
+--   Also, if you are literally passing a tuple (like <tt><a>BP</a> s
+--   '[Tuple '[Int, Bool]</tt>) then you can give in the identity
+--   isomorphism (<a>id</a>) or use <a>splitVars</a>.
 choicesVar :: forall s rs bs b. (Every Num bs, Known Length bs) => Iso' b (Sum I bs) -> BVar s rs b -> BP s rs (Sum (BVar s rs) bs)
 choicesVar' :: forall s rs bs b. Prod Summer bs -> Prod Unity bs -> Iso' b (Sum I bs) -> BVar s rs b -> BP s rs (Sum (BVar s rs) bs)
 sopVar :: forall s rs bss b. (Known Length bss, Every (Every Num ∧ Known Length) bss) => Iso' b (Sum Tuple bss) -> BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) bss)

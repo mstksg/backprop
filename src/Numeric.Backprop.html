@@ -201,8 +201,8 @@
 </span><a name="line-201"></a><span class="hs-comment">-- data Foo = F Int Bool</span><span>
 </span><a name="line-202"></a><span class="hs-comment">--</span><span>
 </span><a name="line-203"></a><span class="hs-comment">-- fooIso :: 'Iso'' Foo (Tuple '[Int, Bool])</span><span>
-</span><a name="line-204"></a><span class="hs-comment">-- fooIso = 'iso' (\(F i b)         -&gt; i ::&lt; b ::&lt; &#216;)</span><span>
-</span><a name="line-205"></a><span class="hs-comment">--              (\(i ::&lt; b ::&lt; &#216;) -&gt; F i b        )</span><span>
+</span><a name="line-204"></a><span class="hs-comment">-- fooIso = 'iso' (\\(F i b)         -\&gt; i ::\&lt; b ::\&lt; &#216;)</span><span>
+</span><a name="line-205"></a><span class="hs-comment">--              (\\(i ::\&lt; b ::\&lt; &#216;) -\&gt; F i b        )</span><span>
 </span><a name="line-206"></a><span class="hs-comment">--</span><span>
 </span><a name="line-207"></a><span class="hs-comment">-- partsVar fooIso :: BVar rs Foo -&gt; BP s rs (Prod (BVar s rs) '[Int, Bool])</span><span>
 </span><a name="line-208"></a><span class="hs-comment">--</span><span>
@@ -242,8 +242,8 @@
 </span><a name="line-242"></a><span class="hs-comment">-- data Foo = F Int Bool</span><span>
 </span><a name="line-243"></a><span class="hs-comment">--</span><span>
 </span><a name="line-244"></a><span class="hs-comment">-- fooIso :: 'Iso'' Foo (Tuple '[Int, Bool])</span><span>
-</span><a name="line-245"></a><span class="hs-comment">-- fooIso = 'iso' (\(F i b)         -&gt; i ::&lt; b ::&lt; &#216;)</span><span>
-</span><a name="line-246"></a><span class="hs-comment">--              (\(i ::&lt; b ::&lt; &#216;) -&gt; F i b        )</span><span>
+</span><a name="line-245"></a><span class="hs-comment">-- fooIso = 'iso' (\\(F i b)         -\&gt; i ::\&lt; b ::\&lt; &#216;)</span><span>
+</span><a name="line-246"></a><span class="hs-comment">--              (\\(i ::\&lt; b ::\&lt; &#216;) -\&gt; F i b        )</span><span>
 </span><a name="line-247"></a><span class="hs-comment">--</span><span>
 </span><a name="line-248"></a><span class="hs-comment">-- stuff :: 'BP' s '[Foo] a</span><span>
 </span><a name="line-249"></a><span class="hs-comment">-- stuff = 'withInps' $ \\(foo :&lt; &#216;) -\&gt; do</span><span>
@@ -285,8 +285,8 @@
 </span><a name="line-285"></a><span class="hs-comment">-- data Foo = F Int Bool</span><span>
 </span><a name="line-286"></a><span class="hs-comment">--</span><span>
 </span><a name="line-287"></a><span class="hs-comment">-- fooIso :: 'Iso'' Foo (Tuple '[Int, Bool])</span><span>
-</span><a name="line-288"></a><span class="hs-comment">-- fooIso = 'iso' (\(F i b)         -&gt; i ::&lt; b ::&lt; &#216;)</span><span>
-</span><a name="line-289"></a><span class="hs-comment">--              (\(i ::&lt; b ::&lt; &#216;) -&gt; F i b        )</span><span>
+</span><a name="line-288"></a><span class="hs-comment">-- fooIso = 'iso' (\\(F i b)         -\&gt; i ::\&lt; b ::\&lt; &#216;)</span><span>
+</span><a name="line-289"></a><span class="hs-comment">--              (\\(i ::\&lt; b ::\&lt; &#216;) -\&gt; F i b        )</span><span>
 </span><a name="line-290"></a><span class="hs-comment">--</span><span>
 </span><a name="line-291"></a><span class="hs-comment">-- stuff :: 'BP' s '[Foo] a</span><span>
 </span><a name="line-292"></a><span class="hs-comment">-- stuff = 'withInps' $ \\(foo :&lt; &#216;) -\&gt; do</span><span>
@@ -395,6 +395,55 @@ choicesVar' ss us i r = do
       return $ BVNode IZ r'
 -- TODO: cannot implement via sopVar?  oh well.
 
+-- | Use an 'Iso' (or compatible 'Control.Lens.Iso.Iso' from the lens
+-- library) to &quot;pull out&quot; the different constructors of a sum type and
+-- return the 'BVar'
+--
+-- If there is an isomorphism between a @b@ and a @'Sum' 'I' as@ (that is,
+-- if an @a@ is just a sum type for every type in @as@), then it lets you
+-- /branch/ on which constructor is used inside the @b@.
+--
+-- @
+-- data Bar = A Int | B Bool | C String
+--
+-- barIso :: 'Iso'' Foo ('Sum' I '[Int, Bool, String])
+-- barIso = 'iso' (\case A i -&gt; 'InL' i
+--                       B b -&gt; 'InR' ('InL' b)
+--                       C s -&gt; 'InR' ('InR' ('InL' s))
+--                )
+--                (\case 'InL' i              -&gt; A i
+--                       'InR' ('InL' b)        -&gt; B b
+--                       'InR' ('InR' ('InL' s))) -&gt; C s
+--                )
+--
+-- choicesVar barIso :: BVar rs Bar -&gt; BP s rs (SUm I (BVar s rs) '[Int, Bool, String])
+--
+-- stuff :: 'BP' s '[Bar] a
+-- stuff = 'withInps' $ \\(bar :&lt; &#216;) -\&gt; do
+--     c &lt;- choicesVar barIso bar
+--     case c of
+--       'InL' i -&gt; do
+--          -- in this branch, bar was made with the A constructor
+--          -- i is the Int inside it
+--       'InR' ('InL' b) -&gt; do
+--          -- in this branch, bar was made with the B constructor
+--          -- b is the Bool inside it
+--       'InR' ('InR' ('InL' s)) -&gt; do
+--          -- in this branch, bar was made with the B constructor
+--          -- s is the String inside it
+-- @
+--
+-- You can use this to pass in product types as the environment to a 'BP',
+-- and then break out the type into its constituent products.
+--
+-- Note that for a type like @Foo@, @fooIso@ can be generated automatically
+-- with 'GHC.Generics.Generic' from &quot;GHC.Generics&quot; and
+-- 'Generics.SOP.Generic' from &quot;Generics.SOP&quot; and /generics-sop/.  See
+-- 'gSplit' for more information.
+--
+-- Also, if you are literally passing a tuple (like
+-- @'BP' s '[Tuple '[Int, Bool]@) then you can give in the identity
+-- isomorphism ('id') or use 'splitVars'.
 choicesVar
     :: forall s rs bs b. (Every Num bs, Known Length bs)
     =&gt; Iso' b (Sum I bs)
