@@ -2600,8 +2600,23 @@ summers' :: Every Num as => Length as -> Prod Summer as
 --   of types in the list <tt>as</tt>.
 unities' :: Every Num as => Length as -> Prod Unity as
 
+
+-- | Provides monomorphic versions of the types and combinators in
+--   <a>Numeric.Backprop.Op</a>, for usage with
+--   <a>Numeric.Backprop.Mono</a> and
+--   <a>Numeric.Backprop.Mono.Implicit</a>.
+--   
+--   Note that <a>Op</a> is a <i>subset</i> or <i>subtype</i> of
+--   <a>OpM</a>, and so, any function that expects an <tt><a>OpM</a> m as
+--   a</tt> (or an <tt><a>OpB</a> s as a</tt>) can be given an
+--   <tt><a>Op</a> as a</tt> and it'll work just fine.
 module Numeric.Backprop.Op.Mono
 type Op n a b = Op (Replicate n a) b
+type OpM m n a = OpM m (Replicate n a)
+data VecT k (n :: N) (f :: k -> *) (a :: k) :: forall k. N -> (k -> *) -> k -> *
+[ØV] :: VecT k Z f a
+[:*] :: VecT k (S n1) f a
+type Vec (n :: N) = VecT * n I
 runOp' :: Op n a b -> Vec n a -> (b, Maybe b -> Vec n a)
 runOp :: Op n a b -> Vec n a -> b
 gradOp :: Op n a b -> Vec n a -> Vec n a
@@ -2611,6 +2626,12 @@ op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op N1 a a
 op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op N2 a a
 op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op N3 a a
 opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op n a a
+infixr 4 :+
+(*:) :: f a -> f a -> VecT k (S (S Z)) f a
+infix 5 *:
+(+:) :: a -> a -> Vec (S (S Z)) a
+infix 5 +:
+head' :: VecT k (S n) f a -> f a
 
 -- | Convenient aliases for low-value Peano numbers.
 type N0 = Z
@@ -2624,16 +2645,6 @@ type N7 = S N6
 type N8 = S N7
 type N9 = S N8
 type N10 = S N9
-data VecT k (n :: N) (f :: k -> *) (a :: k) :: forall k. N -> (k -> *) -> k -> *
-[ØV] :: VecT k Z f a
-[:*] :: VecT k (S n1) f a
-type Vec (n :: N) = VecT * n I
-infixr 4 :+
-(*:) :: f a -> f a -> VecT k (S (S Z)) f a
-infix 5 *:
-(+:) :: a -> a -> Vec (S (S Z)) a
-infix 5 +:
-head' :: VecT k (S n) f a -> f a
 
 module Numeric.Backprop.Mono
 type BP s n a = BP s (Replicate n a)
