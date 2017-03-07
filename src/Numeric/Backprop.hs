@@ -123,7 +123,7 @@ type BPOp s rs a  = BP s rs (BVar s rs a)
 type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 
 
--- | A version of 'opVar'' taking an explicit 'Summer', so can be used on
+-- | A version of 'opVar' taking an explicit 'Summer', so can be used on
 -- values of types that aren't instances of 'Num'.
 opVar'
     :: forall s rs as a. ()
@@ -232,8 +232,6 @@ partsVar
     -> BP s rs (Prod (BVar s rs) bs)
 partsVar = partsVar' summers unities
 
-infixr 1 #<~
-
 -- | A useful infix alias for 'partsVar'.
 --
 -- Building on the example from 'partsVar':
@@ -255,6 +253,7 @@ infixr 1 #<~
 --
 -- See 'gSplit' for an example usage of splitting up an arbitrary product
 -- type (like @Foo@) using "GHC.Geneics" and "Generics.SOP".
+infixr 1 #<~
 (#<~)
     :: (Every Num bs, Known Length bs)
     => Iso' b (Tuple bs)
@@ -512,8 +511,6 @@ withChoices i r f = do
     c <- choicesVar i r
     f c
 
-infixr 1 ?<~
-
 -- | A useful infix alias for 'choicesVar'.
 --
 -- Building on the example from 'choicesVar':
@@ -545,6 +542,7 @@ infixr 1 ?<~
 --          -- in this branch, bar was made with the B constructor
 --          -- s is the String inside it
 -- @
+infixr 1 ?<~
 (?<~)
     :: (Every Num bs, Known Length bs)
     => Iso' b (Sum I bs)
@@ -805,8 +803,6 @@ infixr 1 ~$
     -> BP s rs (BVar s rs a)
 (~$) = opVar
 
-infixr 1 -$
-
 -- | Lets you treat a @'BPOp s as b@ as an @'Op' as b@, and "apply"
 -- arguments to it just like you would with an 'Op' and '~$' / 'opVar'.
 --
@@ -822,6 +818,7 @@ infixr 1 -$
 -- Useful for running a @'BPOp' s rs a@ that you got from a different function, and
 -- "plugging in" its @rs@ inputs with 'BVar's from your current
 -- environment.
+infixr 1 -$
 (-$)
     :: (Every Num as, Known Length as, Num a)
     => BPOp s as a
@@ -875,7 +872,7 @@ opVar2'
     -> BP s rs (BVar s rs c)
 opVar2' s o rx ry = opVar' s o (rx :< ry :< Ø)
 
--- | Convenient wrapper over 'opVar' that takes an 'Op' with two arguments
+-- | Convenient wrapper over 'opVar' that takes an 'OpB' with two arguments
 -- and two 'BVar' arguments.  Lets you not have to type out the entire
 -- 'Prod'.
 --
@@ -910,7 +907,7 @@ opVar3'
     -> BP s rs (BVar s rs d)
 opVar3' s o rx ry rz = opVar' s o (rx :< ry :< rz :< Ø)
 
--- | Convenient wrapper over 'opVar' that takes an 'Op' with three arguments
+-- | Convenient wrapper over 'opVar' that takes an 'OpB' with three arguments
 -- and three 'BVar' arguments.  Lets you not have to type out the entire
 -- 'Prod'.
 --
@@ -1277,12 +1274,81 @@ withInps
     -> BP s rs a
 withInps = withInps' known
 
+-- | Apply 'OpB' over a 'Prod' of 'BVar's, as inputs.
+-- Provides "implicit" backpropagation, with deferred evaluation.
+--
+-- If you had an @'OpB' s '[a, b, c] d@, this function will expect a 3-Prod
+-- of a @'BVar' s rs a@, a @'BVar' s rs b@, and a @'BVar' s rs c@, and the
+-- result will be a @'BVar' s rs d@:
+--
+-- @
+-- myOp :: 'OpB' s '[a, b, c] d
+-- x    :: 'BVar' s rs a
+-- y    :: 'BVar' s rs b
+-- z    :: 'BVar' s rs c
+--
+-- x :< y :< z :< Ø              :: 'Prod' ('BVar' s rs) '[a, b, c]
+-- 'liftB' myOp (x :< y :< z :< Ø) :: 'BVar' s rs d
+-- @
+--
+-- Note that 'OpB' is a superclass of 'Op', so you can provide any 'Op'
+-- here, as well (like those created by 'op1', 'op2', 'constOp', 'op0'
+-- etc.)
+--
+-- 'opVar' has an infix alias, '.$', so the above example can also be
+-- written as:
+--
+-- @
+-- myOp '.$' (x :< y :< z :< Ø) :: 'BVar' s rs d
+-- @
+--
+-- to let you pretend that you're applying the 'myOp' function to three
+-- inputs.
+--
+-- The result is a new /deferred/ 'BVar'.  This should be fine in most
+-- cases, unless you use the result in more than one location.  This will
+-- cause evaluation to be duplicated and multiple redundant graph nodes to
+-- be created.  If you need to use it in two locations, you should use
+-- 'opVar' instead of 'liftB', or use 'bindVar':
+--
+-- @
+-- 'opVar' o xs = 'bindVar' ('liftB' o xs)
+-- @
+--
+-- 'liftB' can be thought of as a "deferred evaluation" version of 'liftB'.
 liftB
     :: OpB s as a
     -> Prod (BVar s rs) as
     -> BVar s rs a
 liftB = flip BVOp
 
+
+-- | Infix synonym for 'liftB', which lets you pretend that you're applying
+-- 'OpB's as if they were functions:
+--
+-- @
+-- myOp :: 'OpB' s '[a, b, c] d
+-- x    :: 'BVar' s rs a
+-- y    :: 'BVar' s rs b
+-- z    :: 'BVar' s rs c
+--
+-- x :< y :< z :< Ø           :: 'Prod' ('BVar' s rs) '[a, b, c]
+-- myOp '.$' (x :< y :< z :< Ø) :: 'BVar' s rs d
+-- @
+--
+-- Note that 'OpB' is a superclass of 'Op', so you can pass in any 'Op'
+-- here, as well (like those created by 'op1', 'op2', 'constOp', 'op0'
+-- etc.)
+--
+-- See the documentation for 'liftB' for all the caveats of this usage.
+--
+-- '.$' can also be thought of as a "deferred evaluation" version of '~$':
+--
+-- @
+-- o '~$' xs = 'bindVar' (o '.$' xs)
+-- @
+--
+infixr 1 .$
 (.$)
     :: OpB s as a
     -> Prod (BVar s rs) as
@@ -1290,12 +1356,49 @@ liftB = flip BVOp
 (.$) = liftB
 
 
+-- | Convenient wrapper over 'liftB' that takes an 'OpB' with one argument
+-- and a single 'BVar' argument.  Lets you not have to type out the entire
+-- 'Prod'.
+--
+-- @
+-- 'liftB1' o x = 'liftB' o (x ':<' 'Ø')
+--
+-- myOp :: 'Op' '[a] b
+-- x    :: 'BVar' s rs a
+--
+-- 'liftB1' myOp x :: 'BVar' s rs b
+-- @
+--
+-- Note that 'OpB' is a superclass of 'Op', so you can pass in an 'Op' here
+-- (like one made with 'op1') as well.
+--
+-- See the documentation for 'liftB' for caveats and potential problematic
+-- situations with this.
 liftB1
     :: OpB s '[a] b
     -> BVar s rs a
     -> BVar s rs b
 liftB1 o = liftB o . only
 
+-- | Convenient wrapper over 'liftB' that takes an 'OpB' with two arguments
+-- and two 'BVar' arguments.  Lets you not have to type out the entire
+-- 'Prod'.
+--
+-- @
+-- 'liftB2' o x y = 'liftB' o (x ':<' y ':<' 'Ø')
+--
+-- myOp :: 'Op' '[a, b] c
+-- x    :: 'BVar' s rs a
+-- y    :: 'BVar' s rs b
+--
+-- 'liftB2' myOp x y :: 'BVar' s rs c
+-- @
+--
+-- Note that 'OpB' is a superclass of 'Op', so you can pass in an 'Op' here
+-- (like one made with 'op2') as well.
+--
+-- See the documentation for 'liftB' for caveats and potential problematic
+-- situations with this.
 liftB2
     :: OpB s '[a,b] c
     -> BVar s rs a
@@ -1303,6 +1406,26 @@ liftB2
     -> BVar s rs c
 liftB2 o x y = liftB o (x :< y :< Ø)
 
+-- | Convenient wrapper over 'liftB' that takes an 'OpB' with three arguments
+-- and three 'BVar' arguments.  Lets you not have to type out the entire
+-- 'Prod'.
+--
+-- @
+-- 'liftB3' o x y z = 'liftB' o (x ':<' y ':<' z ':<' 'Ø')
+--
+-- myOp :: 'Op' '[a, b, c] d
+-- x    :: 'BVar' s rs a
+-- y    :: 'BVar' s rs b
+-- z    :: 'BVar' s rs c
+--
+-- 'liftB3' myOp x y z :: 'BVar' s rs d
+-- @
+--
+-- Note that 'OpB' is a superclass of 'Op', so you can pass in an 'Op' here
+-- (like one made with 'op3') as well.
+--
+-- See the documentation for 'liftB' for caveats and potential problematic
+-- situations with this.
 liftB3
     :: OpB s '[a,b,c] d
     -> BVar s rs a
