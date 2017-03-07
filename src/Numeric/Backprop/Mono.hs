@@ -75,7 +75,7 @@ infixr 1 ~$
 
 infixr 1 -$
 (-$)
-    :: forall s m n a b. Num b
+    :: forall s m n a b. (Num a, Num b, Known Nat m)
     => BPOp s m a b
     -> VecT m (BVar s n a) a
     -> BP s n a (BVar s n a b)
@@ -120,11 +120,11 @@ backprop bp i = (x, prodAlong i g)
     (x, g) = BP.backprop' (toSummers i) (toUnities i) bp (vecToProd i)
 
 evalBPOp
-    :: forall n a b. Num a
+    :: forall n a b. ()
     => (forall s. BPOp s n a b)
     -> Vec n a
     -> b
-evalBPOp bp = fst . backprop bp
+evalBPOp bp = BP.evalBPOp bp . vecToProd
 
 gradBPOp
     :: forall n a b. Num a
@@ -134,10 +134,13 @@ gradBPOp
 gradBPOp bp = snd . backprop bp
 
 bpOp
-    :: forall s n a b. ()
+    :: forall s n a b. (Num a, Known Nat n)
     => BPOp s n a b
     -> OpB s n a b
-bpOp = undefined
+bpOp b = BP.bpOp' (nSummers @n @a n) (nUnities @n @a n) b
+  where
+    n :: Nat n
+    n = known
 
 
 inpVar
@@ -219,3 +222,20 @@ toUnities
 toUnities = \case
     ØV      -> Ø
     _ :* xs -> BP.Unity 1 :< toUnities xs
+
+nSummers
+    :: forall n a. Num a
+    => Nat n
+    -> Prod BP.Summer (Replicate n a)
+nSummers = \case
+    Z_               -> Ø
+    S_ (n :: Nat n') -> BP.Summer sum :< nSummers @n' @a n
+
+nUnities
+    :: forall n a. Num a
+    => Nat n
+    -> Prod BP.Unity (Replicate n a)
+nUnities = \case
+    Z_               -> Ø
+    S_ (n :: Nat n') -> BP.Unity 1 :< nUnities @n' @a n
+

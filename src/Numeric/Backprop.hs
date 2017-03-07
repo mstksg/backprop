@@ -18,7 +18,7 @@ module Numeric.Backprop (
   -- * BP
   -- ** Backprop
   , backprop, evalBPOp, gradBPOp
-  , backprop', evalBPOp', gradBPOp'
+  , backprop', gradBPOp'
   -- ** Utility combinators
   , withInps, implicitly
   , withInps', implicitly'
@@ -114,6 +114,11 @@ type BPOp s rs a  = BP s rs (BVar s rs a)
 -- takes a bunch of 'BVar's containg @rs@ and uses them to (purely) produce
 -- a 'BVar' containing an @a@.
 --
+-- @
+-- foo :: BPOpI s '[ Double, Double ] Float
+-- foo (x :< y :< Ø) = x + sqrt y
+-- @
+--
 -- If you are exclusively doing implicit backpropagation by combining
 -- 'BVar's and using 'BPOpI's, you are probably better off just importing
 -- "Numeric.Backprop.Implicit", which provides better tools.  This type
@@ -158,7 +163,7 @@ splitVars' ss us = partsVar' ss us id
 --
 -- @
 -- -- the environment is a single Int-Bool tuple, tup
--- stuff :: 'BP' s '[  Tuple '[Int, Bool]    ] a
+-- stuff :: 'BP' s '[ Tuple '[Int, Bool] ] a
 -- stuff = 'withInps' $ \\(tup :< Ø) -\> do
 --     i :< b :< Ø <- 'splitVars' tup
 --     -- now, i is a 'BVar' pointing to the 'Int' inside tup
@@ -204,7 +209,7 @@ partsVar' ss us i =
 -- fooIso = 'iso' (\\(F i b)         -\> i ::\< b ::\< Ø)
 --              (\\(i ::\< b ::\< Ø) -\> F i b        )
 --
--- partsVar fooIso :: BVar rs Foo -> BP s rs (Prod (BVar s rs) '[Int, Bool])
+-- 'partsVar' fooIso :: 'BVar' rs Foo -> 'BP' s rs ('Prod' ('BVar' s rs) '[Int, Bool])
 --
 -- stuff :: 'BP' s '[Foo] a
 -- stuff = 'withInps' $ \\(foo :< Ø) -\> do
@@ -333,7 +338,7 @@ gSplit' ss us = partsVar' ss us gTuple
 --
 -- instance SOP.Generic Foo
 --
--- 'gSplit' :: BVar rs Foo -> BP s rs (Prod (BVar s rs) '[Int, Bool])
+-- 'gSplit' :: 'BVar' rs Foo -> 'BP' s rs ('Prod' ('BVar' s rs) '[Int, Bool])
 --
 -- stuff :: 'BP' s '[Foo] a
 -- stuff = 'withInps' $ \\(foo :< Ø) -\> do
@@ -481,7 +486,7 @@ withChoices' ss us i r f = do
 --                       'InR' ('InR' ('InL' (I s))) -> C s
 --                )
 --
--- choicesVar barIso :: BVar rs Bar -> BP s rs (Sum I (BVar s rs) '[Int, Bool, String])
+-- 'choicesVar' barIso :: BVar rs Bar -> BP s rs (Sum I (BVar s rs) '[Int, Bool, String])
 --
 -- stuff :: 'BP' s '[Bar] a
 -- stuff = 'withInps' $ \\(bar :< Ø) -\> do
@@ -1036,7 +1041,8 @@ backprop' ss us bp env = runST $ do
 
 -- | Perform backpropagation on the given 'BPOp'.  Returns the result of
 -- the operation it represents, as well as the gradient of the result with
--- respect to its inputs.
+-- respect to its inputs.  See module header for "Numeric.Backprop" and
+-- package documentation for examples and usages.
 backprop
     :: forall rs a. Every Num rs
     => (forall s. BPOp s rs a)
@@ -1069,28 +1075,16 @@ bpOp
     -> OpB s rs a
 bpOp = bpOp' summers unities
 
--- | A version of 'evalBPOp' taking explicit 'Summer's and 'Unity's, so it
--- can be run with types that aren't instances of 'Num'.
-evalBPOp'
-    :: Prod Summer rs
-    -> Prod Unity rs
-    -> (forall s. BPOp s rs a)  -- ^ 'BPOp' to run
-    -> Tuple rs                 -- ^ input
-    -> a                        -- ^ output
-evalBPOp' ss us bp env = runST $
-    fst <$> backpropWith ss us bp env
-
 -- | Simply run the 'BPOp' on an input tuple, getting the result without
 -- bothering with the gradient or with backpropagation.
 evalBPOp
-    :: forall rs a. Every Num rs
-    => (forall s. BPOp s rs a)  -- ^ 'BPOp' to run
+    :: (forall s. BPOp s rs a)  -- ^ 'BPOp' to run
     -> Tuple rs                 -- ^ input
     -> a                        -- ^ output
-evalBPOp o env = evalBPOp' (summers' l) (unities' l) o env
-  where
-    l :: Length rs
-    l = prodLength env
+evalBPOp bp env = runST $ do
+    r <- evalStateT (runReaderT (bpST bp) env)
+                    (BPS (map1 (\_ -> FRInternal []) env))
+    runReaderT (resolveVar r) env
 
 -- | A version of 'gradBPOp' taking explicit 'Summer's and 'Unity's, so it
 -- can be run with types that aren't instances of 'Num'.

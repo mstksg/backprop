@@ -122,9 +122,9 @@ coerced = iso coerce coerce
 -- >>> import qualified Generics.SOP as SOP
 -- >>> data Foo = A Int Bool      deriving Generic
 -- >>> instance SOP.Generic Foo
--- >>> 'view' 'gTuple' (A 10 True)
+-- >>> view gTuple (A 10 True)
 -- 10 ::< True ::< Ø
--- >>> 'review' 'gTuple' (15 ::< False ::< Ø)
+-- >>> review gTuple (15 ::< False ::< Ø)
 -- A 15 False
 --
 gTuple :: (SOP.Generic a, SOP.Code a ~ '[as]) => Iso' a (Tuple as)
