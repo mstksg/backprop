@@ -39,14 +39,14 @@ module Numeric.Backprop (
   -- ** Var manipulation
   -- *** As parts
   , partsVar, (#<~), withParts
-  , splitVars, gSplit
+  , splitVars, gSplit, gTuple
   , partsVar', withParts'
   , splitVars', gSplit'
   -- *** As sums
-  , choicesVar
-  , choicesVar'
+  , choicesVar, (?<~), withChoices
+  , choicesVar', withChoices'
   -- *** As sums of products
-  , sopVar, gSplits
+  , sopVar, gSplits, gSOP
   , sopVar', gSplits'
   -- ** Combining
   , liftB, (.$), liftB1, liftB2, liftB3
@@ -201,8 +201,8 @@ partsVar' ss us i =
 -- data Foo = F Int Bool
 --
 -- fooIso :: 'Iso'' Foo (Tuple '[Int, Bool])
--- fooIso = 'iso' (\(F i b)         -> i ::< b ::< Ø)
---              (\(i ::< b ::< Ø) -> F i b        )
+-- fooIso = 'iso' (\\(F i b)         -\> i ::\< b ::\< Ø)
+--              (\\(i ::\< b ::\< Ø) -\> F i b        )
 --
 -- partsVar fooIso :: BVar rs Foo -> BP s rs (Prod (BVar s rs) '[Int, Bool])
 --
@@ -219,8 +219,8 @@ partsVar' ss us i =
 --
 -- Note that for a type like @Foo@, @fooIso@ can be generated automatically
 -- with 'GHC.Generics.Generic' from "GHC.Generics" and
--- 'Generics.SOP.Generic' from "Generics.SOP" and /generics-sop/.  See
--- 'gSplit' for more information.
+-- 'Generics.SOP.Generic' from "Generics.SOP" and /generics-sop/, using the
+-- 'gTuple' iso.  See 'gSplit' for more information.
 --
 -- Also, if you are literally passing a tuple (like
 -- @'BP' s '[Tuple '[Int, Bool]@) then you can give in the identity
@@ -242,8 +242,8 @@ infixr 1 #<~
 -- data Foo = F Int Bool
 --
 -- fooIso :: 'Iso'' Foo (Tuple '[Int, Bool])
--- fooIso = 'iso' (\(F i b)         -> i ::< b ::< Ø)
---              (\(i ::< b ::< Ø) -> F i b        )
+-- fooIso = 'iso' (\\(F i b)         -\> i ::\< b ::\< Ø)
+--              (\\(i ::\< b ::\< Ø) -\> F i b        )
 --
 -- stuff :: 'BP' s '[Foo] a
 -- stuff = 'withInps' $ \\(foo :< Ø) -\> do
@@ -285,8 +285,8 @@ withParts' ss us i r f = do
 -- data Foo = F Int Bool
 --
 -- fooIso :: 'Iso'' Foo (Tuple '[Int, Bool])
--- fooIso = 'iso' (\(F i b)         -> i ::< b ::< Ø)
---              (\(i ::< b ::< Ø) -> F i b        )
+-- fooIso = 'iso' (\\(F i b)         -\> i ::\< b ::\< Ø)
+--              (\\(i ::\< b ::\< Ø) -\> F i b        )
 --
 -- stuff :: 'BP' s '[Foo] a
 -- stuff = 'withInps' $ \\(foo :< Ø) -\> do
@@ -320,7 +320,9 @@ gSplit'
 gSplit' ss us = partsVar' ss us gTuple
 
 -- | Using 'GHC.Generics.Generic' from "GHC.Generics" and
--- 'Generics.SOP.Generic' from "Generics.SOP"
+-- 'Generics.SOP.Generic' from "Generics.SOP", /split/ a 'BVar' containing
+-- a product type into a tuple ('Prod') of 'BVar's pointing to each value
+-- inside.
 --
 -- Building on the example from 'partsVar':
 --
@@ -332,11 +334,11 @@ gSplit' ss us = partsVar' ss us gTuple
 --
 -- instance SOP.Generic Foo
 --
--- gSplit :: BVar rs Foo -> BP s rs (Prod (BVar s rs) '[Int, Bool])
+-- 'gSplit' :: BVar rs Foo -> BP s rs (Prod (BVar s rs) '[Int, Bool])
 --
 -- stuff :: 'BP' s '[Foo] a
 -- stuff = 'withInps' $ \\(foo :< Ø) -\> do
---     i :< b :< Ø <- gSplit foo
+--     i :< b :< Ø <- 'gSplit' foo
 --     -- now, i is a 'BVar' pointing to the 'Int' inside foo
 --     -- and b is a 'BVar' pointing to the 'Bool' inside foo
 --     -- you can do stuff with the i and b here
@@ -368,6 +370,8 @@ gSplit
     -> BP s rs (Prod (BVar s rs) bs)
 gSplit = gSplit' summers unities
 
+-- | A version of 'choicesVar' taking explicit 'Summer's and 'Unity's, so it
+-- can be run with internal types that aren't instances of 'Num'.
 choicesVar'
     :: forall s rs bs b. ()
     => Prod Summer bs
@@ -395,6 +399,48 @@ choicesVar' ss us i r = do
       return $ BVNode IZ r'
 -- TODO: cannot implement via sopVar?  oh well.
 
+-- | Use an 'Iso' (or compatible 'Control.Lens.Iso.Iso' from the lens
+-- library) to "pull out" the different constructors of a sum type and
+-- return a (choice) sum of 'BVar's that you can pattern match on.
+--
+-- If there is an isomorphism between a @b@ and a @'Sum' 'I' as@ (that is,
+-- if an @a@ is just a sum type for every type in @as@), then it lets you
+-- /branch/ on which constructor is used inside the @b@.
+--
+-- Essentially implements pattern matching on 'BVar' values.
+--
+-- @
+-- data Bar = A Int | B Bool | C String
+--
+-- barIso :: 'Iso'' Bar ('Sum' I '[Int, Bool, String])
+-- barIso = 'iso' (\\case A i -> 'InL' (I i)
+--                       B b -> 'InR' ('InL' (I b))
+--                       C s -> 'InR' ('InR' ('InL' (I s))
+--                )
+--                (\\case 'InL' (I i)           -> A i
+--                       'InR' ('InL' (I b))       -> B b
+--                       'InR' ('InR' ('InL' (I s))) -> C s
+--                )
+--
+-- choicesVar barIso :: BVar rs Bar -> BP s rs (Sum I (BVar s rs) '[Int, Bool, String])
+--
+-- stuff :: 'BP' s '[Bar] a
+-- stuff = 'withInps' $ \\(bar :< Ø) -\> do
+--     c <- 'choicesVar' barIso bar
+--     case c of
+--       'InL' i -> do
+--          -- in this branch, bar was made with the A constructor
+--          -- i is the Int inside it
+--       'InR' ('InL' b) -> do
+--          -- in this branch, bar was made with the B constructor
+--          -- b is the Bool inside it
+--       'InR' ('InR' ('InL' s)) -> do
+--          -- in this branch, bar was made with the B constructor
+--          -- s is the String inside it
+-- @
+--
+-- You can use this to pass in sum types as the environment to a 'BP', and
+-- then branch on which constructor the value was made with.
 choicesVar
     :: forall s rs bs b. (Every Num bs, Known Length bs)
     => Iso' b (Sum I bs)
@@ -402,6 +448,112 @@ choicesVar
     -> BP s rs (Sum (BVar s rs) bs)
 choicesVar = choicesVar' summers unities
 
+-- | A version of 'withChoices' taking explicit 'Summer's and 'Unity's, so it
+-- can be run with internal types that aren't instances of 'Num'.
+withChoices'
+    :: forall s rs bs b a. ()
+    => Prod Summer bs
+    -> Prod Unity bs
+    -> Iso' b (Sum I bs)
+    -> BVar s rs b
+    -> (Sum (BVar s rs) bs -> BP s rs a)
+    -> BP s rs a
+withChoices' ss us i r f = do
+    c <- choicesVar' ss us i r
+    f c
+
+-- | A continuation-based version of 'choicesVar'.  Instead of binding the
+-- parts and using it in the rest of the block, provide a continuation that
+-- will handle every possible constructor/case of the type of the value the
+-- 'BVar' points to.
+--
+-- Building on the example from 'choicesVar':
+--
+-- @
+-- data Bar = A Int | B Bool | C String
+--
+-- barIso :: 'Iso'' Bar ('Sum' I '[Int, Bool, String])
+-- barIso = 'iso' (\\case A i -> 'InL' (I i)
+--                       B b -> 'InR' ('InL' (I b))
+--                       C s -> 'InR' ('InR' ('InL' (I s))
+--                )
+--                (\\case 'InL' (I i)           -> A i
+--                       'InR' ('InL' (I b))       -> B b
+--                       'InR' ('InR' ('InL' (I s))) -> C s
+--                )
+--
+-- choicesVar barIso :: BVar rs Bar -> BP s rs (Sum I (BVar s rs) '[Int, Bool, String])
+--
+-- stuff :: 'BP' s '[Bar] a
+-- stuff = 'withInps' $ \\(bar :< Ø) -\> do
+--     'withChoices' barIso bar $ \case
+--       'InL' i -> do
+--          -- in this branch, bar was made with the A constructor
+--          -- i is the Int inside it
+--       'InR' ('InL' b) -> do
+--          -- in this branch, bar was made with the B constructor
+--          -- b is the Bool inside it
+--       'InR' ('InR' ('InL' s)) -> do
+--          -- in this branch, bar was made with the B constructor
+--          -- s is the String inside it
+-- @
+--
+-- Nicer than 'choicesVar' directly, because you don't have to give the
+-- result a superfluous name before pattern matching on it.  You can just
+-- directly pattern match in the lambda, so there's a lot less syntactical
+-- noise.
+withChoices
+    :: forall s rs bs b a. (Every Num bs, Known Length bs)
+    => Iso' b (Sum I bs)
+    -> BVar s rs b
+    -> (Sum (BVar s rs) bs -> BP s rs a)
+    -> BP s rs a
+withChoices i r f = do
+    c <- choicesVar i r
+    f c
+
+infixr 1 ?<~
+
+-- | A useful infix alias for 'choicesVar'.
+--
+-- Building on the example from 'choicesVar':
+--
+-- @
+-- data Bar = A Int | B Bool | C String
+--
+-- barIso :: 'Iso'' Bar ('Sum' I '[Int, Bool, String])
+-- barIso = 'iso' (\\case A i -> 'InL' (I i)
+--                       B b -> 'InR' ('InL' (I b))
+--                       C s -> 'InR' ('InR' ('InL' (I s))
+--                )
+--                (\\case 'InL' (I i)           -> A i
+--                       'InR' ('InL' (I b))       -> B b
+--                       'InR' ('InR' ('InL' (I s))) -> C s
+--                )
+--
+-- stuff :: 'BP' s '[Bar] a
+-- stuff = 'withInps' $ \\(bar :< Ø) -\> do
+--     c <- barIso '?<~' bar
+--     case c of
+--       'InL' i -> do
+--          -- in this branch, bar was made with the A constructor
+--          -- i is the Int inside it
+--       'InR' ('InL' b) -> do
+--          -- in this branch, bar was made with the B constructor
+--          -- b is the Bool inside it
+--       'InR' ('InR' ('InL' s)) -> do
+--          -- in this branch, bar was made with the B constructor
+--          -- s is the String inside it
+-- @
+(?<~)
+    :: (Every Num bs, Known Length bs)
+    => Iso' b (Sum I bs)
+    -> BVar s rs b
+    -> BP s rs (Sum (BVar s rs) bs)
+(?<~) = choicesVar
+
+-- | A version of 'sopVar' taking explicit 'Summer's and 'Unity's, so it
+-- can be run with internal types that aren't instances of 'Num'.
 sopVar'
     :: forall s rs bss b. ()
     => Prod (Prod Summer) bss
@@ -430,6 +582,49 @@ sopVar' sss uss i r = do
       registerVar (IRNode IZ r') r
       return $ imap1 (\ix' _ -> BVNode ix' r') ys
 
+-- | A combination of 'partsVar' and 'choicesVar', that lets you split
+-- a type into a sum of products.  Using an 'Iso' (or compatible
+-- 'Control.Lens.Iso.Iso' from the lens library), you can pull out a type
+-- that is a sum of products into a sum of products of 'BVar's.
+--
+-- Implements branching on the constructors of a value that a 'BVar'
+-- contains, and also splitting out the different items inside each
+-- constructor.
+--
+-- @
+-- data Baz = A Int    Bool
+--          | B String Double
+--
+--
+-- bazIso :: 'Iso'' Baz ('Sum' 'Tuple' '[ '[Int, Bool], '[String, Double] ])
+-- bazIso = 'iso' (\\case A i b -> 'InL' (I (i ::< b ::< Ø))
+--                       B s d -> 'InR' ('InL' (I (s ::< d ::< Ø)))
+--                )
+--                (\\case 'InL' (I (i ::< b ::< Ø))     -> A i b
+--                       'InR' ('InL' (I (s ::< d ::< Ø))) -> B s d
+--                )
+--
+-- 'sopVar' bazIso :: 'BVar' rs Baz -> 'BP' s rs ('Sum' ('Prod' ('BVar' s rs)) '[ '[Int, Bool], '[String, Double] ])
+--
+-- stuff :: 'BP' s '[Baz] a
+-- stuff = 'withInps' $ \\(baz :< Ø) -\> do
+--     c <- 'sopVar' barIso baz
+--     case c of
+--       'InL' (i :< b :< Ø) -> do
+--          -- in this branch, baz was made with the A constructor
+--          -- i and b are the Int and Bool inside it
+--       'InR' ('InL' (s :< d :< Ø)) -> do
+--          -- in this branch, baz was made with the B constructor
+--          -- s and d are the String and Double inside it
+-- @
+--
+-- Essentially exists to implement "pattern matching" on multiple
+-- constructors and fields for the value inside a 'BVar'.
+--
+-- Note that for a type like @Baz@, @bazIso@ can be generated automatically
+-- with 'GHC.Generics.Generic' from "GHC.Generics" and
+-- 'Generics.SOP.Generic' from "Generics.SOP" and /generics-sop/, with
+-- 'gSOP'.  See 'gSplits' for more information.
 sopVar
     :: forall s rs bss b. (Known Length bss, Every (Every Num ∧ Known Length) bss)
     => Iso' b (Sum Tuple bss)
@@ -438,6 +633,8 @@ sopVar
 sopVar = sopVar' (withEvery @(Every Num ∧ Known Length) summers)
                  (withEvery @(Every Num ∧ Known Length) unities)
 
+-- | A version of 'gSplits' taking explicit 'Summer's and 'Unity's, so it
+-- can be run with internal types that aren't instances of 'Num'.
 gSplits'
     :: forall s rs b. SOP.Generic b
     => Prod (Prod Summer) (SOP.Code b)
@@ -446,6 +643,45 @@ gSplits'
     -> BP s rs (Sum (Prod (BVar s rs)) (SOP.Code b))
 gSplits' sss uss = sopVar' sss uss gSOP
 
+-- | Using 'GHC.Generics.Generic' from "GHC.Generics" and
+-- 'Generics.SOP.Generic' from "Generics.SOP", /split/ a 'BVar' containing
+-- a sum of products (any simple ADT, essentialy) into a 'Sum' of each
+-- constructor, each containing a tuple ('Prod') of 'BVar's pointing to
+-- each value inside.
+--
+-- Building on the example from 'sopVar':
+--
+-- @
+-- import qualified Generics.SOP as SOP
+-- 
+-- data Baz = A Int    Bool
+--          | B String Double
+--   deriving Generic
+--
+-- instance SOP.Generic Baz
+--
+-- 'gSplits' :: 'BVar' rs Baz -> 'BP' s rs ('Sum' ('Prod' ('BVar' s rs)) '[ '[Int, Bool], '[String, Double] ])
+--
+-- stuff :: 'BP' s '[Baz] a
+-- stuff = 'withInps' $ \\(baz :< Ø) -\> do
+--     c <- gSplits baz
+--     case c of
+--       'InL' (i :< b :< Ø) -> do
+--          -- in this branch, baz was made with the A constructor
+--          -- i and b are the Int and Bool inside it
+--       'InR' ('InL' (s :< d :< Ø)) -> do
+--          -- in this branch, baz was made with the B constructor
+--          -- s and d are the String and Double inside it
+-- @
+--
+-- Because @Foo@ is a straight up sum-of-products type, 'gSplits' can use
+-- "GHC.Generics" and take out the items inside.
+--
+-- Note:
+--
+-- @
+-- 'gSplit' = 'splitVars' 'gSOP'
+-- @
 gSplits
     :: forall s rs b.
       ( SOP.Generic b
@@ -457,7 +693,6 @@ gSplits
 gSplits = sopVar gSOP
 
 
--- TODO: pull summers too
 resolveVar
     :: (MonadReader (Tuple rs) m, MonadBase (ST s) m)
     => BVar s rs a
