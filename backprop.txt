@@ -17,7 +17,7 @@
 --   
 --   If you also import lens, you should only use this module for the
 --   <a>Iso</a>s it exports, and not import the redefined <a>Iso</a> type
---   synonym or <a>from</a> <i> <a>iso</a> </i> <a>review</a>.
+--   synonym or <a>from</a> / <a>iso</a> / <a>review</a>.
 module Numeric.Backprop.Iso
 
 -- | A family of isomorphisms. See <a>Iso'</a>.
