@@ -2617,6 +2617,19 @@ unities' :: Every Num as => Length as -> Prod Unity as
 --   <a>Numeric.Backprop.Mono</a> and
 --   <a>Numeric.Backprop.Mono.Implicit</a>.
 --   
+--   They are monomorphic in the sense that all of the <i>inputs</i> have
+--   to be of the same type. So, something like
+--   
+--   <pre>
+--   <a>Op</a> '[Double, Double, Double] Int
+--   </pre>
+--   
+--   From <a>Numeric.Backprop</a> would, in this module, be:
+--   
+--   <pre>
+--   <a>Op</a> N3 Double Int
+--   </pre>
+--   
 --   See the module header for <a>Numeric.Backprop.Op</a> for more
 --   explicitly details on how to encode an <a>Op</a> and how they are
 --   implemented. For the most part, the same principles will apply.
@@ -3008,6 +3021,7 @@ type BVar s n a = BVar s (Replicate n a)
 --   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
 --   you can provide an <tt><a>Op</a> as a</tt>.
 type Op n a b = Op (Replicate n a) b
+type OpB s n a b = OpB s (Replicate n a) b
 backprop :: forall n a b. Num a => (forall s. BPOp s n a b) -> Vec n a -> (b, Vec n a)
 evalBPOp :: forall n a b. (forall s. BPOp s n a b) -> Vec n a -> b
 gradBPOp :: forall n a b. Num a => (forall s. BPOp s n a b) -> Vec n a -> Vec n a
@@ -3131,6 +3145,7 @@ type BPOp n a b = forall s. VecT n (BVar s n a) a -> BVar s n a b
 --   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
 --   you can provide an <tt><a>Op</a> as a</tt>.
 type Op n a b = Op (Replicate n a) b
+type OpB s n a b = OpB s (Replicate n a) b
 backprop :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> (b, Vec n a)
 grad :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> Vec n a
 eval :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> b
