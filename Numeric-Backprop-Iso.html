@@ -43,9 +43,9 @@ Haskell</p></div><div id="content"><div id="module-header"><table class="info"><
  <code><a href="../generics-sop-0.2.4.0/Generics-SOP-Universe.html#t:Generic">Generic</a></code> typeclass.</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>import qualified Generics.SOP as SOP
 </code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>data Foo = A Int Bool      deriving Generic
 </code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>instance SOP.Generic Foo
-</code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>'view' 'gTuple' (A 10 True)
+</code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>view gTuple (A 10 True)
 </code></strong>10 ::&lt; True ::&lt; &#216;
-<code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>'review' 'gTuple' (15 ::&lt; False ::&lt; &#216;)
+<code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>review gTuple (15 ::&lt; False ::&lt; &#216;)
 </code></strong>A 15 False
 </pre></div></div><div class="top"><p class="src"><a id="v:gSOP" class="def">gSOP</a> :: <a href="../generics-sop-0.2.4.0/Generics-SOP-Universe.html#t:Generic">Generic</a> a =&gt; <a href="Numeric-Backprop-Iso.html#t:Iso-39-">Iso'</a> a (<a href="../type-combinators-0.2.4.3/Data-Type-Sum.html#t:Sum">Sum</a> <a href="Numeric-Backprop-Op.html#t:Tuple">Tuple</a> (<a href="../generics-sop-0.2.4.0/Generics-SOP-Universe.html#t:Code">Code</a> a)) <a href="src/Numeric.Backprop.Iso.html#gSOP" class="link">Source</a> <a href="#v:gSOP" class="selflink">#</a></p><div class="doc"><p>An <code><a href="Numeric-Backprop-Iso.html#t:Iso">Iso</a></code> between a sum type whose constructors are products, and a sum
  (<code><a href="../type-combinators-0.2.4.3/Data-Type-Sum.html#t:Sum">Sum</a></code>) of products (<code><a href="Numeric-Backprop-Op.html#t:Tuple">Tuple</a></code>).  Uses <a href="../generics-sop-0.2.4.0/Generics-SOP.html">Generics.SOP</a> and the

@@ -122,9 +122,9 @@
 </span><a name="line-122"></a><span class="hs-comment">-- &gt;&gt;&gt; import qualified Generics.SOP as SOP</span><span>
 </span><a name="line-123"></a><span class="hs-comment">-- &gt;&gt;&gt; data Foo = A Int Bool      deriving Generic</span><span>
 </span><a name="line-124"></a><span class="hs-comment">-- &gt;&gt;&gt; instance SOP.Generic Foo</span><span>
-</span><a name="line-125"></a><span class="hs-comment">-- &gt;&gt;&gt; 'view' 'gTuple' (A 10 True)</span><span>
+</span><a name="line-125"></a><span class="hs-comment">-- &gt;&gt;&gt; view gTuple (A 10 True)</span><span>
 </span><a name="line-126"></a><span class="hs-comment">-- 10 ::&lt; True ::&lt; &#216;</span><span>
-</span><a name="line-127"></a><span class="hs-comment">-- &gt;&gt;&gt; 'review' 'gTuple' (15 ::&lt; False ::&lt; &#216;)</span><span>
+</span><a name="line-127"></a><span class="hs-comment">-- &gt;&gt;&gt; review gTuple (15 ::&lt; False ::&lt; &#216;)</span><span>
 </span><a name="line-128"></a><span class="hs-comment">-- A 15 False</span><span>
 </span><a name="line-129"></a><span class="hs-comment">--</span><span>
 </span><a name="line-130"></a><span class="hs-identifier">gTuple</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">SOP</span><span class="hs-operator hs-type">.</span><span class="hs-identifier hs-type">Generic</span><span> </span><a href="#local-6989586621679087268"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">SOP</span><span class="hs-operator hs-type">.</span><span class="hs-identifier hs-type">Code</span><span> </span><a href="#local-6989586621679087268"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">~</span><span> </span><span class="hs-char">'[as]) =&gt; Iso' a (Tuple as)
