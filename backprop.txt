@@ -2986,6 +2986,7 @@ type N10 = S N9
 module Numeric.Backprop.Mono
 type BP s n a = BP s (Replicate n a)
 type BPOp s n a b = BP s n a (BVar s n a b)
+type BPOpI s n a b = VecT n (BVar s n a) a -> BVar s n a b
 type BVar s n a = BVar s (Replicate n a)
 
 -- | An <tt><a>Op</a> n a b</tt> is a type synonym over <a>OpM</a> that
