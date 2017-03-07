@@ -144,6 +144,8 @@ opVar' s o i = do
     itraverse1_ (registerVar . flip IRNode r) i
     return (BVNode IZ r)
 
+-- | A version of 'splitVars' taking explicit 'Summer's and 'Unity's, so it
+-- can be run with types that aren't instances of 'Num'.
 splitVars'
     :: forall s rs as. ()
     => Prod Summer as
@@ -152,12 +154,31 @@ splitVars'
     -> BP s rs (Prod (BVar s rs) as)
 splitVars' ss us = partsVar' ss us id
 
+-- | Split out a 'BVar' of a tuple into a tuple ('Prod') of 'BVar's.
+--
+-- @
+-- -- the environment is a single Int-Bool tuple, tup
+-- stuff :: 'BP' s '[  Tuple '[Int, Bool]    ] a
+-- stuff = 'withInps' $ \\(tup :< Ø) -\> do
+--     i :< b :< Ø <- 'splitVars' tup
+--     -- now, i is a 'BVar' pointing to the 'Int' inside tup
+--     -- and b is a 'BVar' pointing to the 'Bool' inside tup
+--     -- you can do stuff with the i and b here
+-- @
+--
+-- Note that
+--
+-- @
+-- 'splitVars' = 'partsVar' 'id'
+-- @
 splitVars
     :: forall s rs as. (Every Num as, Known Length as)
     => BVar s rs (Tuple as)
     -> BP s rs (Prod (BVar s rs) as)
 splitVars = partsVar id
 
+-- | A version of 'partsVar' taking explicit 'Summer's and 'Unity's, so it
+-- can be run with internal types that aren't instances of 'Num'.
 partsVar'
     :: forall s rs bs b. ()
     => Prod Summer bs
@@ -168,6 +189,42 @@ partsVar'
 partsVar' ss us i =
     fmap (view sum1) . sopVar' (only ss) (only us) (i . resum1)
 
+-- | Use an 'Iso' (or compatible 'Control.Lens.Iso.Iso' from the lens
+-- library) to "pull out" the parts of a data type and work with each part
+-- as a 'BVar'.
+--
+-- If there is an isomorphism between a @b@ and a @'Tuple' as@ (that is, if
+-- an @a@ is just a container for a bunch of @as@), then it lets you break
+-- out the @as@ inside and work with those.
+--
+-- @
+-- data Foo = F Int Bool
+--
+-- fooIso :: 'Iso'' Foo (Tuple '[Int, Bool])
+-- fooIso = 'iso' (\(F i b)         -> i ::< b ::< Ø)
+--              (\(i ::< b ::< Ø) -> F i b        )
+--
+-- partsVar fooIso :: BVar rs Foo -> BP s rs (Prod (BVar s rs) '[Int, Bool])
+--
+-- stuff :: 'BP' s '[Foo] a
+-- stuff = 'withInps' $ \\(foo :< Ø) -\> do
+--     i :< b :< Ø <- partsVar fooIso foo
+--     -- now, i is a 'BVar' pointing to the 'Int' inside foo
+--     -- and b is a 'BVar' pointing to the 'Bool' inside foo
+--     -- you can do stuff with the i and b here
+-- @
+--
+-- You can use this to pass in product types as the environment to a 'BP',
+-- and then break out the type into its constituent products.
+--
+-- Note that for a type like @Foo@, @fooIso@ can be generated automatically
+-- with 'GHC.Generics.Generic' from "GHC.Generics" and
+-- 'Generics.SOP.Generic' from "Generics.SOP" and /generics-sop/.  See
+-- 'gSplit' for more information.
+--
+-- Also, if you are literally passing a tuple (like
+-- @'BP' s '[Tuple '[Int, Bool]@) then you can give in the identity
+-- isomorphism ('id') or use 'splitVars'.
 partsVar
     :: forall s rs bs b. (Every Num bs, Known Length bs)
     => Iso' b (Tuple bs)
@@ -176,6 +233,28 @@ partsVar
 partsVar = partsVar' summers unities
 
 infixr 1 #<~
+
+-- | A useful infix alias for 'partsVar'.
+--
+-- Building on the example from 'partsVar':
+--
+-- @
+-- data Foo = F Int Bool
+--
+-- fooIso :: 'Iso'' Foo (Tuple '[Int, Bool])
+-- fooIso = 'iso' (\(F i b)         -> i ::< b ::< Ø)
+--              (\(i ::< b ::< Ø) -> F i b        )
+--
+-- stuff :: 'BP' s '[Foo] a
+-- stuff = 'withInps' $ \\(foo :< Ø) -\> do
+--     i :< b :< Ø <- fooIso '#<~' foo
+--     -- now, i is a 'BVar' pointing to the 'Int' inside foo
+--     -- and b is a 'BVar' pointing to the 'Bool' inside foo
+--     -- you can do stuff with the i and b here
+-- @
+--
+-- See 'gSplit' for an example usage of splitting up an arbitrary product
+-- type (like @Foo@) using "GHC.Geneics" and "Generics.SOP".
 (#<~)
     :: (Every Num bs, Known Length bs)
     => Iso' b (Tuple bs)
@@ -183,6 +262,8 @@ infixr 1 #<~
     -> BP s rs (Prod (BVar s rs) bs)
 (#<~) = partsVar
 
+-- | A version of 'withParts' taking explicit 'Summer's and 'Unity's, so it
+-- can be run with internal types that aren't instances of 'Num'.
 withParts'
     :: Prod Summer bs
     -> Prod Unity bs
@@ -194,6 +275,30 @@ withParts' ss us i r f = do
     p <- partsVar' ss us i r
     f p
 
+-- | A continuation-based version of 'partsVar'.  Instead of binding the
+-- parts and using it in the rest of the block, provide a continuation to
+-- handle do stuff with the parts inside.
+--
+-- Building on the example from 'partsVar':
+--
+-- @
+-- data Foo = F Int Bool
+--
+-- fooIso :: 'Iso'' Foo (Tuple '[Int, Bool])
+-- fooIso = 'iso' (\(F i b)         -> i ::< b ::< Ø)
+--              (\(i ::< b ::< Ø) -> F i b        )
+--
+-- stuff :: 'BP' s '[Foo] a
+-- stuff = 'withInps' $ \\(foo :< Ø) -\> do
+--     'withParts' fooIso foo $ \\(i :< b :< Ø) -\> do
+--       -- now, i is a 'BVar' pointing to the 'Int' inside foo
+--       -- and b is a 'BVar' pointing to the 'Bool' inside foo
+--       -- you can do stuff with the i and b here
+-- @
+--
+-- Useful so that you can work with the internal parts of the data type
+-- in a closure, so the parts don't leak out to the rest of your 'BP'.
+-- But, mostly just a stylistic choice.
 withParts
     :: (Every Num bs, Known Length bs)
     => Iso' b (Tuple bs)
@@ -204,6 +309,8 @@ withParts i r f = do
     p <- partsVar i r
     f p
 
+-- | A version of 'gSplit' taking explicit 'Summer's and 'Unity's, so it
+-- can be run with internal types that aren't instances of 'Num'.
 gSplit'
     :: (SOP.Generic b, SOP.Code b ~ '[bs])
     => Prod Summer bs
@@ -212,6 +319,49 @@ gSplit'
     -> BP s rs (Prod (BVar s rs) bs)
 gSplit' ss us = partsVar' ss us gTuple
 
+-- | Using 'GHC.Generics.Generic' from "GHC.Generics" and
+-- 'Generics.SOP.Generic' from "Generics.SOP"
+--
+-- Building on the example from 'partsVar':
+--
+-- @
+-- import qualified Generics.SOP as SOP
+-- 
+-- data Foo = F Int Bool
+--   deriving Generic
+--
+-- instance SOP.Generic Foo
+--
+-- gSplit :: BVar rs Foo -> BP s rs (Prod (BVar s rs) '[Int, Bool])
+--
+-- stuff :: 'BP' s '[Foo] a
+-- stuff = 'withInps' $ \\(foo :< Ø) -\> do
+--     i :< b :< Ø <- gSplit foo
+--     -- now, i is a 'BVar' pointing to the 'Int' inside foo
+--     -- and b is a 'BVar' pointing to the 'Bool' inside foo
+--     -- you can do stuff with the i and b here
+-- @
+--
+-- Because @Foo@ is a straight up product type, 'gSplit' can use
+-- "GHC.Generics" and take out the items inside.
+--
+-- Note that because
+--
+-- @
+-- 'gSplit' = 'splitVars' 'gTuple'
+-- @
+--
+-- Then, you can also use 'gTuple' with '#<~':
+--
+-- @
+-- stuff :: 'BP' s '[Foo] a
+-- stuff = 'withInps' $ \\(foo :< Ø) -\> do
+--     i :< b :< Ø <- 'gTuple' '#<~' foo
+--     -- now, i is a 'BVar' pointing to the 'Int' inside foo
+--     -- and b is a 'BVar' pointing to the 'Bool' inside foo
+--     -- you can do stuff with the i and b here
+-- @
+--
 gSplit
     :: (Every Num bs, Known Length bs, SOP.Generic b, SOP.Code b ~ '[bs])
     => BVar s rs b
@@ -357,7 +507,7 @@ registerVar bpir = \case
 -- y    :: 'BVar' s rs b
 -- z    :: 'BVar' s rs c
 --
--- x :< y :< z :< Ø           :: 'Prod' ('BVar' s rs) '[a, b, c]
+-- x :< y :< z :< Ø              :: 'Prod' ('BVar' s rs) '[a, b, c]
 -- 'opVar' myOp (x :< y :< z :< Ø) :: 'BP' s rs ('BVar' s rs d)
 -- @
 --
@@ -380,6 +530,8 @@ registerVar bpir = \case
 -- @
 -- 'opVar' o xs = 'bindVar' ('liftB' o xs)
 -- @
+--
+-- 'opVar' can be thought of as a "binding" version of 'liftB'.
 opVar
     :: Num a
     => OpB s as a
@@ -399,6 +551,17 @@ opVar = opVar' known
 -- x :< y :< z :< Ø           :: 'Prod' ('BVar' s rs) '[a, b, c]
 -- myOp '~$' (x :< y :< z :< Ø) :: 'BP' s rs ('BVar' s rs d)
 -- @
+--
+-- Note that 'OpB' is a superclass of 'Op', so you can pass in any 'Op'
+-- here, as well (like those created by 'op1', 'op2', 'constOp', 'op0'
+-- etc.)
+--
+-- '~$' can also be thought of as a "binding" version of '.$':
+--
+-- @
+-- o '~$' xs = 'bindVar' (o '.$' xs)
+-- @
+--
 infixr 1 ~$
 (~$)
     :: Num a
@@ -559,24 +722,24 @@ bindVar' s r = case r of
 --
 -- @
 -- -- bad
--- errSquared :: Num a => BP s '[a, a] a
--- errSquared = withInp $ \(r :< t :< Ø) -> do
+-- errSquared :: Num a => 'BP' s '[a, a] a
+-- errSquared = 'withInp' $ \\(r :< t :< Ø) -\> do
 --     let err = r - t
---     return (err * err)   -- err is used twice!
+--     'return' (err * err)   -- err is used twice!
 --
 -- -- good
--- errSquared :: Num a => BP s '[a, a] a
--- errSquared = withInp $ \(r :< t :< Ø) -> do
+-- errSquared :: Num a => 'BP' s '[a, a] a
+-- errSquared = 'withInps' $ \\(r :< t :< Ø) -\> do
 --     let err = r - t
---     e <- bindVar err     -- force e, so that it's safe to use twice!
---     return (e * e)
+--     e <- 'bindVar' err     -- force e, so that it's safe to use twice!
+--     'return' (e * e)
 --
 -- -- better
--- errSquared :: Num a => BP s '[a, a] a
--- errSquared = withInp $ \(r :< t :< Ø) -> do
+-- errSquared :: Num a => 'BP' s '[a, a] a
+-- errSquared = 'withInps' $ \\(r :< t :< Ø) -\> do
 --     let err = r - t
---     e <- bindVar err
---     bindVar (e * e)      -- result is forced so user doesn't have to worry
+--     e <- 'bindVar' err
+--     'bindVar' (e * e)      -- result is forced so user doesn't have to worry
 -- @
 --
 -- Note the relation to 'opVar' / '~$' / 'liftR' / '.$':
@@ -857,7 +1020,7 @@ withInps' l f = f (inpVars' l)
 --
 -- @
 -- foo :: 'BPOp' '[Double, Int] a
--- foo = 'withInps' $ \(x :< y :< Ø) -> do
+-- foo = 'withInps' $ \\(x :< y :< Ø) -\> do
 --     -- do stuff with inputs
 -- @
 --

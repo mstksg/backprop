@@ -166,10 +166,11 @@ newtype BP s rs b = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s
 -- style.
 --
 -- (However, note that if you directly manipulate 'BVar's using those
--- instances or using 'liftR', it delays evaluation, so every usage site
+-- instances or using 'Numeric.Backprop.liftB', it delays evaluation, so every usage site
 -- has to re-compute the result/create a new node.  If you want to re-use
--- a 'BVar' you created using '(+)' or '(-)' or 'liftR', use 'bindVar' to
--- force it first.)
+-- a 'BVar' you created using '+' or '-' or 'Numeric.Backprop.liftB', use
+-- 'Numeric.Backprop.bindVar' to force it first.  See documentation for
+-- 'Numeric.Backprop.bindVar' for more details.)
 data BVar :: Type -> [Type] -> Type -> Type where
     -- | A BVar referring to a 'BPNode'
     BVNode  :: !(Index bs a)
@@ -247,7 +248,8 @@ _FRInternal f = \case
 -- resulting 'BVar' is deferred/delayed.  At every location you use it, it
 -- will be recomputed, and a separate graph node will be created.  If you
 -- are using a 'BVar' you made with the 'Num' instance in multiple
--- locations, use 'bindVar' first to force it and prevent recomputation.
+-- locations, use 'Numeric.Backprop.bindVar' first to force it and prevent
+-- recomputation.
 instance Num a => Num (BVar s rs a) where
     r1 + r2       = BVOp (r1 :< r2 :< Ø) $ op2 (+)
     r1 - r2       = BVOp (r1 :< r2 :< Ø) $ op2 (-)
