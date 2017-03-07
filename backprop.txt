@@ -1143,8 +1143,8 @@ opVar3' :: Summer d -> OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar 
 --   
 --   Note that for a type like <tt>Foo</tt>, <tt>fooIso</tt> can be
 --   generated automatically with <a>Generic</a> from <a>GHC.Generics</a>
---   and <a>Generic</a> from <a>Generics.SOP</a> and <i>generics-sop</i>.
---   See <a>gSplit</a> for more information.
+--   and <a>Generic</a> from <a>Generics.SOP</a> and <i>generics-sop</i>,
+--   using the <a>gTuple</a> iso. See <a>gSplit</a> for more information.
 --   
 --   Also, if you are literally passing a tuple (like <tt><a>BP</a> s
 --   '[Tuple '[Int, Bool]</tt>) then you can give in the identity
@@ -1223,7 +1223,9 @@ withParts :: (Every Num bs, Known Length bs) => Iso' b (Tuple bs) -> BVar s rs b
 splitVars :: forall s rs as. (Every Num as, Known Length as) => BVar s rs (Tuple as) -> BP s rs (Prod (BVar s rs) as)
 
 -- | Using <a>Generic</a> from <a>GHC.Generics</a> and <a>Generic</a> from
---   <a>Generics.SOP</a>
+--   <a>Generics.SOP</a>, <i>split</i> a <a>BVar</a> containing a product
+--   type into a tuple (<a>Prod</a>) of <a>BVar</a>s pointing to each value
+--   inside.
 --   
 --   Building on the example from <a>partsVar</a>:
 --   
@@ -1235,11 +1237,11 @@ splitVars :: forall s rs as. (Every Num as, Known Length as) => BVar s rs (Tuple
 --   
 --   instance SOP.Generic Foo
 --   
---   gSplit :: BVar rs Foo -&gt; BP s rs (Prod (BVar s rs) '[Int, Bool])
+--   <a>gSplit</a> :: BVar rs Foo -&gt; BP s rs (Prod (BVar s rs) '[Int, Bool])
 --   
 --   stuff :: <a>BP</a> s '[Foo] a
 --   stuff = <a>withInps</a> $ \(foo :&lt; Ø) -&gt; do
---       i :&lt; b :&lt; Ø &lt;- gSplit foo
+--       i :&lt; b :&lt; Ø &lt;- <a>gSplit</a> foo
 --       -- now, i is a <a>BVar</a> pointing to the <a>Int</a> inside foo
 --       -- and b is a <a>BVar</a> pointing to the <a>Bool</a> inside foo
 --       -- you can do stuff with the i and b here
@@ -1266,6 +1268,25 @@ splitVars :: forall s rs as. (Every Num as, Known Length as) => BVar s rs (Tuple
 --   </pre>
 gSplit :: (Every Num bs, Known Length bs, Generic b, Code b ~ '[bs]) => BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
 
+-- | An <a>Iso</a> between a type that is a product type, and a tuple that
+--   contains all of its components. Uses <a>Generics.SOP</a> and the
+--   <a>Generic</a> typeclass.
+--   
+--   <pre>
+--   &gt;&gt;&gt; import qualified Generics.SOP as SOP
+--   
+--   &gt;&gt;&gt; data Foo = A Int Bool      deriving Generic
+--   
+--   &gt;&gt;&gt; instance SOP.Generic Foo
+--   
+--   &gt;&gt;&gt; 'view' 'gTuple' (A 10 True)
+--   10 ::&lt; True ::&lt; Ø
+--   
+--   &gt;&gt;&gt; 'review' 'gTuple' (15 ::&lt; False ::&lt; Ø)
+--   A 15 False
+--   </pre>
+gTuple :: (Generic a, Code a ~ '[as]) => Iso' a (Tuple as)
+
 -- | A version of <a>partsVar</a> taking explicit <a>Summer</a>s and
 --   <a>Unity</a>s, so it can be run with internal types that aren't
 --   instances of <a>Num</a>.
@@ -1287,32 +1308,34 @@ splitVars' :: forall s rs as. Prod Summer as -> Prod Unity as -> BVar s rs (Tupl
 gSplit' :: (Generic b, Code b ~ '[bs]) => Prod Summer bs -> Prod Unity bs -> BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
 
 -- | Use an <a>Iso</a> (or compatible <a>Iso</a> from the lens library) to
---   "pull out" the different constructors of a sum type and return the
---   <a>BVar</a>
+--   "pull out" the different constructors of a sum type and return a
+--   (choice) sum of <a>BVar</a>s that you can pattern match on.
 --   
 --   If there is an isomorphism between a <tt>b</tt> and a <tt><a>Sum</a>
 --   <a>I</a> as</tt> (that is, if an <tt>a</tt> is just a sum type for
 --   every type in <tt>as</tt>), then it lets you <i>branch</i> on which
 --   constructor is used inside the <tt>b</tt>.
 --   
+--   Essentially implements pattern matching on <a>BVar</a> values.
+--   
 --   <pre>
 --   data Bar = A Int | B Bool | C String
 --   
---   barIso :: <a>Iso'</a> Foo (<a>Sum</a> I '[Int, Bool, String])
---   barIso = <a>iso</a> (case A i -&gt; <a>InL</a> i
---                         B b -&gt; <a>InR</a> (<a>InL</a> b)
---                         C s -&gt; <a>InR</a> (<a>InR</a> (<a>InL</a> s))
+--   barIso :: <a>Iso'</a> Bar (<a>Sum</a> I '[Int, Bool, String])
+--   barIso = <a>iso</a> (\case A i -&gt; <a>InL</a> (I i)
+--                         B b -&gt; <a>InR</a> (<a>InL</a> (I b))
+--                         C s -&gt; <a>InR</a> (<a>InR</a> (<a>InL</a> (I s))
 --                  )
---                  (case <a>InL</a> i              -&gt; A i
---                         <a>InR</a> (<a>InL</a> b)        -&gt; B b
---                         <a>InR</a> (<a>InR</a> (<a>InL</a> s))) -&gt; C s
+--                  (\case <a>InL</a> (I i)           -&gt; A i
+--                         <a>InR</a> (<a>InL</a> (I b))       -&gt; B b
+--                         <a>InR</a> (<a>InR</a> (<a>InL</a> (I s))) -&gt; C s
 --                  )
 --   
---   choicesVar barIso :: BVar rs Bar -&gt; BP s rs (SUm I (BVar s rs) '[Int, Bool, String])
+--   choicesVar barIso :: BVar rs Bar -&gt; BP s rs (Sum I (BVar s rs) '[Int, Bool, String])
 --   
 --   stuff :: <a>BP</a> s '[Bar] a
 --   stuff = <a>withInps</a> $ \(bar :&lt; Ø) -&gt; do
---       c &lt;- choicesVar barIso bar
+--       c &lt;- <a>choicesVar</a> barIso bar
 --       case c of
 --         <a>InL</a> i -&gt; do
 --            -- in this branch, bar was made with the A constructor
@@ -1325,22 +1348,217 @@ gSplit' :: (Generic b, Code b ~ '[bs]) => Prod Summer bs -> Prod Unity bs -> BVa
 --            -- s is the String inside it
 --   </pre>
 --   
---   You can use this to pass in product types as the environment to a
---   <a>BP</a>, and then break out the type into its constituent products.
---   
---   Note that for a type like <tt>Foo</tt>, <tt>fooIso</tt> can be
---   generated automatically with <a>Generic</a> from <a>GHC.Generics</a>
---   and <a>Generic</a> from <a>Generics.SOP</a> and <i>generics-sop</i>.
---   See <a>gSplit</a> for more information.
---   
---   Also, if you are literally passing a tuple (like <tt><a>BP</a> s
---   '[Tuple '[Int, Bool]</tt>) then you can give in the identity
---   isomorphism (<a>id</a>) or use <a>splitVars</a>.
+--   You can use this to pass in sum types as the environment to a
+--   <a>BP</a>, and then branch on which constructor the value was made
+--   with.
 choicesVar :: forall s rs bs b. (Every Num bs, Known Length bs) => Iso' b (Sum I bs) -> BVar s rs b -> BP s rs (Sum (BVar s rs) bs)
+
+-- | A useful infix alias for <a>choicesVar</a>.
+--   
+--   Building on the example from <a>choicesVar</a>:
+--   
+--   <pre>
+--   data Bar = A Int | B Bool | C String
+--   
+--   barIso :: <a>Iso'</a> Bar (<a>Sum</a> I '[Int, Bool, String])
+--   barIso = <a>iso</a> (\case A i -&gt; <a>InL</a> (I i)
+--                         B b -&gt; <a>InR</a> (<a>InL</a> (I b))
+--                         C s -&gt; <a>InR</a> (<a>InR</a> (<a>InL</a> (I s))
+--                  )
+--                  (\case <a>InL</a> (I i)           -&gt; A i
+--                         <a>InR</a> (<a>InL</a> (I b))       -&gt; B b
+--                         <a>InR</a> (<a>InR</a> (<a>InL</a> (I s))) -&gt; C s
+--                  )
+--   
+--   stuff :: <a>BP</a> s '[Bar] a
+--   stuff = <a>withInps</a> $ \(bar :&lt; Ø) -&gt; do
+--       c &lt;- barIso <a>?&lt;~</a> bar
+--       case c of
+--         <a>InL</a> i -&gt; do
+--            -- in this branch, bar was made with the A constructor
+--            -- i is the Int inside it
+--         <a>InR</a> (<a>InL</a> b) -&gt; do
+--            -- in this branch, bar was made with the B constructor
+--            -- b is the Bool inside it
+--         <a>InR</a> (<a>InR</a> (<a>InL</a> s)) -&gt; do
+--            -- in this branch, bar was made with the B constructor
+--            -- s is the String inside it
+--   </pre>
+(?<~) :: (Every Num bs, Known Length bs) => Iso' b (Sum I bs) -> BVar s rs b -> BP s rs (Sum (BVar s rs) bs)
+infixr 1 ?<~
+
+-- | A continuation-based version of <a>choicesVar</a>. Instead of binding
+--   the parts and using it in the rest of the block, provide a
+--   continuation that will handle every possible constructor/case of the
+--   type of the value the <a>BVar</a> points to.
+--   
+--   Building on the example from <a>choicesVar</a>:
+--   
+--   <pre>
+--   data Bar = A Int | B Bool | C String
+--   
+--   barIso :: <a>Iso'</a> Bar (<a>Sum</a> I '[Int, Bool, String])
+--   barIso = <a>iso</a> (\case A i -&gt; <a>InL</a> (I i)
+--                         B b -&gt; <a>InR</a> (<a>InL</a> (I b))
+--                         C s -&gt; <a>InR</a> (<a>InR</a> (<a>InL</a> (I s))
+--                  )
+--                  (\case <a>InL</a> (I i)           -&gt; A i
+--                         <a>InR</a> (<a>InL</a> (I b))       -&gt; B b
+--                         <a>InR</a> (<a>InR</a> (<a>InL</a> (I s))) -&gt; C s
+--                  )
+--   
+--   choicesVar barIso :: BVar rs Bar -&gt; BP s rs (Sum I (BVar s rs) '[Int, Bool, String])
+--   
+--   stuff :: <a>BP</a> s '[Bar] a
+--   stuff = <a>withInps</a> $ \(bar :&lt; Ø) -&gt; do
+--       <a>withChoices</a> barIso bar $ case
+--         <a>InL</a> i -&gt; do
+--            -- in this branch, bar was made with the A constructor
+--            -- i is the Int inside it
+--         <a>InR</a> (<a>InL</a> b) -&gt; do
+--            -- in this branch, bar was made with the B constructor
+--            -- b is the Bool inside it
+--         <a>InR</a> (<a>InR</a> (<a>InL</a> s)) -&gt; do
+--            -- in this branch, bar was made with the B constructor
+--            -- s is the String inside it
+--   </pre>
+--   
+--   Nicer than <a>choicesVar</a> directly, because you don't have to give
+--   the result a superfluous name before pattern matching on it. You can
+--   just directly pattern match in the lambda, so there's a lot less
+--   syntactical noise.
+withChoices :: forall s rs bs b a. (Every Num bs, Known Length bs) => Iso' b (Sum I bs) -> BVar s rs b -> (Sum (BVar s rs) bs -> BP s rs a) -> BP s rs a
+
+-- | A version of <a>choicesVar</a> taking explicit <a>Summer</a>s and
+--   <a>Unity</a>s, so it can be run with internal types that aren't
+--   instances of <a>Num</a>.
 choicesVar' :: forall s rs bs b. Prod Summer bs -> Prod Unity bs -> Iso' b (Sum I bs) -> BVar s rs b -> BP s rs (Sum (BVar s rs) bs)
+
+-- | A version of <a>withChoices</a> taking explicit <a>Summer</a>s and
+--   <a>Unity</a>s, so it can be run with internal types that aren't
+--   instances of <a>Num</a>.
+withChoices' :: forall s rs bs b a. Prod Summer bs -> Prod Unity bs -> Iso' b (Sum I bs) -> BVar s rs b -> (Sum (BVar s rs) bs -> BP s rs a) -> BP s rs a
+
+-- | A combination of <a>partsVar</a> and <a>choicesVar</a>, that lets you
+--   split a type into a sum of products. Using an <a>Iso</a> (or
+--   compatible <a>Iso</a> from the lens library), you can pull out a type
+--   that is a sum of products into a sum of products of <a>BVar</a>s.
+--   
+--   Implements branching on the constructors of a value that a <a>BVar</a>
+--   contains, and also splitting out the different items inside each
+--   constructor.
+--   
+--   <pre>
+--   data Baz = A Int    Bool
+--            | B String Double
+--   
+--   
+--   bazIso :: <a>Iso'</a> Baz (<a>Sum</a> <a>Tuple</a> '[ '[Int, Bool], '[String, Double] ])
+--   bazIso = <a>iso</a> (\case A i b -&gt; <a>InL</a> (I (i ::&lt; b ::&lt; Ø))
+--                         B s d -&gt; <a>InR</a> (<a>InL</a> (I (s ::&lt; d ::&lt; Ø)))
+--                  )
+--                  (\case <a>InL</a> (I (i ::<a>::&lt; Ø))     -</a> A i b
+--                         <a>InR</a> (<a>InL</a> (I (s ::<a>::&lt; Ø))) -</a> B s d
+--                  )
+--   
+--   <a>sopVar</a> bazIso :: <a>BVar</a> rs Baz -&gt; <a>BP</a> s rs (<a>Sum</a> (<a>Prod</a> (<a>BVar</a> s rs)) '[ '[Int, Bool], '[String, Double] ])
+--   
+--   stuff :: <a>BP</a> s '[Baz] a
+--   stuff = <a>withInps</a> $ \(baz :&lt; Ø) -&gt; do
+--       c &lt;- <a>sopVar</a> barIso baz
+--       case c of
+--         <a>InL</a> (i :<a>:&lt; Ø) -</a> do
+--            -- in this branch, baz was made with the A constructor
+--            -- i and b are the Int and Bool inside it
+--         <a>InR</a> (<a>InL</a> (s :<a>:&lt; Ø)) -</a> do
+--            -- in this branch, baz was made with the B constructor
+--            -- s and d are the String and Double inside it
+--   </pre>
+--   
+--   Essentially exists to implement "pattern matching" on multiple
+--   constructors and fields for the value inside a <a>BVar</a>.
+--   
+--   Note that for a type like <tt>Baz</tt>, <tt>bazIso</tt> can be
+--   generated automatically with <a>Generic</a> from <a>GHC.Generics</a>
+--   and <a>Generic</a> from <a>Generics.SOP</a> and <i>generics-sop</i>,
+--   with <a>gSOP</a>. See <a>gSplits</a> for more information.
 sopVar :: forall s rs bss b. (Known Length bss, Every (Every Num ∧ Known Length) bss) => Iso' b (Sum Tuple bss) -> BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) bss)
+
+-- | Using <a>Generic</a> from <a>GHC.Generics</a> and <a>Generic</a> from
+--   <a>Generics.SOP</a>, <i>split</i> a <a>BVar</a> containing a sum of
+--   products (any simple ADT, essentialy) into a <a>Sum</a> of each
+--   constructor, each containing a tuple (<a>Prod</a>) of <a>BVar</a>s
+--   pointing to each value inside.
+--   
+--   Building on the example from <a>sopVar</a>:
+--   
+--   <pre>
+--   import qualified Generics.SOP as SOP
+--   
+--   data Baz = A Int    Bool
+--            | B String Double
+--     deriving Generic
+--   
+--   instance SOP.Generic Baz
+--   
+--   <a>gSplits</a> :: <a>BVar</a> rs Baz -&gt; <a>BP</a> s rs (<a>Sum</a> (<a>Prod</a> (<a>BVar</a> s rs)) '[ '[Int, Bool], '[String, Double] ])
+--   
+--   stuff :: <a>BP</a> s '[Baz] a
+--   stuff = <a>withInps</a> $ \(baz :&lt; Ø) -&gt; do
+--       c &lt;- gSplits baz
+--       case c of
+--         <a>InL</a> (i :<a>:&lt; Ø) -</a> do
+--            -- in this branch, baz was made with the A constructor
+--            -- i and b are the Int and Bool inside it
+--         <a>InR</a> (<a>InL</a> (s :<a>:&lt; Ø)) -</a> do
+--            -- in this branch, baz was made with the B constructor
+--            -- s and d are the String and Double inside it
+--   </pre>
+--   
+--   Because <tt>Foo</tt> is a straight up sum-of-products type,
+--   <a>gSplits</a> can use <a>GHC.Generics</a> and take out the items
+--   inside.
+--   
+--   Note:
+--   
+--   <pre>
+--   <a>gSplit</a> = <a>splitVars</a> <a>gSOP</a>
+--   </pre>
 gSplits :: forall s rs b. (Generic b, Known Length (Code b), Every (Every Num ∧ Known Length) (Code b)) => BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) (Code b))
+
+-- | An <a>Iso</a> between a sum type whose constructors are products, and
+--   a sum (<a>Sum</a>) of products (<a>Tuple</a>). Uses
+--   <a>Generics.SOP</a> and the <a>Generic</a> typeclass.
+--   
+--   <pre>
+--   &gt;&gt;&gt; import qualified Generics.SOP as SOP
+--   
+--   &gt;&gt;&gt; data Bar = A Int Bool | B String Double
+--   
+--   &gt;&gt;&gt; instance SOP.Generic Bar
+--   
+--   &gt;&gt;&gt; 'view' 'gSOP' (A 10 True)
+--   'InL' (10 ::&lt; True ::&lt; Ø)
+--   
+--   &gt;&gt;&gt; 'view' 'gSOP' (B "hello" 3.4)
+--   'InR' ('InL' ("hello" ::&lt; 3.4 ::&lt; Ø))
+--   
+--   &gt;&gt;&gt; 'review' 'gTuple' ('InL' (15 ::&lt; False ::&lt; Ø))
+--   A 15 False
+--   
+--   &gt;&gt;&gt; 'review' 'gTuple' ('InR' ('InL' ("bye" ::&lt; 9.8 ::&lt; Ø)))
+--   B "bye" 9.8
+--   </pre>
+gSOP :: Generic a => Iso' a (Sum Tuple (Code a))
+
+-- | A version of <a>sopVar</a> taking explicit <a>Summer</a>s and
+--   <a>Unity</a>s, so it can be run with internal types that aren't
+--   instances of <a>Num</a>.
 sopVar' :: forall s rs bss b. Prod (Prod Summer) bss -> Prod (Prod Unity) bss -> Iso' b (Sum Tuple bss) -> BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) bss)
+
+-- | A version of <a>gSplits</a> taking explicit <a>Summer</a>s and
+--   <a>Unity</a>s, so it can be run with internal types that aren't
+--   instances of <a>Num</a>.
 gSplits' :: forall s rs b. Generic b => Prod (Prod Summer) (Code b) -> Prod (Prod Unity) (Code b) -> BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) (Code b))
 liftB :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
 (.$) :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
