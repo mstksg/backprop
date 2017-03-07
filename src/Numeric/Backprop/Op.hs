@@ -158,7 +158,8 @@ import           Type.Class.Witness
 --
 -- would be a function that takes an 'Int' and a 'Bool' and returns
 -- a 'Double' (in 'IO').  It can be differentiated to give a /gradient/ of
--- an 'Int' and a 'Bool' (in 'IO') if given the total derivative for @a@.
+-- an 'Int' and a 'Bool' (also in 'IO') if given the total derivative for
+-- the @Double@.
 --
 -- Note that an 'OpM' is a /superclass/ of 'Op', so any function that
 -- expects an @'OpM' m as a@ can also accept an @'Op' as a@.
@@ -166,9 +167,9 @@ import           Type.Class.Witness
 -- See 'runOpM', 'gradOpM', and 'gradOpWithM' for examples on how to run
 -- it.
 newtype OpM m as a =
-    -- | Construct an 'OpM' by giving a function creating the result, and
-    -- also a continuation on how to create the gradient, given the total
-    -- derivative of @a@.
+    -- | Construct an 'OpM' by giving a (monadic) function creating the
+    -- result, and also a continuation on how to create the gradient, given
+    -- the total derivative of @a@.
     --
     -- See the module documentation for "Numeric.Backprop.Op" for more
     -- details on the function that this constructor and 'Op' expect.
@@ -185,7 +186,7 @@ newtype OpM m as a =
 --
 -- is a function from an 'Int' and a 'Bool', returning a 'Double'.  It can
 -- be differentiated to give a /gradient/ of an 'Int' and a 'Bool' if given
--- a total derivative for @a@.
+-- a total derivative for the @Double@.
 --
 -- See 'runOp', 'gradOp', and 'gradOpWith' for examples on how to run it,
 -- and 'Op' for instructions on creating it.
@@ -463,7 +464,7 @@ opConst = opConst' summers
 -- 'opConst''.
 --
 -- Note that because this returns an 'Op', it can be used with any function
--- that expects an 'OpM', as well.
+-- that expects an 'OpM' or 'Numeric.Backprop.OpB', as well.
 op0 :: a -> Op '[] a
 op0 x = Op $ \case
     Ø -> (x, const Ø)

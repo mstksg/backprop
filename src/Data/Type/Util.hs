@@ -35,6 +35,12 @@ import           Type.Class.Witness
 import           Type.Family.List
 import           Type.Family.Nat
 
+-- | @'Replicate' n a@ is a list of @a@s repeated @n@ times.
+--
+-- >>> :kind! Replicate N3 Int
+-- '[Int, Int, Int]
+-- >>> :kind! Replicate N5 Double
+-- '[Double, Double, Double, Double, Double]
 type family Replicate (n :: N) (a :: k) = (as :: [k]) | as -> n where
     Replicate 'Z     a = '[]
     Replicate ('S n) a = a ': Replicate n a

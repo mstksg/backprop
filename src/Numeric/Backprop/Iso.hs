@@ -20,7 +20,7 @@
 --
 -- If you also import lens, you should only use this module for the
 -- 'Iso's it exports, and not import the redefined 'Iso' type synonym or
--- 'from' / 'iso' / 'review'.
+-- 'from' \/ 'iso' \/ 'review'.
 --
 
 module Numeric.Backprop.Iso (
