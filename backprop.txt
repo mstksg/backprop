@@ -355,8 +355,8 @@ runOpM' :: OpM m as a -> Tuple as -> m (a, Maybe a -> m (Tuple as))
 --   
 --   That is, given an <tt><a>OpM</a> m as b1</tt>, an <tt><a>OpM</a> m as
 --   b2</tt>, and an <tt><a>OpM</a> m as b3</tt>, it can compose them with
---   an <tt><a>OpM</a> m '[b1,b2,b3] c</tt> to create an <tt><a>OpM</a> as
---   c</tt>.
+--   an <tt><a>OpM</a> m '[b1,b2,b3] c</tt> to create an <tt><a>OpM</a> m
+--   as c</tt>.
 composeOp :: (Monad m, Known Length as, Every Num as) => Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
 
 -- | <a>composeOp</a>, but taking explicit <a>Summer</a>s, for the
@@ -393,6 +393,46 @@ opConst :: (Every Num as, Known Length as) => a -> Op as a
 -- | A version of <a>opConst</a> that takes explicit <a>Summer</a>s, so can
 --   be run on values of types that aren't <a>Num</a> instances.
 opConst' :: Prod Summer as -> a -> Op as a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking one
+--   argument. Uses <a>diff</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op1 (recip . negate)) (5 ::&lt; Ø)
+--   (-0.2, 0.04 ::&lt; Ø)
+--   </pre>
+op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking two
+--   arguments. Uses <a>grad</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op2 (\x y -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
+--   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
+--   </pre>
+op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking three
+--   arguments. Uses <a>grad</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op3 (\x y z -&gt; (x * sqrt y)**z)) (3 ::&lt; 4 ::&lt; 2 ::&lt; Ø)
+--   (36.0, 24.0 ::&lt; 9.0 ::&lt; 64.503 ::&lt; Ø)
+--   </pre>
+op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking
+--   multiple arguments. Uses <a>grad</a>, and so can take any numerical
+--   function polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (opN (\(x :+ y :+ Ø) -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
+--   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
+--   </pre>
+opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
 
 -- | Create an <a>Op</a> of a function taking one input, by giving its
 --   explicit derivative. The function should return a tuple containing the
@@ -471,46 +511,6 @@ op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a, b] c
 -- | Create an <a>Op</a> of a function taking three inputs, by giving its
 --   explicit gradient. See documentation for <a>op2'</a> for more details.
 op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a, b, c] d
-
--- | Automatically create an <a>Op</a> of a numerical function taking one
---   argument. Uses <a>diff</a>, and so can take any numerical function
---   polymorphic over the standard numeric types.
---   
---   <pre>
---   &gt;&gt;&gt; gradOp' (op1 (recip . negate)) (5 ::&lt; Ø)
---   (-0.2, 0.04 ::&lt; Ø)
---   </pre>
-op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
-
--- | Automatically create an <a>Op</a> of a numerical function taking two
---   arguments. Uses <a>grad</a>, and so can take any numerical function
---   polymorphic over the standard numeric types.
---   
---   <pre>
---   &gt;&gt;&gt; gradOp' (op2 (\x y -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
---   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
---   </pre>
-op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
-
--- | Automatically create an <a>Op</a> of a numerical function taking three
---   arguments. Uses <a>grad</a>, and so can take any numerical function
---   polymorphic over the standard numeric types.
---   
---   <pre>
---   &gt;&gt;&gt; gradOp' (op3 (\x y z -&gt; (x * sqrt y)**z)) (3 ::&lt; 4 ::&lt; 2 ::&lt; Ø)
---   (36.0, 24.0 ::&lt; 9.0 ::&lt; 64.503 ::&lt; Ø)
---   </pre>
-op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
-
--- | Automatically create an <a>Op</a> of a numerical function taking
---   multiple arguments. Uses <a>grad</a>, and so can take any numerical
---   function polymorphic over the standard numeric types.
---   
---   <pre>
---   &gt;&gt;&gt; gradOp' (opN (\(x :+ y :+ Ø) -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
---   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
---   </pre>
-opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
 
 -- | An <a>Op</a> that coerces an item into another item whose type has the
 --   same runtime representation. Requires the input to be an instance of
@@ -2617,15 +2617,36 @@ data VecT k (n :: N) (f :: k -> *) (a :: k) :: forall k. N -> (k -> *) -> k -> *
 [ØV] :: VecT k Z f a
 [:*] :: VecT k (S n1) f a
 type Vec (n :: N) = VecT * n I
-runOp' :: Op n a b -> Vec n a -> (b, Maybe b -> Vec n a)
 runOp :: Op n a b -> Vec n a -> b
 gradOp :: Op n a b -> Vec n a -> Vec n a
+gradOp' :: Op n a b -> Vec n a -> (b, Vec n a)
 gradOpWith :: Op n a b -> Vec n a -> b -> Vec n a
 gradOpWith' :: Op n a b -> Vec n a -> Maybe b -> Vec n a
+runOp' :: Op n a b -> Vec n a -> (b, Maybe b -> Vec n a)
+runOpM :: Functor m => OpM m n a b -> Vec n a -> m b
+gradOpM :: Monad m => OpM m n a b -> Vec n a -> m (Vec n a)
+gradOpM' :: Monad m => OpM m n a b -> Vec n a -> m (b, Vec n a)
+gradOpWithM :: Monad m => OpM m n a b -> Vec n a -> b -> m (Vec n a)
+gradOpWithM' :: Monad m => OpM m n a b -> Vec n a -> Maybe b -> m (Vec n a)
+runOpM' :: Functor m => OpM m n a b -> Vec n a -> m (b, Maybe b -> m (Vec n a))
+op0 :: a -> Op N0 b a
+opConst :: forall n a b. (Known Nat n, Num b) => a -> Op n b a
+
+-- | Compose <a>OpM</a>s together, similar to <a>.</a>. But, because all
+--   <a>OpM</a>s are &lt;math&gt;, this is more like <a>sequence</a> for
+--   functions, or <tt>liftAN</tt>.
+--   
+--   That is, given an <tt>o</tt> of <tt><a>OpM</a> m n a b</tt>s, it can
+--   compose them with an <tt><a>OpM</a> m o b c</tt> to create an
+--   <tt><a>OpM</a> m o a c</tt>.
+composeOp :: forall m n o a b c. (Monad m, Num a, Known Nat n) => VecT o (OpM m n a) b -> OpM m o b c -> OpM m n a c
 op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op N1 a a
 op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op N2 a a
 op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op N3 a a
 opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op n a a
+op1' :: (a -> (b, Maybe b -> a)) -> Op N1 a b
+op2' :: (a -> a -> (b, Maybe b -> (a, a))) -> Op N2 a b
+op3' :: (a -> a -> a -> (b, Maybe b -> (a, a, a))) -> Op N3 a b
 infixr 4 :+
 (*:) :: f a -> f a -> VecT k (S (S Z)) f a
 infix 5 *:
