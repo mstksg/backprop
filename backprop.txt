@@ -791,7 +791,7 @@ gradBPOp' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple
 --   
 --   <pre>
 --   foo :: <a>BPOp</a> '[Double, Int] a
---   foo = <a>withInps</a> $ \(x :<a>:&lt; Ø) -</a> do
+--   foo = <a>withInps</a> $ \(x :&lt; y :&lt; Ø) -&gt; do
 --       -- do stuff with inputs
 --   </pre>
 --   
@@ -904,20 +904,20 @@ bpOp :: (Every Num rs, Known Length rs) => BPOp s rs a -> OpB s rs a
 --   <pre>
 --   -- bad
 --   errSquared :: Num a =&gt; <a>BP</a> s '[a, a] a
---   errSquared = <tt>withInp</tt> $ \(r :<a>:&lt; Ø) -</a> do
+--   errSquared = <tt>withInp</tt> $ \(r :&lt; t :&lt; Ø) -&gt; do
 --       let err = r - t
 --       <a>return</a> (err * err)   -- err is used twice!
 --   
 --   -- good
 --   errSquared :: Num a =&gt; <a>BP</a> s '[a, a] a
---   errSquared = <a>withInps</a> $ \(r :<a>:&lt; Ø) -</a> do
+--   errSquared = <a>withInps</a> $ \(r :&lt; t :&lt; Ø) -&gt; do
 --       let err = r - t
 --       e &lt;- <a>bindVar</a> err     -- force e, so that it's safe to use twice!
 --       <a>return</a> (e * e)
 --   
 --   -- better
 --   errSquared :: Num a =&gt; <a>BP</a> s '[a, a] a
---   errSquared = <a>withInps</a> $ \(r :<a>:&lt; Ø) -</a> do
+--   errSquared = <a>withInps</a> $ \(r :&lt; t :&lt; Ø) -&gt; do
 --       let err = r - t
 --       e &lt;- <a>bindVar</a> err
 --       <a>bindVar</a> (e * e)      -- result is forced so user doesn't have to worry

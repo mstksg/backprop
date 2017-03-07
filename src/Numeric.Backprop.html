@@ -573,20 +573,20 @@ bindVar' s r = case r of
 -- @
 -- -- bad
 -- errSquared :: Num a =&gt; 'BP' s '[a, a] a
--- errSquared = 'withInp' $ \\(r :&lt; t :&lt; &#216;) -&gt; do
+-- errSquared = 'withInp' $ \\(r :&lt; t :&lt; &#216;) -\&gt; do
 --     let err = r - t
 --     'return' (err * err)   -- err is used twice!
 --
 -- -- good
 -- errSquared :: Num a =&gt; 'BP' s '[a, a] a
--- errSquared = 'withInps' $ \\(r :&lt; t :&lt; &#216;) -&gt; do
+-- errSquared = 'withInps' $ \\(r :&lt; t :&lt; &#216;) -\&gt; do
 --     let err = r - t
 --     e &lt;- 'bindVar' err     -- force e, so that it's safe to use twice!
 --     'return' (e * e)
 --
 -- -- better
 -- errSquared :: Num a =&gt; 'BP' s '[a, a] a
--- errSquared = 'withInps' $ \\(r :&lt; t :&lt; &#216;) -&gt; do
+-- errSquared = 'withInps' $ \\(r :&lt; t :&lt; &#216;) -\&gt; do
 --     let err = r - t
 --     e &lt;- 'bindVar' err
 --     'bindVar' (e * e)      -- result is forced so user doesn't have to worry
@@ -870,7 +870,7 @@ withInps' l f = f (inpVars' l)
 --
 -- @
 -- foo :: 'BPOp' '[Double, Int] a
--- foo = 'withInps' $ \\(x :&lt; y :&lt; &#216;) -&gt; do
+-- foo = 'withInps' $ \\(x :&lt; y :&lt; &#216;) -\&gt; do
 --     -- do stuff with inputs
 -- @
 --
