@@ -970,7 +970,7 @@ bindVar' :: Summer a -> BVar s rs a -> BP s rs (BVar s rs a)
 --   y    :: <a>BVar</a> s rs b
 --   z    :: <a>BVar</a> s rs c
 --   
---   x :&lt; y :&lt; z :&lt; Ø           :: <a>Prod</a> (<a>BVar</a> s rs) '[a, b, c]
+--   x :&lt; y :&lt; z :&lt; Ø              :: <a>Prod</a> (<a>BVar</a> s rs) '[a, b, c]
 --   <a>opVar</a> myOp (x :&lt; y :&lt; z :&lt; Ø) :: <a>BP</a> s rs (<a>BVar</a> s rs d)
 --   </pre>
 --   
@@ -1111,15 +1111,179 @@ opVar2' :: Summer c -> OpB s '[a, b] c -> BVar s rs a -> BVar s rs b -> BP s rs 
 -- | A version of <a>opVar3</a> taking an explicit <a>Summer</a>, so can be
 --   used on values of types that aren't instances of <a>Num</a>.
 opVar3' :: Summer d -> OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar s rs c -> BP s rs (BVar s rs d)
+
+-- | Use an <a>Iso</a> (or compatible <a>Iso</a> from the lens library) to
+--   "pull out" the parts of a data type and work with each part as a
+--   <a>BVar</a>.
+--   
+--   If there is an isomorphism between a <tt>b</tt> and a <tt><a>Tuple</a>
+--   as</tt> (that is, if an <tt>a</tt> is just a container for a bunch of
+--   <tt>as</tt>), then it lets you break out the <tt>as</tt> inside and
+--   work with those.
+--   
+--   <pre>
+--   data Foo = F Int Bool
+--   
+--   fooIso :: <a>Iso'</a> Foo (Tuple '[Int, Bool])
+--   fooIso = <a>iso</a> ((F i b)         -&gt; i ::&lt; b ::&lt; Ø)
+--                ((i ::<a>::&lt; Ø) -</a> F i b        )
+--   
+--   partsVar fooIso :: BVar rs Foo -&gt; BP s rs (Prod (BVar s rs) '[Int, Bool])
+--   
+--   stuff :: <a>BP</a> s '[Foo] a
+--   stuff = <a>withInps</a> $ \(foo :&lt; Ø) -&gt; do
+--       i :&lt; b :&lt; Ø &lt;- partsVar fooIso foo
+--       -- now, i is a <a>BVar</a> pointing to the <a>Int</a> inside foo
+--       -- and b is a <a>BVar</a> pointing to the <a>Bool</a> inside foo
+--       -- you can do stuff with the i and b here
+--   </pre>
+--   
+--   You can use this to pass in product types as the environment to a
+--   <a>BP</a>, and then break out the type into its constituent products.
+--   
+--   Note that for a type like <tt>Foo</tt>, <tt>fooIso</tt> can be
+--   generated automatically with <a>Generic</a> from <a>GHC.Generics</a>
+--   and <a>Generic</a> from <a>Generics.SOP</a> and <i>generics-sop</i>.
+--   See <a>gSplit</a> for more information.
+--   
+--   Also, if you are literally passing a tuple (like <tt><a>BP</a> s
+--   '[Tuple '[Int, Bool]</tt>) then you can give in the identity
+--   isomorphism (<a>id</a>) or use <a>splitVars</a>.
 partsVar :: forall s rs bs b. (Every Num bs, Known Length bs) => Iso' b (Tuple bs) -> BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
+
+-- | A useful infix alias for <a>partsVar</a>.
+--   
+--   Building on the example from <a>partsVar</a>:
+--   
+--   <pre>
+--   data Foo = F Int Bool
+--   
+--   fooIso :: <a>Iso'</a> Foo (Tuple '[Int, Bool])
+--   fooIso = <a>iso</a> ((F i b)         -&gt; i ::&lt; b ::&lt; Ø)
+--                ((i ::<a>::&lt; Ø) -</a> F i b        )
+--   
+--   stuff :: <a>BP</a> s '[Foo] a
+--   stuff = <a>withInps</a> $ \(foo :&lt; Ø) -&gt; do
+--       i :&lt; b :&lt; Ø &lt;- fooIso <a>#&lt;~</a> foo
+--       -- now, i is a <a>BVar</a> pointing to the <a>Int</a> inside foo
+--       -- and b is a <a>BVar</a> pointing to the <a>Bool</a> inside foo
+--       -- you can do stuff with the i and b here
+--   </pre>
+--   
+--   See <a>gSplit</a> for an example usage of splitting up an arbitrary
+--   product type (like <tt>Foo</tt>) using <a>GHC.Geneics</a> and
+--   <a>Generics.SOP</a>.
 (#<~) :: (Every Num bs, Known Length bs) => Iso' b (Tuple bs) -> BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
 infixr 1 #<~
+
+-- | A continuation-based version of <a>partsVar</a>. Instead of binding
+--   the parts and using it in the rest of the block, provide a
+--   continuation to handle do stuff with the parts inside.
+--   
+--   Building on the example from <a>partsVar</a>:
+--   
+--   <pre>
+--   data Foo = F Int Bool
+--   
+--   fooIso :: <a>Iso'</a> Foo (Tuple '[Int, Bool])
+--   fooIso = <a>iso</a> ((F i b)         -&gt; i ::&lt; b ::&lt; Ø)
+--                ((i ::<a>::&lt; Ø) -</a> F i b        )
+--   
+--   stuff :: <a>BP</a> s '[Foo] a
+--   stuff = <a>withInps</a> $ \(foo :&lt; Ø) -&gt; do
+--       <a>withParts</a> fooIso foo $ \(i :&lt; b :&lt; Ø) -&gt; do
+--         -- now, i is a <a>BVar</a> pointing to the <a>Int</a> inside foo
+--         -- and b is a <a>BVar</a> pointing to the <a>Bool</a> inside foo
+--         -- you can do stuff with the i and b here
+--   </pre>
+--   
+--   Useful so that you can work with the internal parts of the data type
+--   in a closure, so the parts don't leak out to the rest of your
+--   <a>BP</a>. But, mostly just a stylistic choice.
 withParts :: (Every Num bs, Known Length bs) => Iso' b (Tuple bs) -> BVar s rs b -> (Prod (BVar s rs) bs -> BP s rs a) -> BP s rs a
+
+-- | Split out a <a>BVar</a> of a tuple into a tuple (<a>Prod</a>) of
+--   <a>BVar</a>s.
+--   
+--   <pre>
+--   -- the environment is a single Int-Bool tuple, tup
+--   stuff :: <a>BP</a> s '[  Tuple '[Int, Bool]    ] a
+--   stuff = <a>withInps</a> $ \(tup :&lt; Ø) -&gt; do
+--       i :&lt; b :&lt; Ø &lt;- <a>splitVars</a> tup
+--       -- now, i is a <a>BVar</a> pointing to the <a>Int</a> inside tup
+--       -- and b is a <a>BVar</a> pointing to the <a>Bool</a> inside tup
+--       -- you can do stuff with the i and b here
+--   </pre>
+--   
+--   Note that
+--   
+--   <pre>
+--   <a>splitVars</a> = <a>partsVar</a> <a>id</a>
+--   </pre>
 splitVars :: forall s rs as. (Every Num as, Known Length as) => BVar s rs (Tuple as) -> BP s rs (Prod (BVar s rs) as)
+
+-- | Using <a>Generic</a> from <a>GHC.Generics</a> and <a>Generic</a> from
+--   <a>Generics.SOP</a>
+--   
+--   Building on the example from <a>partsVar</a>:
+--   
+--   <pre>
+--   import qualified Generics.SOP as SOP
+--   
+--   data Foo = F Int Bool
+--     deriving Generic
+--   
+--   instance SOP.Generic Foo
+--   
+--   gSplit :: BVar rs Foo -&gt; BP s rs (Prod (BVar s rs) '[Int, Bool])
+--   
+--   stuff :: <a>BP</a> s '[Foo] a
+--   stuff = <a>withInps</a> $ \(foo :&lt; Ø) -&gt; do
+--       i :&lt; b :&lt; Ø &lt;- gSplit foo
+--       -- now, i is a <a>BVar</a> pointing to the <a>Int</a> inside foo
+--       -- and b is a <a>BVar</a> pointing to the <a>Bool</a> inside foo
+--       -- you can do stuff with the i and b here
+--   </pre>
+--   
+--   Because <tt>Foo</tt> is a straight up product type, <a>gSplit</a> can
+--   use <a>GHC.Generics</a> and take out the items inside.
+--   
+--   Note that because
+--   
+--   <pre>
+--   <a>gSplit</a> = <a>splitVars</a> <a>gTuple</a>
+--   </pre>
+--   
+--   Then, you can also use <a>gTuple</a> with <a>#&lt;~</a>:
+--   
+--   <pre>
+--   stuff :: <a>BP</a> s '[Foo] a
+--   stuff = <a>withInps</a> $ \(foo :&lt; Ø) -&gt; do
+--       i :&lt; b :&lt; Ø &lt;- <a>gTuple</a> <a>#&lt;~</a> foo
+--       -- now, i is a <a>BVar</a> pointing to the <a>Int</a> inside foo
+--       -- and b is a <a>BVar</a> pointing to the <a>Bool</a> inside foo
+--       -- you can do stuff with the i and b here
+--   </pre>
 gSplit :: (Every Num bs, Known Length bs, Generic b, Code b ~ '[bs]) => BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
+
+-- | A version of <a>partsVar</a> taking explicit <a>Summer</a>s and
+--   <a>Unity</a>s, so it can be run with internal types that aren't
+--   instances of <a>Num</a>.
 partsVar' :: forall s rs bs b. Prod Summer bs -> Prod Unity bs -> Iso' b (Tuple bs) -> BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
+
+-- | A version of <a>withParts</a> taking explicit <a>Summer</a>s and
+--   <a>Unity</a>s, so it can be run with internal types that aren't
+--   instances of <a>Num</a>.
 withParts' :: Prod Summer bs -> Prod Unity bs -> Iso' b (Tuple bs) -> BVar s rs b -> (Prod (BVar s rs) bs -> BP s rs a) -> BP s rs a
+
+-- | A version of <a>splitVars</a> taking explicit <a>Summer</a>s and
+--   <a>Unity</a>s, so it can be run with types that aren't instances of
+--   <a>Num</a>.
 splitVars' :: forall s rs as. Prod Summer as -> Prod Unity as -> BVar s rs (Tuple as) -> BP s rs (Prod (BVar s rs) as)
+
+-- | A version of <a>gSplit</a> taking explicit <a>Summer</a>s and
+--   <a>Unity</a>s, so it can be run with internal types that aren't
+--   instances of <a>Num</a>.
 gSplit' :: (Generic b, Code b ~ '[bs]) => Prod Summer bs -> Prod Unity bs -> BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
 choicesVar :: forall s rs bs b. (Every Num bs, Known Length bs) => Iso' b (Sum I bs) -> BVar s rs b -> BP s rs (Sum (BVar s rs) bs)
 choicesVar' :: forall s rs bs b. Prod Summer bs -> Prod Unity bs -> Iso' b (Sum I bs) -> BVar s rs b -> BP s rs (Sum (BVar s rs) bs)
