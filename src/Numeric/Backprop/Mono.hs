@@ -16,8 +16,8 @@
 
 module Numeric.Backprop.Mono (
   -- * Types
-    BP, BPOp, BVar
-  , Op
+    BP, BPOp, BPOpI, BVar
+  , Op, OpB
   -- * BP
   -- ** Backprop
   , backprop, evalBPOp, gradBPOp

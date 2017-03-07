@@ -21,6 +21,19 @@
 -- Provides monomorphic versions of the types and combinators in
 -- "Numeric.Backprop.Op", for usage with "Numeric.Backprop.Mono" and
 -- "Numeric.Backprop.Mono.Implicit".
+--
+-- They are monomorphic in the sense that all of the /inputs/ have to be of
+-- the same type.  So, something like
+--
+-- @
+-- 'Numeric.Backprop.Op' '[Double, Double, Double] Int
+-- @
+--
+-- From "Numeric.Backprop" would, in this module, be:
+--
+-- @
+-- 'Op' N3 Double Int
+-- @
 -- 
 -- See the module header for "Numeric.Backprop.Op" for more explicitly
 -- details on how to encode an 'Op' and how they are implemented.  For the

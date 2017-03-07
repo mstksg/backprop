@@ -4,7 +4,7 @@
 
 module Numeric.Backprop.Mono.Implicit (
   -- * Types
-    BVar, BPOp, Op
+    BVar, BPOp, Op, BP.OpB
   -- * Backpropagation
   , backprop, grad, eval
   -- * Var manipulation
