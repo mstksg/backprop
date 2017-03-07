@@ -434,6 +434,17 @@ op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   </pre>
 opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
 
+-- | <tt><a>Replicate</a> n a</tt> is a list of <tt>a</tt>s repeated
+--   <tt>n</tt> times.
+--   
+--   <pre>
+--   &gt;&gt;&gt; :kind! Replicate N3 Int
+--   '[Int, Int, Int]
+--   
+--   &gt;&gt;&gt; :kind! Replicate N5 Double
+--   '[Double, Double, Double, Double, Double]
+--   </pre>
+
 -- | Create an <a>Op</a> of a function taking one input, by giving its
 --   explicit derivative. The function should return a tuple containing the
 --   result of the function, and also a function taking the derivative of
@@ -2850,6 +2861,17 @@ op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   (6.0, 2.0 :+ 0.75 :+ ØV)
 --   </pre>
 opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op n a a
+
+-- | <tt><a>Replicate</a> n a</tt> is a list of <tt>a</tt>s repeated
+--   <tt>n</tt> times.
+--   
+--   <pre>
+--   &gt;&gt;&gt; :kind! Replicate N3 Int
+--   '[Int, Int, Int]
+--   
+--   &gt;&gt;&gt; :kind! Replicate N5 Double
+--   '[Double, Double, Double, Double, Double]
+--   </pre>
 
 -- | Create an <a>Op</a> of a function taking one input, by giving its
 --   explicit derivative. The function should return a tuple containing the
