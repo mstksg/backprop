@@ -1,8 +1,11 @@
+{-# LANGUAGE AllowAmbiguousTypes        #-}
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
 
@@ -20,13 +23,14 @@
 
 module Numeric.Backprop.Internal.Helper (
   -- * Summer
-    Summer(..), summers, summers'
+    Summer(..), summers, nSummers', summers'
   -- * Unity
-  , Unity(..), unities, unities'
+  , Unity(..), unities, nUnities', unities'
   ) where
 
 import           Data.Type.Index
 import           Data.Type.Length
+import           Data.Type.Nat
 import           Data.Type.Product
 import           Data.Type.Util
 import           Type.Class.Known
@@ -107,4 +111,20 @@ unities'
     => Length as
     -> Prod Unity as
 unities' l = withEvery' @Num l known
+
+nSummers'
+    :: forall n a. Num a
+    => Nat n
+    -> Prod Summer (Replicate n a)
+nSummers' = \case
+    Z_               -> Ø
+    S_ (n :: Nat n') -> Summer sum :< nSummers' @n' @a n
+
+nUnities'
+    :: forall n a. Num a
+    => Nat n
+    -> Prod Unity (Replicate n a)
+nUnities' = \case
+    Z_               -> Ø
+    S_ (n :: Nat n') -> Unity 1 :< nUnities' @n' @a n
 

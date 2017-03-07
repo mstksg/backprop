@@ -48,11 +48,11 @@ module Numeric.Backprop.Op (
   -- * Creation
   , op0, opConst
   , opConst'
-  -- ** Giving gradients directly
-  , op1', op2', op3'
   -- ** Automatic creation using the /ad/ library
   , op1, op2, op3, opN
   , Replicate
+  -- ** Giving gradients directly
+  , op1', op2', op3'
   -- ** From Isomorphisms
   , opCoerce, opTup, opIso
   , opCoerce', opTup', opIso'
@@ -216,7 +216,7 @@ newtype OpCont m as a = OC { runOpCont :: Maybe a -> m (Tuple as) }
 -- See the module documentation for "Numeric.Backprop.Op" for more details
 -- on the function that this constructor and 'OpM' expect.
 pattern Op :: (Tuple as -> (a, Maybe a -> Tuple as)) -> Op as a
-pattern Op runOp' <- OpM ((\f -> (second . fmap) getI . getI . f) -> runOp')
+pattern Op runOp' <- OpM (\f -> (second . fmap) getI . getI . f -> runOp')
   where
     Op f = OpM (pure . (second . fmap) pure . f)
 
@@ -281,7 +281,7 @@ composeOp' ss os o = OpM $ \xs -> do
 --
 -- That is, given an @'OpM' m as b1@, an @'OpM' m as b2@, and an @'OpM'
 -- m as b3@, it can compose them with an @'OpM' m '[b1,b2,b3] c@ to create
--- an @'OpM' as c@.
+-- an @'OpM' m as c@.
 composeOp
     :: (Monad m, Known Length as, Every Num as)
     => Prod (OpM m as) bs   -- ^ 'Prod' of 'OpM's taking @as@ and returning

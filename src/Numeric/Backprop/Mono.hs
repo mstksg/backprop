@@ -44,12 +44,13 @@ module Numeric.Backprop.Mono (
 
 import           Data.Type.Fin
 import           Data.Type.Nat
-import           Data.Type.Product hiding  (head')
+import           Data.Type.Product hiding         (head')
 import           Data.Type.Util
 import           Data.Type.Vector
+import           Numeric.Backprop.Internal.Helper
 import           Numeric.Backprop.Op.Mono
 import           Type.Class.Known
-import qualified Numeric.Backprop          as BP
+import qualified Numeric.Backprop                 as BP
 
 type BP s n a      = BP.BP s (Replicate n a)
 type BVar s n a    = BP.BVar s (Replicate n a)
@@ -137,7 +138,7 @@ bpOp
     :: forall s n a b. (Num a, Known Nat n)
     => BPOp s n a b
     -> OpB s n a b
-bpOp b = BP.bpOp' (nSummers @n @a n) (nUnities @n @a n) b
+bpOp b = BP.bpOp' (nSummers' @n @a n) (nUnities' @n @a n) b
   where
     n :: Nat n
     n = known
@@ -222,20 +223,4 @@ toUnities
 toUnities = \case
     ØV      -> Ø
     _ :* xs -> BP.Unity 1 :< toUnities xs
-
-nSummers
-    :: forall n a. Num a
-    => Nat n
-    -> Prod BP.Summer (Replicate n a)
-nSummers = \case
-    Z_               -> Ø
-    S_ (n :: Nat n') -> BP.Summer sum :< nSummers @n' @a n
-
-nUnities
-    :: forall n a. Num a
-    => Nat n
-    -> Prod BP.Unity (Replicate n a)
-nUnities = \case
-    Z_               -> Ø
-    S_ (n :: Nat n') -> BP.Unity 1 :< nUnities @n' @a n
 
