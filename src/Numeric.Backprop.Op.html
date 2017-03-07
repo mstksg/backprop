@@ -463,7 +463,7 @@ opConst = opConst' summers
 -- 'opConst''.
 --
 -- Note that because this returns an 'Op', it can be used with any function
--- that expects an 'OpM', as well.
+-- that expects an 'OpM' or 'Numeric.Backprop.OpB', as well.
 op0 :: a -&gt; Op '[] a
 op0 x = Op $ \case
     &#216; -&gt; (x, const &#216;)

@@ -378,7 +378,7 @@ composeOp' :: Monad m => Prod Summer as -> Prod (OpM m as) bs -> OpM m bs c -> O
 --   <a>opConst</a> and <a>opConst'</a>.
 --   
 --   Note that because this returns an <a>Op</a>, it can be used with any
---   function that expects an <a>OpM</a>, as well.
+--   function that expects an <a>OpM</a> or <a>OpB</a>, as well.
 op0 :: a -> Op '[] a
 
 -- | An <a>Op</a> that ignores all of its inputs and returns a given
@@ -2617,19 +2617,116 @@ data VecT k (n :: N) (f :: k -> *) (a :: k) :: forall k. N -> (k -> *) -> k -> *
 [ØV] :: VecT k Z f a
 [:*] :: VecT k (S n1) f a
 type Vec (n :: N) = VecT * n I
+
+-- | Run the function that an <a>Op</a> encodes, to get the result.
+--   
+--   <pre>
+--   &gt;&gt;&gt; runOp (op2 (*)) (3 :+ 5 :+ Ø)
+--   15
+--   </pre>
 runOp :: Op n a b -> Vec n a -> b
+
+-- | Run the function that an <a>Op</a> encodes, and get the gradient of
+--   the output with respect to the inputs.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp (op2 (*)) (3 :+ 5 :+ ØV)
+--   5 :+ 3 :+ ØV
+--   -- the gradient of x*y is (y, x)
+--   </pre>
 gradOp :: Op n a b -> Vec n a -> Vec n a
+
+-- | Run the function that an <a>Op</a> encodes, to get the resulting
+--   output and also its gradient with respect to the inputs.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOpM' (op2 (*)) (3 :+ 5 :+ ØV) :: IO (Int, Vec N2 Int)
+--   (15, 5 :+ 3 :+ ØV)
+--   </pre>
 gradOp' :: Op n a b -> Vec n a -> (b, Vec n a)
+
+-- | Run the function that an <a>Op</a> encodes, and get the gradient of a
+--   "final result" with respect to the inputs, given the total derivative
+--   of the output with the final result.
+--   
+--   See <a>gradOp</a> and the module documentaiton for
+--   <a>Numeric.Backprop.Op</a> for more information.
 gradOpWith :: Op n a b -> Vec n a -> b -> Vec n a
+
+-- | A combination of <a>gradOp</a> and <a>gradOpWith</a>. The third
+--   argument is (optionally) the total derivative the result. Give
+--   <a>Nothing</a> and it is assumed that the result is the final result
+--   (and the total derivative is 1), and this behaves the same as
+--   <a>gradOp</a>. Give <tt><a>Just</a> d</tt> and it uses the <tt>d</tt>
+--   as the total derivative of the result, and this behaves like
+--   <a>gradOpWith</a>.
+--   
+--   See <a>gradOp</a> and the module documentaiton for
+--   <a>Numeric.Backprop.Op</a> for more information.
 gradOpWith' :: Op n a b -> Vec n a -> Maybe b -> Vec n a
+
+-- | A combination of <a>runOp</a> and <a>gradOpWith'</a>. Given an
+--   <a>Op</a> and inputs, returns the result of the <a>Op</a> and a
+--   continuation that gives its gradient.
+--   
+--   The continuation takes the total derivative of the result as input.
+--   See documenation for <a>gradOpWith'</a> and module documentation for
+--   <a>Numeric.Backprop.Op</a> for more information.
 runOp' :: Op n a b -> Vec n a -> (b, Maybe b -> Vec n a)
+
+-- | The monadic version of <a>runOp</a>, for <a>OpM</a>s.
+--   
+--   <pre>
+--   &gt;&gt;&gt; runOpM (op2 (*)) (3 :+ 5 :+ ØV) :: IO Int
+--   15
+--   </pre>
 runOpM :: Functor m => OpM m n a b -> Vec n a -> m b
+
+-- | The monadic version of <a>gradOp</a>, for <a>OpM</a>s.
 gradOpM :: Monad m => OpM m n a b -> Vec n a -> m (Vec n a)
+
+-- | The monadic version of <a>gradOp'</a>, for <a>OpM</a>s.
 gradOpM' :: Monad m => OpM m n a b -> Vec n a -> m (b, Vec n a)
+
+-- | The monadic version of <a>gradOpWith</a>, for <a>OpM</a>s.
 gradOpWithM :: Monad m => OpM m n a b -> Vec n a -> b -> m (Vec n a)
+
+-- | The monadic version of <a>gradOpWith'</a>, for <a>OpM</a>s.
 gradOpWithM' :: Monad m => OpM m n a b -> Vec n a -> Maybe b -> m (Vec n a)
+
+-- | The monadic version of <a>runOp</a>, for <a>OpM</a>s.
+--   
+--   <pre>
+--   &gt;&gt;&gt; runOpM (op2 (*)) (3 :+ 5 :+ ØV) :: IO Int
+--   15
+--   </pre>
 runOpM' :: Functor m => OpM m n a b -> Vec n a -> m (b, Maybe b -> m (Vec n a))
+
+-- | Create an <a>Op</a> that takes no inputs and always returns the given
+--   value.
+--   
+--   There is no gradient, of course (using <a>gradOp</a> will give you an
+--   empty vector), because there is no input to have a gradient of.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op0 10) ØV
+--   (10, ØV)
+--   </pre>
+--   
+--   For a constant <a>Op</a> that takes input and ignores it, see
+--   <a>opConst</a>.
+--   
+--   Note that because this returns an <a>Op</a>, it can be used with any
+--   function that expects an <a>OpM</a> or <a>OpB</a>, as well.
 op0 :: a -> Op N0 b a
+
+-- | An <a>Op</a> that ignores all of its inputs and returns a given
+--   constant value.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (opConst 10) (1 :+ 2 :+ 3 :+ ØV)
+--   (10, 0 :+ 0 :+ 0 :+ ØV)
+--   </pre>
 opConst :: forall n a b. (Known Nat n, Num b) => a -> Op n b a
 
 -- | Compose <a>OpM</a>s together, similar to <a>.</a>. But, because all
@@ -2640,12 +2737,123 @@ opConst :: forall n a b. (Known Nat n, Num b) => a -> Op n b a
 --   compose them with an <tt><a>OpM</a> m o b c</tt> to create an
 --   <tt><a>OpM</a> m o a c</tt>.
 composeOp :: forall m n o a b c. (Monad m, Num a, Known Nat n) => VecT o (OpM m n a) b -> OpM m o b c -> OpM m n a c
+
+-- | Automatically create an <a>Op</a> of a numerical function taking one
+--   argument. Uses <a>diff</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op1 (recip . negate)) (5 :+ ØV)
+--   (-0.2, 0.04 :+ ØV)
+--   </pre>
 op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op N1 a a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking two
+--   arguments. Uses <a>grad</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op2 (\x y -&gt; x * sqrt y)) (3 :+ 4 :+ ØV)
+--   (6.0, 2.0 :+ 0.75 :+ ØV)
+--   </pre>
 op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op N2 a a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking three
+--   arguments. Uses <a>grad</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op3 (\x y z -&gt; (x * sqrt y)**z)) (3 :+ 4 :+ 2 :+ ØV)
+--   (36.0, 24.0 :+ 9.0 :+ 64.503 :+ ØV)
+--   </pre>
 op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op N3 a a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking
+--   multiple arguments. Uses <a>grad</a>, and so can take any numerical
+--   function polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (opN (\(x :+ y :+ Ø) -&gt; x * sqrt y)) (3 :+ 4 :+ ØV)
+--   (6.0, 2.0 :+ 0.75 :+ ØV)
+--   </pre>
 opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op n a a
+
+-- | Create an <a>Op</a> of a function taking one input, by giving its
+--   explicit derivative. The function should return a tuple containing the
+--   result of the function, and also a function taking the derivative of
+--   the result and return the derivative of the input.
+--   
+--   If we have
+--   
+--   &lt;math&gt;
+--   
+--   Then the derivative &lt;math&gt;, it would be:
+--   
+--   &lt;math&gt;
+--   
+--   If our <a>Op</a> represents &lt;math&gt;, then the second item in the
+--   resulting tuple should be a function that takes &lt;math&gt; and
+--   returns &lt;math&gt;.
+--   
+--   If the input is <a>Nothing</a>, then &lt;math&gt; should be taken to
+--   be &lt;math&gt;.
+--   
+--   As an example, here is an <a>Op</a> that squares its input:
+--   
+--   <pre>
+--   square :: Num a =&gt; <a>Op</a> <a>N1</a> a a
+--   square = <a>op1'</a> $ \x -&gt; (x*x, \case Nothing -&gt; 2 * x
+--                                     Just d  -&gt; 2 * d * x
+--                         )
+--   </pre>
+--   
+--   Remember that, generally, end users shouldn't directly construct
+--   <a>Op</a>s; they should be provided by libraries or generated
+--   automatically.
+--   
+--   For numeric functions, single-input <a>Op</a>s can be generated
+--   automatically using <a>op1</a>.
 op1' :: (a -> (b, Maybe b -> a)) -> Op N1 a b
+
+-- | Create an <a>Op</a> of a function taking two inputs, by giving its
+--   explicit gradient. The function should return a tuple containing the
+--   result of the function, and also a function taking the derivative of
+--   the result and return the derivative of the input.
+--   
+--   If we have
+--   
+--   &lt;math&gt;
+--   
+--   Then the gradient &lt;math&gt; would be:
+--   
+--   &lt;math&gt;
+--   
+--   If our <a>Op</a> represents &lt;math&gt;, then the second item in the
+--   resulting tuple should be a function that takes &lt;math&gt; and
+--   returns &lt;math&gt;.
+--   
+--   If the input is <a>Nothing</a>, then &lt;math&gt; should be taken to
+--   be &lt;math&gt;.
+--   
+--   As an example, here is an <a>Op</a> that multiplies its inputs:
+--   
+--   <pre>
+--   mul :: Num a =&gt; <a>Op</a> <a>N2</a> a a
+--   mul = <a>op2'</a> $ \x y -&gt; (x*y, \case Nothing -&gt; (y  , x  )
+--                                    Just d  -&gt; (d*y, x*d)
+--                        )
+--   </pre>
+--   
+--   Remember that, generally, end users shouldn't directly construct
+--   <a>Op</a>s; they should be provided by libraries or generated
+--   automatically.
+--   
+--   For numeric functions, two-input <a>Op</a>s can be generated
+--   automatically using <a>op2</a>.
 op2' :: (a -> a -> (b, Maybe b -> (a, a))) -> Op N2 a b
+
+-- | Create an <a>Op</a> of a function taking three inputs, by giving its
+--   explicit gradient. See documentation for <a>op2'</a> for more details.
 op3' :: (a -> a -> a -> (b, Maybe b -> (a, a, a))) -> Op N3 a b
 infixr 4 :+
 (*:) :: f a -> f a -> VecT k (S (S Z)) f a
@@ -2694,9 +2902,45 @@ liftB :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r 
 liftB1 :: OpB s N1 a a -> BVar s n r a -> BVar s n r a
 liftB2 :: OpB s N2 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a
 liftB3 :: OpB s N3 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BVar s n r a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking one
+--   argument. Uses <a>diff</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op1 (recip . negate)) (5 :+ ØV)
+--   (-0.2, 0.04 :+ ØV)
+--   </pre>
 op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op N1 a a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking two
+--   arguments. Uses <a>grad</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op2 (\x y -&gt; x * sqrt y)) (3 :+ 4 :+ ØV)
+--   (6.0, 2.0 :+ 0.75 :+ ØV)
+--   </pre>
 op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op N2 a a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking three
+--   arguments. Uses <a>grad</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op3 (\x y z -&gt; (x * sqrt y)**z)) (3 :+ 4 :+ 2 :+ ØV)
+--   (36.0, 24.0 :+ 9.0 :+ 64.503 :+ ØV)
+--   </pre>
 op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op N3 a a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking
+--   multiple arguments. Uses <a>grad</a>, and so can take any numerical
+--   function polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (opN (\(x :+ y :+ Ø) -&gt; x * sqrt y)) (3 :+ 4 :+ ØV)
+--   (6.0, 2.0 :+ 0.75 :+ ØV)
+--   </pre>
 opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op n a a
 
 -- | Convenient aliases for low-value Peano numbers.
@@ -2735,9 +2979,45 @@ liftB :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r 
 liftB1 :: OpB s N1 a a -> BVar s n r a -> BVar s n r a
 liftB2 :: OpB s N2 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a
 liftB3 :: OpB s N3 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BVar s n r a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking one
+--   argument. Uses <a>diff</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op1 (recip . negate)) (5 :+ ØV)
+--   (-0.2, 0.04 :+ ØV)
+--   </pre>
 op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op N1 a a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking two
+--   arguments. Uses <a>grad</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op2 (\x y -&gt; x * sqrt y)) (3 :+ 4 :+ ØV)
+--   (6.0, 2.0 :+ 0.75 :+ ØV)
+--   </pre>
 op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op N2 a a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking three
+--   arguments. Uses <a>grad</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op3 (\x y z -&gt; (x * sqrt y)**z)) (3 :+ 4 :+ 2 :+ ØV)
+--   (36.0, 24.0 :+ 9.0 :+ 64.503 :+ ØV)
+--   </pre>
 op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op N3 a a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking
+--   multiple arguments. Uses <a>grad</a>, and so can take any numerical
+--   function polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (opN (\(x :+ y :+ Ø) -&gt; x * sqrt y)) (3 :+ 4 :+ ØV)
+--   (6.0, 2.0 :+ 0.75 :+ ØV)
+--   </pre>
 opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op n a a
 
 -- | Convenient aliases for low-value Peano numbers.
