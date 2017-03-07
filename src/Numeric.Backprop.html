@@ -115,7 +115,7 @@
 </span><a name="line-115"></a><span class="hs-comment">-- a 'BVar' containing an @a@.</span><span>
 </span><a name="line-116"></a><span class="hs-comment">--</span><span>
 </span><a name="line-117"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-118"></a><span class="hs-comment">-- foo :: BPOpI s '[ Double, Double ] Float</span><span>
+</span><a name="line-118"></a><span class="hs-comment">-- foo :: BPOpI s '[ Double, Double ] Double</span><span>
 </span><a name="line-119"></a><span class="hs-comment">-- foo (x :&lt; y :&lt; &#216;) = x + sqrt y</span><span>
 </span><a name="line-120"></a><span class="hs-comment">-- @</span><span>
 </span><a name="line-121"></a><span class="hs-comment">--</span><span>
@@ -1143,18 +1143,20 @@ backpropWith ss us bp env = do
               FRTerminal g   -&gt; return $ fromMaybe (getUnity u) g
     return (res, gradFunc)
 
--- | A version of 'implicitly' taking explicit 'Length', indicating the
--- number of inputs required and their types.
+-- | A version of 'implicitly' taking explicit 'Length' and an explicit
+-- 'Summer', indicating the number of inputs required and their types, and
+-- also allowing it to work on types that aren't instances of 'Num'.
 --
--- Mostly useful for rare &quot;extremely polymorphic&quot; situations, where GHC
--- can't infer the type and length of the list of inputs.  If you ever
--- actually explicitly write down @rs@ as a list of types, you should be
--- able to just use 'implicitly'.
+-- Requiring an explicit 'Length' is mostly useful for rare &quot;extremely
+-- polymorphic&quot; situations, where GHC can't infer the type and length of
+-- the list of inputs.  If you ever actually explicitly write down @rs@ as
+-- a list of types, you should be able to just use 'implicitly'.
 implicitly'
     :: Length rs
+    -&gt; Summer a
     -&gt; BPOpI s rs a
     -&gt; BPOp s rs a
-implicitly' l f = withInps' l (return . f)
+implicitly' l s f = withInps' l (bindVar' s . f)
 
 -- | Convert a 'BPOpI' into a 'BPOp'.  That is, convert a function on
 -- a bundle of 'BVar's (generating an implicit graph) into a fully fledged
@@ -1165,10 +1167,10 @@ implicitly' l f = withInps' l (return . f)
 -- it might be more convenient to use &quot;Numeric.Backprop.Implicit&quot; instead,
 -- which is geared around that use case.
 implicitly
-    :: Known Length rs
+    :: (Known Length rs, Num a)
     =&gt; BPOpI s rs a
     -&gt; BPOp s rs a
-implicitly = implicitly' known
+implicitly = implicitly' known known
 
 -- | Create a 'BVar' given an index into the input environment.  For an
 -- example,
