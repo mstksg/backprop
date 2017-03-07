@@ -2032,6 +2032,12 @@ type Op as a = forall m. Monad m => OpM m as a
 --   You can think of <a>OpB</a> as a superclass/parent class of <a>Op</a>
 --   in this sense, and of <a>Op</a> as a subclass of <a>OpB</a>.
 type OpB s as a = OpM (ST s) as a
+data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
+[Ø] :: Prod k f ([] k)
+[:<] :: Prod k f ((:) k a1 as)
+
+-- | A Prod of simple Haskell types.
+type Tuple = Prod * I
 
 -- | Run backpropagation on a <a>BPOp</a> function, getting both the result
 --   and the gradient of the result with respect to the inputs.
@@ -2511,9 +2517,6 @@ op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a, b] c
 -- | Create an <a>Op</a> of a function taking three inputs, by giving its
 --   explicit gradient. See documentation for <a>op2'</a> for more details.
 op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a, b, c] d
-data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
-[Ø] :: Prod k f ([] k)
-[:<] :: Prod k f ((:) k a1 as)
 
 -- | Construct a two element Prod. Since the precedence of (:&gt;) is
 --   higher than (:&lt;), we can conveniently write lists like:
@@ -2532,9 +2535,6 @@ infix 6 :>
 -- | Build a singleton Prod.
 only :: f a -> Prod k f ((:) k a ([] k))
 head' :: Prod k f ((:<) k a as) -> f a
-
--- | A Prod of simple Haskell types.
-type Tuple = Prod * I
 
 -- | Cons onto a Tuple.
 infixr 5 ::<
