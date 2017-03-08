@@ -38,16 +38,35 @@
 -- @
 -- 'BP' s 'N3' Double Int
 -- @
--- 
+--
 -- Instead of dealing with 'Prod's and 'Tuple's, this module works with
 -- 'VecT's and 'Vec's, respectively.  These are fixed-length vectors whose
 -- length are encoded in their types, constructed with ':*' (for 'VecT') or
 -- ':+' (for 'Vec').
 --
 -- Most of the concepts in normal heterogeneous backprop (for
--- "Numeric.Backprop") should apply here as well; just remember to convert
--- something like @'Numeric.Backprop.Op.Op' '[a, a] b@ to @'Op' 'N2' a b@
--- here.
+-- "Numeric.Backprop") should apply here as well, so you can look at any of
+-- the tutorials or examples and repurpose them to work here.  Just
+-- remember to convert something like @'Numeric.Backprop.Op.Op' '[a, a] b@
+-- to @'Op' 'N2' a b@.
+--
+-- As a comparison, this implements something similar in functionality to
+-- "Numeric.AD" and "Numeric.AD.Mode.Reverse" from the /ad/ package, in
+-- that they both offer monomorphic automatic differentiation through
+-- backpropagation.  However, there are some key differences:
+--
+-- 1. Because this module offers explicit-graph backpropagation, you can
+-- specify your data dependencies in a way that the library can take
+-- advantage of and save recomputation.  (Note that the
+-- "Numeric.Backprop.Implicit" module takes away explicit-graph
+-- capabilities, so its functionality is roughtly the same in this sense)
+--
+-- 2. "Numeric.AD.Mode.Reverse" can compute jacobians, or generalized
+-- gradients for \(\mathbb{R}^N \rightarrow \mathbb{R}^M\) functions.  This
+-- module only computs gradients for \(\mathbb{R}^N \rightarrow
+-- \mathbb{R}\)-like functions.  This is more of a conscious design
+-- decision in the API of this module rather than a fundamental limitation
+-- of the implementation.
 --
 
 module Numeric.Backprop.Mono (

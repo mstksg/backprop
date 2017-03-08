@@ -59,36 +59,36 @@ liftB2 liftB21403,1404
 liftB3 liftB31431,1432
 caching caching1451,1452
 
-src/Numeric/Backprop/Mono.hs,713
-module Numeric.Backprop.Mono Numeric.Backprop.Mono16,17
-type BP BP91,92
-type BP s s91,92
-type BVar BVar120,121
-type BPOp BPOp139,140
-type BPOpI BPOpI163,164
-type OpB OpB186,187
-opVar opVar229,230
-(~(260,261
-o o283,284
-constVar constVar290,291
-opVar1 opVar1312,313
-opVar2 opVar2336,337
-opVar3 opVar3362,363
-bindVar bindVar409,410
-backprop backprop420,421
-evalBPOp evalBPOp431,432
-gradBPOp gradBPOp440,441
-bpOp bpOp453,454
-inpVar inpVar480,481
-inpVars inpVars500,501
-withInps withInps529,530
-implicitly implicitly543,544
-liftB liftB591,592
-liftB1 liftB1647,648
-liftB2 liftB2673,674
-liftB3 liftB3701,702
-toSummers toSummers714,715
-toUnities toUnities722,723
+src/Numeric/Backprop/Mono.hs,717
+module Numeric.Backprop.Mono Numeric.Backprop.Mono52,53
+type BP BP127,128
+type BP s s127,128
+type BVar BVar156,157
+type BPOp BPOp175,176
+type BPOpI BPOpI199,200
+type OpB OpB222,223
+opVar opVar265,266
+(~(296,297
+o o319,320
+constVar constVar326,327
+opVar1 opVar1348,349
+opVar2 opVar2372,373
+opVar3 opVar3398,399
+bindVar bindVar445,446
+backprop backprop456,457
+evalBPOp evalBPOp467,468
+gradBPOp gradBPOp476,477
+bpOp bpOp489,490
+inpVar inpVar516,517
+inpVars inpVars536,537
+withInps withInps565,566
+implicitly implicitly579,580
+liftB liftB627,628
+liftB1 liftB1683,684
+liftB2 liftB2709,710
+liftB3 liftB3737,738
+toSummers toSummers750,751
+toUnities toUnities758,759
 
 src/Numeric/Backprop/Internal.hs,1200
 module Numeric.Backprop.InternalNumeric.Backprop.Internal29,30
@@ -226,8 +226,8 @@ summers summers89,90
 summers' summers'97,98
 unities unities104,105
 unities' unities'112,113
-nSummers' nSummers'118,119
-nUnities' nUnities'126,127
+nSummers' nSummers'120,121
+nUnities' nUnities'130,131
 
 src/Numeric/Backprop/Op/Mono.hs,1128
 module Numeric.Backprop.Op.Mono Numeric.Backprop.Op.Mono46,47

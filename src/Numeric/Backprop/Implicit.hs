@@ -15,11 +15,13 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- Offers full functionality for implicit-graph backpropagation.  The main
--- function, 'backprop', takes a function from 'BVar's to a result 'BVar'.
--- These 'BVar's can be manipulated using their 'Num' / 'Fractional'
--- / 'Floating' instances, and the library can perform backpropagation on
--- the function by using an implicitly built graph.
+-- Offers full functionality for implicit-graph backpropagationu.  The
+-- intended usage is to write a 'BPOp', which is a normal Haskell
+-- function from 'BVar's to a result 'BVar'. These 'BVar's can be
+-- manipulated using their 'Num' / 'Fractional' / 'Floating' instances.
+--
+-- The library can then perform backpropagation on the function (using
+-- 'backprop' or 'grad') by using an implicitly built graph.
 --
 -- This should actually be powerful enough for most use cases, but falls
 -- short for a couple of situations:
@@ -88,8 +90,8 @@ import qualified Numeric.Backprop          as BP
 -- a 'BVar' containing an @a@.
 --
 -- @
--- foo :: BPOp '[ Double, Double ] Float
--- foo (x :< y :< Ø) = x + sqrt y
+-- foo :: 'BPOp' '[ Double, Double ] Double
+-- foo (x ':<' y ':<' 'Ø') = x + sqrt y
 -- @
 --
 -- 'BPOp' here is related to 'Numeric.Backprop.BPOpI' from the normal
@@ -116,7 +118,7 @@ backprop' ss us f = BP.backprop' ss us $ BP.withInps' (prodLength ss) (return . 
 --   in  z + x ** y
 -- @
 --
--- >>> backprop foo (2 ::< 3 ::< Ø)
+-- >>> 'backprop' foo (2 ::< 3 ::< Ø)
 -- (11.46, 13.73 ::< 6.12 ::< Ø)
 backprop
     :: (Known Length rs, Every Num rs, Num a)
