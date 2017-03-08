@@ -19,17 +19,26 @@ Repository source is [on github], and so are the [rendered docs].
   [on github]: https://github.com/mstksg/backprop
   [rendered docs]: https://mstksg.github.io/backprop
 
+If you’re reading this as a literate haskell file, you should know that
+a [rendered pdf version is available on github.]. If you are reading
+this as a pdf file, you should know that a \[literate haskell version
+that you can run\] is also available on github!
+
+  [rendered pdf version is available on github.]: https://github.com/mstksg/backprop/blob/master/renders/MNIST.pdf
+
 ``` {.sourceCode .literate .haskell}
-{-# LANGUAGE BangPatterns         #-}
-{-# LANGUAGE DataKinds            #-}
-{-# LANGUAGE DeriveGeneric        #-}
-{-# LANGUAGE GADTs                #-}
-{-# LANGUAGE LambdaCase           #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE TupleSections        #-}
-{-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE ViewPatterns         #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE BangPatterns                     #-}
+{-# LANGUAGE DataKinds                        #-}
+{-# LANGUAGE DeriveGeneric                    #-}
+{-# LANGUAGE GADTs                            #-}
+{-# LANGUAGE LambdaCase                       #-}
+{-# LANGUAGE ScopedTypeVariables              #-}
+{-# LANGUAGE TupleSections                    #-}
+{-# LANGUAGE TypeApplications                 #-}
+{-# LANGUAGE ViewPatterns                     #-}
+{-# OPTIONS_GHC -fno-warn-orphans             #-}
+{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
+{-# OPTIONS_GHC -fno-warn-unused-top-binds    #-}
 
 import           Control.DeepSeq
 import           Control.Exception
@@ -304,7 +313,7 @@ gradNet
     -> R i
     -> Network i h1 h2 o
 gradNet n x = case gradBPOp runNetwork (x ::< n ::< Ø) of
-    gradX ::< gradN ::< Ø -> gradN
+    _gradX ::< gradN ::< Ø -> gradN
 ```
 
 This gives the gradient of all of the parameters in the matrices and

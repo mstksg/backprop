@@ -108,3 +108,14 @@ this gradient to do gradient descent.
 For a more fleshed out example, see the [MNIST tutorial][mnist-lhs] (also
 [rendered as a pdf][mnist-pdf])
 
+What's Next
+-----------
+
+1.  Benchmarks against numeric algorithms implemented from scratch, to gauge
+    how much overhead this library adds
+2.  Benchmarks against other automatic differentiation libraries.
+3.  Open question: can we offer pattern matching/sum type support for
+    "implicit-mode" backprop?  It's already possible for the explicit-graph
+    mode backprop.
+4.  Consider shifting over the implementation to use `unsafePerformIO` like the
+    *ad* library does to leverage some interesting benefits.
