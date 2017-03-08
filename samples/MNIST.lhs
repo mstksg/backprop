@@ -2,7 +2,7 @@
 % Justin Le
 
 The *backprop* library performs backpropagation over a *hetereogeneous*
-system of relationships.  It offers both an implicit ([ad][]-like) and explicit graph
+system of relationships.  It offers both an implicit (*[ad][]*-like) and explicit graph
 building usage style.  Let's use it to build neural networks and learn
 mnist!
 
@@ -14,16 +14,18 @@ docs][docs].
 [repo]: https://github.com/mstksg/backprop
 [docs]: https://mstksg.github.io/backprop
 
-> {-# LANGUAGE BangPatterns         #-}
-> {-# LANGUAGE DataKinds            #-}
-> {-# LANGUAGE DeriveGeneric        #-}
-> {-# LANGUAGE GADTs                #-}
-> {-# LANGUAGE LambdaCase           #-}
-> {-# LANGUAGE ScopedTypeVariables  #-}
-> {-# LANGUAGE TupleSections        #-}
-> {-# LANGUAGE TypeApplications     #-}
-> {-# LANGUAGE ViewPatterns         #-}
-> {-# OPTIONS_GHC -fno-warn-orphans #-}
+> {-# LANGUAGE BangPatterns                     #-}
+> {-# LANGUAGE DataKinds                        #-}
+> {-# LANGUAGE DeriveGeneric                    #-}
+> {-# LANGUAGE GADTs                            #-}
+> {-# LANGUAGE LambdaCase                       #-}
+> {-# LANGUAGE ScopedTypeVariables              #-}
+> {-# LANGUAGE TupleSections                    #-}
+> {-# LANGUAGE TypeApplications                 #-}
+> {-# LANGUAGE ViewPatterns                     #-}
+> {-# OPTIONS_GHC -fno-warn-orphans             #-}
+> {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
+> {-# OPTIONS_GHC -fno-warn-unused-top-binds    #-}
 >
 > import           Control.DeepSeq
 > import           Control.Exception
@@ -56,7 +58,7 @@ docs][docs].
 Types
 =====
 
-For the most part, we're going to be using the great [hmatrix][] library
+For the most part, we're going to be using the great *[hmatrix][]* library
 and its vector and matrix types.  It offers a type `L m n` for $m \times n$
 matrices, and a type `R n` for an $n$ vector.
 
@@ -141,8 +143,11 @@ implements these for you, and the end-user never has to make `Op`
 primitives.
 
 But in this case, I'm going to put the definitions here to show that there
-isn't any magic going on.  Please refer to documentation for `Op` for more
-details on how `Op` is implemented and how this works.
+isn't any magic going on.  If you're curious, refer to [documentation for
+`Op`][opdoc] for more details on how `Op` is implemented and how this
+works.
+
+[opdoc]: https://mstksg.github.io/backprop/Numeric-Backprop-Op.html
 
 First, matrix-vector multiplication primitive, giving an explicit gradient
 function.
@@ -203,13 +208,13 @@ to run our network!
 >     return $ y + b
 
 A `BPOp s '[ R i, Layer i o ] (R o)` is a backpropagatable function that
-produces an `R o` (a vector with `o` elements, from the [hmatrix][]
+produces an `R o` (a vector with `o` elements, from the *[hmatrix][]*
 library) given an input environment of an `R i` (the "input" of the layer)
 and a layer.
 
 We use `withInps` to bring the environment into scope as a bunch of
-`BVar`s.  `x` is a `BVar` containing to the input vector, and `l` is a `BVar`
-containing to the layer.
+`BVar`s.  `x` is a `BVar` containing the input vector, and `l` is a `BVar`
+containing the layer.
 
 The first thing we do is split out the parts of the layer so we can work
 with the internal matrices.  We can use `#<~` to "split out" the components
@@ -270,7 +275,7 @@ But, the magic part is that we can also get the gradient!
 >     -> R i
 >     -> Network i h1 h2 o
 > gradNet n x = case gradBPOp runNetwork (x ::< n ::< Ø) of
->     gradX ::< gradN ::< Ø -> gradN
+>     _gradX ::< gradN ::< Ø -> gradN
 
 This gives the gradient of all of the parameters in the matrices and
 vectors inside the `Network`, which we can use to "train"!
@@ -428,6 +433,14 @@ Because the heavy lifting is done by the data types themselves, we can
 presumably plug in *any* type and any tensor/numerical backend, and reap
 the benefits of those libraries' optimizations and parallelizations.  *Any*
 type can be backpropagated! :D
+
+What now?
+---------
+
+Check out the docs for the [Numeric.Backprop][] module for a more detailed
+picture of what's going on, or find more examples at the [github repo][repo]!
+
+[Numeric.Backprop]: https://mstksg.github.io/backprop/Numeric-Backprop.html
 
 Boring stuff
 ============

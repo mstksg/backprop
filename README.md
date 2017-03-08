@@ -13,45 +13,17 @@ gradient descent and other optimization techniques.
 
 [ad]: http://hackage.haskell.org/package/ad
 
-Simple (monomorphic) usage: (provided as a [sample][monotest])
+Tutorial and example on training on the MNIST data set [available here as a
+literate haskell file][mnist-lhs], or [rendered here as a PDF][mnist-pdf]!
+**Read this first!**
 
-[monotest]: https://github.com/mstksg/backprop/blob/master/samples/MonoTest.hs
+[mnist-lhs]: https://github.com/mstksg/backprop/blob/master/samples/MNIST.lhs
+[mnist-pdf]: https://github.com/mstksg/backprop/blob/master/renders/MNIST.pdf
 
-~~~haskell
-{-# LANGUAGE GADTs #-}
-
-import           Numeric.Backprop.Mono
-
-testImplicit :: BPOp s N3 Double Double
-testImplicit = implicitly $ \(x :* y :* z :* ØV) ->
-    ((x * y) + y) * z
-
-testExplicit :: BPOp s N3 Double Double
-testExplicit = withInps $ \(x :* y :* z :* ØV) -> do
-    xy  <- op2 (*) ~$ (x   :* y :* ØV)
-    xyy <- op2 (+) ~$ (xy  :* y :* ØV)
-    op2 (*)        ~$ (xyy :* z :* ØV)
-
-main :: IO ()
-main = do
-    print $ backprop testImplicit (2 :+ 3 :+ 4 :+ ØV)
-    print $ backprop testExplicit (2 :+ 3 :+ 4 :+ ØV)
-~~~
-
-The above builds graph (both implicitly and explicitly) of the function
-`f x y z = ((x * y) + y) * z` and performs automatic
-differentiation/back-propagation to compute the gradient of the function and
-the result, giving `36` and `12 :+ 12 :+ 9 :+ ØV`.
-
-Simple monomorphic operations are liftable using `op1` / `op2` / `op3`, but
-polymorphic heterogeneous operations, which are where the library shines, must
-be built explicitly.  Ideally, a library would abstract over building `Op`s
-and provide them directly for a user to use.
-
-Here is a slightly more complicated example, describing the running of a neural
-network with one hidden layer to calculate its squared error with respect to
-target `targ`, which is parameterized by two weight matrices and two bias
-vectors.  Vector/matrix types are from the *hmatrix* package.
+The quick example below describes the running of a neural network with one
+hidden layer to calculate its squared error with respect to target `targ`,
+which is parameterized by two weight matrices and two bias vectors.
+Vector/matrix types are from the *hmatrix* package.
 
 ~~~haskell
 logistic :: Floating a => a -> a
@@ -80,9 +52,9 @@ neuralNetExplicit inp = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
     x1 = constVar inp
 ~~~
 
-Now `neuralNet` can be "run" with the input vectors and parameters (a
-`L n m`, `R n`, `L o n`, and `R o`) and calculate the output of the
-neural net.
+Now `neuralNetExplicit` and `neuralNetImplicit` can be "run" with the input
+vectors and parameters (a `L n m`, `R n`, `L o n`, and `R o`) and calculate the
+output of the neural net.
 
 ~~~haskell
 runNet
@@ -120,12 +92,8 @@ The result is the gradient of the input tuple's components, with respect
 to the `Double` result of `opError` (the squared error).  We can then use
 this gradient to do gradient descent.
 
-A more full annotated example is given [in the repository as a literate haskell
-file][neuraltest], and gives over a full example with a recursive network type.
-It is also [rendered as a pdf][neuraltest-pdf].
-
-[neuraltest]: https://github.com/mstksg/backprop/blob/master/samples/NeuralTest.lhs
-[neuraltest-pdf]: https://github.com/mstksg/backprop/blob/master/renders/NeuralTest.pdf
+For a more fleshed out example, see the [MNIST tutorial][mnist-lhs] (also
+[rendered as a pdf][mnist-pdf])
 
 Documentation is currently rendered [on github pages][docs]!
 
