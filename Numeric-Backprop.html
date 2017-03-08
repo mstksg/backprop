@@ -159,11 +159,11 @@ foo = do
  (<code>rs</code>) of the <code><code><a href="Numeric-Backprop.html#t:BP">BP</a></code> s rs</code></p><p>For example, if your <code><a href="Numeric-Backprop.html#t:BP">BP</a></code> has an <code><a href="../base-4.9.1.0/Data-Int.html#t:Int">Int</a></code> and <code><a href="../base-4.9.1.0/Prelude.html#t:Double">Double</a></code> in its input
  environment (a <code><code><a href="Numeric-Backprop.html#t:BP">BP</a></code> s '[Int, Double]</code>), this would return a <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code>
  pointing to the <code><a href="../base-4.9.1.0/Data-Int.html#t:Int">Int</a></code> and a <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> pointing to the <code><a href="../base-4.9.1.0/Prelude.html#t:Double">Double</a></code>.</p><pre>case (<code><a href="Numeric-Backprop.html#v:inpVars">inpVars</a></code> :: <code><a href="Numeric-Backprop.html#t:Prod">Prod</a></code> (<code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> s '[Int, Double]) '[Int, Double]) of
-  x :<a href="y">:&lt; &#216; -</a> do
+  x :&lt; y :&lt; &#216; -&gt; do
     -- the first item, x, is a var to the input <code><a href="../base-4.9.1.0/Data-Int.html#t:Int">Int</a></code>
-    x :: <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> s '[Int, Double] Int
+    -- x :: <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> s '[Int, Double] Int
     -- the second item, y, is a var to the input <code><a href="../base-4.9.1.0/Prelude.html#t:Double">Double</a></code>
-    y :: <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> s '[Int, Double] Double
+    -- y :: <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> s '[Int, Double] Double
 </pre></div></div><div class="top"><p class="src"><a id="v:bpOp" class="def">bpOp</a> :: (<a href="../type-combinators-0.2.4.3/Data-Type-Index.html#t:Every">Every</a> <a href="../base-4.9.1.0/Prelude.html#t:Num">Num</a> rs, <a href="../type-combinators-0.2.4.3/Type-Class-Known.html#t:Known">Known</a> <a href="../type-combinators-0.2.4.3/Data-Type-Length.html#t:Length">Length</a> rs) =&gt; <a href="Numeric-Backprop.html#t:BPOp">BPOp</a> s rs a -&gt; <a href="Numeric-Backprop.html#t:OpB">OpB</a> s rs a <a href="src/Numeric.Backprop.html#bpOp" class="link">Source</a> <a href="#v:bpOp" class="selflink">#</a></p><div class="doc"><p>Turn a <code><a href="Numeric-Backprop.html#t:BPOp">BPOp</a></code> into an <code><a href="Numeric-Backprop.html#t:OpB">OpB</a></code>.  Basically converts a <code><a href="Numeric-Backprop.html#t:BP">BP</a></code> taking an <code>rs</code>
  and producing an <code>a</code> into an <code><a href="Numeric-Backprop.html#t:Op">Op</a></code> taking an <code>rs</code> and returning an <code>a</code>,
  with all of the powers and utility of an <code><a href="Numeric-Backprop.html#t:Op">Op</a></code>, including all of its

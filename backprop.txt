@@ -945,11 +945,11 @@ inpVar :: Index rs a -> BVar s rs a
 --   
 --   <pre>
 --   case (<a>inpVars</a> :: <a>Prod</a> (<a>BVar</a> s '[Int, Double]) '[Int, Double]) of
---     x :<a>:&lt; Ø -</a> do
+--     x :&lt; y :&lt; Ø -&gt; do
 --       -- the first item, x, is a var to the input <a>Int</a>
---       x :: <a>BVar</a> s '[Int, Double] Int
+--       -- x :: <a>BVar</a> s '[Int, Double] Int
 --       -- the second item, y, is a var to the input <a>Double</a>
---       y :: <a>BVar</a> s '[Int, Double] Double
+--       -- y :: <a>BVar</a> s '[Int, Double] Double
 --   </pre>
 inpVars :: Known Length rs => Prod (BVar s rs) rs
 
