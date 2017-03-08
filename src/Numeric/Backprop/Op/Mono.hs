@@ -58,7 +58,7 @@ module Numeric.Backprop.Op.Mono (
   -- ** Monadic
   , runOpM, gradOpM, gradOpM', gradOpWithM, gradOpWithM', runOpM'
   -- * Creation
-  , op0, opConst, composeOp
+  , op0, opConst, composeOp, composeOp1, (~.~)
   -- ** Automatic creation using the /ad/ library
   , op1, op2, op3, opN
   , Replicate
@@ -456,3 +456,29 @@ composeOp
     -> OpM m n a c
 composeOp v o = BP.composeOp' (BP.nSummers' @n @a known) (vecToProd v) o
 
+-- | Convenient wrappver over 'composeOp' for the case where the second
+-- function only takes one input, so the two 'OpM's can be directly piped
+-- together, like for '.'.
+composeOp1
+    :: forall m n a b c. (Monad m, Num a, Known Nat n)
+    => OpM m n a b
+    -> OpM m N1 b c
+    -> OpM m n a c
+composeOp1 v o = composeOp @_ @_ @_ @a (v :* ØV) o
+
+-- | Convenient infix synonym for (flipped) 'composeOp1'.  Meant to be used
+-- just like '.':
+--
+-- @
+-- 'op1' negate            :: 'Op' '[a]   a
+-- 'op2' (+)               :: Op '[a,a] a
+--
+-- op1 negate '~.~' op2 (+) :: Op '[a, a] a
+-- @
+infixr 9 ~.~
+(~.~)
+    :: forall m n a b c. (Monad m, Num a, Known Nat n)
+    => OpM m N1 b c
+    -> OpM m n a b
+    -> OpM m n a c
+f ~.~ g = composeOp1 @_ @_ @a g f

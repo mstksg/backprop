@@ -91,7 +91,7 @@ module Numeric.Backprop (
   -- ** Combining
   , liftB, (.$), liftB1, liftB2, liftB3
   -- * Op
-  , op1, op2, op3, opN
+  , op1, op2, op3, opN, composeOp, composeOp1, (~.~)
   , op1', op2', op3'
   -- * Utility
   , pattern (:>), only, head'
@@ -932,7 +932,7 @@ opVar = opVar' known
 -- o '~$' xs = 'bindVar' (o '.$' xs)
 -- @
 --
-infixr 1 ~$
+infixr 5 ~$
 (~$)
     :: Num a
     => OpB s as a
@@ -955,7 +955,7 @@ infixr 1 ~$
 -- Useful for running a @'BPOp' s as b@ that you got from a different function, and
 -- "plugging in" its @as@ inputs with 'BVar's from your current
 -- environment.
-infixr 1 -$
+infixr 5 -$
 (-$)
     :: (Every Num as, Known Length as, Num a)
     => BPOp s as a
@@ -1477,7 +1477,7 @@ liftB = flip BVOp
 -- o '~$' xs = 'bindVar' (o '.$' xs)
 -- @
 --
-infixr 1 .$
+infixr 5 .$
 (.$)
     :: OpB s as a
     -> Prod (BVar s rs) as

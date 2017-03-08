@@ -45,8 +45,8 @@ module Numeric.Backprop.Op (
   -- ** Monadic
   , runOpM, gradOpM, gradOpM', gradOpWithM, gradOpWithM', runOpM'
   -- * Manipulation
-  , composeOp
-  , composeOp'
+  , composeOp, composeOp1, (~.~)
+  , composeOp', composeOp1'
   -- * Creation
   , op0, opConst
   , opConst'
@@ -298,6 +298,44 @@ composeOp
                             --     input 'Prod'.
     -> OpM m as c           -- ^ Composed 'OpM'
 composeOp = composeOp' summers
+
+-- | 'composeOp1', but taking explicit 'Summer's, for the situation where
+-- the @as@ are not instance of 'Num'.
+composeOp1'
+    :: Monad m
+    => Prod Summer as
+    -> OpM m as b
+    -> OpM m '[b] c
+    -> OpM m as c
+composeOp1' ss = composeOp' ss . only
+
+-- | Convenient wrappver over 'composeOp' for the case where the second
+-- function only takes one input, so the two 'OpM's can be directly piped
+-- together, like for '.'.
+composeOp1
+    :: (Monad m, Known Length as, Every Num as)
+    => OpM m as b
+    -> OpM m '[b] c
+    -> OpM m as c
+composeOp1 = composeOp . only
+
+-- | Convenient infix synonym for (flipped) 'composeOp1'.  Meant to be used
+-- just like '.':
+--
+-- @
+-- 'op1' negate            :: 'Op' '[a]   a
+-- 'op2' (+)               :: Op '[a,a] a
+--
+-- op1 negate '~.~' op2 (+) :: Op '[a, a] a
+-- @
+infixr 9 ~.~
+(~.~)
+    :: (Monad m, Known Length as, Every Num as)
+    => OpM m '[b] c
+    -> OpM m as b
+    -> OpM m as c
+(~.~) = flip composeOp1
+
 
 -- | Run the function that an 'Op' encodes, to get the result.
 --

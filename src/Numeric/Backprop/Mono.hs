@@ -91,7 +91,7 @@ module Numeric.Backprop.Mono (
   -- ** Combining
   , liftB, (.$), liftB1, liftB2, liftB3
   -- * Op
-  , op1, op2, op3, opN
+  , op1, op2, op3, opN, composeOp, composeOp1, (~.~)
   , op1', op2', op3'
   -- * Utility
   , pattern (:+), (*:), (+:), head'
@@ -347,7 +347,7 @@ opVar o = BP.opVar o . vecToProd
 -- o '~$' xs = 'bindVar' (o '.$' xs)
 -- @
 --
-infixr 1 ~$
+infixr 5 ~$
 (~$)
     :: forall s m n r a b. Num b
     => OpB s m a b
@@ -370,7 +370,7 @@ infixr 1 ~$
 -- Useful for running a @'BPOp' s n a b@ that you got from a different function, and
 -- "plugging in" its @a@ inputs with 'BVar's from your current
 -- environment.
-infixr 1 -$
+infixr 5 -$
 (-$)
     :: forall s m n r a b. (Num a, Num b, Known Nat m)
     => BPOp s m a b
