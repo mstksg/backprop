@@ -378,9 +378,30 @@ runOpM' :: OpM m as a -> Tuple as -> m (a, Maybe a -> m (Tuple as))
 --   as c</tt>.
 composeOp :: (Monad m, Known Length as, Every Num as) => Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
 
+-- | Convenient wrappver over <a>composeOp</a> for the case where the
+--   second function only takes one input, so the two <a>OpM</a>s can be
+--   directly piped together, like for <a>.</a>.
+composeOp1 :: (Monad m, Known Length as, Every Num as) => OpM m as b -> OpM m '[b] c -> OpM m as c
+
+-- | Convenient infix synonym for (flipped) <a>composeOp1</a>. Meant to be
+--   used just like <a>.</a>:
+--   
+--   <pre>
+--   <a>op1</a> negate            :: <a>Op</a> '[a]   a
+--   <a>op2</a> (+)               :: Op '[a,a] a
+--   
+--   op1 negate <a>~.~</a> op2 (+) :: Op '[a, a] a
+--   </pre>
+(~.~) :: (Monad m, Known Length as, Every Num as) => OpM m '[b] c -> OpM m as b -> OpM m as c
+infixr 9 ~.~
+
 -- | <a>composeOp</a>, but taking explicit <a>Summer</a>s, for the
 --   situation where the <tt>as</tt> are not instance of <a>Num</a>.
 composeOp' :: Monad m => Prod Summer as -> Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
+
+-- | <a>composeOp1</a>, but taking explicit <a>Summer</a>s, for the
+--   situation where the <tt>as</tt> are not instance of <a>Num</a>.
+composeOp1' :: Monad m => Prod Summer as -> OpM m as b -> OpM m '[b] c -> OpM m as c
 
 -- | Create an <a>Op</a> that takes no inputs and always returns the given
 --   value.
@@ -1092,7 +1113,7 @@ opVar :: Num a => OpB s as a -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
 --   o <a>~$</a> xs = <a>bindVar</a> (o <a>.$</a> xs)
 --   </pre>
 (~$) :: Num a => OpB s as a -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
-infixr 1 ~$
+infixr 5 ~$
 
 -- | Convenient wrapper over <a>opVar</a> that takes an <a>OpB</a> with one
 --   argument and a single <a>BVar</a> argument. Lets you not have to type
@@ -1165,7 +1186,7 @@ opVar3 :: Num d => OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar s rs
 --   different function, and "plugging in" its <tt>as</tt> inputs with
 --   <a>BVar</a>s from your current environment.
 (-$) :: (Every Num as, Known Length as, Num a) => BPOp s as a -> Prod (BVar s rs) as -> BPOp s rs a
-infixr 1 -$
+infixr 5 -$
 
 -- | A version of <a>opVar</a> taking an explicit <a>Summer</a>, so can be
 --   used on values of types that aren't instances of <a>Num</a>.
@@ -1715,7 +1736,7 @@ liftB :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
 --   o <a>~$</a> xs = <a>bindVar</a> (o <a>.$</a> xs)
 --   </pre>
 (.$) :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
-infixr 1 .$
+infixr 5 .$
 
 -- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with one
 --   argument and a single <a>BVar</a> argument. Lets you not have to type
@@ -1819,6 +1840,33 @@ op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
 --   </pre>
 opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
+
+-- | Compose <a>OpM</a>s together, similar to <a>.</a>. But, because all
+--   <a>OpM</a>s are &lt;math&gt;, this is more like <a>sequence</a> for
+--   functions, or <tt>liftAN</tt>.
+--   
+--   That is, given an <tt><a>OpM</a> m as b1</tt>, an <tt><a>OpM</a> m as
+--   b2</tt>, and an <tt><a>OpM</a> m as b3</tt>, it can compose them with
+--   an <tt><a>OpM</a> m '[b1,b2,b3] c</tt> to create an <tt><a>OpM</a> m
+--   as c</tt>.
+composeOp :: (Monad m, Known Length as, Every Num as) => Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
+
+-- | Convenient wrappver over <a>composeOp</a> for the case where the
+--   second function only takes one input, so the two <a>OpM</a>s can be
+--   directly piped together, like for <a>.</a>.
+composeOp1 :: (Monad m, Known Length as, Every Num as) => OpM m as b -> OpM m '[b] c -> OpM m as c
+
+-- | Convenient infix synonym for (flipped) <a>composeOp1</a>. Meant to be
+--   used just like <a>.</a>:
+--   
+--   <pre>
+--   <a>op1</a> negate            :: <a>Op</a> '[a]   a
+--   <a>op2</a> (+)               :: Op '[a,a] a
+--   
+--   op1 negate <a>~.~</a> op2 (+) :: Op '[a, a] a
+--   </pre>
+(~.~) :: (Monad m, Known Length as, Every Num as) => OpM m '[b] c -> OpM m as b -> OpM m as c
+infixr 9 ~.~
 
 -- | Create an <a>Op</a> of a function taking one input, by giving its
 --   explicit derivative. The function should return a tuple containing the
@@ -2268,7 +2316,7 @@ liftB :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
 --   o <a>~$</a> xs = <a>bindVar</a> (o <a>.$</a> xs)
 --   </pre>
 (.$) :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
-infixr 1 .$
+infixr 5 .$
 
 -- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with one
 --   argument and a single <a>BVar</a> argument. Lets you not have to type
@@ -2923,6 +2971,23 @@ opConst :: forall n a b. (Known Nat n, Num b) => a -> Op n b a
 --   <tt><a>OpM</a> m o a c</tt>.
 composeOp :: forall m n o a b c. (Monad m, Num a, Known Nat n) => VecT o (OpM m n a) b -> OpM m o b c -> OpM m n a c
 
+-- | Convenient wrappver over <a>composeOp</a> for the case where the
+--   second function only takes one input, so the two <a>OpM</a>s can be
+--   directly piped together, like for <a>.</a>.
+composeOp1 :: forall m n a b c. (Monad m, Num a, Known Nat n) => OpM m n a b -> OpM m N1 b c -> OpM m n a c
+
+-- | Convenient infix synonym for (flipped) <a>composeOp1</a>. Meant to be
+--   used just like <a>.</a>:
+--   
+--   <pre>
+--   <a>op1</a> negate            :: <a>Op</a> '[a]   a
+--   <a>op2</a> (+)               :: Op '[a,a] a
+--   
+--   op1 negate <a>~.~</a> op2 (+) :: Op '[a, a] a
+--   </pre>
+(~.~) :: forall m n a b c. (Monad m, Num a, Known Nat n) => OpM m N1 b c -> OpM m n a b -> OpM m n a c
+infixr 9 ~.~
+
 -- | Automatically create an <a>Op</a> of a numerical function taking one
 --   argument. Uses <a>diff</a>, and so can take any numerical function
 --   polymorphic over the standard numeric types.
@@ -3516,7 +3581,7 @@ opVar :: forall s m n r a b. Num b => OpB s m a b -> VecT m (BVar s n r) a -> BP
 --   o <a>~$</a> xs = <a>bindVar</a> (o <a>.$</a> xs)
 --   </pre>
 (~$) :: forall s m n r a b. Num b => OpB s m a b -> VecT m (BVar s n r) a -> BP s n r (BVar s n r b)
-infixr 1 ~$
+infixr 5 ~$
 
 -- | Convenient wrapper over <a>opVar</a> that takes an <a>OpB</a> with one
 --   argument and a single <a>BVar</a> argument. Lets you not have to type
@@ -3589,7 +3654,7 @@ opVar3 :: forall s n r a b. Num b => OpB s N3 a b -> BVar s n r a -> BVar s n r 
 --   different function, and "plugging in" its <tt>a</tt> inputs with
 --   <a>BVar</a>s from your current environment.
 (-$) :: forall s m n r a b. (Num a, Num b, Known Nat m) => BPOp s m a b -> VecT m (BVar s n r) a -> BP s n r (BVar s n r b)
-infixr 1 -$
+infixr 5 -$
 
 -- | Apply <a>OpB</a> over a <a>VecT</a> of <a>BVar</a>s, as inputs.
 --   Provides "implicit" backpropagation, with deferred evaluation.
@@ -3767,6 +3832,32 @@ op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   (6.0, 2.0 :+ 0.75 :+ ØV)
 --   </pre>
 opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op n a a
+
+-- | Compose <a>OpM</a>s together, similar to <a>.</a>. But, because all
+--   <a>OpM</a>s are &lt;math&gt;, this is more like <a>sequence</a> for
+--   functions, or <tt>liftAN</tt>.
+--   
+--   That is, given an <tt>o</tt> of <tt><a>OpM</a> m n a b</tt>s, it can
+--   compose them with an <tt><a>OpM</a> m o b c</tt> to create an
+--   <tt><a>OpM</a> m o a c</tt>.
+composeOp :: forall m n o a b c. (Monad m, Num a, Known Nat n) => VecT o (OpM m n a) b -> OpM m o b c -> OpM m n a c
+
+-- | Convenient wrappver over <a>composeOp</a> for the case where the
+--   second function only takes one input, so the two <a>OpM</a>s can be
+--   directly piped together, like for <a>.</a>.
+composeOp1 :: forall m n a b c. (Monad m, Num a, Known Nat n) => OpM m n a b -> OpM m N1 b c -> OpM m n a c
+
+-- | Convenient infix synonym for (flipped) <a>composeOp1</a>. Meant to be
+--   used just like <a>.</a>:
+--   
+--   <pre>
+--   <a>op1</a> negate            :: <a>Op</a> '[a]   a
+--   <a>op2</a> (+)               :: Op '[a,a] a
+--   
+--   op1 negate <a>~.~</a> op2 (+) :: Op '[a, a] a
+--   </pre>
+(~.~) :: forall m n a b c. (Monad m, Num a, Known Nat n) => OpM m N1 b c -> OpM m n a b -> OpM m n a c
+infixr 9 ~.~
 
 -- | Create an <a>Op</a> of a function taking one input, by giving its
 --   explicit derivative. The function should return a tuple containing the
