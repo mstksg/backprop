@@ -603,8 +603,8 @@ module Numeric.Backprop
 -- | A Monad allowing you to explicitly build hetereogeneous data
 --   dependency graphs and that the library can perform backpropagation on.
 --   
---   A <tt><a>BP</a> s rs b</tt> is a <a>BP</a> action that uses an
---   environment of <tt>rs</tt> returning a <tt>b</tt>. When "run", it will
+--   A <tt><a>BP</a> s rs a</tt> is a <a>BP</a> action that uses an
+--   environment of <tt>rs</tt> returning a <tt>a</tt>. When "run", it will
 --   compute a gradient that is a tuple of <tt>rs</tt>. (The phantom
 --   parameter <tt>s</tt> is used to ensure that any <a>BVar</a>s aren't
 --   leaked out of the monad)
@@ -613,7 +613,7 @@ module Numeric.Backprop
 --   <a>BVar</a> -- that is, things of the form
 --   
 --   <pre>
---   <a>BP</a> s rs (<a>BVar</a> rs a)
+--   <a>BP</a> s rs (<a>BVar</a> s rs a)
 --   </pre>
 --   
 --   The above is a <a>BP</a> action that returns a <a>BVar</a> containing
@@ -626,19 +626,19 @@ module Numeric.Backprop
 --   and <a>Double</a> as inputs. And, if you ran a
 --   
 --   <pre>
---   <a>BP</a> s '[ Int, Double, Double ] (<a>BVar</a> '[ Int, Double, Double ] Double)
+--   <a>BP</a> s '[ Int, Double, Double ] (<a>BVar</a> s '[ Int, Double, Double ] Double)
 --   </pre>
 --   
 --   Or, using the <tt>BPOp</tt> type synonym:
 --   
 --   <pre>
---   <a>BPOp</a> s '[ Int, Double, Double ] (<a>BVar</a> rs Double)
+--   <a>BPOp</a> s '[ Int, Double, Double ] Double
 --   </pre>
 --   
 --   with <a>backprop</a> or <a>gradBPOp</a>, it'll return a gradient on
 --   the inputs (<a>Int</a>, <a>Double</a>, and <a>Double</a>) and produce
 --   a value of type <a>Double</a>.
-data BP s rs b
+data BP s rs a
 
 -- | A handy type synonym representing a <a>BP</a> action that returns a
 --   <a>BVar</a>. This is handy because this is the form of <a>BP</a>
@@ -684,11 +684,12 @@ type BPOp s rs a = BP s rs (BVar s rs a)
 --   backprop function, a <tt><a>BPOp</a> s rs a</tt>.
 type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 
--- | The basic unit of manipulation inside <a>BP</a>. Instead of directly
---   working with values, you work with <a>BVar</a>s contating those
---   values. When you work with a <a>BVar</a>, the <i>backprop</i> library
---   can keep track of what values refer to which other values, and so can
---   perform backpropagation to compute gradients.
+-- | The basic unit of manipulation inside <a>BP</a> (or inside an
+--   implicit-graph backprop function). Instead of directly working with
+--   values, you work with <a>BVar</a>s contating those values. When you
+--   work with a <a>BVar</a>, the <i>backprop</i> library can keep track of
+--   what values refer to which other values, and so can perform
+--   backpropagation to compute gradients.
 --   
 --   A <tt><a>BVar</a> s rs a</tt> refers to a value of type <tt>a</tt>,
 --   with an environment of values of the types <tt>rs</tt>. The phantom
@@ -697,7 +698,7 @@ type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 --   
 --   (That is, if you're using implicit backprop, it ensures that you
 --   interact with <a>BVar</a>s in a polymorphic way. And, if you're using
---   implicit backprop, it ensures that a <tt><a>BVar</a> s rs a</tt> never
+--   explicit backprop, it ensures that a <tt><a>BVar</a> s rs a</tt> never
 --   leaves the <tt><a>BP</a> s rs</tt> that it was created in.)
 --   
 --   <a>BVar</a>s have <a>Num</a>, <a>Fractional</a>, <a>Floating</a>, etc.
@@ -1950,11 +1951,12 @@ unities' :: Every Num as => Length as -> Prod Unity as
 --   </ol>
 module Numeric.Backprop.Implicit
 
--- | The basic unit of manipulation inside <a>BP</a>. Instead of directly
---   working with values, you work with <a>BVar</a>s contating those
---   values. When you work with a <a>BVar</a>, the <i>backprop</i> library
---   can keep track of what values refer to which other values, and so can
---   perform backpropagation to compute gradients.
+-- | The basic unit of manipulation inside <a>BP</a> (or inside an
+--   implicit-graph backprop function). Instead of directly working with
+--   values, you work with <a>BVar</a>s contating those values. When you
+--   work with a <a>BVar</a>, the <i>backprop</i> library can keep track of
+--   what values refer to which other values, and so can perform
+--   backpropagation to compute gradients.
 --   
 --   A <tt><a>BVar</a> s rs a</tt> refers to a value of type <tt>a</tt>,
 --   with an environment of values of the types <tt>rs</tt>. The phantom
@@ -1963,7 +1965,7 @@ module Numeric.Backprop.Implicit
 --   
 --   (That is, if you're using implicit backprop, it ensures that you
 --   interact with <a>BVar</a>s in a polymorphic way. And, if you're using
---   implicit backprop, it ensures that a <tt><a>BVar</a> s rs a</tt> never
+--   explicit backprop, it ensures that a <tt><a>BVar</a> s rs a</tt> never
 --   leaves the <tt><a>BP</a> s rs</tt> that it was created in.)
 --   
 --   <a>BVar</a>s have <a>Num</a>, <a>Fractional</a>, <a>Floating</a>, etc.
@@ -2644,7 +2646,7 @@ unities' :: Every Num as => Length as -> Prod Unity as
 --   From <a>Numeric.Backprop</a> would, in this module, be:
 --   
 --   <pre>
---   <a>Op</a> N3 Double Int
+--   <a>Op</a> <a>N3</a> Double Int
 --   </pre>
 --   
 --   See the module header for <a>Numeric.Backprop.Op</a> for more
@@ -2663,7 +2665,7 @@ module Numeric.Backprop.Op.Mono
 --   For example, a value of type
 --   
 --   <pre>
---   <a>Op</a> N2 Int Double
+--   <a>Op</a> <a>N2</a> Int Double
 --   </pre>
 --   
 --   is a function that takes two <a>Int</a>s and returns a <a>Double</a>.
@@ -2708,7 +2710,7 @@ type Op n a b = Op (Replicate n a) b
 --   For example, an
 --   
 --   <pre>
---   <a>OpM</a> IO N2 Int Double
+--   <a>OpM</a> IO <a>N2</a> Int Double
 --   </pre>
 --   
 --   would be a function that takes two <a>Int</a>s and returns a
@@ -3004,7 +3006,48 @@ type N9 = S N8
 type N10 = S N9
 
 module Numeric.Backprop.Mono
-type BP s n a = BP s (Replicate n a)
+
+-- | A Monad allowing you to explicitly build hetereogeneous data
+--   dependency graphs and that the library can perform backpropagation on.
+--   
+--   A <tt><a>BP</a> s n r a</tt> is a <a>BP</a> action that uses an
+--   environment <tt>n</tt> values of type <tt>r</tt>, and returns an
+--   <tt>a</tt>. When "run", it will compute a gradient that is a vector
+--   (<a>Vec</a>) of <tt>n</tt> <tt>r</tt>s. (The phantom parameter
+--   <tt>s</tt> is used to ensure that any <a>BVar</a>s aren't leaked out
+--   of the monad)
+--   
+--   Note that you can only "run" a <tt><a>BP</a> s n r</tt> that produces
+--   a <a>BVar</a> -- that is, things of the form
+--   
+--   <pre>
+--   <a>BP</a> s n r (<a>BVar</a> n r a)
+--   </pre>
+--   
+--   The above is a <a>BP</a> action that returns a <a>BVar</a> containing
+--   an <tt>a</tt>. When this is run, it'll produce a result of type
+--   <tt>a</tt> and a gradient of that is a vector of <tt>n</tt> values of
+--   type <tt>r</tt>. (This form has a type synonym, <a>BPOp</a>, for
+--   convenience)
+--   
+--   For example, <tt><a>BP</a> s <a>N3</a> Double</tt> is a monad that
+--   represents a computation with three <a>Double</a>s as inputs. And, if
+--   you ran a
+--   
+--   <pre>
+--   <a>BP</a> s <a>N3</a> Double (<a>BVar</a> N3 Double Int)
+--   </pre>
+--   
+--   Or, using the <a>BPOp</a> type synonym:
+--   
+--   <pre>
+--   <a>BPOp</a> s <a>N3</a> Double Int
+--   </pre>
+--   
+--   with <a>backprop</a> or <a>gradBPOp</a>, it'll return a gradient on
+--   the inputs (a vector of three <a>Double</a>s) and produce a value of
+--   type <a>Int</a>.
+type BP s n r = BP s (Replicate n r)
 
 -- | A handy type synonym representing a <a>BP</a> action that returns a
 --   <a>BVar</a>. This is handy because this is the form of <a>BP</a>
@@ -3013,42 +3056,72 @@ type BP s n a = BP s (Replicate n a)
 --   A value of type:
 --   
 --   <pre>
---   <a>BPOp</a> s n a b
+--   <a>BPOp</a> s n r a
 --   </pre>
 --   
 --   is an action that takes an input environment of <tt>n</tt> values of
---   type <tt>a</tt> and produces a <a>BVar</a> containing a value of type
---   <tt>b</tt>. Because it returns a <a>BVar</a>, the library can track
+--   type <tt>r</tt> and produces a <a>BVar</a> containing a value of type
+--   <tt>a</tt>. Because it returns a <a>BVar</a>, the library can track
 --   the data dependencies between the <a>BVar</a> and the input
 --   environment and perform backpropagation.
 --   
 --   See documentation for <a>BP</a> for an explanation of the phantom type
 --   parameter <tt>s</tt>.
-type BPOp s n a b = BP s n a (BVar s n a b)
+type BPOp s n r a = BP s n r (BVar s n r a)
 
 -- | An "implicit" operation on <a>BVar</a>s that can be backpropagated. A
 --   value of type:
 --   
 --   <pre>
---   <a>BPOpI</a> s n a b
+--   <a>BPOpI</a> s n r a
 --   </pre>
 --   
---   takes a vector of <tt>n</tt> of <a>BVar</a>s containg <tt>a</tt>s and
---   uses them to (purely) produce a <a>BVar</a> containing an <tt>b</tt>.
+--   takes a vector (<a>Vec</a>) of <tt>n</tt> of <a>BVar</a>s containg
+--   <tt>r</tt>s and uses them to (purely) produce a <a>BVar</a> containing
+--   an <tt>a</tt>.
 --   
 --   <pre>
---   foo :: BPOpI s N2 Double Double
+--   foo :: BPOpI s <a>N2</a> Double Double
 --   foo (x :+ y :+ ØV) = x + sqrt y
 --   </pre>
 --   
 --   If you are exclusively doing implicit backpropagation by combining
 --   <a>BVar</a>s and using <a>BPOpI</a>s, you are probably better off just
---   importing <a>Numeric.Backprop.Implicit</a>, which provides better
---   tools. This type synonym exists in <a>Numeric.Backprop</a> just for
---   the <a>implicitly</a> function, which can convert "implicit" backprop
---   functions like a <tt><a>BPOpI</a> s rs a</tt> into an "explicit" graph
---   backprop function, a <tt><a>BPOp</a> s rs a</tt>.
-type BPOpI s n a b = VecT n (BVar s n a) a -> BVar s n a b
+--   importing <a>Numeric.Backprop.Mono.Implicit</a>, which provides better
+--   tools. This type synonym exists in <a>Numeric.Backprop.Mono</a> just
+--   for the <a>implicitly</a> function, which can convert "implicit"
+--   backprop functions like a <tt><a>BPOpI</a> s rs a</tt> into an
+--   "explicit" graph backprop function, a <tt><a>BPOp</a> s rs a</tt>.
+type BPOpI s n r a = VecT n (BVar s n r) r -> BVar s n r a
+
+-- | The basic unit of manipulation inside <a>BP</a> (or inside an
+--   implicit-graph backprop function). Instead of directly working with
+--   values, you work with <a>BVar</a>s contating those values. When you
+--   work with a <a>BVar</a>, the <i>backprop</i> library can keep track of
+--   what values refer to which other values, and so can perform
+--   backpropagation to compute gradients.
+--   
+--   A <tt><a>BVar</a> s n r a</tt> refers to a value of type <tt>a</tt>,
+--   with an environment of <tt>n</tt> values of type <tt>r</tt>. The
+--   phantom parameter <tt>s</tt> is used to ensure that stray <a>BVar</a>s
+--   don't leak outside of the backprop process.
+--   
+--   (That is, if you're using implicit backprop, it ensures that you
+--   interact with <a>BVar</a>s in a polymorphic way. And, if you're using
+--   explicit backprop, it ensures that a <tt><a>BVar</a> s n r a</tt>
+--   never leaves the <tt><a>BP</a> s n r</tt> that it was created in.)
+--   
+--   <a>BVar</a>s have <a>Num</a>, <a>Fractional</a>, <a>Floating</a>, etc.
+--   instances, so they can be manipulated using polymorphic functions and
+--   numeric functions in Haskell. You can add them, subtract them, etc.,
+--   in "implicit" backprop style.
+--   
+--   (However, note that if you directly manipulate <a>BVar</a>s using
+--   those instances or using <a>liftB</a>, it delays evaluation, so every
+--   usage site has to re-compute the result/create a new node. If you want
+--   to re-use a <a>BVar</a> you created using <a>+</a> or <a>-</a> or
+--   <a>liftB</a>, use <tt>bindVar</tt> to force it first. See
+--   documentation for <tt>bindVar</tt> for more details.)
 type BVar s n a = BVar s (Replicate n a)
 
 -- | An <tt><a>Op</a> n a b</tt> describes a differentiable function from
@@ -3057,7 +3130,7 @@ type BVar s n a = BVar s (Replicate n a)
 --   For example, a value of type
 --   
 --   <pre>
---   <a>Op</a> N2 Int Double
+--   <a>Op</a> <a>N2</a> Int Double
 --   </pre>
 --   
 --   is a function that takes two <a>Int</a>s and returns a <a>Double</a>.
@@ -3101,7 +3174,7 @@ type Op n a b = Op (Replicate n a) b
 --   represents a differentiable function that takes a <tt>n</tt> values of
 --   type <tt>a</tt> produces an a <tt>b</tt>, which can be run on
 --   <tt><a>BVar</a> s</tt>s and also inside <tt><a>BP</a> s</tt>s. For
---   example, an <tt><a>OpB</a> s N2 Double Bool</tt> takes two
+--   example, an <tt><a>OpB</a> s <a>N2</a> Double Bool</tt> takes two
 --   <a>Double</a>s and produces a <a>Bool</a>, and does it in a
 --   differentiable way.
 --   
@@ -3199,6 +3272,35 @@ infix 5 +:
 head' :: VecT k (S n) f a -> f a
 
 module Numeric.Backprop.Mono.Implicit
+
+-- | The basic unit of manipulation inside <a>BP</a> (or inside an
+--   implicit-graph backprop function). Instead of directly working with
+--   values, you work with <a>BVar</a>s contating those values. When you
+--   work with a <a>BVar</a>, the <i>backprop</i> library can keep track of
+--   what values refer to which other values, and so can perform
+--   backpropagation to compute gradients.
+--   
+--   A <tt><a>BVar</a> s n r a</tt> refers to a value of type <tt>a</tt>,
+--   with an environment of <tt>n</tt> values of type <tt>r</tt>. The
+--   phantom parameter <tt>s</tt> is used to ensure that stray <a>BVar</a>s
+--   don't leak outside of the backprop process.
+--   
+--   (That is, if you're using implicit backprop, it ensures that you
+--   interact with <a>BVar</a>s in a polymorphic way. And, if you're using
+--   explicit backprop, it ensures that a <tt><a>BVar</a> s n r a</tt>
+--   never leaves the <tt><a>BP</a> s n r</tt> that it was created in.)
+--   
+--   <a>BVar</a>s have <a>Num</a>, <a>Fractional</a>, <a>Floating</a>, etc.
+--   instances, so they can be manipulated using polymorphic functions and
+--   numeric functions in Haskell. You can add them, subtract them, etc.,
+--   in "implicit" backprop style.
+--   
+--   (However, note that if you directly manipulate <a>BVar</a>s using
+--   those instances or using <a>liftB</a>, it delays evaluation, so every
+--   usage site has to re-compute the result/create a new node. If you want
+--   to re-use a <a>BVar</a> you created using <a>+</a> or <a>-</a> or
+--   <a>liftB</a>, use <tt>bindVar</tt> to force it first. See
+--   documentation for <tt>bindVar</tt> for more details.)
 type BVar s n a = BVar s (Replicate n a)
 type BPOp n a b = forall s. VecT n (BVar s n a) a -> BVar s n a b
 
@@ -3208,7 +3310,7 @@ type BPOp n a b = forall s. VecT n (BVar s n a) a -> BVar s n a b
 --   For example, a value of type
 --   
 --   <pre>
---   <a>Op</a> N2 Int Double
+--   <a>Op</a> <a>N2</a> Int Double
 --   </pre>
 --   
 --   is a function that takes two <a>Int</a>s and returns a <a>Double</a>.
@@ -3252,7 +3354,7 @@ type Op n a b = Op (Replicate n a) b
 --   represents a differentiable function that takes a <tt>n</tt> values of
 --   type <tt>a</tt> produces an a <tt>b</tt>, which can be run on
 --   <tt><a>BVar</a> s</tt>s and also inside <tt><a>BP</a> s</tt>s. For
---   example, an <tt><a>OpB</a> s N2 Double Bool</tt> takes two
+--   example, an <tt><a>OpB</a> s <a>N2</a> Double Bool</tt> takes two
 --   <a>Double</a>s and produces a <a>Bool</a>, and does it in a
 --   differentiable way.
 --   
