@@ -3006,6 +3006,33 @@ type N8 = S N7
 type N9 = S N8
 type N10 = S N9
 
+
+-- | Provides a monomorphic interface to the library and to the
+--   <a>Numeric.Backprop</a> module.
+--   
+--   They are monomorphic in the sense that all of the <i>inputs</i> have
+--   to be of the same type. So, something like
+--   
+--   <pre>
+--   <a>BP</a> s '[Double, Double, Double] Int
+--   </pre>
+--   
+--   From <a>Numeric.Backprop</a> would, in this module, be:
+--   
+--   <pre>
+--   <a>BP</a> s <a>N3</a> Double Int
+--   </pre>
+--   
+--   Instead of dealing with <a>Prod</a>s and <a>Tuple</a>s, this module
+--   works with <a>VecT</a>s and <a>Vec</a>s, respectively. These are
+--   fixed-length vectors whose length are encoded in their types,
+--   constructed with <a>:*</a> (for <a>VecT</a>) or <a>:+</a> (for
+--   <a>Vec</a>).
+--   
+--   Most of the concepts in normal heterogeneous backprop (for
+--   <a>Numeric.Backprop</a>) should apply here as well; just remember to
+--   convert something like <tt><a>Op</a> '[a, a] b</tt> to <tt><a>Op</a>
+--   <a>N2</a> a b</tt> here.
 module Numeric.Backprop.Mono
 
 -- | A Monad allowing you to explicitly build hetereogeneous data
