@@ -112,14 +112,12 @@ runNetwork = withInps $ \(x :< n :< Ø) -> do
     r <- runLayer -$ (logistic z :< l3 :< Ø)
     softmax       -$ (r          :< Ø)
 
-errOp
-    :: KnownNat m
-    => R m
-    -> BVar s rs (R m)
+crossEntropy
+    :: KnownNat n
+    => R n
+    -> BVar s rs (R n)
     -> BPOp s rs Double
-errOp targ r = do
-    err <- bindVar $ r - t
-    dot ~$ (err :< err :< Ø)
+crossEntropy targ r = (op1 negate ~.~ dot) ~$ (log r :< t :< Ø)
   where
     t = constVar targ
 
@@ -137,7 +135,7 @@ trainStep r !x !t !n = case gradBPOp o (x ::< n ::< Ø) of
     o :: BPOp s '[ R i, Network i h1 h2 o ] Double
     o = do
       y <- runNetwork
-      errOp t y
+      crossEntropy t y
 
 trainList
     :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
@@ -167,24 +165,28 @@ main = MWC.withSystemRandom $ \g -> do
     Just train <- loadMNIST "data/train-images-idx3-ubyte" "data/train-labels-idx1-ubyte"
     Just test  <- loadMNIST "data/t10k-images-idx3-ubyte"  "data/t10k-labels-idx1-ubyte"
     putStrLn "Loaded data."
-    net0 :: Network 784 300 100 9 <- MWC.uniformR (-1, 1) g
-    flip evalStateT net0 . forever $ do
+    net0 <- MWC.uniformR @(Network 784 300 100 9) (-1, 1) g
+    flip evalStateT net0 . forM_ [1..] $ \e -> do
       train' <- liftIO . fmap V.toList $ MWC.uniformShuffle (V.fromList train) g
+      liftIO $ printf "[Epoch %d]\n" (e :: Int)
 
-      liftIO $ putStrLn "Training epoch..."
-      forM_ (chunksOf 5000 train') $ \chnk -> StateT $ \n0 -> do
-        test' <- liftIO . fmap V.toList $ MWC.uniformShuffle (V.fromList train) g
+      forM_ ([1..] `zip` chunksOf batch train') $ \(b, chnk) -> StateT $ \n0 -> do
+        printf "(Batch %d)\n" (b :: Int)
 
         t0 <- getCurrentTime
-        n' <- evaluate . force $ trainList 0.05 chnk n0
+        n' <- evaluate . force $ trainList rate chnk n0
         t1 <- getCurrentTime
+        printf "Trained on %d points in %s.\n" batch (show (t1 `diffUTCTime` t0))
 
-        printf "Trained on 5000 points in %s.\n" (show (t1 `diffUTCTime` t0))
-
-        let score = testNet (take 5000 test) n'
-        printf "Error: %.3f%%\n" ((1 - score) * 100)
+        let trainScore = testNet chnk n'
+            testScore  = testNet test n'
+        printf "Training error:   %.2f%%\n" ((1 - trainScore) * 100)
+        printf "Validation error: %.2f%%\n" ((1 - testScore) * 100)
 
         return ((), n')
+  where
+    rate  = 0.05
+    batch = 5000
 
 loadMNIST
     :: FilePath
