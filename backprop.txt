@@ -1972,7 +1972,7 @@ summers' :: Every Num as => Length as -> Prod Summer as
 unities' :: Every Num as => Length as -> Prod Unity as
 
 
--- | Offers full functionality for implicit-graph backpropagationu. The
+-- | Offers full functionality for implicit-graph backpropagation. The
 --   intended usage is to write a <a>BPOp</a>, which is a normal Haskell
 --   function from <a>BVar</a>s to a result <a>BVar</a>. These <a>BVar</a>s
 --   can be manipulated using their <a>Num</a> / <a>Fractional</a> /
