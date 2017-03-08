@@ -52,8 +52,8 @@ import           Lens.Micro.TH
 import           Numeric.Backprop.Internal.Helper
 import           Numeric.Backprop.Op
 
--- | A type synonym for 'OpM' specialized to what the /backprop/ library
--- uses to perform backpropagation.
+-- | A subclass of 'OpM' (and superclass of 'Op'), representing 'Op's that
+-- the /backprop/ library uses to perform backpropation.
 --
 -- An
 --
@@ -62,11 +62,11 @@ import           Numeric.Backprop.Op
 -- @
 --
 -- represents a differentiable function that takes a tuple of @rs@ and
--- produces an a @a@, which can be run on @'BVar' s@ and also inside @'BP'
+-- produces an a @a@, which can be run on @'BVar' s@s and also inside @'BP'
 -- s@s.  For example, an @'OpB' s '[ Int, Double ] Bool@ takes an 'Int' and
 -- a 'Double' and produces a 'Bool', and does it in a differentiable way.
 --
--- Note that 'OpB' is a /superset/ of 'Op', so, if you see any function
+-- 'OpB' is a /superset/ of 'Op', so, if you see any function
 -- that expects an 'OpB' (like 'Numeric.Backprop.opVar'' and
 -- 'Numeric.Backprop.~$', for example), you can give them an 'Op', as well.
 --
@@ -105,8 +105,8 @@ data BPState :: Type -> [Type] -> Type where
 -- | A Monad allowing you to explicitly build hetereogeneous data
 -- dependency graphs and that the library can perform backpropagation on.
 --
--- A @'BP' s rs b@ is a 'BP' action that uses an environment of @rs@
--- returning a @b@.  When "run", it will compute a gradient that is a tuple
+-- A @'BP' s rs a@ is a 'BP' action that uses an environment of @rs@
+-- returning a @a@.  When "run", it will compute a gradient that is a tuple
 -- of @rs@.  (The phantom parameter @s@ is used to ensure that any 'BVar's
 -- aren't leaked out of the monad)
 --
@@ -114,7 +114,7 @@ data BPState :: Type -> [Type] -> Type where
 -- that is, things of the form
 --
 -- @
--- 'BP' s rs ('BVar' rs a)
+-- 'BP' s rs ('BVar' s rs a)
 -- @
 --
 -- The above is a 'BP' action that returns a 'BVar' containing an @a@.
@@ -127,36 +127,37 @@ data BPState :: Type -> [Type] -> Type where
 -- inputs.   And, if you ran a
 --
 -- @
--- 'BP' s '[ Int, Double, Double ] ('BVar' '[ Int, Double, Double ] Double)
+-- 'BP' s '[ Int, Double, Double ] ('BVar' s '[ Int, Double, Double ] Double)
 -- @
 --
 -- Or, using the 'BPOp' type synonym:
 --
 -- @
--- 'Numeric.Backprop.BPOp' s '[ Int, Double, Double ] ('BVar' rs Double)
+-- 'Numeric.Backprop.BPOp' s '[ Int, Double, Double ] Double
 -- @
 --
 -- with 'Numeric.Backprop.backprop' or 'Numeric.Backprop.gradBPOp', it'll
 -- return a gradient on the inputs ('Int', 'Double', and 'Double') and
 -- produce a value of type 'Double'.
-newtype BP s rs b = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s)) b }
+newtype BP s rs a = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s)) a }
       deriving ( Functor
                , Applicative
                , Monad
                )
 
--- | The basic unit of manipulation inside 'BP'.  Instead of directly
--- working with values, you work with 'BVar's contating those values.  When
--- you work with a 'BVar', the /backprop/ library can keep track of what
--- values refer to which other values, and so can perform backpropagation
--- to compute gradients.
+-- | The basic unit of manipulation inside 'BP' (or inside an
+-- implicit-graph backprop function).  Instead of directly working with
+-- values, you work with 'BVar's contating those values.  When you work
+-- with a 'BVar', the /backprop/ library can keep track of what values
+-- refer to which other values, and so can perform backpropagation to
+-- compute gradients.
 --
 -- A @'BVar' s rs a@ refers to a value of type @a@, with an environment
 -- of values of the types @rs@.  The phantom parameter @s@ is used to
 -- ensure that stray 'BVar's don't leak outside of the backprop process.
 --
 -- (That is, if you're using implicit backprop, it ensures that you interact
--- with 'BVar's in a polymorphic way.  And, if you're using implicit
+-- with 'BVar's in a polymorphic way.  And, if you're using explicit
 -- backprop, it ensures that a @'BVar' s rs a@ never leaves the @'BP' s rs@
 -- that it was created in.)
 --

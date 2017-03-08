@@ -175,10 +175,9 @@ newtype OpM m as a =
     -- details on the function that this constructor and 'Op' expect.
     OpM (Tuple as -> m (a, Maybe a -> m (Tuple as)))
 
--- | An @'Op' as a@ is a type synonym over 'OpM' that describes
--- a differentiable function from @as@ to @a@.
+-- | An @'Op' as a@ describes a differentiable function from @as@ to @a@.
 --
--- For example, an
+-- For example, a value of type
 --
 -- @
 -- 'Op' '[Int, Bool] Double
@@ -186,7 +185,12 @@ newtype OpM m as a =
 --
 -- is a function from an 'Int' and a 'Bool', returning a 'Double'.  It can
 -- be differentiated to give a /gradient/ of an 'Int' and a 'Bool' if given
--- a total derivative for the @Double@.
+-- a total derivative for the @Double@.  If we call 'Bool' \(2\), then,
+-- mathematically, it is akin to a:
+--
+-- \[
+-- f : \mathbb{Z} \times 2 \rightarrow \mathbb{R}
+-- \]
 --
 -- See 'runOp', 'gradOp', and 'gradOpWith' for examples on how to run it,
 -- and 'Op' for instructions on creating it.
@@ -198,8 +202,9 @@ newtype OpM m as a =
 -- can even be created automatically using 'op1', 'op2', 'op3', and 'opN'
 -- with a little help from "Numeric.AD" from the /ad/ library.
 --
--- Note that this type is a /subset/ or /subtype/ of 'OpM'.  So, if a function
--- ever expects an @'OpM' m as a@, you can always provide an @'Op' as a@
+-- Note that this type is a /subset/ or /subtype/ of 'OpM' (and also of
+-- 'Numeric.Backprop.OpB').  So, if a function ever expects an @'OpM' m as
+-- a@ (or a 'Numeric.Backprop.OpB'), you can always provide an @'Op' as a@
 -- instead.
 --
 -- Many functions in this library will expect an @'OpM' m as a@ (or

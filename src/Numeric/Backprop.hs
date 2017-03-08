@@ -115,7 +115,7 @@ type BPOp s rs a  = BP s rs (BVar s rs a)
 -- a 'BVar' containing an @a@.
 --
 -- @
--- foo :: BPOpI s '[ Double, Double ] Float
+-- foo :: BPOpI s '[ Double, Double ] Double
 -- foo (x :< y :< Ø) = x + sqrt y
 -- @
 --
@@ -808,10 +808,10 @@ infixr 1 ~$
     -> BP s rs (BVar s rs a)
 (~$) = opVar
 
--- | Lets you treat a @'BPOp s as b@ as an @'Op' as b@, and "apply"
+-- | Lets you treat a @'BPOp' s as b@ as an @'Op' as b@, and "apply"
 -- arguments to it just like you would with an 'Op' and '~$' / 'opVar'.
 --
--- Basically a convenient wrapper over 'bpOp':
+-- Basically a convenient wrapper over 'bpOp' and '~$':
 --
 -- @
 -- o '-$' xs = bpOp o '~$' xs
@@ -820,8 +820,8 @@ infixr 1 ~$
 -- So for a @'BPOp' s as b@, you can "plug in" 'BVar's to @as@, and get
 -- a @b@ as a result.
 --
--- Useful for running a @'BPOp' s rs a@ that you got from a different function, and
--- "plugging in" its @rs@ inputs with 'BVar's from your current
+-- Useful for running a @'BPOp' s as b@ that you got from a different function, and
+-- "plugging in" its @as@ inputs with 'BVar's from your current
 -- environment.
 infixr 1 -$
 (-$)
@@ -951,7 +951,7 @@ bindVar' s r = case r of
     BVOp    rs o -> opVar' s o rs
 
 -- | Concretizes a delayed 'BVar'.  If you build up a 'BVar' using numeric
--- functions like '+' or '*' or using 'liftR', it'll defer the evaluation,
+-- functions like '+' or '*' or using 'liftB', it'll defer the evaluation,
 -- and all of its usage sites will create a separate graph node.
 --
 -- Use 'bindVar' if you ever intend to use a 'BVar' in more than one
@@ -979,10 +979,10 @@ bindVar' s r = case r of
 --     'bindVar' (e * e)      -- result is forced so user doesn't have to worry
 -- @
 --
--- Note the relation to 'opVar' / '~$' / 'liftR' / '.$':
+-- Note the relation to 'opVar' / '~$' / 'liftB' / '.$':
 --
 -- @
--- 'opVar' o xs    = 'bindVar' ('liftR' o xs)
+-- 'opVar' o xs    = 'bindVar' ('liftB' o xs)
 -- o '~$' xs       = 'bindVar' (o '.$' xs)
 -- 'op2' (*) '~$' (x :< y :< Ø) = 'bindVar' (x * y)
 -- @
@@ -1143,18 +1143,20 @@ backpropWith ss us bp env = do
               FRTerminal g   -> return $ fromMaybe (getUnity u) g
     return (res, gradFunc)
 
--- | A version of 'implicitly' taking explicit 'Length', indicating the
--- number of inputs required and their types.
+-- | A version of 'implicitly' taking explicit 'Length' and an explicit
+-- 'Summer', indicating the number of inputs required and their types, and
+-- also allowing it to work on types that aren't instances of 'Num'.
 --
--- Mostly useful for rare "extremely polymorphic" situations, where GHC
--- can't infer the type and length of the list of inputs.  If you ever
--- actually explicitly write down @rs@ as a list of types, you should be
--- able to just use 'implicitly'.
+-- Requiring an explicit 'Length' is mostly useful for rare "extremely
+-- polymorphic" situations, where GHC can't infer the type and length of
+-- the list of inputs.  If you ever actually explicitly write down @rs@ as
+-- a list of types, you should be able to just use 'implicitly'.
 implicitly'
     :: Length rs
+    -> Summer a
     -> BPOpI s rs a
     -> BPOp s rs a
-implicitly' l f = withInps' l (return . f)
+implicitly' l s f = withInps' l (bindVar' s . f)
 
 -- | Convert a 'BPOpI' into a 'BPOp'.  That is, convert a function on
 -- a bundle of 'BVar's (generating an implicit graph) into a fully fledged
@@ -1165,10 +1167,10 @@ implicitly' l f = withInps' l (return . f)
 -- it might be more convenient to use "Numeric.Backprop.Implicit" instead,
 -- which is geared around that use case.
 implicitly
-    :: Known Length rs
+    :: (Known Length rs, Num a)
     => BPOpI s rs a
     -> BPOp s rs a
-implicitly = implicitly' known
+implicitly = implicitly' known known
 
 -- | Create a 'BVar' given an index into the input environment.  For an
 -- example,
@@ -1203,12 +1205,12 @@ inpVar = BVInp
 -- pointing to the 'Int' and a 'BVar' pointing to the 'Double'.
 --
 -- @
--- let x :< y :< Ø = 'inpVars' :: 'Prod' ('BVar' s '[Int, Double]) '[Int, Double]
---
--- -- the first item, x, is a var to the input 'Int'
--- x :: 'BVar' s '[Int, Double] Int
--- -- the second item, y, is a var to the input 'Double'
--- y :: 'BVar' s '[Int, Double] Double
+-- case ('inpVars' :: 'Prod' ('BVar' s '[Int, Double]) '[Int, Double]) of
+--   x :< y :< Ø -> do
+--     -- the first item, x, is a var to the input 'Int'
+--     x :: 'BVar' s '[Int, Double] Int
+--     -- the second item, y, is a var to the input 'Double'
+--     y :: 'BVar' s '[Int, Double] Double
 -- @
 inpVars
     :: Known Length rs
@@ -1257,8 +1259,9 @@ withInps' l f = f (inpVars' l)
 -- @
 -- foo :: 'BPOp' '[Double, Int] a
 -- foo = do
---     x :< y :< Ø <- 'inpVars'
---     -- do stuff with inputs
+--     case 'inpVars' of
+--       x :< y :< Ø -> do
+--         -- do stuff with inputs
 -- @
 --
 -- But just a little nicer!
@@ -1268,8 +1271,8 @@ withInps
     -> BP s rs a
 withInps = withInps' known
 
--- | Apply 'OpB' over a 'Prod' of 'BVar's, as inputs.
--- Provides "implicit" backpropagation, with deferred evaluation.
+-- | Apply 'OpB' over a 'Prod' of 'BVar's, as inputs. Provides
+-- "implicit-graph" backpropagation, with deferred evaluation.
 --
 -- If you had an @'OpB' s '[a, b, c] d@, this function will expect a 3-Prod
 -- of a @'BVar' s rs a@, a @'BVar' s rs b@, and a @'BVar' s rs c@, and the
@@ -1289,7 +1292,7 @@ withInps = withInps' known
 -- here, as well (like those created by 'op1', 'op2', 'constOp', 'op0'
 -- etc.)
 --
--- 'opVar' has an infix alias, '.$', so the above example can also be
+-- 'liftB' has an infix alias, '.$', so the above example can also be
 -- written as:
 --
 -- @
@@ -1309,7 +1312,7 @@ withInps = withInps' known
 -- 'opVar' o xs = 'bindVar' ('liftB' o xs)
 -- @
 --
--- 'liftB' can be thought of as a "deferred evaluation" version of 'liftB'.
+-- 'liftB' can be thought of as a "deferred evaluation" version of 'opVar'.
 liftB
     :: OpB s as a
     -> Prod (BVar s rs) as

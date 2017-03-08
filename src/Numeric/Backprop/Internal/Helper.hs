@@ -112,6 +112,8 @@ unities'
     -> Prod Unity as
 unities' l = withEvery' @Num l known
 
+-- | Create @n@ canonical 'Summer's of for the same type, using its 'Num'
+-- instance.
 nSummers'
     :: forall n a. Num a
     => Nat n
@@ -120,6 +122,8 @@ nSummers' = \case
     Z_               -> Ø
     S_ (n :: Nat n') -> Summer sum :< nSummers' @n' @a n
 
+-- | Create @n@ canonical 'Unity's of for the same type, using its 'Num'
+-- instance.
 nUnities'
     :: forall n a. Num a
     => Nat n

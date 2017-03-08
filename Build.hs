@@ -14,8 +14,9 @@ opts = shakeOptions { shakeFiles     = ".shake"
 data Doc = Lab
 
 main :: IO ()
-main = getDirectoryFilesIO "samples" ["/*.lhs"] >>=
-          \allSrc -> shakeArgs opts $ do
+main = getDirectoryFilesIO "samples" ["/*.lhs"] >>= \allSamps ->
+       getDirectoryFilesIO "src" ["//*.hs"]     >>= \allSrc ->
+         shakeArgs opts $ do
 
     want ["all"]
 
@@ -23,10 +24,10 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>=
       need ["pdf", "md", "build", "haddocks", "gentags"]
 
     "pdf" ~>
-      need (map (\f -> "renders" </> takeFileName f -<.> "pdf") allSrc)
+      need (map (\f -> "renders" </> takeFileName f -<.> "pdf") allSamps)
 
     "md" ~>
-      need (map (\f -> "renders" </> takeFileName f -<.> "md") allSrc)
+      need (map (\f -> "renders" </> takeFileName f -<.> "md") allSamps)
 
     "build" ~>
       cmd "stack" "install"
@@ -51,7 +52,8 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>=
                    "-o" f
                    src
 
-    ["tags","TAGS"] &%> \_ ->
+    ["tags","TAGS"] &%> \_ -> do
+      need (("src" </>) <$> allSrc)
       cmd "hasktags" "src/"
 
     "clean" ~> do

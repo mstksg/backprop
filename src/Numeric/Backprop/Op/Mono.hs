@@ -32,7 +32,7 @@
 -- From "Numeric.Backprop" would, in this module, be:
 --
 -- @
--- 'Op' N3 Double Int
+-- 'Op' 'N3' Double Int
 -- @
 -- 
 -- See the module header for "Numeric.Backprop.Op" for more explicitly
@@ -65,7 +65,7 @@ module Numeric.Backprop.Op.Mono (
   -- * Utility
   -- ** Vectors
   , pattern (:+), (*:), (+:), head'
-  -- ** Type synonyms
+  -- ** 'Nat' type synonyms
   , N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10
  ) where
 
@@ -81,19 +81,22 @@ import           Type.Family.Nat
 import qualified Numeric.Backprop.Internal.Helper as BP
 import qualified Numeric.Backprop.Op              as BP
 
--- | An @'Op' n a b@ is a type synonym over 'OpM' that describes
--- a differentiable function from @n@ values of type @a@ to a value of
--- type @b@.
+-- | An @'Op' n a b@ describes a differentiable function from @n@ values of
+-- type @a@ to a value of type @b@.
 --
--- For example, an
+-- For example, a value of type
 --
 -- @
--- 'Op' N2 Int Double
+-- 'Op' 'N2' Int Double
 -- @
 --
 -- is a function that takes two 'Int's and returns a 'Double'.
 -- It can be differentiated to give a /gradient/ of two 'Int's, if given
--- a total derivative for the 'Double'.
+-- a total derivative for the 'Double'.  Mathematically, it is akin to a:
+--
+-- \[
+-- f : \mathbb{Z}^2 \rightarrow \mathbb{R}
+-- \]
 --
 -- See 'runOp', 'gradOp', and 'gradOpWith' for examples on how to run it,
 -- and 'Op' for instructions on creating it.
@@ -105,23 +108,23 @@ import qualified Numeric.Backprop.Op              as BP
 -- can even be created automatically using 'op1', 'op2', 'op3', and 'opN'
 -- with a little help from "Numeric.AD" from the /ad/ library.
 --
--- Note that this type is a /subset/ or /subtype/ of 'OpM'.  So, if a function
--- ever expects an @'OpM' m as a@, you can always provide an @'Op' as a@
--- instead.
+-- Note that this type is a /subset/ or /subtype/ of 'OpM' (and also of
+-- 'Numeric.Backprop.Mono.OpB').  So, if a function ever expects an @'OpM'
+-- m as a@ (or a 'Numeric.Backprop.Mono.OpB'), you can always provide an
+-- @'Op' as a@ instead.
 --
 -- Many functions in this library will expect an @'OpM' m as a@ (or
 -- an @'Numeric.Backprop.Mono.OpB' s as a@), and in all of these cases, you can
 -- provide an @'Op' as a@.
 type Op n a b  = BP.Op (Replicate n a) b
 
--- | An @'Op' m n a b@ is a type synonym over 'OpM' that describes
--- a differentiable (monadic) function from @n@ values of type @a@ to
--- a value of type @b@.
+-- | An @'OpM' m n a b@ represents a differentiable (monadic) function from
+-- @n@ values of type @a@ to a value of type @b@.
 --
 -- For example, an
 --
 -- @
--- 'OpM' IO N2 Int Double
+-- 'OpM' IO 'N2' Int Double
 -- @
 --
 -- would be a function that takes two 'Int's and returns a 'Double' (in

@@ -119,7 +119,7 @@ backprop' ss us f = BP.backprop' ss us $ BP.withInps' (prodLength ss) (return . 
 -- >>> backprop foo (2 ::< 3 ::< Ø)
 -- (11.46, 13.73 ::< 6.12 ::< Ø)
 backprop
-    :: (Known Length rs, Every Num rs)
+    :: (Known Length rs, Every Num rs, Num a)
     => BPOp rs a
     -> Tuple rs
     -> (a, Tuple rs)
@@ -148,7 +148,7 @@ grad' ss us f = snd . backprop' ss us f
 -- >>> grad foo (2 ::< 3 ::< Ø)
 -- 13.73 ::< 6.12 ::< Ø
 grad
-    :: (Known Length rs, Every Num rs)
+    :: (Known Length rs, Every Num rs, Num a)
     => BPOp rs a
     -> Tuple rs
     -> Tuple rs
@@ -167,7 +167,7 @@ grad f = snd . backprop f
 -- >>> eval foo (2 ::< 3 ::< Ø)
 -- 11.46
 eval
-    :: (Known Length rs, Every Num rs)
+    :: (Known Length rs, Every Num rs, Num a)
     => BPOp rs a
     -> Tuple rs
     -> a

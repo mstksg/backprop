@@ -46,50 +46,49 @@ gradBPOp' gradBPOp'1096,1097
 gradBPOp gradBPOp1105,1106
 closeOff closeOff1114,1115
 backpropWith backpropWith1133,1134
-implicitly' implicitly'1156,1157
-implicitly implicitly1170,1171
-inpVar inpVar1195,1196
-inpVars inpVars1215,1216
-inpVars' inpVars'1227,1228
-withInps' withInps'1240,1241
-withInps withInps1268,1269
-liftB liftB1316,1317
-liftB1 liftB11374,1375
-liftB2 liftB21400,1401
-liftB3 liftB31428,1429
-caching caching1448,1449
+implicitly' implicitly'1158,1159
+implicitly implicitly1172,1173
+inpVar inpVar1197,1198
+inpVars inpVars1217,1218
+inpVars' inpVars'1229,1230
+withInps' withInps'1242,1243
+withInps withInps1271,1272
+liftB liftB1319,1320
+liftB1 liftB11377,1378
+liftB2 liftB21403,1404
+liftB3 liftB31431,1432
+caching caching1451,1452
 
-src/Numeric/Backprop/Mono.hs,724
+src/Numeric/Backprop/Mono.hs,713
 module Numeric.Backprop.Mono Numeric.Backprop.Mono16,17
-type BP BP53,54
-type BP s s53,54
-type BVar BVar54,55
-type BPOp BPOp55,56
-type BPOpI BPOpI56,57
-type OpB OpB58,59
-opVar opVar65,66
-(~(73,74
-o o81,82
-constVar constVar86,87
-opVar1 opVar193,94
-opVar2 opVar2101,102
-opVar3 opVar3110,111
-backprop backprop117,118
-evalBPOp evalBPOp126,127
-gradBPOp gradBPOp133,134
-bpOp bpOp139,140
-inpVar inpVar148,149
-inpVars inpVars153,154
-withInps withInps159,160
-implicitly implicitly165,166
-liftB liftB172,173
-liftB1 liftB1185,186
-liftB2 liftB2192,193
-liftB3 liftB3200,201
-toSummers toSummers213,214
-toUnities toUnities221,222
-nSummers nSummers229,230
-nUnities nUnities237,238
+type BP BP91,92
+type BP s s91,92
+type BVar BVar120,121
+type BPOp BPOp139,140
+type BPOpI BPOpI163,164
+type OpB OpB186,187
+opVar opVar229,230
+(~(260,261
+o o283,284
+constVar constVar290,291
+opVar1 opVar1312,313
+opVar2 opVar2336,337
+opVar3 opVar3362,363
+bindVar bindVar409,410
+backprop backprop420,421
+evalBPOp evalBPOp431,432
+gradBPOp gradBPOp440,441
+bpOp bpOp453,454
+inpVar inpVar480,481
+inpVars inpVars500,501
+withInps withInps529,530
+implicitly implicitly543,544
+liftB liftB591,592
+liftB1 liftB1647,648
+liftB2 liftB2673,674
+liftB3 liftB3701,702
+toSummers toSummers714,715
+toUnities toUnities722,723
 
 src/Numeric/Backprop/Internal.hs,1200
 module Numeric.Backprop.InternalNumeric.Backprop.Internal29,30
@@ -103,31 +102,31 @@ data BPState BPState99,100
     BPS BPS100,101
     BPS :: { _bpsSources _bpsSources100,101
 newtype BP BP141,142
-newtype BP s rs b = BP BP141,142
-newtype BP s rs b = BP { bpST bpST141,142
-data BVar BVar173,174
-    BVNode BVNode175,176
-    BVInp BVInp179,180
-    BVConst BVConst182,183
-    BVOp BVOp186,187
-data BPInpRef BPInpRef192,193
-    IRNode IRNode194,195
-    IRPipe IRPipe198,199
-    IRConst IRConst203,204
-data BPNode BPNode210,211
-    BPN BPN211,212
-    BPN :: { _bpnOut _bpnOut211,212
-           , _bpnRes _bpnRes212,213
-           , _bpnGradFunc _bpnGradFunc213,214
-           , _bpnGradCache _bpnGradCache214,215
-           , _bpnSummer _bpnSummer215,216
-data BPPipe BPPipe222,223
-    BPP BPP223,224
-    BPP :: { _bppOut _bppOut223,224
-           , _bppRes _bppRes224,225
-           , _bppGradFunc _bppGradFunc225,226
-           , _bppGradCache _bppGradCache226,227
-_FRInternal _FRInternal239,240
+newtype BP s rs a = BP BP141,142
+newtype BP s rs a = BP { bpST bpST141,142
+data BVar BVar174,175
+    BVNode BVNode176,177
+    BVInp BVInp180,181
+    BVConst BVConst183,184
+    BVOp BVOp187,188
+data BPInpRef BPInpRef193,194
+    IRNode IRNode195,196
+    IRPipe IRPipe199,200
+    IRConst IRConst204,205
+data BPNode BPNode211,212
+    BPN BPN212,213
+    BPN :: { _bpnOut _bpnOut212,213
+           , _bpnRes _bpnRes213,214
+           , _bpnGradFunc _bpnGradFunc214,215
+           , _bpnGradCache _bpnGradCache215,216
+           , _bpnSummer _bpnSummer216,217
+data BPPipe BPPipe223,224
+    BPP BPP224,225
+    BPP :: { _bppOut _bppOut224,225
+           , _bppRes _bppRes225,226
+           , _bppGradFunc _bppGradFunc226,227
+           , _bppGradCache _bppGradCache227,228
+_FRInternal _FRInternal240,241
 
 src/Numeric/Backprop/Mono/Implicit.hs,176
 module Numeric.Backprop.Mono.Implicit Numeric.Backprop.Mono.Implicit4,5
@@ -157,101 +156,126 @@ gSplit gSplit366,367
 
 src/Numeric/Backprop/Op.hs,1426
 module Numeric.Backprop.Op Numeric.Backprop.Op31,32
-newtype OpM OpM167,168
-    OpM OpM174,175
-type Op Op206,207
-type Op as as206,207
-newtype OpCont OpCont209,210
-newtype OpCont m as a = OC OC209,210
-newtype OpCont m as a = OC { runOpCont runOpCont209,210
-pattern pattern218,219
-runOpM' runOpM'234,235
-runOp' runOp'248,249
-composeOp' composeOp'260,261
-composeOp composeOp291,292
-runOp runOp297,298
-runOp runOp298,299
-gradOp' gradOp'305,306
-gradOp' gradOp'306,307
-runOpM runOpM312,313
-runOpM runOpM313,314
-gradOpM' gradOpM'316,317
-gradOpM' gradOpM'317,318
-gradOpWith' gradOpWith'338,339
-gradOpWithM' gradOpWithM'349,350
-gradOpWith gradOpWith364,365
-gradOpWithM gradOpWithM373,374
-gradOp gradOp381,382
-gradOp gradOp382,383
-gradOpM gradOpM385,386
-gradOpM gradOpM386,387
-opCoerce' opCoerce'392,393
-opCoerce' opCoerce'393,394
-opCoerce opCoerce404,405
-opCoerce opCoerce405,406
-opTup' opTup'412,413
-opTup opTup421,422
-opIso' opIso'425,426
-opIso' opIso'426,427
-opIso opIso435,436
-opIso opIso436,437
-opConst' opConst'440,441
-opConst' opConst'441,442
-opConst opConst449,450
-opConst opConst450,451
-op0 op0466,467
-op0 op0467,468
-op1' op1'515,516
-op2' op2'567,568
-op3' op3'577,578
-op1 op1588,589
-op1 op1591,592
-op2 op2601,602
-op2 op2604,605
-op3 op3612,613
-op3 op3615,616
-opN opN623,624
-opN opN626,627
-instance instance630,631
+newtype OpM OpM168,169
+    OpM OpM175,176
+type Op Op212,213
+type Op as as212,213
+newtype OpCont OpCont215,216
+newtype OpCont m as a = OC OC215,216
+newtype OpCont m as a = OC { runOpCont runOpCont215,216
+pattern pattern224,225
+runOpM' runOpM'240,241
+runOp' runOp'254,255
+composeOp' composeOp'266,267
+composeOp composeOp297,298
+runOp runOp303,304
+runOp runOp304,305
+gradOp' gradOp'311,312
+gradOp' gradOp'312,313
+runOpM runOpM318,319
+runOpM runOpM319,320
+gradOpM' gradOpM'322,323
+gradOpM' gradOpM'323,324
+gradOpWith' gradOpWith'344,345
+gradOpWithM' gradOpWithM'355,356
+gradOpWith gradOpWith370,371
+gradOpWithM gradOpWithM379,380
+gradOp gradOp387,388
+gradOp gradOp388,389
+gradOpM gradOpM391,392
+gradOpM gradOpM392,393
+opCoerce' opCoerce'398,399
+opCoerce' opCoerce'399,400
+opCoerce opCoerce410,411
+opCoerce opCoerce411,412
+opTup' opTup'418,419
+opTup opTup427,428
+opIso' opIso'431,432
+opIso' opIso'432,433
+opIso opIso441,442
+opIso opIso442,443
+opConst' opConst'446,447
+opConst' opConst'447,448
+opConst opConst455,456
+opConst opConst456,457
+op0 op0472,473
+op0 op0473,474
+op1' op1'521,522
+op2' op2'573,574
+op3' op3'583,584
+op1 op1594,595
+op1 op1597,598
+op2 op2607,608
+op2 op2610,611
+op3 op3618,619
+op3 op3621,622
+opN opN629,630
+opN opN632,633
+instance instance636,637
 
-src/Numeric/Backprop/Internal/Helper.hs,447
-module Numeric.Backprop.Internal.Helper Numeric.Backprop.Internal.Helper20,21
-newtype Summer Summer48,49
-newtype Summer a = Summer Summer48,49
-newtype Summer a = Summer { runSummer runSummer48,49
-newtype Unity Unity65,66
-newtype Unity  a = Unity Unity65,66
-newtype Unity  a = Unity  { getUnity getUnity65,66
-instance instance70,71
-summers summers85,86
-summers' summers'93,94
-unities unities100,101
-unities' unities'108,109
+src/Numeric/Backprop/Internal/Helper.hs,505
+module Numeric.Backprop.Internal.Helper Numeric.Backprop.Internal.Helper23,24
+newtype Summer Summer52,53
+newtype Summer a = Summer Summer52,53
+newtype Summer a = Summer { runSummer runSummer52,53
+newtype Unity Unity69,70
+newtype Unity  a = Unity Unity69,70
+newtype Unity  a = Unity  { getUnity getUnity69,70
+instance instance74,75
+summers summers89,90
+summers' summers'97,98
+unities unities104,105
+unities' unities'112,113
+nSummers' nSummers'118,119
+nUnities' nUnities'126,127
 
-src/Numeric/Backprop/Op/Mono.hs,503
-module Numeric.Backprop.Op.Mono Numeric.Backprop.Op.Mono22,23
-type Op Op47,48
-type Op n n47,48
-type OpM OpM48,49
-type OpM m m48,49
-op1 op150,51
-op1 op153,54
-op2 op255,56
-op2 op258,59
-op3 op360,61
-op3 op363,64
-opN opN65,66
-opN opN68,69
-runOp' runOp'70,71
-runOp' runOp'71,72
-runOp runOp76,77
-runOp runOp77,78
-gradOpWith' gradOpWith'79,80
-gradOpWith' gradOpWith'80,81
-gradOpWith gradOpWith82,83
-gradOpWith gradOpWith83,84
-gradOp gradOp85,86
-gradOp gradOp86,87
+src/Numeric/Backprop/Op/Mono.hs,1128
+module Numeric.Backprop.Op.Mono Numeric.Backprop.Op.Mono46,47
+type Op Op118,119
+type Op n n118,119
+type OpM OpM138,139
+type OpM m m138,139
+pattern pattern147,148
+op0 op0185,186
+op0 op0186,187
+opConst opConst193,194
+opConst opConst194,195
+op1 op1202,203
+op1 op1205,206
+op2 op2213,214
+op2 op2216,217
+op3 op3224,225
+op3 op3227,228
+opN opN235,236
+opN opN238,239
+op1' op1'285,286
+op2' op2'334,335
+op3' op3'341,342
+runOp' runOp'350,351
+runOp' runOp'351,352
+runOp runOp360,361
+runOp runOp361,362
+gradOpWith' gradOpWith'372,373
+gradOpWith' gradOpWith'373,374
+gradOpWith gradOpWith381,382
+gradOpWith gradOpWith382,383
+gradOp gradOp390,391
+gradOp gradOp391,392
+gradOp' gradOp'398,399
+gradOp' gradOp'399,400
+runOpM' runOpM'405,406
+runOpM' runOpM'406,407
+runOpM runOpM415,416
+runOpM runOpM416,417
+gradOpM gradOpM419,420
+gradOpM gradOpM420,421
+gradOpM' gradOpM'425,426
+gradOpM' gradOpM'426,427
+gradOpWithM' gradOpWithM'432,433
+gradOpWithM' gradOpWithM'433,434
+gradOpWithM gradOpWithM438,439
+gradOpWithM gradOpWithM439,440
+composeOp composeOp454,455
 
 src/Numeric/Backprop/Iso.hs,618
 module Numeric.Backprop.Iso Numeric.Backprop.Iso25,26
@@ -285,24 +309,24 @@ nsSum nsSum194,195
 
 src/Data/Type/Util.hs,588
 module Data.Type.Util Data.Type.Util16,17
-type family family37,38
-type family Replicate Replicate37,38
-vecToProd vecToProd44,45
-prodToVec' prodToVec'52,53
-prodAlong prodAlong62,63
-finIndex finIndex71,72
-traverse1_ traverse1_80,81
-itraverse1_ itraverse1_90,91
-for1 for1100,101
-for1_ for1_107,108
-ifor1 ifor1114,115
-ifor1_ ifor1_121,122
-zipP zipP127,128
-unzipP unzipP136,137
-indexP indexP140,141
-indexP indexP141,142
-reIndex reIndex151,152
-prodLength prodLength156,157
-withEvery withEvery164,165
-withEvery' withEvery'171,172
-tagSum tagSum177,178
+type family family43,44
+type family Replicate Replicate43,44
+vecToProd vecToProd50,51
+prodToVec' prodToVec'58,59
+prodAlong prodAlong68,69
+finIndex finIndex77,78
+traverse1_ traverse1_86,87
+itraverse1_ itraverse1_96,97
+for1 for1106,107
+for1_ for1_113,114
+ifor1 ifor1120,121
+ifor1_ ifor1_127,128
+zipP zipP133,134
+unzipP unzipP142,143
+indexP indexP146,147
+indexP indexP147,148
+reIndex reIndex157,158
+prodLength prodLength162,163
+withEvery withEvery170,171
+withEvery' withEvery'177,178
+tagSum tagSum183,184
