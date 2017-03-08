@@ -390,10 +390,10 @@ composeOp1 :: (Monad m, Known Length as, Every Num as) => OpM m as b -> OpM m '[
 --   <a>op1</a> negate            :: <a>Op</a> '[a]   a
 --   <a>op2</a> (+)               :: Op '[a,a] a
 --   
---   op1 negate <a>~.~</a> op2 (+) :: Op '[a, a] a
+--   op1 negate <a>~.</a> op2 (+) :: Op '[a, a] a
 --   </pre>
-(~.~) :: (Monad m, Known Length as, Every Num as) => OpM m '[b] c -> OpM m as b -> OpM m as c
-infixr 9 ~.~
+(~.) :: (Monad m, Known Length as, Every Num as) => OpM m '[b] c -> OpM m as b -> OpM m as c
+infixr 9 ~.
 
 -- | <a>composeOp</a>, but taking explicit <a>Summer</a>s, for the
 --   situation where the <tt>as</tt> are not instance of <a>Num</a>.
@@ -1863,10 +1863,10 @@ composeOp1 :: (Monad m, Known Length as, Every Num as) => OpM m as b -> OpM m '[
 --   <a>op1</a> negate            :: <a>Op</a> '[a]   a
 --   <a>op2</a> (+)               :: Op '[a,a] a
 --   
---   op1 negate <a>~.~</a> op2 (+) :: Op '[a, a] a
+--   op1 negate <a>~.</a> op2 (+) :: Op '[a, a] a
 --   </pre>
-(~.~) :: (Monad m, Known Length as, Every Num as) => OpM m '[b] c -> OpM m as b -> OpM m as c
-infixr 9 ~.~
+(~.) :: (Monad m, Known Length as, Every Num as) => OpM m '[b] c -> OpM m as b -> OpM m as c
+infixr 9 ~.
 
 -- | Create an <a>Op</a> of a function taking one input, by giving its
 --   explicit derivative. The function should return a tuple containing the
@@ -2983,10 +2983,10 @@ composeOp1 :: forall m n a b c. (Monad m, Num a, Known Nat n) => OpM m n a b -> 
 --   <a>op1</a> negate            :: <a>Op</a> '[a]   a
 --   <a>op2</a> (+)               :: Op '[a,a] a
 --   
---   op1 negate <a>~.~</a> op2 (+) :: Op '[a, a] a
+--   op1 negate <a>~.</a> op2 (+) :: Op '[a, a] a
 --   </pre>
-(~.~) :: forall m n a b c. (Monad m, Num a, Known Nat n) => OpM m N1 b c -> OpM m n a b -> OpM m n a c
-infixr 9 ~.~
+(~.) :: forall m n a b c. (Monad m, Num a, Known Nat n) => OpM m N1 b c -> OpM m n a b -> OpM m n a c
+infixr 9 ~.
 
 -- | Automatically create an <a>Op</a> of a numerical function taking one
 --   argument. Uses <a>diff</a>, and so can take any numerical function
@@ -3854,10 +3854,10 @@ composeOp1 :: forall m n a b c. (Monad m, Num a, Known Nat n) => OpM m n a b -> 
 --   <a>op1</a> negate            :: <a>Op</a> '[a]   a
 --   <a>op2</a> (+)               :: Op '[a,a] a
 --   
---   op1 negate <a>~.~</a> op2 (+) :: Op '[a, a] a
+--   op1 negate <a>~.</a> op2 (+) :: Op '[a, a] a
 --   </pre>
-(~.~) :: forall m n a b c. (Monad m, Num a, Known Nat n) => OpM m N1 b c -> OpM m n a b -> OpM m n a c
-infixr 9 ~.~
+(~.) :: forall m n a b c. (Monad m, Num a, Known Nat n) => OpM m N1 b c -> OpM m n a b -> OpM m n a c
+infixr 9 ~.
 
 -- | Create an <a>Op</a> of a function taking one input, by giving its
 --   explicit derivative. The function should return a tuple containing the

@@ -45,7 +45,7 @@
 </span><a name="line-45"></a><span>  </span><span class="hs-comment">-- ** Monadic</span><span>
 </span><a name="line-46"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#runOpM"><span class="hs-identifier hs-var">runOpM</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#gradOpM"><span class="hs-identifier hs-var">gradOpM</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#gradOpM%27"><span class="hs-identifier hs-var">gradOpM'</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#gradOpWithM"><span class="hs-identifier hs-var">gradOpWithM</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#gradOpWithM%27"><span class="hs-identifier hs-var">gradOpWithM'</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#runOpM%27"><span class="hs-identifier hs-var">runOpM'</span></a><span>
 </span><a name="line-47"></a><span>  </span><span class="hs-comment">-- * Manipulation</span><span>
-</span><a name="line-48"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#composeOp"><span class="hs-identifier hs-var">composeOp</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#composeOp1"><span class="hs-identifier hs-var">composeOp1</span></a><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Op.html#~.~"><span class="hs-operator hs-var">~.~</span></a><span class="hs-special">)</span><span>
+</span><a name="line-48"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#composeOp"><span class="hs-identifier hs-var">composeOp</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#composeOp1"><span class="hs-identifier hs-var">composeOp1</span></a><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Op.html#~."><span class="hs-operator hs-var">~.</span></a><span class="hs-special">)</span><span>
 </span><a name="line-49"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#composeOp%27"><span class="hs-identifier hs-var">composeOp'</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#composeOp1%27"><span class="hs-identifier hs-var">composeOp1'</span></a><span>
 </span><a name="line-50"></a><span>  </span><span class="hs-comment">-- * Creation</span><span>
 </span><a name="line-51"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#op0"><span class="hs-identifier hs-var">op0</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Op.html#opConst"><span class="hs-identifier hs-var">opConst</span></a><span>
@@ -326,15 +326,15 @@ composeOp1 = composeOp . only
 -- 'op1' negate            :: 'Op' '[a]   a
 -- 'op2' (+)               :: Op '[a,a] a
 --
--- op1 negate '~.~' op2 (+) :: Op '[a, a] a
+-- op1 negate '~.' op2 (+) :: Op '[a, a] a
 -- @
-infixr 9 ~.~
-(~.~)
+infixr 9 ~.
+(~.)
     :: (Monad m, Known Length as, Every Num as)
     =&gt; OpM m '[b] c
     -&gt; OpM m as b
     -&gt; OpM m as c
-(~.~) = flip composeOp1
+(~.) = flip composeOp1
 
 
 -- | Run the function that an 'Op' encodes, to get the result.
