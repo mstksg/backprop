@@ -3,7 +3,8 @@ backprop
 
 [![Build Status](https://travis-ci.org/mstksg/backprop.svg?branch=master)](https://travis-ci.org/mstksg/backprop)
 
-[**Literate Haskell Tutorial/Demo on MNIST data set**][mnist-lhs]
+[**Literate Haskell Tutorial/Demo on MNIST data set**][mnist-lhs] (and [PDF
+rendering][mnist-pdf])
 
 Automatic *heterogeneous* back-propagation that can be used either *implicitly*
 (in the style of the [ad][] library) or using *explicit* graphs built in
