@@ -1338,11 +1338,11 @@ inpVar = BVInp
 --
 -- @
 -- case ('inpVars' :: 'Prod' ('BVar' s '[Int, Double]) '[Int, Double]) of
---   x :< y :< Ø -> do
+--   x :\< y :\< Ø -\> do
 --     -- the first item, x, is a var to the input 'Int'
---     x :: 'BVar' s '[Int, Double] Int
+--     -- x :: 'BVar' s '[Int, Double] Int
 --     -- the second item, y, is a var to the input 'Double'
---     y :: 'BVar' s '[Int, Double] Double
+--     -- y :: 'BVar' s '[Int, Double] Double
 -- @
 inpVars
     :: Known Length rs

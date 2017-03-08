@@ -57,15 +57,27 @@ vectors.  Vector/matrix types are from the *hmatrix* package.
 logistic :: Floating a => a -> a
 logistic x = 1 / (1 + exp (-x))
 
-neuralNet
+neuralNetImplicit
       :: (KnownNat m, KnownNat n, KnownNat o)
       => R m
-      -> BPOp s '[ L n m, R n, L o n, R o ] (R o)
-neuralNet inp = implicitly $ \(w1 :< b1 :< w2 :< b2 :< Ø) ->
+      -> BPOpI s '[ L n m, R n, L o n, R o ] (R o)
+neuralNetImplicit inp = \(w1 :< b1 :< w2 :< b2 :< Ø) ->
     let z = logistic (liftB2 matVec w1 x + b1)
     in  logistic (liftB2 matVec w2 z + b2)
   where
     x = constRef inp
+
+neuralNetExplicit
+      :: (KnownNat m, KnownNat n, KnownNat o)
+      => R m
+      -> BPOp s '[ L n m, R n, L o n, R o ] (R o)
+neuralNetExplicit inp = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
+    y1  <- matVec ~$ (w1 :< x1 :< Ø)
+    let x2 = logistic (y1 + b1)
+    y2  <- matVec ~$ (w2 :< x2 :< Ø)
+    return $ logistic (y2 + b2)
+  where
+    x1 = constVar inp
 ~~~
 
 Now `neuralNet` can be "run" with the input vectors and parameters (a
@@ -78,7 +90,7 @@ runNet
     => R m
     -> Tuple '[ L n m, R n, L o n, R o ]
     -> R o
-runNet inp = evalBPOp (neuralNet inp)
+runNet inp = evalBPOp (neuralNetExplicit inp)
 ~~~
 
 But, in defining `neuralNet`, we also generated a graph that *backprop* can
@@ -97,7 +109,7 @@ netGrad inp targ params = gradBPOp opError params
     -- (implicit style also possible)
     opError :: BPOp s '[ L n m, R n, L o n, R o ] Double
     opError = do
-        res <- neuralNet inp
+        res <- neuralNetExplicit inp
         err <- bindRef (res - t)
         dot ~$ (err :< err :< Ø)
       where
