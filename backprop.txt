@@ -2434,8 +2434,8 @@ partsVar :: forall s rs bs a. (Known Length bs, Every Num bs) => Iso' a (Tuple b
 --                (\(i ::&lt; b ::&lt; Ø) -&gt; F i b        )
 --   
 --   stuff :: <a>BPOp</a> s '[Foo] a
---   stuff (foo :&lt; Ø) = <a>withParts</a> fooIso foo $ case
---       i :<a>:&lt; Ø -</a>
+--   stuff (foo :&lt; Ø) = <a>withParts</a> fooIso foo $ \case
+--       i :&lt; b :&lt; Ø -&gt;
 --         -- now, i is a <a>BVar</a> pointing to the <a>Int</a> inside foo
 --         -- and b is a <a>BVar</a> pointing to the <a>Bool</a> inside foo
 --         -- you can do stuff with the i and b here

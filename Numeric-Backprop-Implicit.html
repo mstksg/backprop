@@ -191,8 +191,8 @@ fooIso = <code><a href="Numeric-Backprop-Iso.html#v:iso">iso</a></code> (\(F i b
              (\(i ::&lt; b ::&lt; &#216;) -&gt; F i b        )
 
 stuff :: <code><a href="Numeric-Backprop-Implicit.html#t:BPOp">BPOp</a></code> s '[Foo] a
-stuff (foo :&lt; &#216;) = <code><a href="Numeric-Backprop-Implicit.html#v:withParts">withParts</a></code> fooIso foo $ case
-    i :<a href="b">:&lt; &#216; -</a>
+stuff (foo :&lt; &#216;) = <code><a href="Numeric-Backprop-Implicit.html#v:withParts">withParts</a></code> fooIso foo $ \case
+    i :&lt; b :&lt; &#216; -&gt;
       -- now, i is a <code><a href="Numeric-Backprop-Implicit.html#t:BVar">BVar</a></code> pointing to the <code><a href="../base-4.9.1.0/Data-Int.html#t:Int">Int</a></code> inside foo
       -- and b is a <code><a href="Numeric-Backprop-Implicit.html#t:BVar">BVar</a></code> pointing to the <code><a href="../base-4.9.1.0/Data-Bool.html#t:Bool">Bool</a></code> inside foo
       -- you can do stuff with the i and b here

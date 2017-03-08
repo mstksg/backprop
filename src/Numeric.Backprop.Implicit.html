@@ -275,8 +275,8 @@
 </span><a name="line-275"></a><span class="hs-comment">--              (\\(i ::\&lt; b ::\&lt; &#216;) -\&gt; F i b        )</span><span>
 </span><a name="line-276"></a><span class="hs-comment">--</span><span>
 </span><a name="line-277"></a><span class="hs-comment">-- stuff :: 'BPOp' s '[Foo] a</span><span>
-</span><a name="line-278"></a><span class="hs-comment">-- stuff (foo :&lt; &#216;) = 'withParts' fooIso foo $ \case</span><span>
-</span><a name="line-279"></a><span class="hs-comment">--     i :&lt; b :&lt; &#216; -&gt;</span><span>
+</span><a name="line-278"></a><span class="hs-comment">-- stuff (foo :&lt; &#216;) = 'withParts' fooIso foo $ \\case</span><span>
+</span><a name="line-279"></a><span class="hs-comment">--     i :\&lt; b :&lt; &#216; -\&gt;</span><span>
 </span><a name="line-280"></a><span class="hs-comment">--       -- now, i is a 'BVar' pointing to the 'Int' inside foo</span><span>
 </span><a name="line-281"></a><span class="hs-comment">--       -- and b is a 'BVar' pointing to the 'Bool' inside foo</span><span>
 </span><a name="line-282"></a><span class="hs-comment">--       -- you can do stuff with the i and b here</span><span>
