@@ -1422,6 +1422,8 @@ gSplit' :: (Generic b, Code b ~ '[bs]) => Prod Summer bs -> Prod Unity bs -> BVa
 --   You can use this to pass in sum types as the environment to a
 --   <a>BP</a>, and then branch on which constructor the value was made
 --   with.
+--   
+--   See <a>Numeric.Backprop#sum</a> for a mini-tutorial on <a>Sum</a>.
 choicesVar :: forall s rs bs b. (Every Num bs, Known Length bs) => Iso' b (Sum I bs) -> BVar s rs b -> BP s rs (Sum (BVar s rs) bs)
 
 -- | A useful infix alias for <a>choicesVar</a>.
@@ -1509,6 +1511,9 @@ choicesVar' :: forall s rs bs b. Prod Summer bs -> Prod Unity bs -> Iso' b (Sum 
 --   <a>Unity</a>s, so it can be run with internal types that aren't
 --   instances of <a>Num</a>.
 withChoices' :: forall s rs bs b a. Prod Summer bs -> Prod Unity bs -> Iso' b (Sum I bs) -> BVar s rs b -> (Sum (BVar s rs) bs -> BP s rs a) -> BP s rs a
+data Sum k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
+[InL] :: Sum k f ((:) k a1 as)
+[InR] :: Sum k f ((:) k a1 as)
 
 -- | A combination of <a>partsVar</a> and <a>choicesVar</a>, that lets you
 --   split a type into a sum of products. Using an <a>Iso</a> (or
@@ -1553,6 +1558,8 @@ withChoices' :: forall s rs bs b a. Prod Summer bs -> Prod Unity bs -> Iso' b (S
 --   generated automatically with <a>Generic</a> from <a>GHC.Generics</a>
 --   and <a>Generic</a> from <a>Generics.SOP</a> and <i>generics-sop</i>,
 --   with <a>gSOP</a>. See <a>gSplits</a> for more information.
+--   
+--   See <a>Numeric.Backprop#sum</a> for a mini-tutorial on <a>Sum</a>.
 sopVar :: forall s rs bss b. (Known Length bss, Every (Every Num ∧ Known Length) bss) => Iso' b (Sum Tuple bss) -> BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) bss)
 
 -- | Using <a>Generic</a> from <a>GHC.Generics</a> and <a>Generic</a> from
@@ -1595,6 +1602,8 @@ sopVar :: forall s rs bss b. (Known Length bss, Every (Every Num ∧ Known Lengt
 --   <pre>
 --   <a>gSplit</a> = <a>splitVars</a> <a>gSOP</a>
 --   </pre>
+--   
+--   See <a>Numeric.Backprop#sum</a> for a mini-tutorial on <a>Sum</a>.
 gSplits :: forall s rs b. (Generic b, Known Length (Code b), Every (Every Num ∧ Known Length) (Code b)) => BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) (Code b))
 
 -- | An <a>Iso</a> between a sum type whose constructors are products, and
