@@ -1928,12 +1928,14 @@ summers' :: Every Num as => Length as -> Prod Summer as
 unities' :: Every Num as => Length as -> Prod Unity as
 
 
--- | Offers full functionality for implicit-graph backpropagation. The main
---   function, <a>backprop</a>, takes a function from <a>BVar</a>s to a
---   result <a>BVar</a>. These <a>BVar</a>s can be manipulated using their
---   <a>Num</a> / <a>Fractional</a> / <a>Floating</a> instances, and the
---   library can perform backpropagation on the function by using an
---   implicitly built graph.
+-- | Offers full functionality for implicit-graph backpropagationu. The
+--   intended usage is to write a <a>BPOp</a>, which is a normal Haskell
+--   function from <a>BVar</a>s to a result <a>BVar</a>. These <a>BVar</a>s
+--   can be manipulated using their <a>Num</a> <i> <a>Fractional</a> </i>
+--   <a>Floating</a> instances.
+--   
+--   The library can then perform backpropagation on the function (using
+--   <a>backprop</a> or <a>grad</a>) by using an implicitly built graph.
 --   
 --   This should actually be powerful enough for most use cases, but falls
 --   short for a couple of situations:
@@ -1993,8 +1995,8 @@ data BVar :: Type -> [Type] -> Type -> Type
 --   (purely) produce a <a>BVar</a> containing an <tt>a</tt>.
 --   
 --   <pre>
---   foo :: BPOp '[ Double, Double ] Float
---   foo (x :&lt; y :&lt; Ø) = x + sqrt y
+--   foo :: <a>BPOp</a> '[ Double, Double ] Double
+--   foo (x <a>:&lt;</a> y <a>:&lt;</a> 'Ø') = x + sqrt y
 --   </pre>
 --   
 --   <a>BPOp</a> here is related to <a>BPOpI</a> from the normal
@@ -2081,7 +2083,7 @@ type Tuple = Prod * I
 --   </pre>
 --   
 --   <pre>
---   &gt;&gt;&gt; backprop foo (2 ::&lt; 3 ::&lt; Ø)
+--   &gt;&gt;&gt; 'backprop' foo (2 ::&lt; 3 ::&lt; Ø)
 --   (11.46, 13.73 ::&lt; 6.12 ::&lt; Ø)
 --   </pre>
 backprop :: (Known Length rs, Every Num rs, Num a) => BPOp rs a -> Tuple rs -> (a, Tuple rs)
@@ -3030,9 +3032,31 @@ type N10 = S N9
 --   <a>Vec</a>).
 --   
 --   Most of the concepts in normal heterogeneous backprop (for
---   <a>Numeric.Backprop</a>) should apply here as well; just remember to
---   convert something like <tt><a>Op</a> '[a, a] b</tt> to <tt><a>Op</a>
---   <a>N2</a> a b</tt> here.
+--   <a>Numeric.Backprop</a>) should apply here as well, so you can look at
+--   any of the tutorials or examples and repurpose them to work here. Just
+--   remember to convert something like <tt><a>Op</a> '[a, a] b</tt> to
+--   <tt><a>Op</a> <a>N2</a> a b</tt>.
+--   
+--   As a comparison, this implements something similar in functionality to
+--   <a>Numeric.AD</a> and <a>Numeric.AD.Mode.Reverse</a> from the
+--   <i>ad</i> package, in that they both offer monomorphic automatic
+--   differentiation through backpropagation. However, there are some key
+--   differences:
+--   
+--   <ol>
+--   <li>Because this module offers explicit-graph backpropagation, you can
+--   specify your data dependencies in a way that the library can take
+--   advantage of and save recomputation. (Note that the
+--   <a>Numeric.Backprop.Implicit</a> module takes away explicit-graph
+--   capabilities, so its functionality is roughtly the same in this
+--   sense)</li>
+--   <li><a>Numeric.AD.Mode.Reverse</a> can compute jacobians, or
+--   generalized gradients for &lt;math&gt; functions. This module only
+--   computs gradients for (mathbb{R}^N rightarrow mathbb{R})-like
+--   functions. This is more of a conscious design decision in the API of
+--   this module rather than a fundamental limitation of the
+--   implementation.</li>
+--   </ol>
 module Numeric.Backprop.Mono
 
 -- | A Monad allowing you to explicitly build hetereogeneous data
@@ -3780,6 +3804,39 @@ infix 5 *:
 infix 5 +:
 head' :: VecT k (S n) f a -> f a
 
+
+-- | Offers full functionality for implicit-graph backpropagation with
+--   monomorphic inputs. The intended usage is to write a <a>BPOp</a>,
+--   which is a normal Haskell function from <a>BVar</a>s to a result
+--   <a>BVar</a>. These <a>BVar</a>s can be manipulated using their
+--   <a>Num</a> <i> <a>Fractional</a> </i> <a>Floating</a> instances.
+--   
+--   The library can then perform backpropagation on the function (using
+--   <a>backprop</a> or <a>grad</a>) by using an implicitly built graph.
+--   
+--   This is an "implicit-only" version of <a>Numeric.Backprop.Mono</a>,
+--   and a monomorphic version of <a>Numeric.Backprop.Implicit</a>,
+--   monomorphic in the sense that all of the inputs are of the same type.
+--   
+--   Like for <a>Numeric.Backprop.Implicit</a>, this should actually be
+--   powerful enough for most use cases, but falls short because without
+--   explicit graph capabilities, recomputation can sometimes be
+--   inevitable. If the result of a function on <a>BVar</a>s is used twice
+--   (like <tt>z</tt> in <tt>let z = x * y in z + z</tt>), this will
+--   allocate a new redundant graph node for every usage site of
+--   <tt>z</tt>. You can explicitly <i>force</i> <tt>z</tt>, but only using
+--   an explicit graph description using <a>Numeric.Backprop.Mono</a>.
+--   
+--   Like <a>Numeric.Backprop.Implicit</a>, this can't handle sum types,
+--   but neither can <a>Numeric.Backprop.Mono</a>, so no loss here :)
+--   
+--   This module implements pretty much the same functionality as
+--   <a>Numeric.AD</a> and <a>Numeric.AD.Mode.Reverse</a> from the
+--   <i>ad</i> package, because it uses the same implicit-graph
+--   backpropagation method. It can't compute jacobians/generalized
+--   gradients, however. This isn't a fundamental limitation of the
+--   implementaiton, though, but rather just a conscious design decision
+--   for this module's API.
 module Numeric.Backprop.Mono.Implicit
 
 -- | The basic unit of manipulation inside <a>BP</a> (or inside an
@@ -3811,6 +3868,25 @@ module Numeric.Backprop.Mono.Implicit
 --   <a>liftB</a>, use <a>bindVar</a> to force it first. See documentation
 --   for <a>bindVar</a> for more details.)
 type BVar s n a = BVar s (Replicate n a)
+
+-- | An operation on <a>BVar</a>s that can be backpropagated. A value of
+--   type:
+--   
+--   <pre>
+--   <a>BPOp</a> n r a
+--   </pre>
+--   
+--   takes a vector (<a>VecT</a>) of <a>BVar</a>s containg <tt>n</tt>
+--   <tt>r</tt>s and uses them to (purely) produce a <a>BVar</a> containing
+--   an <tt>a</tt>.
+--   
+--   <pre>
+--   foo :: <a>BPOp</a> <a>N2</a> Double Double
+--   foo (x <a>:*</a> y <a>:*</a> 'ØV') = x + sqrt y
+--   </pre>
+--   
+--   <a>BPOp</a> here is related to <a>BPOpI</a> from the normal
+--   explicit-graph backprop module <a>Numeric.Backprop.Mono</a>.
 type BPOp n a b = forall s. VecT n (BVar s n a) a -> BVar s n a b
 
 -- | An <tt><a>Op</a> n a b</tt> describes a differentiable function from
@@ -3874,8 +3950,53 @@ type Op n a b = Op (Replicate n a) b
 --   You can think of <a>OpB</a> as a superclass/parent class of <a>Op</a>
 --   in this sense, and of <a>Op</a> as a subclass of <a>OpB</a>.
 type OpB s n a b = OpB s (Replicate n a) b
+
+-- | Run backpropagation on a <a>BPOp</a> function, getting both the result
+--   and the gradient of the result with respect to the inputs.
+--   
+--   <pre>
+--   foo :: <a>BPOp</a> <a>N2</a> Double Double
+--   foo (x :* y :* ØV) =
+--     let z = x * sqrt y
+--     in  z + x ** y
+--   </pre>
+--   
+--   <pre>
+--   &gt;&gt;&gt; 'backprop' foo (2 :+ 3 :+ ØV)
+--   (11.46, 13.73 :+ 6.12 :+ ØV)
+--   </pre>
 backprop :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> (b, Vec n a)
+
+-- | Run the <a>BPOp</a> on an input tuple and return the gradient of the
+--   result with respect to the input tuple.
+--   
+--   <pre>
+--   foo :: <a>BPOp</a> <a>N2</a> Double Double
+--   foo (x :* y :* ØV) =
+--     let z = x * sqrt y
+--     in  z + x ** y
+--   </pre>
+--   
+--   <pre>
+--   &gt;&gt;&gt; 'grad' foo (2 :+ 3 :+ ØV)
+--   13.73 :+ 6.12 :+ ØV
+--   </pre>
 grad :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> Vec n a
+
+-- | Simply run the <a>BPOp</a> on an input tuple, getting the result
+--   without bothering with the gradient or with backpropagation.
+--   
+--   <pre>
+--   foo :: <a>BPOp</a> <a>N2</a> Double Double
+--   foo (x :* y :* ØV) =
+--     let z = x * sqrt y
+--     in  z + x ** y
+--   </pre>
+--   
+--   <pre>
+--   &gt;&gt;&gt; 'eval' foo (2 :+ 3 :+ ØV)
+--   11.46
+--   </pre>
 eval :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> b
 
 -- | Create a <a>BVar</a> that represents just a specific value, that
