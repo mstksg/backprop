@@ -9,12 +9,50 @@
 {-# LANGUAGE TypeInType          #-}
 {-# LANGUAGE TypeOperators       #-}
 
+-- |
+-- Module      : Numeric.Backprop
+-- Copyright   : (c) Justin Le 2017
+-- License     : BSD3
+--
+-- Maintainer  : justin@jle.im
+-- Stability   : experimental
+-- Portability : non-portable
+--
+--
+-- Provides the 'BP' monad and the 'BVar' type; after manipulating 'BVar's
+-- (inputs to your function) to produce a result, the library tracks internal data
+-- dependencies, which are used to perform backpropagation (reverse-mode
+-- automatic differentiation) to calculate the gradient of the output with
+-- respect to the inputs.
+--
+-- Similar to automatic differentiation from the /ad/ library and
+-- "Numeric.AD.Mode.Reverse", except for a few key differences:
+--
+-- 1. Most importantly, this library implements /heterogeneous/
+-- backpropagation, so you can manipulate values of different types (like
+-- different matrix and vector types, and product and sum types).  This is
+-- essential for things like backpropagation for neural networks.
+--
+-- 2. This module allows you to /explicitly/ build your data dependency
+-- graph if you wish, which allows the library to perform optimizations and
+-- reduce extra allocation, which may or may not provide advantages over
+-- "Numeric.AD.Mode.Reverse"'s 'System.IO.Unsafe.unsafePerformIO'-based
+-- implicit graph building.
+--
+-- See the <https://github.com/mstksg/backprop README> for more information
+-- and links to demonstrations and tutorials.  If you want to plunge right
+-- in, you can also look directly at the main types, 'BP', 'BPOp', 'BVar',
+-- 'Op', and the main functions, 'backprop' and 'opVar'.
+--
+--
+
 module Numeric.Backprop (
   -- * Types
   -- ** Backprop types
     BP, BPOp, BPOpI, BVar, Op, OpB
   -- ** Tuple types
-  , Prod(..), Tuple
+  -- $prod
+  , Prod(..), Tuple, I(..)
   -- * BP
   -- ** Backprop
   , backprop, evalBPOp, gradBPOp
@@ -84,6 +122,54 @@ import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness
 import qualified Generics.SOP              as SOP
+
+-- $prod
+--
+-- 'Prod' is a heterogeneous list/tuple type, which allows you to tuple
+-- together multiple values of different types and operate on them
+-- generically.
+--
+-- A @'Prod' f '[a, b, c]@ contains an @f a@, an @f b@, and an @f c@, and
+-- is constructed by consing them together with ':<' (using 'Ø' as nil):
+--
+-- @
+-- 'I' "Hello" ':<' I True :< I 7.8 :< Ø    :: 'Prod' 'I' '[String, Bool, Double]
+-- 'C' "hello" :< C "world" :< C "ok" :< Ø  :: 'Prod' ('C' String) '[a, b, c]
+-- 'Proxy' :< Proxy :< Proxy :< Ø           :: 'Prod' 'Proxy' '[a, b, c]
+-- @
+--
+-- ('I' is the identity functor, and 'C' is the constant functor)
+--
+-- So, in general:
+--
+-- @
+-- x :: f a
+-- y :: f b
+-- z :: f c
+-- x :< y :< z :< Ø :: Prod f '[a, b, c]
+-- @
+--
+-- If you're having problems typing 'Ø', you can use 'only':
+--
+-- @
+-- only z           :: Prod f '[c]
+-- x :< y :< only z :: Prod f '[a, b, c]
+-- @
+--
+-- 'Tuple' is provided as a convenient type synonym for 'Prod' 'I', and has
+-- a convenient pattern synonym '::<' (and 'only_'), which can also be used
+-- for pattern matching:
+--
+-- @
+-- x :: a
+-- y :: b
+-- z :: c
+--
+-- 'only_' z             :: 'Tuple' '[c]
+-- x '::<' y ::< z ::< Ø :: 'Tuple' '[a, b, c
+-- x ::< y ::< only_ z :: 'Tuple' '[a, b, c
+-- @
+--
 
 -- | A handy type synonym representing a 'BP' action that returns a 'BVar'.
 -- This is handy because this is the form of 'BP' actions that

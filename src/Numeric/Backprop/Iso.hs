@@ -33,6 +33,8 @@ module Numeric.Backprop.Iso (
   , coerced
   , gTuple, gSOP
   , sum1, resum1
+  -- * Utility types
+  , Prod(..), Tuple, Sum(..), I(..)
   ) where
 
 import           Data.Coerce

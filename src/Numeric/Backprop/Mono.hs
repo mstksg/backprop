@@ -53,26 +53,27 @@
 -- As a comparison, this implements something similar in functionality to
 -- "Numeric.AD" and "Numeric.AD.Mode.Reverse" from the /ad/ package, in
 -- that they both offer monomorphic automatic differentiation through
--- backpropagation.  However, there are some key differences:
+-- backpropagation.  This module doesn't allow the computation of jacobians
+-- or generalized gradients for \(\mathbb{R}^N \rightarrow \mathbb{R}^M\)
+-- functions.  This module only computs gradients for \(\mathbb{R}^N
+-- \rightarrow \mathbb{R}\)-like functions.  This is more of a conscious
+-- design decision in the API of this module rather than a fundamental
+-- limitation of the implementation.
 --
--- 1. Because this module offers explicit-graph backpropagation, you can
--- specify your data dependencies in a way that the library can take
--- advantage of and save recomputation.  (Note that the
--- "Numeric.Backprop.Implicit" module takes away explicit-graph
--- capabilities, so its functionality is roughtly the same in this sense)
---
--- 2. "Numeric.AD.Mode.Reverse" can compute jacobians, or generalized
--- gradients for \(\mathbb{R}^N \rightarrow \mathbb{R}^M\) functions.  This
--- module only computs gradients for \(\mathbb{R}^N \rightarrow
--- \mathbb{R}\)-like functions.  This is more of a conscious design
--- decision in the API of this module rather than a fundamental limitation
--- of the implementation.
+-- This module also allows you to build explicit data dependency graphs so
+-- the library can reduce duplication and perform optimizations, which may
+-- or may not provide advantages over "Numeric.AD.Mode.Reverse"'s
+-- 'System.IO.Unsafe.unsafePerformIO'-based implicit graph building.
 --
 
 module Numeric.Backprop.Mono (
   -- * Types
+  -- ** Backprop types
     BP, BPOp, BPOpI, BVar
   , Op, OpB
+  -- ** Vector types
+  -- ** Vectors
+  , VecT(..), Vec, I(..)
   -- * BP
   -- ** Backprop
   , backprop, evalBPOp, gradBPOp
@@ -93,10 +94,9 @@ module Numeric.Backprop.Mono (
   , op1, op2, op3, opN
   , op1', op2', op3'
   -- * Utility
+  , pattern (:+), (*:), (+:), head'
   -- ** 'Nat' type synonyms
   , N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10
-  -- ** Vectors
-  , VecT(..), Vec, pattern (:+), (*:), (+:), head'
   ) where
 
 import           Data.Type.Fin

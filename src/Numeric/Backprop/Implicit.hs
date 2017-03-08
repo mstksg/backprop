@@ -18,7 +18,7 @@
 -- Offers full functionality for implicit-graph backpropagationu.  The
 -- intended usage is to write a 'BPOp', which is a normal Haskell
 -- function from 'BVar's to a result 'BVar'. These 'BVar's can be
--- manipulated using their 'Num' / 'Fractional' / 'Floating' instances.
+-- manipulated using their 'Num' \/ 'Fractional' \/ 'Floating' instances.
 --
 -- The library can then perform backpropagation on the function (using
 -- 'backprop' or 'grad') by using an implicitly built graph.
@@ -37,13 +37,18 @@
 -- not sure if this is a fundamental limitation (I suspect it might be) or
 -- if I just can't figure out how to implement it.  Suggestions welcome!
 --
+-- As a comparison, this module offers functionality and an API very
+-- similar to "Numeric.AD.Mode.Reverse" from the /ad/ library, except for
+-- the fact that it can handle /heterogeneous/ values.
+--
 
 
 module Numeric.Backprop.Implicit (
   -- * Types
-    BVar, BPOp, Op, OpB
+  -- ** Backprop types
+    BPOp, BVar, Op, OpB
   -- ** Tuple types
-  , Prod(..), Tuple
+  , Prod(..), Tuple, I(..)
   -- * Backpropagation
   , backprop, grad, eval
   , backprop', grad'

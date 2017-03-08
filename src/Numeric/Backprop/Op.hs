@@ -36,7 +36,7 @@ module Numeric.Backprop.Op (
   -- ** Op and Synonyms
     Op, pattern Op, OpM(..)
   -- ** Tuple Types
-  , Prod(..), Tuple
+  , Prod(..), Tuple, I(..)
   -- * Running
   -- ** Pure
   , runOp, gradOp, gradOp', gradOpWith, gradOpWith', runOp'

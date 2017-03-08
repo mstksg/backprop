@@ -49,7 +49,7 @@ module Numeric.Backprop.Op.Mono (
   -- ** Op and synonyms
     Op, pattern Op, OpM, pattern OpM
   -- ** Vector types
-  , VecT(..), Vec
+  , VecT(..), Vec, I(..)
   -- * Running
   -- ** Pure
   , runOp, gradOp, gradOp', gradOpWith, gradOpWith', runOp'
@@ -63,7 +63,6 @@ module Numeric.Backprop.Op.Mono (
   -- ** Giving gradients directly
   , op1', op2', op3'
   -- * Utility
-  -- ** Vectors
   , pattern (:+), (*:), (+:), head'
   -- ** 'Nat' type synonyms
   , N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10
