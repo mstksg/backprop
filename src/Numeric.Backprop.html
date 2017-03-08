@@ -1205,12 +1205,12 @@ inpVar = BVInp
 -- pointing to the 'Int' and a 'BVar' pointing to the 'Double'.
 --
 -- @
--- let x :&lt; y :&lt; &#216; = 'inpVars' :: 'Prod' ('BVar' s '[Int, Double]) '[Int, Double]
---
--- -- the first item, x, is a var to the input 'Int'
--- x :: 'BVar' s '[Int, Double] Int
--- -- the second item, y, is a var to the input 'Double'
--- y :: 'BVar' s '[Int, Double] Double
+-- case ('inpVars' :: 'Prod' ('BVar' s '[Int, Double]) '[Int, Double]) of
+--   x :&lt; y :&lt; &#216; -&gt; do
+--     -- the first item, x, is a var to the input 'Int'
+--     x :: 'BVar' s '[Int, Double] Int
+--     -- the second item, y, is a var to the input 'Double'
+--     y :: 'BVar' s '[Int, Double] Double
 -- @
 inpVars
     :: Known Length rs
@@ -1259,8 +1259,9 @@ withInps' l f = f (inpVars' l)
 -- @
 -- foo :: 'BPOp' '[Double, Int] a
 -- foo = do
---     x :&lt; y :&lt; &#216; &lt;- 'inpVars'
---     -- do stuff with inputs
+--     case 'inpVars' of
+--       x :&lt; y :&lt; &#216; -&gt; do
+--         -- do stuff with inputs
 -- @
 --
 -- But just a little nicer!

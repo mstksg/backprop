@@ -825,8 +825,9 @@ gradBPOp' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple
 --   <pre>
 --   foo :: <a>BPOp</a> '[Double, Int] a
 --   foo = do
---       x :&lt; y :&lt; Ø &lt;- <a>inpVars</a>
---       -- do stuff with inputs
+--       case <a>inpVars</a> of
+--         x :<a>:&lt; Ø -</a> do
+--           -- do stuff with inputs
 --   </pre>
 --   
 --   But just a little nicer!
@@ -899,12 +900,12 @@ inpVar :: Index rs a -> BVar s rs a
 --   <a>BVar</a> pointing to the <a>Double</a>.
 --   
 --   <pre>
---   let x :&lt; y :&lt; Ø = <a>inpVars</a> :: <a>Prod</a> (<a>BVar</a> s '[Int, Double]) '[Int, Double]
---   
---   -- the first item, x, is a var to the input <a>Int</a>
---   x :: <a>BVar</a> s '[Int, Double] Int
---   -- the second item, y, is a var to the input <a>Double</a>
---   y :: <a>BVar</a> s '[Int, Double] Double
+--   case (<a>inpVars</a> :: <a>Prod</a> (<a>BVar</a> s '[Int, Double]) '[Int, Double]) of
+--     x :<a>:&lt; Ø -</a> do
+--       -- the first item, x, is a var to the input <a>Int</a>
+--       x :: <a>BVar</a> s '[Int, Double] Int
+--       -- the second item, y, is a var to the input <a>Double</a>
+--       y :: <a>BVar</a> s '[Int, Double] Double
 --   </pre>
 inpVars :: Known Length rs => Prod (BVar s rs) rs
 
@@ -3120,8 +3121,8 @@ type BPOpI s n r a = VecT n (BVar s n r) r -> BVar s n r a
 --   those instances or using <a>liftB</a>, it delays evaluation, so every
 --   usage site has to re-compute the result/create a new node. If you want
 --   to re-use a <a>BVar</a> you created using <a>+</a> or <a>-</a> or
---   <a>liftB</a>, use <tt>bindVar</tt> to force it first. See
---   documentation for <tt>bindVar</tt> for more details.)
+--   <a>liftB</a>, use <a>bindVar</a> to force it first. See documentation
+--   for <a>bindVar</a> for more details.)
 type BVar s n a = BVar s (Replicate n a)
 
 -- | An <tt><a>Op</a> n a b</tt> describes a differentiable function from
@@ -3185,15 +3186,98 @@ type Op n a b = Op (Replicate n a) b
 --   You can think of <a>OpB</a> as a superclass/parent class of <a>Op</a>
 --   in this sense, and of <a>Op</a> as a subclass of <a>OpB</a>.
 type OpB s n a b = OpB s (Replicate n a) b
-backprop :: forall n a b. Num a => (forall s. BPOp s n a b) -> Vec n a -> (b, Vec n a)
-evalBPOp :: forall n a b. (forall s. BPOp s n a b) -> Vec n a -> b
-gradBPOp :: forall n a b. Num a => (forall s. BPOp s n a b) -> Vec n a -> Vec n a
-bpOp :: forall s n a b. (Num a, Known Nat n) => BPOp s n a b -> OpB s n a b
-withInps :: Known Nat n => (VecT n (BVar s n a) a -> BP s n a b) -> BP s n a b
+
+-- | Perform backpropagation on the given <a>BPOp</a>. Returns the result
+--   of the operation it represents, as well as the gradient of the result
+--   with respect to its inputs. See module header for
+--   <a>Numeric.Backprop.Mono</a> and package documentation for examples
+--   and usages.
+backprop :: forall n r a. Num r => (forall s. BPOp s n r a) -> Vec n r -> (a, Vec n r)
+
+-- | Simply run the <a>BPOp</a> on an input vector, getting the result
+--   without bothering with the gradient or with backpropagation.
+evalBPOp :: forall n r a. (forall s. BPOp s n r a) -> Vec n r -> a
+
+-- | Run the <a>BPOp</a> on an input vector and return the gradient of the
+--   result with respect to the input vector
+gradBPOp :: forall n r a. Num r => (forall s. BPOp s n r a) -> Vec n r -> Vec n r
+
+-- | Runs a continuation on a <a>Vec</a> of all of the input <a>BVar</a>s.
+--   
+--   Handy for bringing the environment into scope and doing stuff with it:
+--   
+--   <pre>
+--   foo :: <a>BPOp</a> <a>N2</a> Double Int
+--   foo = <a>withInps</a> $ \(x :+ y :+ ØV) -&gt; do
+--       -- do stuff with inputs
+--   </pre>
+--   
+--   Looks kinda like <tt>foo (x :+ y :+ ØV) = -- ...</tt>, don't it?
+--   
+--   Note that the above is the same as
+--   
+--   <pre>
+--   foo :: <a>BPOp</a> <a>N2</a> Double Int
+--   foo = do
+--       case <a>inpVars</a> of
+--         x :* y :* ØV -&gt; do
+--           -- do stuff with inputs
+--   </pre>
+--   
+--   But just a little nicer!
+withInps :: Known Nat n => (VecT n (BVar s n r) r -> BP s n r a) -> BP s n r a
 implicitly :: Known Nat n => BPOpI s n a b -> BPOp s n a b
 constVar :: b -> BVar s n a b
-inpVar :: Fin n -> BVar s n a a
-inpVars :: Known Nat n => VecT n (BVar s n a) a
+
+-- | Create a <a>BVar</a> given an index (<a>Fin</a>) into the input
+--   environment. For an example,
+--   
+--   <pre>
+--   <a>inpVar</a> <a>FZ</a>
+--   </pre>
+--   
+--   would refer to the <i>first</i> input variable, Bool]@), and
+--   
+--   <pre>
+--   <a>inpVar</a> (<a>FS</a> <a>FZ</a>)
+--   </pre>
+--   
+--   Would refer to the <i>second</i> input variable.
+--   
+--   Typically, there shouldn't be any reason to use <a>inpVar</a>
+--   directly. It's cleaner to get all of your input <a>BVar</a>s together
+--   using <a>withInps</a> or <a>inpVars</a>.
+inpVar :: Fin n -> BVar s n r r
+
+-- | Get a <a>VecT</a> (vector) of <a>BVar</a>s for all of the input
+--   environment (the <tt>n</tt> <tt>r</tt>s) of the <tt><a>BP</a> s n
+--   r</tt>
+--   
+--   For example, if your <a>BP</a> has two <a>Double</a>s inside its input
+--   environment (a <tt><a>BP</a> s <a>N2</a> Double</tt>), this would
+--   return two <a>BVar</a>s, pointing to each input <a>Double</a>.
+--   
+--   <pre>
+--   case (<a>inpVars</a> :: <a>VecT</a> <a>N2</a> (<a>BVar</a> s <a>N2</a> Double) Double) of
+--     x :* y :* ØV -&gt; do
+--       -- the first item, x, is a var to the first input
+--       x :: <a>BVar</a> s N2 Double
+--       -- the second item, y, is a var to the second input
+--       y :: <a>BVar</a> s N2 Double
+--   </pre>
+inpVars :: Known Nat n => VecT n (BVar s n r) r
+
+-- | Turn a <a>BPOp</a> into an <a>OpB</a>. Basically converts a <a>BP</a>
+--   taking <tt>n</tt> <tt>r</tt>s and producing an <tt>a</tt> into an
+--   <a>Op</a> taking an <tt>n</tt> <tt>r</tt>s and returning an
+--   <tt>a</tt>, with all of the powers and utility of an <a>Op</a>,
+--   including all of its gradient-finding glory.
+--   
+--   Handy because an <a>OpB</a> can be used with almost all of the
+--   <a>Op</a>-related functions in this moduel, including <a>opVar</a>,
+--   <a>~$</a>, etc.
+bpOp :: forall s n r a. (Num r, Known Nat n) => BPOp s n r a -> OpB s n r a
+bindVar :: Num a => BVar s n r a -> BP s n r (BVar s n r a)
 opVar :: forall s m n a b. Num b => OpB s m a b -> VecT m (BVar s n a) a -> BP s n a (BVar s n a b)
 (~$) :: Num b => OpB s m a b -> VecT m (BVar s n a) a -> BP s n a (BVar s n a b)
 infixr 1 ~$
@@ -3248,6 +3332,84 @@ op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   </pre>
 opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op n a a
 
+-- | Create an <a>Op</a> of a function taking one input, by giving its
+--   explicit derivative. The function should return a tuple containing the
+--   result of the function, and also a function taking the derivative of
+--   the result and return the derivative of the input.
+--   
+--   If we have
+--   
+--   &lt;math&gt;
+--   
+--   Then the derivative &lt;math&gt;, it would be:
+--   
+--   &lt;math&gt;
+--   
+--   If our <a>Op</a> represents &lt;math&gt;, then the second item in the
+--   resulting tuple should be a function that takes &lt;math&gt; and
+--   returns &lt;math&gt;.
+--   
+--   If the input is <a>Nothing</a>, then &lt;math&gt; should be taken to
+--   be &lt;math&gt;.
+--   
+--   As an example, here is an <a>Op</a> that squares its input:
+--   
+--   <pre>
+--   square :: Num a =&gt; <a>Op</a> <a>N1</a> a a
+--   square = <a>op1'</a> $ \x -&gt; (x*x, \case Nothing -&gt; 2 * x
+--                                     Just d  -&gt; 2 * d * x
+--                         )
+--   </pre>
+--   
+--   Remember that, generally, end users shouldn't directly construct
+--   <a>Op</a>s; they should be provided by libraries or generated
+--   automatically.
+--   
+--   For numeric functions, single-input <a>Op</a>s can be generated
+--   automatically using <a>op1</a>.
+op1' :: (a -> (b, Maybe b -> a)) -> Op N1 a b
+
+-- | Create an <a>Op</a> of a function taking two inputs, by giving its
+--   explicit gradient. The function should return a tuple containing the
+--   result of the function, and also a function taking the derivative of
+--   the result and return the derivative of the input.
+--   
+--   If we have
+--   
+--   &lt;math&gt;
+--   
+--   Then the gradient &lt;math&gt; would be:
+--   
+--   &lt;math&gt;
+--   
+--   If our <a>Op</a> represents &lt;math&gt;, then the second item in the
+--   resulting tuple should be a function that takes &lt;math&gt; and
+--   returns &lt;math&gt;.
+--   
+--   If the input is <a>Nothing</a>, then &lt;math&gt; should be taken to
+--   be &lt;math&gt;.
+--   
+--   As an example, here is an <a>Op</a> that multiplies its inputs:
+--   
+--   <pre>
+--   mul :: Num a =&gt; <a>Op</a> <a>N2</a> a a
+--   mul = <a>op2'</a> $ \x y -&gt; (x*y, \case Nothing -&gt; (y  , x  )
+--                                    Just d  -&gt; (d*y, x*d)
+--                        )
+--   </pre>
+--   
+--   Remember that, generally, end users shouldn't directly construct
+--   <a>Op</a>s; they should be provided by libraries or generated
+--   automatically.
+--   
+--   For numeric functions, two-input <a>Op</a>s can be generated
+--   automatically using <a>op2</a>.
+op2' :: (a -> a -> (b, Maybe b -> (a, a))) -> Op N2 a b
+
+-- | Create an <a>Op</a> of a function taking three inputs, by giving its
+--   explicit gradient. See documentation for <a>op2'</a> for more details.
+op3' :: (a -> a -> a -> (b, Maybe b -> (a, a, a))) -> Op N3 a b
+
 -- | Convenient aliases for low-value Peano numbers.
 type N0 = Z
 type N1 = S N0
@@ -3299,8 +3461,8 @@ module Numeric.Backprop.Mono.Implicit
 --   those instances or using <a>liftB</a>, it delays evaluation, so every
 --   usage site has to re-compute the result/create a new node. If you want
 --   to re-use a <a>BVar</a> you created using <a>+</a> or <a>-</a> or
---   <a>liftB</a>, use <tt>bindVar</tt> to force it first. See
---   documentation for <tt>bindVar</tt> for more details.)
+--   <a>liftB</a>, use <a>bindVar</a> to force it first. See documentation
+--   for <a>bindVar</a> for more details.)
 type BVar s n a = BVar s (Replicate n a)
 type BPOp n a b = forall s. VecT n (BVar s n a) a -> BVar s n a b
 
