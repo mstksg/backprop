@@ -45,7 +45,7 @@ module Numeric.Backprop.Op (
   -- ** Monadic
   , runOpM, gradOpM, gradOpM', gradOpWithM, gradOpWithM', runOpM'
   -- * Manipulation
-  , composeOp, composeOp1, (~.~)
+  , composeOp, composeOp1, (~.)
   , composeOp', composeOp1'
   -- * Creation
   , op0, opConst
@@ -326,15 +326,15 @@ composeOp1 = composeOp . only
 -- 'op1' negate            :: 'Op' '[a]   a
 -- 'op2' (+)               :: Op '[a,a] a
 --
--- op1 negate '~.~' op2 (+) :: Op '[a, a] a
+-- op1 negate '~.' op2 (+) :: Op '[a, a] a
 -- @
-infixr 9 ~.~
-(~.~)
+infixr 9 ~.
+(~.)
     :: (Monad m, Known Length as, Every Num as)
     => OpM m '[b] c
     -> OpM m as b
     -> OpM m as c
-(~.~) = flip composeOp1
+(~.) = flip composeOp1
 
 
 -- | Run the function that an 'Op' encodes, to get the result.

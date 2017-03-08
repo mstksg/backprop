@@ -66,7 +66,7 @@ executable backprop-neuraltest
 
 executable backprop-mnist
   hs-source-dirs:      samples
-  main-is:             MNIST.hs
+  main-is:             MNIST.lhs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -O2
   build-depends:       base
                      , backprop

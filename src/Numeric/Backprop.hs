@@ -91,7 +91,7 @@ module Numeric.Backprop (
   -- ** Combining
   , liftB, (.$), liftB1, liftB2, liftB3
   -- * Op
-  , op1, op2, op3, opN, composeOp, composeOp1, (~.~)
+  , op1, op2, op3, opN, composeOp, composeOp1, (~.)
   , op1', op2', op3'
   -- * Utility
   , pattern (:>), only, head'

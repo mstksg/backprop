@@ -58,7 +58,7 @@ module Numeric.Backprop.Op.Mono (
   -- ** Monadic
   , runOpM, gradOpM, gradOpM', gradOpWithM, gradOpWithM', runOpM'
   -- * Creation
-  , op0, opConst, composeOp, composeOp1, (~.~)
+  , op0, opConst, composeOp, composeOp1, (~.)
   -- ** Automatic creation using the /ad/ library
   , op1, op2, op3, opN
   , Replicate
@@ -473,12 +473,12 @@ composeOp1 v o = composeOp @_ @_ @_ @a (v :* ØV) o
 -- 'op1' negate            :: 'Op' '[a]   a
 -- 'op2' (+)               :: Op '[a,a] a
 --
--- op1 negate '~.~' op2 (+) :: Op '[a, a] a
+-- op1 negate '~.' op2 (+) :: Op '[a, a] a
 -- @
-infixr 9 ~.~
-(~.~)
+infixr 9 ~.
+(~.)
     :: forall m n a b c. (Monad m, Num a, Known Nat n)
     => OpM m N1 b c
     -> OpM m n a b
     -> OpM m n a c
-f ~.~ g = composeOp1 @_ @_ @a g f
+f ~. g = composeOp1 @_ @_ @a g f
