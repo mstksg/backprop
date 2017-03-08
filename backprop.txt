@@ -174,6 +174,18 @@ sum1 :: Iso' (Sum f '[a]) (f a)
 
 -- | An iso between a single type and a single-type <a>Sum</a>.
 resum1 :: Iso' (f a) (Sum f '[a])
+data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
+[Ø] :: Prod k f ([] k)
+[:<] :: Prod k f ((:) k a1 as)
+
+-- | A Prod of simple Haskell types.
+type Tuple = Prod * I
+data Sum k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
+[InL] :: Sum k f ((:) k a1 as)
+[InR] :: Sum k f ((:) k a1 as)
+newtype I a :: * -> *
+I :: a -> I a
+[getI] :: I a -> a
 
 
 -- | Provides the <a>Op</a> (and <a>OpM</a>) type and combinators, which
@@ -267,6 +279,9 @@ data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
 
 -- | A Prod of simple Haskell types.
 type Tuple = Prod * I
+newtype I a :: * -> *
+I :: a -> I a
+[getI] :: I a -> a
 
 -- | Run the function that an <a>Op</a> encodes, to get the result.
 --   
@@ -598,6 +613,32 @@ instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, D
 instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Real.Fractional as, Data.Type.Index.Every GHC.Num.Num as, GHC.Real.Fractional a) => GHC.Real.Fractional (Numeric.Backprop.Op.OpM m as a)
 instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Float.Floating as, Data.Type.Index.Every GHC.Real.Fractional as, Data.Type.Index.Every GHC.Num.Num as, GHC.Float.Floating a) => GHC.Float.Floating (Numeric.Backprop.Op.OpM m as a)
 
+
+-- | Provides the <a>BP</a> monad and the <a>BVar</a> type; after
+--   manipulating <a>BVar</a>s (inputs to your function) to produce a
+--   result, the library tracks internal data dependencies, which are used
+--   to perform backpropagation (reverse-mode automatic differentiation) to
+--   calculate the gradient of the output with respect to the inputs.
+--   
+--   Similar to automatic differentiation from the <i>ad</i> library and
+--   <a>Numeric.AD.Mode.Reverse</a>, except for a few key differences:
+--   
+--   <ol>
+--   <li>Most importantly, this library implements <i>heterogeneous</i>
+--   backpropagation, so you can manipulate values of different types (like
+--   different matrix and vector types, and product and sum types). This is
+--   essential for things like backpropagation for neural networks.</li>
+--   <li>This module allows you to <i>explicitly</i> build your data
+--   dependency graph if you wish, which allows the library to perform
+--   optimizations and reduce extra allocation, which may or may not
+--   provide advantages over <a>Numeric.AD.Mode.Reverse</a>'s
+--   <a>unsafePerformIO</a>-based implicit graph building.</li>
+--   </ol>
+--   
+--   See the <a>README</a> for more information and links to demonstrations
+--   and tutorials. If you want to plunge right in, you can also look
+--   directly at the main types, <a>BP</a>, <a>BPOp</a>, <a>BVar</a>,
+--   <a>Op</a>, and the main functions, <a>backprop</a> and <a>opVar</a>.
 module Numeric.Backprop
 
 -- | A Monad allowing you to explicitly build hetereogeneous data
@@ -782,6 +823,9 @@ data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
 
 -- | A Prod of simple Haskell types.
 type Tuple = Prod * I
+newtype I a :: * -> *
+I :: a -> I a
+[getI] :: I a -> a
 
 -- | Perform backpropagation on the given <a>BPOp</a>. Returns the result
 --   of the operation it represents, as well as the gradient of the result
@@ -1931,7 +1975,7 @@ unities' :: Every Num as => Length as -> Prod Unity as
 -- | Offers full functionality for implicit-graph backpropagationu. The
 --   intended usage is to write a <a>BPOp</a>, which is a normal Haskell
 --   function from <a>BVar</a>s to a result <a>BVar</a>. These <a>BVar</a>s
---   can be manipulated using their <a>Num</a> <i> <a>Fractional</a> </i>
+--   can be manipulated using their <a>Num</a> / <a>Fractional</a> /
 --   <a>Floating</a> instances.
 --   
 --   The library can then perform backpropagation on the function (using
@@ -1952,7 +1996,30 @@ unities' :: Every Num as => Length as -> Prod Unity as
 --   suspect it might be) or if I just can't figure out how to implement
 --   it. Suggestions welcome!</li>
 --   </ol>
+--   
+--   As a comparison, this module offers functionality and an API very
+--   similar to <a>Numeric.AD.Mode.Reverse</a> from the <i>ad</i> library,
+--   except for the fact that it can handle <i>heterogeneous</i> values.
 module Numeric.Backprop.Implicit
+
+-- | An operation on <a>BVar</a>s that can be backpropagated. A value of
+--   type:
+--   
+--   <pre>
+--   <a>BPOp</a> rs a
+--   </pre>
+--   
+--   takes a bunch of <a>BVar</a>s containg <tt>rs</tt> and uses them to
+--   (purely) produce a <a>BVar</a> containing an <tt>a</tt>.
+--   
+--   <pre>
+--   foo :: <a>BPOp</a> '[ Double, Double ] Double
+--   foo (x <a>:&lt;</a> y <a>:&lt;</a> 'Ø') = x + sqrt y
+--   </pre>
+--   
+--   <a>BPOp</a> here is related to <a>BPOpI</a> from the normal
+--   explicit-graph backprop module <a>Numeric.Backprop</a>.
+type BPOp rs a = forall s. Prod (BVar s rs) rs -> BVar s rs a
 
 -- | The basic unit of manipulation inside <a>BP</a> (or inside an
 --   implicit-graph backprop function). Instead of directly working with
@@ -1983,25 +2050,6 @@ module Numeric.Backprop.Implicit
 --   <a>liftB</a>, use <a>bindVar</a> to force it first. See documentation
 --   for <a>bindVar</a> for more details.)
 data BVar :: Type -> [Type] -> Type -> Type
-
--- | An operation on <a>BVar</a>s that can be backpropagated. A value of
---   type:
---   
---   <pre>
---   <a>BPOp</a> rs a
---   </pre>
---   
---   takes a bunch of <a>BVar</a>s containg <tt>rs</tt> and uses them to
---   (purely) produce a <a>BVar</a> containing an <tt>a</tt>.
---   
---   <pre>
---   foo :: <a>BPOp</a> '[ Double, Double ] Double
---   foo (x <a>:&lt;</a> y <a>:&lt;</a> 'Ø') = x + sqrt y
---   </pre>
---   
---   <a>BPOp</a> here is related to <a>BPOpI</a> from the normal
---   explicit-graph backprop module <a>Numeric.Backprop</a>.
-type BPOp rs a = forall s. Prod (BVar s rs) rs -> BVar s rs a
 
 -- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
 --   <tt>as</tt> to <tt>a</tt>.
@@ -2071,6 +2119,9 @@ data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
 
 -- | A Prod of simple Haskell types.
 type Tuple = Prod * I
+newtype I a :: * -> *
+I :: a -> I a
+[getI] :: I a -> a
 
 -- | Run backpropagation on a <a>BPOp</a> function, getting both the result
 --   and the gradient of the result with respect to the inputs.
@@ -2739,6 +2790,9 @@ data VecT k (n :: N) (f :: k -> *) (a :: k) :: forall k. N -> (k -> *) -> k -> *
 [ØV] :: VecT k Z f a
 [:*] :: VecT k (S n1) f a
 type Vec (n :: N) = VecT * n I
+newtype I a :: * -> *
+I :: a -> I a
+[getI] :: I a -> a
 
 -- | Run the function that an <a>Op</a> encodes, to get the result.
 --   
@@ -3040,23 +3094,18 @@ type N10 = S N9
 --   As a comparison, this implements something similar in functionality to
 --   <a>Numeric.AD</a> and <a>Numeric.AD.Mode.Reverse</a> from the
 --   <i>ad</i> package, in that they both offer monomorphic automatic
---   differentiation through backpropagation. However, there are some key
---   differences:
+--   differentiation through backpropagation. This module doesn't allow the
+--   computation of jacobians or generalized gradients for &lt;math&gt;
+--   functions. This module only computs gradients for (mathbb{R}^N
+--   rightarrow mathbb{R})-like functions. This is more of a conscious
+--   design decision in the API of this module rather than a fundamental
+--   limitation of the implementation.
 --   
---   <ol>
---   <li>Because this module offers explicit-graph backpropagation, you can
---   specify your data dependencies in a way that the library can take
---   advantage of and save recomputation. (Note that the
---   <a>Numeric.Backprop.Implicit</a> module takes away explicit-graph
---   capabilities, so its functionality is roughtly the same in this
---   sense)</li>
---   <li><a>Numeric.AD.Mode.Reverse</a> can compute jacobians, or
---   generalized gradients for &lt;math&gt; functions. This module only
---   computs gradients for (mathbb{R}^N rightarrow mathbb{R})-like
---   functions. This is more of a conscious design decision in the API of
---   this module rather than a fundamental limitation of the
---   implementation.</li>
---   </ol>
+--   This module also allows you to build explicit data dependency graphs
+--   so the library can reduce duplication and perform optimizations, which
+--   may or may not provide advantages over
+--   <a>Numeric.AD.Mode.Reverse</a>'s <a>unsafePerformIO</a>-based implicit
+--   graph building.
 module Numeric.Backprop.Mono
 
 -- | A Monad allowing you to explicitly build hetereogeneous data
@@ -3237,6 +3286,13 @@ type Op n a b = Op (Replicate n a) b
 --   You can think of <a>OpB</a> as a superclass/parent class of <a>Op</a>
 --   in this sense, and of <a>Op</a> as a subclass of <a>OpB</a>.
 type OpB s n a b = OpB s (Replicate n a) b
+data VecT k (n :: N) (f :: k -> *) (a :: k) :: forall k. N -> (k -> *) -> k -> *
+[ØV] :: VecT k Z f a
+[:*] :: VecT k (S n1) f a
+type Vec (n :: N) = VecT * n I
+newtype I a :: * -> *
+I :: a -> I a
+[getI] :: I a -> a
 
 -- | Perform backpropagation on the given <a>BPOp</a>. Returns the result
 --   of the operation it represents, as well as the gradient of the result
@@ -3780,6 +3836,12 @@ op2' :: (a -> a -> (b, Maybe b -> (a, a))) -> Op N2 a b
 -- | Create an <a>Op</a> of a function taking three inputs, by giving its
 --   explicit gradient. See documentation for <a>op2'</a> for more details.
 op3' :: (a -> a -> a -> (b, Maybe b -> (a, a, a))) -> Op N3 a b
+infixr 4 :+
+(*:) :: f a -> f a -> VecT k (S (S Z)) f a
+infix 5 *:
+(+:) :: a -> a -> Vec (S (S Z)) a
+infix 5 +:
+head' :: VecT k (S n) f a -> f a
 
 -- | Convenient aliases for low-value Peano numbers.
 type N0 = Z
@@ -3793,16 +3855,6 @@ type N7 = S N6
 type N8 = S N7
 type N9 = S N8
 type N10 = S N9
-data VecT k (n :: N) (f :: k -> *) (a :: k) :: forall k. N -> (k -> *) -> k -> *
-[ØV] :: VecT k Z f a
-[:*] :: VecT k (S n1) f a
-type Vec (n :: N) = VecT * n I
-infixr 4 :+
-(*:) :: f a -> f a -> VecT k (S (S Z)) f a
-infix 5 *:
-(+:) :: a -> a -> Vec (S (S Z)) a
-infix 5 +:
-head' :: VecT k (S n) f a -> f a
 
 
 -- | Offers full functionality for implicit-graph backpropagation with
@@ -3950,6 +4002,13 @@ type Op n a b = Op (Replicate n a) b
 --   You can think of <a>OpB</a> as a superclass/parent class of <a>Op</a>
 --   in this sense, and of <a>Op</a> as a subclass of <a>OpB</a>.
 type OpB s n a b = OpB s (Replicate n a) b
+data VecT k (n :: N) (f :: k -> *) (a :: k) :: forall k. N -> (k -> *) -> k -> *
+[ØV] :: VecT k Z f a
+[:*] :: VecT k (S n1) f a
+type Vec (n :: N) = VecT * n I
+newtype I a :: * -> *
+I :: a -> I a
+[getI] :: I a -> a
 
 -- | Run backpropagation on a <a>BPOp</a> function, getting both the result
 --   and the gradient of the result with respect to the inputs.
@@ -4179,6 +4238,12 @@ op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   (6.0, 2.0 :+ 0.75 :+ ØV)
 --   </pre>
 opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op n a a
+infixr 4 :+
+(*:) :: f a -> f a -> VecT k (S (S Z)) f a
+infix 5 *:
+(+:) :: a -> a -> Vec (S (S Z)) a
+infix 5 +:
+head' :: VecT k (S n) f a -> f a
 
 -- | Convenient aliases for low-value Peano numbers.
 type N0 = Z
@@ -4192,13 +4257,3 @@ type N7 = S N6
 type N8 = S N7
 type N9 = S N8
 type N10 = S N9
-data VecT k (n :: N) (f :: k -> *) (a :: k) :: forall k. N -> (k -> *) -> k -> *
-[ØV] :: VecT k Z f a
-[:*] :: VecT k (S n1) f a
-type Vec (n :: N) = VecT * n I
-infixr 4 :+
-(*:) :: f a -> f a -> VecT k (S (S Z)) f a
-infix 5 *:
-(+:) :: a -> a -> Vec (S (S Z)) a
-infix 5 +:
-head' :: VecT k (S n) f a -> f a
