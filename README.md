@@ -13,12 +13,23 @@ gradient descent and other optimization techniques.
 
 [ad]: http://hackage.haskell.org/package/ad
 
+Documentation is currently rendered [on github pages][docs]!
+
+[docs]: https://mstksg.github.io/backprop
+
+MNIST Digit Classifier Example
+------------------------------
+
 Tutorial and example on training on the MNIST data set [available here as a
 literate haskell file][mnist-lhs], or [rendered here as a PDF][mnist-pdf]!
 **Read this first!**
 
 [mnist-lhs]: https://github.com/mstksg/backprop/blob/master/samples/MNIST.lhs
 [mnist-pdf]: https://github.com/mstksg/backprop/blob/master/renders/MNIST.pdf
+
+
+Brief example
+-------------
 
 The quick example below describes the running of a neural network with one
 hidden layer to calculate its squared error with respect to target `targ`,
@@ -95,6 +106,3 @@ this gradient to do gradient descent.
 For a more fleshed out example, see the [MNIST tutorial][mnist-lhs] (also
 [rendered as a pdf][mnist-pdf])
 
-Documentation is currently rendered [on github pages][docs]!
-
-[docs]: https://mstksg.github.io/backprop
