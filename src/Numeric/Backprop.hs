@@ -50,7 +50,7 @@ module Numeric.Backprop (
   -- * Types
   -- ** Backprop types
     BP, BPOp, BPOpI, BVar, Op, OpB
-  -- ** Tuple types
+  -- ** Tuple types#prod#
   -- $prod
   , Prod(..), Tuple, I(..)
   -- * BP
@@ -83,6 +83,8 @@ module Numeric.Backprop (
   -- *** As sums
   , choicesVar, (?<~), withChoices
   , choicesVar', withChoices'
+  -- $sum
+  , Sum(..)
   -- *** As sums of products
   , sopVar, gSplits, gSOP
   , sopVar', gSplits'
@@ -133,7 +135,7 @@ import qualified Generics.SOP              as SOP
 -- is constructed by consing them together with ':<' (using 'Ø' as nil):
 --
 -- @
--- 'I' "Hello" ':<' I True :< I 7.8 :< Ø    :: 'Prod' 'I' '[String, Bool, Double]
+-- 'I' "hello" ':<' I True :< I 7.8 :< Ø    :: 'Prod' 'I' '[String, Bool, Double]
 -- 'C' "hello" :< C "world" :< C "ok" :< Ø  :: 'Prod' ('C' String) '[a, b, c]
 -- 'Proxy' :< Proxy :< Proxy :< Ø           :: 'Prod' 'Proxy' '[a, b, c]
 -- @
@@ -166,10 +168,48 @@ import qualified Generics.SOP              as SOP
 -- z :: c
 --
 -- 'only_' z             :: 'Tuple' '[c]
--- x '::<' y ::< z ::< Ø :: 'Tuple' '[a, b, c
--- x ::< y ::< only_ z :: 'Tuple' '[a, b, c
+-- x '::<' y ::< z ::< Ø :: 'Tuple' '[a, b, c]
+-- x ::< y ::< only_ z :: 'Tuple' '[a, b, c]
+-- @
+
+
+-- $sum
+--
+-- #sum#
+--
+-- Like the 'Prod' type (see mini-tutorial at "Numeric.Backprop#prod"), the
+-- 'Sum' type lets you make arbitrary sum types over different types and
+-- work with them generically.
+--
+-- A @'Sum' f '[a, b, c]@ contains /either/ an @f a@, an @f b@, /or/ an @f
+-- c@, and is constructed with the constructors 'InL' and 'InR', which are
+-- analogous to 'Left' and 'Right'. 
+--
+-- For a value of type @'Sum' f '[Int, Bool, String]@, there are three
+-- constructors:
+--
+-- @
+-- 'InL'             :: f Int    -> 'Sum' f '[Int, Bool, String]
+-- InL . InR       :: f Bool   -> Sum f '[Int, Bool, String]
+-- InL . InR . InR :: f String -> Sum f '[Int, Bool, String]
 -- @
 --
+-- Each 'InR' "pushes deeper" into the 'Sum'.
+--
+-- Likewise, if you have a value of type @'Sum' f '[Int, Bool, String]@,
+-- you can see which constructor it was made (and what type it contains)
+-- with by pattern matching:
+--
+-- @
+-- foo :: 'Sum' f '[Int, Bool, String]
+--
+-- case foo of
+--   'InL' i         -> -- foo contains an "f Int"
+--   'InR' (InL b)   -> -- foo contains an "f Bool"
+--   InR (InR (InL s)) -> -- foo contains an "f String"
+-- @
+
+
 
 -- | A handy type synonym representing a 'BP' action that returns a 'BVar'.
 -- This is handy because this is the form of 'BP' actions that
@@ -531,6 +571,8 @@ choicesVar' ss us i r = do
 --
 -- You can use this to pass in sum types as the environment to a 'BP', and
 -- then branch on which constructor the value was made with.
+--
+-- See "Numeric.Backprop#sum" for a mini-tutorial on 'Sum'.
 choicesVar
     :: forall s rs bs b. (Every Num bs, Known Length bs)
     => Iso' b (Sum I bs)
@@ -714,6 +756,8 @@ sopVar' sss uss i r = do
 -- with 'GHC.Generics.Generic' from "GHC.Generics" and
 -- 'Generics.SOP.Generic' from "Generics.SOP" and /generics-sop/, with
 -- 'gSOP'.  See 'gSplits' for more information.
+--
+-- See "Numeric.Backprop#sum" for a mini-tutorial on 'Sum'.
 sopVar
     :: forall s rs bss b. (Known Length bss, Every (Every Num ∧ Known Length) bss)
     => Iso' b (Sum Tuple bss)
@@ -771,6 +815,8 @@ gSplits' sss uss = sopVar' sss uss gSOP
 -- @
 -- 'gSplit' = 'splitVars' 'gSOP'
 -- @
+--
+-- See "Numeric.Backprop#sum" for a mini-tutorial on 'Sum'.
 gSplits
     :: forall s rs b.
       ( SOP.Generic b

@@ -15,7 +15,7 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- Offers full functionality for implicit-graph backpropagationu.  The
+-- Offers full functionality for implicit-graph backpropagation.  The
 -- intended usage is to write a 'BPOp', which is a normal Haskell
 -- function from 'BVar's to a result 'BVar'. These 'BVar's can be
 -- manipulated using their 'Num' \/ 'Fractional' \/ 'Floating' instances.
@@ -48,6 +48,8 @@ module Numeric.Backprop.Implicit (
   -- ** Backprop types
     BPOp, BVar, Op, OpB
   -- ** Tuple types
+  -- | See "Numeric.Backprop#prod" for a mini-tutorial on 'Prod' and
+  -- 'Tuple'
   , Prod(..), Tuple, I(..)
   -- * Backpropagation
   , backprop, grad, eval

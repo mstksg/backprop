@@ -34,6 +34,8 @@ module Numeric.Backprop.Iso (
   , gTuple, gSOP
   , sum1, resum1
   -- * Utility types
+  -- | See "Numeric.Backprop#prod" for a mini-tutorial on 'Prod' and
+  -- 'Tuple', and "Numeric.Backprop#sum" for a mini-tutorial on 'Sum'.
   , Prod(..), Tuple, Sum(..), I(..)
   ) where
 

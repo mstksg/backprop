@@ -36,6 +36,8 @@ module Numeric.Backprop.Op (
   -- ** Op and Synonyms
     Op, pattern Op, OpM(..)
   -- ** Tuple Types
+  -- | See "Numeric.Backprop#prod" for a mini-tutorial on 'Prod' and
+  -- 'Tuple'
   , Prod(..), Tuple, I(..)
   -- * Running
   -- ** Pure

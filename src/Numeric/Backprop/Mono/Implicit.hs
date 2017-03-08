@@ -49,6 +49,8 @@ module Numeric.Backprop.Mono.Implicit (
   -- ** Backprop types
     BVar, BPOp, Op, BP.OpB
   -- ** Vectors
+  -- | See "Numeric.Backprop.Mono#vec" for a mini-tutorial on 'VecT' and
+  -- 'Vec'
   , VecT(..), Vec, I(..)
   -- * Backpropagation
   , backprop, grad, eval

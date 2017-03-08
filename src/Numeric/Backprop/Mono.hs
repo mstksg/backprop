@@ -71,8 +71,8 @@ module Numeric.Backprop.Mono (
   -- ** Backprop types
     BP, BPOp, BPOpI, BVar
   , Op, OpB
-  -- ** Vector types
-  -- ** Vectors
+  -- ** Vectors#vec#
+  -- $vec
   , VecT(..), Vec, I(..)
   -- * BP
   -- ** Backprop
@@ -108,6 +108,46 @@ import           Numeric.Backprop.Internal.Helper
 import           Numeric.Backprop.Op.Mono
 import           Type.Class.Known
 import qualified Numeric.Backprop                 as BP
+
+-- $vec
+--
+-- A 'VecT' is a fixed-length list of a given type.  It's basically the
+-- "monomorphic" version of a 'Prod' (see the mini-tutorial in
+-- "Numeric.Backprop#prod").
+--
+-- A @'VecT' n f a@ is a list of @n@ @f a@s, and is constructed by consing
+-- them together with ':*' (using 'ØV' as nil):
+--
+--
+-- @
+-- 'I' "hello" ':*' I "world" :* I "ok" :* ØV :: 'VecT' 'N3' 'I' String
+-- [1,2,3] :* [4,5,6,7] :* ØV             :: 'VecT' 'N2' [] Int
+-- @
+--
+-- ('I' is the identity functor)
+--
+-- So, in general:
+--
+-- @
+-- x :: f a
+-- y :: f a
+-- z :: f a
+-- k :: f a
+-- x :* y :* z :* k :* ØV :: 'VecT' f 'N4' a
+-- @
+--
+-- 'Vec' is provided as a convenient type synonym for 'VecT' 'I', and has
+-- a convenient pattern synonym ':+', which can also be used for pattern
+-- matching:
+--
+-- @
+-- x :: a
+-- y :: a
+-- z :: a
+-- k :: a
+--
+-- x '::<' y ::< z ::< k ::< ØV :: 'Vec' 'N4' a
+-- @
 
 -- | A Monad allowing you to explicitly build hetereogeneous data
 -- dependency graphs and that the library can perform backpropagation on.

@@ -49,6 +49,8 @@ module Numeric.Backprop.Op.Mono (
   -- ** Op and synonyms
     Op, pattern Op, OpM, pattern OpM
   -- ** Vector types
+  -- | See "Numeric.Backprop.Mono#vec" for a mini-tutorial on 'VecT' and
+  -- 'Vec'
   , VecT(..), Vec, I(..)
   -- * Running
   -- ** Pure
@@ -70,6 +72,7 @@ module Numeric.Backprop.Op.Mono (
 
 import           Data.Bifunctor
 import           Data.Reflection                  (Reifies)
+import           Data.Type.Combinator
 import           Data.Type.Nat
 import           Data.Type.Util
 import           Data.Type.Vector
