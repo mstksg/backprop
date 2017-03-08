@@ -21,16 +21,13 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>= \allSamps ->
     want ["all"]
 
     "all" ~>
-      need ["pdf", "md", "build", "haddocks", "gentags"]
+      need ["pdf", "md", "haddocks", "gentags"]
 
     "pdf" ~>
       need (map (\f -> "renders" </> takeFileName f -<.> "pdf") allSamps)
 
     "md" ~>
       need (map (\f -> "renders" </> takeFileName f -<.> "md") allSamps)
-
-    "build" ~>
-      cmd "stack" "install"
 
     "haddocks" ~>
       cmd "jle-git-haddocks"

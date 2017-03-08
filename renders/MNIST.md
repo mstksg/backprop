@@ -21,10 +21,11 @@ Repository source is [on github], and so are the [rendered docs].
 
 If you’re reading this as a literate haskell file, you should know that
 a [rendered pdf version is available on github.]. If you are reading
-this as a pdf file, you should know that a \[literate haskell version
-that you can run\] is also available on github!
+this as a pdf file, you should know that a [literate haskell version
+that you can run] is also available on github!
 
   [rendered pdf version is available on github.]: https://github.com/mstksg/backprop/blob/master/renders/MNIST.pdf
+  [literate haskell version that you can run]: https://github.com/mstksg/backprop/blob/master/samples/MNIST.lhs
 
 ``` {.sourceCode .literate .haskell}
 {-# LANGUAGE BangPatterns                     #-}
