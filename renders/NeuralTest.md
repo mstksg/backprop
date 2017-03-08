@@ -104,8 +104,8 @@ single-hidden-layer neural network:
 simpleOp
       :: (KnownNat m, KnownNat n, KnownNat o)
       => R m
-      -> BPOp s '[ L n m, R n, L o n, R o ] (R o)
-simpleOp inp = implicitly $ \(w1 :< b1 :< w2 :< b2 :< Ø) ->
+      -> BPOpI s '[ L n m, R n, L o n, R o ] (R o)
+simpleOp inp = \(w1 :< b1 :< w2 :< b2 :< Ø) ->
     let z = logistic $ liftB2 matVec w1 x + b1
     in  logistic $ liftB2 matVec w2 z + b2
   where
@@ -123,7 +123,7 @@ runSimple
     => R m
     -> Tuple '[ L n m, R n, L o n, R o ]
     -> R o
-runSimple inp = evalBPOp (simpleOp inp)
+runSimple inp = evalBPOp (implicitly $ simpleOp inp)
 ```
 
 Alternatively, we can define `simpleOp` in explicit monadic style, were
@@ -159,7 +159,7 @@ simpleGrad inp targ params = gradBPOp opError params
   where
     opError :: BPOp s '[ L n m, R n, L o n, R o ] Double
     opError = do
-        res <- simpleOp inp
+        res <- implicitly $ simpleOp inp
         -- we explicitly bind err to prevent recomputation
         err <- bindVar $ res - t
         dot ~$ (err :< err :< Ø)
