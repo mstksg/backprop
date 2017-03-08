@@ -921,7 +921,7 @@ inpVars :: Known Length rs => Prod (BVar s rs) rs
 bpOp :: (Every Num rs, Known Length rs) => BPOp s rs a -> OpB s rs a
 
 -- | Concretizes a delayed <a>BVar</a>. If you build up a <a>BVar</a> using
---   numeric functions like <a>+</a> or <a>*</a> or using <tt>liftR</tt>,
+--   numeric functions like <a>+</a> or <a>*</a> or using <a>liftB</a>,
 --   it'll defer the evaluation, and all of its usage sites will create a
 --   separate graph node.
 --   
@@ -950,11 +950,11 @@ bpOp :: (Every Num rs, Known Length rs) => BPOp s rs a -> OpB s rs a
 --       <a>bindVar</a> (e * e)      -- result is forced so user doesn't have to worry
 --   </pre>
 --   
---   Note the relation to <a>opVar</a> <i> <a>~$</a> </i> <tt>liftR</tt> /
+--   Note the relation to <a>opVar</a> <i> <a>~$</a> </i> <a>liftB</a> /
 --   <a>.$</a>:
 --   
 --   <pre>
---   <a>opVar</a> o xs    = <a>bindVar</a> (<tt>liftR</tt> o xs)
+--   <a>opVar</a> o xs    = <a>bindVar</a> (<a>liftB</a> o xs)
 --   o <a>~$</a> xs       = <a>bindVar</a> (o <a>.$</a> xs)
 --   <a>op2</a> (*) <a>~$</a> (x :&lt; y :&lt; Ø) = <a>bindVar</a> (x * y)
 --   </pre>
@@ -3083,7 +3083,7 @@ type BPOp s n r a = BP s n r (BVar s n r a)
 --   
 --   <pre>
 --   foo :: BPOpI s <a>N2</a> Double Double
---   foo (x :+ y :+ ØV) = x + sqrt y
+--   foo (x :* y :* ØV) = x + sqrt y
 --   </pre>
 --   
 --   If you are exclusively doing implicit backpropagation by combining
@@ -3208,11 +3208,11 @@ gradBPOp :: forall n r a. Num r => (forall s. BPOp s n r a) -> Vec n r -> Vec n 
 --   
 --   <pre>
 --   foo :: <a>BPOp</a> <a>N2</a> Double Int
---   foo = <a>withInps</a> $ \(x :+ y :+ ØV) -&gt; do
+--   foo = <a>withInps</a> $ \(x :* y :* ØV) -&gt; do
 --       -- do stuff with inputs
 --   </pre>
 --   
---   Looks kinda like <tt>foo (x :+ y :+ ØV) = -- ...</tt>, don't it?
+--   Looks kinda like <tt>foo (x :* y *+ ØV) = -- ...</tt>, don't it?
 --   
 --   Note that the above is the same as
 --   
@@ -3226,8 +3226,21 @@ gradBPOp :: forall n r a. Num r => (forall s. BPOp s n r a) -> Vec n r -> Vec n 
 --   
 --   But just a little nicer!
 withInps :: Known Nat n => (VecT n (BVar s n r) r -> BP s n r a) -> BP s n r a
+
+-- | Convert a <a>BPOpI</a> into a <a>BPOp</a>. That is, convert a function
+--   on a bundle of <a>BVar</a>s (generating an implicit graph) into a
+--   fully fledged <a>BPOp</a> that you can run <a>backprop</a> on. See
+--   <a>BPOpI</a> for more information.
+--   
+--   If you are going to write exclusively using implicit <a>BVar</a>
+--   operations, it might be more convenient to use
+--   <a>Numeric.Backprop.Mono.Implicit</a> instead, which is geared around
+--   that use case.
 implicitly :: Known Nat n => BPOpI s n a b -> BPOp s n a b
-constVar :: b -> BVar s n a b
+
+-- | Create a <a>BVar</a> that represents just a specific value, that
+--   doesn't depend on any other <a>BVar</a>s.
+constVar :: a -> BVar s n r a
 
 -- | Create a <a>BVar</a> given an index (<a>Fin</a>) into the input
 --   environment. For an example,
@@ -3277,14 +3290,98 @@ inpVars :: Known Nat n => VecT n (BVar s n r) r
 --   <a>Op</a>-related functions in this moduel, including <a>opVar</a>,
 --   <a>~$</a>, etc.
 bpOp :: forall s n r a. (Num r, Known Nat n) => BPOp s n r a -> OpB s n r a
-bindVar :: Num a => BVar s n r a -> BP s n r (BVar s n r a)
-opVar :: forall s m n a b. Num b => OpB s m a b -> VecT m (BVar s n a) a -> BP s n a (BVar s n a b)
-(~$) :: Num b => OpB s m a b -> VecT m (BVar s n a) a -> BP s n a (BVar s n a b)
+
+-- | Concretizes a delayed <a>BVar</a>. If you build up a <a>BVar</a> using
+--   numeric functions like <a>+</a> or <a>*</a> or using <a>liftB</a>,
+--   it'll defer the evaluation, and all of its usage sites will create a
+--   separate graph node.
+--   
+--   Use <a>bindVar</a> if you ever intend to use a <a>BVar</a> in more
+--   than one location.
+--   
+--   <pre>
+--   -- bad
+--   errSquared :: Num a =&gt; <a>BP</a> s N2 a a
+--   errSquared = <tt>withInp</tt> $ \(x :* y :* Ø) -&gt; do
+--       let err = r - t
+--       <a>return</a> (err * err)   -- err is used twice!
+--   
+--   -- good
+--   errSquared :: Num a =&gt; <a>BP</a> s N2 a a
+--   errSquared = <tt>withInp</tt> $ \(x :* y :* Ø) -&gt; do
+--       let err = r - t
+--       e &lt;- <a>bindVar</a> err     -- force e, so that it's safe to use twice!
+--       <a>return</a> (e * e)
+--   
+--   -- better
+--   errSquared :: Num a =&gt; <a>BP</a> s N2 a a
+--   errSquared = <tt>withInp</tt> $ \(x :* y :* Ø) -&gt; do
+--       let err = r - t
+--       e &lt;- <a>bindVar</a> err
+--       <a>bindVar</a> (e * e)      -- result is forced so user doesn't have to worry
+--   </pre>
+--   
+--   Note the relation to <a>opVar</a> <i> <a>~$</a> </i> <a>liftB</a> /
+--   <a>.$</a>:
+--   
+--   <pre>
+--   <a>opVar</a> o xs    = <a>bindVar</a> (<a>liftB</a> o xs)
+--   o <a>~$</a> xs       = <a>bindVar</a> (o <a>.$</a> xs)
+--   <a>op2</a> (*) <a>~$</a> (x :&lt; y :&lt; Ø) = <a>bindVar</a> (x * y)
+--   </pre>
+--   
+--   So you can avoid <a>bindVar</a> altogether if you use the explicitly
+--   binding <a>~$</a> and <a>opVar</a> etc.
+--   
+--   Note that <a>bindVar</a> on <a>BVar</a>s that are already forced is a
+--   no-op.
+bindVar :: forall s n r a. Num a => BVar s n r a -> BP s n r (BVar s n r a)
+
+-- | Apply an <a>OpB</a> to a <a>VecT</a> (vector) of <a>BVar</a>s.
+--   
+--   If you had an <tt><a>OpB</a> s N3 a b</tt>, this function will expect
+--   a vector of of three <tt><a>BVar</a> s n r a</tt>s, and the result
+--   will be a <tt><a>BVar</a> s n r b</tt>:
+--   
+--   <pre>
+--   myOp :: <a>OpB</a> s N3 a b
+--   x    :: <a>BVar</a> s n r a
+--   y    :: <a>BVar</a> s n r a
+--   z    :: <a>BVar</a> s n r a
+--   
+--   x <a>:*</a> y :* z :* 'ØV'              :: <a>VecT</a> N3 (<a>BVar</a> s n r) a
+--   <a>opVar</a> myOp (x :* y :* z :* ØV) :: <a>BP</a> s n r (<a>BVar</a> s n r b)
+--   </pre>
+--   
+--   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can provide
+--   any <a>Op</a> here, as well (like those created by <a>op1</a>,
+--   <a>op2</a>, <tt>constOp</tt>, <a>op0</a> etc.)
+--   
+--   <a>opVar</a> has an infix alias, <a>~$</a>, so the above example can
+--   also be written as:
+--   
+--   <pre>
+--   myOp <a>~$</a> (x :* y :* z :* ØV) :: <a>BP</a> s n r (<a>BVar</a> s n r b)
+--   </pre>
+--   
+--   to let you pretend that you're applying the <tt>myOp</tt> function to
+--   three inputs.
+--   
+--   Also note the relation between <a>opVar</a> and <a>liftB</a> and
+--   <a>bindVar</a>:
+--   
+--   <pre>
+--   <a>opVar</a> o xs = <a>bindVar</a> (<a>liftB</a> o xs)
+--   </pre>
+--   
+--   <a>opVar</a> can be thought of as a "binding" version of <a>liftB</a>.
+opVar :: forall s m n r a b. Num b => OpB s m a b -> VecT m (BVar s n r) a -> BP s n r (BVar s n r b)
+(~$) :: forall s m n r a b. Num b => OpB s m a b -> VecT m (BVar s n r) a -> BP s n r (BVar s n r b)
 infixr 1 ~$
-opVar1 :: forall s n a b. Num b => OpB s N1 a b -> BVar s n a a -> BP s n a (BVar s n a b)
-opVar2 :: forall s n a b. Num b => OpB s N2 a b -> BVar s n a a -> BVar s n a a -> BP s n a (BVar s n a b)
-opVar3 :: forall s n a b. Num b => OpB s N3 a b -> BVar s n a a -> BVar s n a a -> BVar s n a a -> BP s n a (BVar s n a b)
-(-$) :: forall s m n a b. (Num a, Num b, Known Nat m) => BPOp s m a b -> VecT m (BVar s n a) a -> BP s n a (BVar s n a b)
+opVar1 :: forall s n r a b. Num b => OpB s N1 a b -> BVar s n r a -> BP s n r (BVar s n r b)
+opVar2 :: forall s n r a b. Num b => OpB s N2 a b -> BVar s n r a -> BVar s n r a -> BP s n r (BVar s n r b)
+opVar3 :: forall s n r a b. Num b => OpB s N3 a b -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BP s n r (BVar s n r b)
+(-$) :: forall s m n r a b. (Num a, Num b, Known Nat m) => BPOp s m a b -> VecT m (BVar s n r) a -> BP s n r (BVar s n r b)
 infixr 1 -$
 liftB :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
 (.$) :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
@@ -3530,7 +3627,10 @@ type OpB s n a b = OpB s (Replicate n a) b
 backprop :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> (b, Vec n a)
 grad :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> Vec n a
 eval :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> b
-constVar :: b -> BVar s n a b
+
+-- | Create a <a>BVar</a> that represents just a specific value, that
+--   doesn't depend on any other <a>BVar</a>s.
+constVar :: a -> BVar s n r a
 liftB :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
 (.$) :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
 liftB1 :: OpB s N1 a a -> BVar s n r a -> BVar s n r a

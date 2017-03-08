@@ -951,7 +951,7 @@ bindVar' s r = case r of
     BVOp    rs o -&gt; opVar' s o rs
 
 -- | Concretizes a delayed 'BVar'.  If you build up a 'BVar' using numeric
--- functions like '+' or '*' or using 'liftR', it'll defer the evaluation,
+-- functions like '+' or '*' or using 'liftB', it'll defer the evaluation,
 -- and all of its usage sites will create a separate graph node.
 --
 -- Use 'bindVar' if you ever intend to use a 'BVar' in more than one
@@ -979,10 +979,10 @@ bindVar' s r = case r of
 --     'bindVar' (e * e)      -- result is forced so user doesn't have to worry
 -- @
 --
--- Note the relation to 'opVar' / '~$' / 'liftR' / '.$':
+-- Note the relation to 'opVar' / '~$' / 'liftB' / '.$':
 --
 -- @
--- 'opVar' o xs    = 'bindVar' ('liftR' o xs)
+-- 'opVar' o xs    = 'bindVar' ('liftB' o xs)
 -- o '~$' xs       = 'bindVar' (o '.$' xs)
 -- 'op2' (*) '~$' (x :&lt; y :&lt; &#216;) = 'bindVar' (x * y)
 -- @
