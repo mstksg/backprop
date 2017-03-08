@@ -808,10 +808,10 @@ infixr 1 ~$
     -&gt; BP s rs (BVar s rs a)
 (~$) = opVar
 
--- | Lets you treat a @'BPOp s as b@ as an @'Op' as b@, and &quot;apply&quot;
+-- | Lets you treat a @'BPOp' s as b@ as an @'Op' as b@, and &quot;apply&quot;
 -- arguments to it just like you would with an 'Op' and '~$' / 'opVar'.
 --
--- Basically a convenient wrapper over 'bpOp':
+-- Basically a convenient wrapper over 'bpOp' and '~$':
 --
 -- @
 -- o '-$' xs = bpOp o '~$' xs
@@ -820,8 +820,8 @@ infixr 1 ~$
 -- So for a @'BPOp' s as b@, you can &quot;plug in&quot; 'BVar's to @as@, and get
 -- a @b@ as a result.
 --
--- Useful for running a @'BPOp' s rs a@ that you got from a different function, and
--- &quot;plugging in&quot; its @rs@ inputs with 'BVar's from your current
+-- Useful for running a @'BPOp' s as b@ that you got from a different function, and
+-- &quot;plugging in&quot; its @as@ inputs with 'BVar's from your current
 -- environment.
 infixr 1 -$
 (-$)
@@ -1271,8 +1271,8 @@ withInps
     -&gt; BP s rs a
 withInps = withInps' known
 
--- | Apply 'OpB' over a 'Prod' of 'BVar's, as inputs.
--- Provides &quot;implicit&quot; backpropagation, with deferred evaluation.
+-- | Apply 'OpB' over a 'Prod' of 'BVar's, as inputs. Provides
+-- &quot;implicit-graph&quot; backpropagation, with deferred evaluation.
 --
 -- If you had an @'OpB' s '[a, b, c] d@, this function will expect a 3-Prod
 -- of a @'BVar' s rs a@, a @'BVar' s rs b@, and a @'BVar' s rs c@, and the
@@ -1292,7 +1292,7 @@ withInps = withInps' known
 -- here, as well (like those created by 'op1', 'op2', 'constOp', 'op0'
 -- etc.)
 --
--- 'opVar' has an infix alias, '.$', so the above example can also be
+-- 'liftB' has an infix alias, '.$', so the above example can also be
 -- written as:
 --
 -- @
@@ -1312,7 +1312,7 @@ withInps = withInps' known
 -- 'opVar' o xs = 'bindVar' ('liftB' o xs)
 -- @
 --
--- 'liftB' can be thought of as a &quot;deferred evaluation&quot; version of 'liftB'.
+-- 'liftB' can be thought of as a &quot;deferred evaluation&quot; version of 'opVar'.
 liftB
     :: OpB s as a
     -&gt; Prod (BVar s rs) as

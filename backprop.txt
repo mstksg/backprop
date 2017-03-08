@@ -1104,11 +1104,11 @@ opVar2 :: Num c => OpB s '[a, b] c -> BVar s rs a -> BVar s rs b -> BP s rs (BVa
 --   an <a>Op</a> here (like one made with <a>op3</a>) as well.
 opVar3 :: Num d => OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar s rs c -> BP s rs (BVar s rs d)
 
--- | Lets you treat a <tt>'BPOp s as b</tt> as an <tt><a>Op</a> as b</tt>,
---   and "apply" arguments to it just like you would with an <a>Op</a> and
---   <a>~$</a> / <a>opVar</a>.
+-- | Lets you treat a <tt><a>BPOp</a> s as b</tt> as an <tt><a>Op</a> as
+--   b</tt>, and "apply" arguments to it just like you would with an
+--   <a>Op</a> and <a>~$</a> / <a>opVar</a>.
 --   
---   Basically a convenient wrapper over <a>bpOp</a>:
+--   Basically a convenient wrapper over <a>bpOp</a> and <a>~$</a>:
 --   
 --   <pre>
 --   o <a>-$</a> xs = bpOp o <a>~$</a> xs
@@ -1117,8 +1117,8 @@ opVar3 :: Num d => OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar s rs
 --   So for a <tt><a>BPOp</a> s as b</tt>, you can "plug in" <a>BVar</a>s
 --   to <tt>as</tt>, and get a <tt>b</tt> as a result.
 --   
---   Useful for running a <tt><a>BPOp</a> s rs a</tt> that you got from a
---   different function, and "plugging in" its <tt>rs</tt> inputs with
+--   Useful for running a <tt><a>BPOp</a> s as b</tt> that you got from a
+--   different function, and "plugging in" its <tt>as</tt> inputs with
 --   <a>BVar</a>s from your current environment.
 (-$) :: (Every Num as, Known Length as, Num a) => BPOp s as a -> Prod (BVar s rs) as -> BPOp s rs a
 infixr 1 -$
@@ -1589,7 +1589,7 @@ sopVar' :: forall s rs bss b. Prod (Prod Summer) bss -> Prod (Prod Unity) bss ->
 gSplits' :: forall s rs b. Generic b => Prod (Prod Summer) (Code b) -> Prod (Prod Unity) (Code b) -> BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) (Code b))
 
 -- | Apply <a>OpB</a> over a <a>Prod</a> of <a>BVar</a>s, as inputs.
---   Provides "implicit" backpropagation, with deferred evaluation.
+--   Provides "implicit-graph" backpropagation, with deferred evaluation.
 --   
 --   If you had an <tt><a>OpB</a> s '[a, b, c] d</tt>, this function will
 --   expect a 3-Prod of a <tt><a>BVar</a> s rs a</tt>, a <tt><a>BVar</a> s
@@ -1610,7 +1610,7 @@ gSplits' :: forall s rs b. Generic b => Prod (Prod Summer) (Code b) -> Prod (Pro
 --   any <a>Op</a> here, as well (like those created by <a>op1</a>,
 --   <a>op2</a>, <tt>constOp</tt>, <a>op0</a> etc.)
 --   
---   <a>opVar</a> has an infix alias, <a>.$</a>, so the above example can
+--   <a>liftB</a> has an infix alias, <a>.$</a>, so the above example can
 --   also be written as:
 --   
 --   <pre>
@@ -1632,7 +1632,7 @@ gSplits' :: forall s rs b. Generic b => Prod (Prod Summer) (Code b) -> Prod (Pro
 --   </pre>
 --   
 --   <a>liftB</a> can be thought of as a "deferred evaluation" version of
---   <a>liftB</a>.
+--   <a>opVar</a>.
 liftB :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
 
 -- | Infix synonym for <a>liftB</a>, which lets you pretend that you're
@@ -2133,7 +2133,7 @@ grad' :: Prod Summer rs -> Prod Unity rs -> BPOp rs a -> Tuple rs -> Tuple rs
 constVar :: a -> BVar s rs a
 
 -- | Apply <a>OpB</a> over a <a>Prod</a> of <a>BVar</a>s, as inputs.
---   Provides "implicit" backpropagation, with deferred evaluation.
+--   Provides "implicit-graph" backpropagation, with deferred evaluation.
 --   
 --   If you had an <tt><a>OpB</a> s '[a, b, c] d</tt>, this function will
 --   expect a 3-Prod of a <tt><a>BVar</a> s rs a</tt>, a <tt><a>BVar</a> s
@@ -2154,7 +2154,7 @@ constVar :: a -> BVar s rs a
 --   any <a>Op</a> here, as well (like those created by <a>op1</a>,
 --   <a>op2</a>, <tt>constOp</tt>, <a>op0</a> etc.)
 --   
---   <a>opVar</a> has an infix alias, <a>.$</a>, so the above example can
+--   <a>liftB</a> has an infix alias, <a>.$</a>, so the above example can
 --   also be written as:
 --   
 --   <pre>
@@ -2176,7 +2176,7 @@ constVar :: a -> BVar s rs a
 --   </pre>
 --   
 --   <a>liftB</a> can be thought of as a "deferred evaluation" version of
---   <a>liftB</a>.
+--   <a>opVar</a>.
 liftB :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
 
 -- | Infix synonym for <a>liftB</a>, which lets you pretend that you're
@@ -3236,7 +3236,7 @@ withInps :: Known Nat n => (VecT n (BVar s n r) r -> BP s n r a) -> BP s n r a
 --   operations, it might be more convenient to use
 --   <a>Numeric.Backprop.Mono.Implicit</a> instead, which is geared around
 --   that use case.
-implicitly :: Known Nat n => BPOpI s n a b -> BPOp s n a b
+implicitly :: Known Nat n => BPOpI s n r a -> BPOp s n r a
 
 -- | Create a <a>BVar</a> that represents just a specific value, that
 --   doesn't depend on any other <a>BVar</a>s.
@@ -3376,17 +3376,240 @@ bindVar :: forall s n r a. Num a => BVar s n r a -> BP s n r (BVar s n r a)
 --   
 --   <a>opVar</a> can be thought of as a "binding" version of <a>liftB</a>.
 opVar :: forall s m n r a b. Num b => OpB s m a b -> VecT m (BVar s n r) a -> BP s n r (BVar s n r b)
+
+-- | Infix synonym for <a>opVar</a>, which lets you pretend that you're
+--   applying <a>OpB</a>s as if they were functions:
+--   
+--   <pre>
+--   myOp :: <a>OpB</a> s N3 a b
+--   x    :: <a>BVar</a> s n r a
+--   y    :: <a>BVar</a> s n r a
+--   z    :: <a>BVar</a> s n r a
+--   
+--   x <a>:*</a> y :* z :* 'ØV'              :: <a>VecT</a> N3 (<a>BVar</a> s n r) a
+--   myOp <a>~$</a> (x :* y :* z :* ØV) :: <a>BP</a> s n r (<a>BVar</a> s n r b)
+--   </pre>
+--   
+--   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
+--   any <a>Op</a> here, as well (like those created by <a>op1</a>,
+--   <a>op2</a>, <tt>constOp</tt>, <a>op0</a> etc.)
+--   
+--   <a>~$</a> can also be thought of as a "binding" version of <a>.$</a>:
+--   
+--   <pre>
+--   o <a>~$</a> xs = <a>bindVar</a> (o <a>.$</a> xs)
+--   </pre>
 (~$) :: forall s m n r a b. Num b => OpB s m a b -> VecT m (BVar s n r) a -> BP s n r (BVar s n r b)
 infixr 1 ~$
+
+-- | Convenient wrapper over <a>opVar</a> that takes an <a>OpB</a> with one
+--   argument and a single <a>BVar</a> argument. Lets you not have to type
+--   out the entire <a>VecT</a>.
+--   
+--   <pre>
+--   <a>opVar1</a> o x = <a>opVar</a> o (x <a>:*</a> 'ØV')
+--   
+--   myOp :: <a>Op</a> N2 a b
+--   x    :: <a>BVar</a> s n r a
+--   
+--   <a>opVar1</a> myOp x :: <a>BP</a> s n r (<a>BVar</a> s n r b)
+--   </pre>
+--   
+--   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
+--   an <a>Op</a> here (like one made with <a>op1</a>) as well.
 opVar1 :: forall s n r a b. Num b => OpB s N1 a b -> BVar s n r a -> BP s n r (BVar s n r b)
+
+-- | Convenient wrapper over <a>opVar</a> that takes an <a>OpB</a> with two
+--   arguments and two <a>BVar</a> arguments. Lets you not have to type out
+--   the entire <a>VecT</a>.
+--   
+--   <pre>
+--   <a>opVar2</a> o x y = <a>opVar</a> o (x <a>:*</a> y <a>:*</a> 'ØV')
+--   
+--   myOp :: <a>Op</a> N2 a b
+--   x    :: <a>BVar</a> s n r a
+--   y    :: <a>BVar</a> s n r b
+--   
+--   <a>opVar2</a> myOp x y :: <a>BP</a> s n r (<a>BVar</a> s n r b)
+--   </pre>
+--   
+--   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
+--   an <a>Op</a> here (like one made with <a>op2</a>) as well.
 opVar2 :: forall s n r a b. Num b => OpB s N2 a b -> BVar s n r a -> BVar s n r a -> BP s n r (BVar s n r b)
+
+-- | Convenient wrapper over <a>opVar</a> that takes an <a>OpB</a> with
+--   three arguments and three <a>BVar</a> arguments. Lets you not have to
+--   type out the entire <a>VecT</a>.
+--   
+--   <pre>
+--   <a>opVar3</a> o x y z = <a>opVar</a> o (x <a>:*</a> y <a>:*</a> z <a>:*</a> 'ØV')
+--   
+--   myOp :: <a>Op</a> N3 a b
+--   x    :: <a>BVar</a> s n r a
+--   y    :: <a>BVar</a> s n r a
+--   z    :: <a>BVar</a> s n r a
+--   
+--   <a>opVar3</a> myOp x y z :: <a>BP</a> s n r (<a>BVar</a> s n r b)
+--   </pre>
+--   
+--   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
+--   an <a>Op</a> here (like one made with <a>op3</a>) as well.
 opVar3 :: forall s n r a b. Num b => OpB s N3 a b -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BP s n r (BVar s n r b)
+
+-- | Lets you treat a <tt><a>BPOp</a> s n a b</tt> as an <tt><a>Op</a> n a
+--   b</tt>, and "apply" arguments to it just like you would with an
+--   <a>Op</a> and <a>~$</a> / <a>opVar</a>.
+--   
+--   Basically a convenient wrapper over <a>bpOp</a> and <a>~$</a>:
+--   
+--   <pre>
+--   o <a>-$</a> xs = bpOp o <a>~$</a> xs
+--   </pre>
+--   
+--   So for a <tt><a>BPOp</a> s n a b</tt>, you can "plug in" <a>BVar</a>s
+--   to each <tt>a</tt>, and get a <tt>b</tt> as a result.
+--   
+--   Useful for running a <tt><a>BPOp</a> s n a b</tt> that you got from a
+--   different function, and "plugging in" its <tt>a</tt> inputs with
+--   <a>BVar</a>s from your current environment.
 (-$) :: forall s m n r a b. (Num a, Num b, Known Nat m) => BPOp s m a b -> VecT m (BVar s n r) a -> BP s n r (BVar s n r b)
 infixr 1 -$
+
+-- | Apply <a>OpB</a> over a <a>VecT</a> of <a>BVar</a>s, as inputs.
+--   Provides "implicit" backpropagation, with deferred evaluation.
+--   
+--   If you had an <tt><a>OpB</a> s N3 a b</tt>, this function will expect
+--   a vector of of three <tt><a>BVar</a> s n r a</tt>s, and the result
+--   will be a <tt><a>BVar</a> s n r b</tt>:
+--   
+--   <pre>
+--   myOp :: <a>OpB</a> s N3 a b
+--   x    :: <a>BVar</a> s n r a
+--   y    :: <a>BVar</a> s n r a
+--   z    :: <a>BVar</a> s n r a
+--   
+--   x <a>:*</a> y :* z :* 'ØV'              :: <a>VecT</a> N3 (<a>BVar</a> s n r) a
+--   <a>liftB</a> myOp (x :* y :* z :* ØV) :: <a>BVar</a> s n r b
+--   </pre>
+--   
+--   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can provide
+--   any <a>Op</a> here, as well (like those created by <a>op1</a>,
+--   <a>op2</a>, <tt>constOp</tt>, <a>op0</a> etc.)
+--   
+--   <a>liftB</a> has an infix alias, <a>.$</a>, so the above example can
+--   also be written as:
+--   
+--   <pre>
+--   myOp <a>.$</a> (x :* y :* z :* ØV) :: <a>BVar</a> s n r b
+--   </pre>
+--   
+--   to let you pretend that you're applying the <tt>myOp</tt> function to
+--   three inputs.
+--   
+--   The result is a new <i>deferred</i> <a>BVar</a>. This should be fine
+--   in most cases, unless you use the result in more than one location.
+--   This will cause evaluation to be duplicated and multiple redundant
+--   graph nodes to be created. If you need to use it in two locations, you
+--   should use <a>opVar</a> instead of <a>liftB</a>, or use
+--   <a>bindVar</a>:
+--   
+--   <pre>
+--   <a>opVar</a> o xs = <a>bindVar</a> (<a>liftB</a> o xs)
+--   </pre>
+--   
+--   <a>liftB</a> can be thought of as a "deferred evaluation" version of
+--   <a>opVar</a>.
 liftB :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
+
+-- | Infix synonym for <a>liftB</a>, which lets you pretend that you're
+--   applying <a>OpB</a>s as if they were functions:
+--   
+--   <pre>
+--   myOp :: <a>OpB</a> s N3 a b
+--   x    :: <a>BVar</a> s n r a
+--   y    :: <a>BVar</a> s n r a
+--   z    :: <a>BVar</a> s n r a
+--   
+--   x <a>:*</a> y :* z :* 'ØV'              :: <a>VecT</a> N3 (<a>BVar</a> s n r) a
+--   myOp <a>.$</a> (x :* y :* z :* ØV) :: <a>BVar</a> s n r b
+--   </pre>
+--   
+--   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
+--   any <a>Op</a> here, as well (like those created by <a>op1</a>,
+--   <a>op2</a>, <tt>constOp</tt>, <a>op0</a> etc.)
+--   
+--   See the documentation for <a>liftB</a> for all the caveats of this
+--   usage.
+--   
+--   <a>.$</a> can also be thought of as a "deferred evaluation" version of
+--   <a>~$</a>:
+--   
+--   <pre>
+--   o <a>~$</a> xs = <a>bindVar</a> (o <a>.$</a> xs)
+--   </pre>
 (.$) :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
+
+-- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with one
+--   argument and a single <a>BVar</a> argument. Lets you not have to type
+--   out the entire <a>VecT</a>.
+--   
+--   <pre>
+--   <a>liftB1</a> o x = <a>liftB</a> o (x <a>:*</a> 'ØV')
+--   
+--   myOp :: <a>Op</a> N2 a b
+--   x    :: <a>BVar</a> s n r a
+--   
+--   <a>liftB1</a> myOp x :: <a>BVar</a> s n r b
+--   </pre>
+--   
+--   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
+--   an <a>Op</a> here (like one made with <a>op1</a>) as well.
+--   
+--   See the documentation for <a>liftB</a> for caveats and potential
+--   problematic situations with this.
 liftB1 :: OpB s N1 a a -> BVar s n r a -> BVar s n r a
+
+-- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with two
+--   arguments and two <a>BVar</a> arguments. Lets you not have to type out
+--   the entire <a>VecT</a>.
+--   
+--   <pre>
+--   <a>liftB2</a> o x y = <a>liftB</a> o (x <a>:*</a> y <a>:*</a> 'ØV')
+--   
+--   myOp :: <a>Op</a> N2 a b
+--   x    :: <a>BVar</a> s n r a
+--   y    :: <a>BVar</a> s n r b
+--   
+--   <a>liftB2</a> myOp x y :: <a>BVar</a> s n r b
+--   </pre>
+--   
+--   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
+--   an <a>Op</a> here (like one made with <a>op2</a>) as well.
+--   
+--   See the documentation for <a>liftB</a> for caveats and potential
+--   problematic situations with this.
 liftB2 :: OpB s N2 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a
+
+-- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with
+--   three arguments and three <a>BVar</a> arguments. Lets you not have to
+--   type out the entire <a>Prod</a>.
+--   
+--   <pre>
+--   <a>liftB3</a> o x y z = <a>liftB</a> o (x <a>:*</a> y <a>:*</a> z <a>:*</a> 'ØV')
+--   
+--   myOp :: <a>Op</a> N3 a b
+--   x    :: <a>BVar</a> s n r a
+--   y    :: <a>BVar</a> s n r b
+--   z    :: <a>BVar</a> s n r b
+--   
+--   <a>liftB3</a> myOp x y z :: <a>BVar</a> s n r b
+--   </pre>
+--   
+--   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
+--   an <a>Op</a> here (like one made with <a>op3</a>) as well.
+--   
+--   See the documentation for <a>liftB</a> for caveats and potential
+--   problematic situations with this.
 liftB3 :: OpB s N3 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BVar s n r a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking one
@@ -3631,10 +3854,142 @@ eval :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> b
 -- | Create a <a>BVar</a> that represents just a specific value, that
 --   doesn't depend on any other <a>BVar</a>s.
 constVar :: a -> BVar s n r a
+
+-- | Apply <a>OpB</a> over a <a>VecT</a> of <a>BVar</a>s, as inputs.
+--   Provides "implicit" backpropagation, with deferred evaluation.
+--   
+--   If you had an <tt><a>OpB</a> s N3 a b</tt>, this function will expect
+--   a vector of of three <tt><a>BVar</a> s n r a</tt>s, and the result
+--   will be a <tt><a>BVar</a> s n r b</tt>:
+--   
+--   <pre>
+--   myOp :: <a>OpB</a> s N3 a b
+--   x    :: <a>BVar</a> s n r a
+--   y    :: <a>BVar</a> s n r a
+--   z    :: <a>BVar</a> s n r a
+--   
+--   x <a>:*</a> y :* z :* 'ØV'              :: <a>VecT</a> N3 (<a>BVar</a> s n r) a
+--   <a>liftB</a> myOp (x :* y :* z :* ØV) :: <a>BVar</a> s n r b
+--   </pre>
+--   
+--   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can provide
+--   any <a>Op</a> here, as well (like those created by <a>op1</a>,
+--   <a>op2</a>, <tt>constOp</tt>, <a>op0</a> etc.)
+--   
+--   <a>liftB</a> has an infix alias, <a>.$</a>, so the above example can
+--   also be written as:
+--   
+--   <pre>
+--   myOp <a>.$</a> (x :* y :* z :* ØV) :: <a>BVar</a> s n r b
+--   </pre>
+--   
+--   to let you pretend that you're applying the <tt>myOp</tt> function to
+--   three inputs.
+--   
+--   The result is a new <i>deferred</i> <a>BVar</a>. This should be fine
+--   in most cases, unless you use the result in more than one location.
+--   This will cause evaluation to be duplicated and multiple redundant
+--   graph nodes to be created. If you need to use it in two locations, you
+--   should use <a>opVar</a> instead of <a>liftB</a>, or use
+--   <a>bindVar</a>:
+--   
+--   <pre>
+--   <a>opVar</a> o xs = <a>bindVar</a> (<a>liftB</a> o xs)
+--   </pre>
+--   
+--   <a>liftB</a> can be thought of as a "deferred evaluation" version of
+--   <a>opVar</a>.
 liftB :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
+
+-- | Infix synonym for <a>liftB</a>, which lets you pretend that you're
+--   applying <a>OpB</a>s as if they were functions:
+--   
+--   <pre>
+--   myOp :: <a>OpB</a> s N3 a b
+--   x    :: <a>BVar</a> s n r a
+--   y    :: <a>BVar</a> s n r a
+--   z    :: <a>BVar</a> s n r a
+--   
+--   x <a>:*</a> y :* z :* 'ØV'              :: <a>VecT</a> N3 (<a>BVar</a> s n r) a
+--   myOp <a>.$</a> (x :* y :* z :* ØV) :: <a>BVar</a> s n r b
+--   </pre>
+--   
+--   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
+--   any <a>Op</a> here, as well (like those created by <a>op1</a>,
+--   <a>op2</a>, <tt>constOp</tt>, <a>op0</a> etc.)
+--   
+--   See the documentation for <a>liftB</a> for all the caveats of this
+--   usage.
+--   
+--   <a>.$</a> can also be thought of as a "deferred evaluation" version of
+--   <a>~$</a>:
+--   
+--   <pre>
+--   o <a>~$</a> xs = <a>bindVar</a> (o <a>.$</a> xs)
+--   </pre>
 (.$) :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
+
+-- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with one
+--   argument and a single <a>BVar</a> argument. Lets you not have to type
+--   out the entire <a>VecT</a>.
+--   
+--   <pre>
+--   <a>liftB1</a> o x = <a>liftB</a> o (x <a>:*</a> 'ØV')
+--   
+--   myOp :: <a>Op</a> N2 a b
+--   x    :: <a>BVar</a> s n r a
+--   
+--   <a>liftB1</a> myOp x :: <a>BVar</a> s n r b
+--   </pre>
+--   
+--   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
+--   an <a>Op</a> here (like one made with <a>op1</a>) as well.
+--   
+--   See the documentation for <a>liftB</a> for caveats and potential
+--   problematic situations with this.
 liftB1 :: OpB s N1 a a -> BVar s n r a -> BVar s n r a
+
+-- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with two
+--   arguments and two <a>BVar</a> arguments. Lets you not have to type out
+--   the entire <a>VecT</a>.
+--   
+--   <pre>
+--   <a>liftB2</a> o x y = <a>liftB</a> o (x <a>:*</a> y <a>:*</a> 'ØV')
+--   
+--   myOp :: <a>Op</a> N2 a b
+--   x    :: <a>BVar</a> s n r a
+--   y    :: <a>BVar</a> s n r b
+--   
+--   <a>liftB2</a> myOp x y :: <a>BVar</a> s n r b
+--   </pre>
+--   
+--   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
+--   an <a>Op</a> here (like one made with <a>op2</a>) as well.
+--   
+--   See the documentation for <a>liftB</a> for caveats and potential
+--   problematic situations with this.
 liftB2 :: OpB s N2 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a
+
+-- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with
+--   three arguments and three <a>BVar</a> arguments. Lets you not have to
+--   type out the entire <a>Prod</a>.
+--   
+--   <pre>
+--   <a>liftB3</a> o x y z = <a>liftB</a> o (x <a>:*</a> y <a>:*</a> z <a>:*</a> 'ØV')
+--   
+--   myOp :: <a>Op</a> N3 a b
+--   x    :: <a>BVar</a> s n r a
+--   y    :: <a>BVar</a> s n r b
+--   z    :: <a>BVar</a> s n r b
+--   
+--   <a>liftB3</a> myOp x y z :: <a>BVar</a> s n r b
+--   </pre>
+--   
+--   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
+--   an <a>Op</a> here (like one made with <a>op3</a>) as well.
+--   
+--   See the documentation for <a>liftB</a> for caveats and potential
+--   problematic situations with this.
 liftB3 :: OpB s N3 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BVar s n r a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking one
