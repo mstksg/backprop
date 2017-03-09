@@ -1,6 +1,7 @@
 backprop
 ========
 
+[![backprop on Hackage](https://img.shields.io/hackage/v/backprop.svg?maxAge=2592000)](https://hackage.haskell.org/package/backprop)
 [![Build Status](https://travis-ci.org/mstksg/backprop.svg?branch=master)](https://travis-ci.org/mstksg/backprop)
 
 [**Literate Haskell Tutorial/Demo on MNIST data set**][mnist-lhs] (and [PDF
@@ -16,8 +17,10 @@ gradient descent and other optimization techniques.
 
 [ad]: http://hackage.haskell.org/package/ad
 
-Documentation is currently rendered [on github pages][docs]!
+Currently up on [hackage][], but more up-to-date documentation is currently
+rendered [on github pages][docs]!
 
+[hackage]: http://hackage.haskell.org/package/backprop
 [docs]: https://mstksg.github.io/backprop
 
 MNIST Digit Classifier Example
