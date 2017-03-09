@@ -7,7 +7,7 @@ links-as-notes: true
 title: Learning MNIST with Neural Networks with backprop library
 ---
 
-The *backprop* library performs backpropagation over a *hetereogeneous*
+The *backprop* library performs back-propagation over a *hetereogeneous*
 system of relationships. It offers both an implicit (*[ad]*-like) and
 explicit graph building usage style. Let’s use it to build neural
 networks and learn mnist!

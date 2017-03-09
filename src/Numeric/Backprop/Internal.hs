@@ -25,7 +25,7 @@
 -- Portability : non-portable
 --
 -- Provides the types and instances used for the graph
--- building/backpropagation for the library.
+-- building/back-propagation for the library.
 
 module Numeric.Backprop.Internal
   ( Summer(..), summers, summers'
@@ -103,7 +103,7 @@ data BPState :: Type -> [Type] -> Type where
         -> BPState s rs
 
 -- | A Monad allowing you to explicitly build hetereogeneous data
--- dependency graphs and that the library can perform backpropagation on.
+-- dependency graphs and that the library can perform back-propagation on.
 --
 -- A @'BP' s rs a@ is a 'BP' action that uses an environment of @rs@
 -- returning a @a@.  When "run", it will compute a gradient that is a tuple
@@ -154,7 +154,7 @@ newtype BP s rs a = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s
 -- implicit-graph backprop function).  Instead of directly working with
 -- values, you work with 'BVar's contating those values.  When you work
 -- with a 'BVar', the /backprop/ library can keep track of what values
--- refer to which other values, and so can perform backpropagation to
+-- refer to which other values, and so can perform back-propagation to
 -- compute gradients.
 --
 -- A @'BVar' s rs a@ refers to a value of type @a@, with an environment

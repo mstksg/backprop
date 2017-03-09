@@ -11,13 +11,13 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- Offers full functionality for implicit-graph backpropagation with
+-- Offers full functionality for implicit-graph back-propagation with
 -- monomorphic inputs.  The intended usage is to write a 'BPOp', which is
 -- a normal Haskell function from 'BVar's to a result 'BVar'. These 'BVar's
 -- can be manipulated using their 'Num' / 'Fractional' / 'Floating'
 -- instances.
 --
--- The library can then perform backpropagation on the function (using
+-- The library can then perform back-propagation on the function (using
 -- 'backprop' or 'grad') by using an implicitly built graph.
 --
 -- This is an "implicit-only" version of "Numeric.Backprop.Mono", and
@@ -37,7 +37,7 @@
 --
 -- This module implements pretty much the same functionality as
 -- "Numeric.AD" and "Numeric.AD.Mode.Reverse" from the /ad/ package,
--- because it uses the same implicit-graph backpropagation method.  It
+-- because it uses the same implicit-graph back-propagation method.  It
 -- can't compute jacobians/generalized gradients, however.  This isn't
 -- a fundamental limitation of the implementaiton, though, but rather just
 -- a conscious design decision for this module's API.
@@ -52,7 +52,7 @@ module Numeric.Backprop.Mono.Implicit (
   -- | See "Numeric.Backprop.Mono#vec" for a mini-tutorial on 'VecT' and
   -- 'Vec'
   , VecT(..), Vec, I(..)
-  -- * Backpropagation
+  -- * back-propagation
   , backprop, grad, eval
   -- * Var manipulation
   , constVar, liftB, (.$), liftB1, liftB2, liftB3
@@ -88,7 +88,7 @@ import qualified Numeric.Backprop.Mono        as BP
 -- explicit-graph backprop module "Numeric.Backprop.Mono".
 type BPOp n a b = forall s. VecT n (BVar s n a) a -> BVar s n a b
 
--- | Run backpropagation on a 'BPOp' function, getting both the result and
+-- | Run back-propagation on a 'BPOp' function, getting both the result and
 -- the gradient of the result with respect to the inputs.
 --
 -- @
@@ -127,7 +127,7 @@ grad
 grad f = snd . backprop f
 
 -- | Simply run the 'BPOp' on an input tuple, getting the result without
--- bothering with the gradient or with backpropagation.
+-- bothering with the gradient or with back-propagation.
 --
 -- @
 -- foo :: 'BPOp' 'N2' Double Double

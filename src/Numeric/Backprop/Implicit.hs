@@ -15,12 +15,12 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- Offers full functionality for implicit-graph backpropagation.  The
+-- Offers full functionality for implicit-graph back-propagation.  The
 -- intended usage is to write a 'BPOp', which is a normal Haskell
 -- function from 'BVar's to a result 'BVar'. These 'BVar's can be
 -- manipulated using their 'Num' \/ 'Fractional' \/ 'Floating' instances.
 --
--- The library can then perform backpropagation on the function (using
+-- The library can then perform back-propagation on the function (using
 -- 'backprop' or 'grad') by using an implicitly built graph.
 --
 -- This should actually be powerful enough for most use cases, but falls
@@ -51,7 +51,7 @@ module Numeric.Backprop.Implicit (
   -- | See "Numeric.Backprop#prod" for a mini-tutorial on 'Prod' and
   -- 'Tuple'
   , Prod(..), Tuple, I(..)
-  -- * Backpropagation
+  -- * back-propagation
   , backprop, grad, eval
   , backprop', grad'
   -- * Var manipulation
@@ -115,7 +115,7 @@ backprop'
     -> (a, Tuple rs)
 backprop' ss us f = BP.backprop' ss us $ BP.withInps' (prodLength ss) (return . f)
 
--- | Run backpropagation on a 'BPOp' function, getting both the result and
+-- | Run back-propagation on a 'BPOp' function, getting both the result and
 -- the gradient of the result with respect to the inputs.
 --
 -- @
@@ -164,7 +164,7 @@ grad
 grad f = snd . backprop f
 
 -- | Simply run the 'BPOp' on an input tuple, getting the result without
--- bothering with the gradient or with backpropagation.
+-- bothering with the gradient or with back-propagation.
 --
 -- @
 -- foo :: 'BPOp' '[Double, Double] Double
@@ -242,6 +242,10 @@ partsVar' ss us i r = imap1 (\ix u -> BP.liftB1 (BP.op1' (f ix u)) r) us
 -- Also, if you are literally passing a tuple (like
 -- @'BP' s '[Tuple '[Int, Bool]@) then you can give in the identity
 -- isomorphism ('id') or use 'splitVars'.
+--
+-- At the moment, this implicit 'partsVar' is less efficient than the
+-- explicit 'Numeric.Backprop.partsVar', but this might change in the
+-- future.
 partsVar
     :: forall s rs bs a. (Known Length bs, Every Num bs)
     => Iso' a (Tuple bs)

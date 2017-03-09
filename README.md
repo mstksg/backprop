@@ -84,7 +84,7 @@ runNet inp = evalBPOp (neuralNetExplicit inp)
 ~~~
 
 But, in defining `neuralNet`, we also generated a graph that *backprop* can
-use to do backpropagation, too!
+use to do back-propagation, too!
 
 ~~~haskell
 dot :: KnownNat n
@@ -115,16 +115,49 @@ this gradient to do gradient descent.
 For a more fleshed out example, see the [MNIST tutorial][mnist-lhs] (also
 [rendered as a pdf][mnist-pdf])
 
-What's Next
------------
+Todo
+----
 
-1.  Benchmarks against numeric algorithms implemented from scratch, to gauge
-    how much overhead this library adds
-2.  Benchmarks against other automatic differentiation libraries.
-3.  Open question: can we offer pattern matching/sum type support for
-    "implicit-mode" backprop?  It's already possible for the explicit-graph
-    mode backprop.
-4.  Consider shifting over the implementation to use `unsafePerformIO` like the
-    *ad* library does to leverage some interesting benefits.  Using
-    `unsafePerformIO` might remove the current need for explicit-graph mode, as
-    well.
+1.  Actual profiling and benchmarking, to gauge how much overhead this library
+    adds over "manual" back-propagation.
+
+    Ideally this can be brought down to 0?
+
+2.  Some simple performance and API tweaks that are probably possible now and
+    would clearly benefit: (if you want to contribute)
+
+    a.  Providing optimized `Num`/`Fractional`/`Floating` instances for `BVal`
+        by supplying known gradients directly instead of relying on *ad*.
+
+    b.  Switch from `ST s` to `IO`, and use `unsafePerformIO` to automatically
+        bind `BVal`s (like *ad* does) when using `liftB`.  This might remove
+        some overhead during graph building, and, from an API standpoint,
+        remove the need for explicit binding.
+
+    c.  Switch from `STRef`s/`IORef`s to `Array`.  (This one I'm unclear if it
+        would help any)
+
+3.  Benchmark against competing back-propagation libraries like *ad*, and
+    auto-differentiating tensor libraries like *[grenade][]*
+
+    [grenade]: https://github.com/HuwCampbell/grenade
+
+4.  Explore opportunities for parallelization.  There are some naive ways of
+    directly parallelizing right now, but potential overhead should be
+    investigated.
+
+5.  Some open questions:
+
+    a.  Is it possible to offer pattern matching on sum types/with different
+        constructors for implicit-graph backprop?  It's possible for
+        explicit-graph versions already, with `choicesVar`, but not yet with
+        the implicit-graph interface.  Could be similar to an "Applicative vs.
+        Monad" issue where you can only have pre-determined fixed computation
+        paths when using `Applicative`, but I'm not sure.  Still, it would be
+        nice, because if this was possible, we could possibly do away with
+        explicit-graph mode completely.
+
+    b.  Though we already have sum type support with explicit-graph mode, we
+        can't support GADTs yet.  It'd be nice to see if this is possible,
+        because a lot of dependently typed neural network stuff is made much
+        simpler with GADTs.

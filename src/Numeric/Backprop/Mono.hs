@@ -53,7 +53,7 @@
 -- As a comparison, this implements something similar in functionality to
 -- "Numeric.AD" and "Numeric.AD.Mode.Reverse" from the /ad/ package, in
 -- that they both offer monomorphic automatic differentiation through
--- backpropagation.  This module doesn't allow the computation of jacobians
+-- back-propagation.  This module doesn't allow the computation of jacobians
 -- or generalized gradients for \(\mathbb{R}^N \rightarrow \mathbb{R}^M\)
 -- functions.  This module only computs gradients for \(\mathbb{R}^N
 -- \rightarrow \mathbb{R}\)-like functions.  This is more of a conscious
@@ -150,7 +150,7 @@ import qualified Numeric.Backprop                 as BP
 -- @
 
 -- | A Monad allowing you to explicitly build hetereogeneous data
--- dependency graphs and that the library can perform backpropagation on.
+-- dependency graphs and that the library can perform back-propagation on.
 --
 -- A @'BP' s n r a@ is a 'BP' action that uses an environment @n@ values of
 -- type @r@, and returns an @a@. When "run", it will compute a gradient that
@@ -194,7 +194,7 @@ type BP s n r      = BP.BP s (Replicate n r)
 -- implicit-graph backprop function).  Instead of directly working with
 -- values, you work with 'BVar's contating those values.  When you work
 -- with a 'BVar', the /backprop/ library can keep track of what values
--- refer to which other values, and so can perform backpropagation to
+-- refer to which other values, and so can perform back-propagation to
 -- compute gradients.
 --
 -- A @'BVar' s n r a@ refers to a value of type @a@, with an environment
@@ -232,7 +232,7 @@ type BVar s n a    = BP.BVar s (Replicate n a)
 -- is an action that takes an input environment of @n@ values of type @r@
 -- and produces a 'BVar' containing a value of type @a@.  Because it
 -- returns a 'BVar', the library can track the data dependencies between
--- the 'BVar' and the input environment and perform backpropagation.
+-- the 'BVar' and the input environment and perform back-propagation.
 --
 -- See documentation for 'BP' for an explanation of the phantom type
 -- parameter @s@.
@@ -253,7 +253,7 @@ type BPOp s n r a  = BP s n r (BVar s n r a)
 -- foo (x :* y :* ØV) = x + sqrt y
 -- @
 --
--- If you are exclusively doing implicit backpropagation by combining
+-- If you are exclusively doing implicit back-propagation by combining
 -- 'BVar's and using 'BPOpI's, you are probably better off just importing
 -- "Numeric.Backprop.Mono.Implicit", which provides better tools.  This
 -- type synonym exists in "Numeric.Backprop.Mono" just for the 'implicitly'
@@ -508,7 +508,7 @@ bindVar
     -> BP s n r (BVar s n r a)
 bindVar = BP.bindVar
 
--- | Perform backpropagation on the given 'BPOp'.  Returns the result of
+-- | Perform back-propagation on the given 'BPOp'.  Returns the result of
 -- the operation it represents, as well as the gradient of the result with
 -- respect to its inputs.  See module header for "Numeric.Backprop.Mono"
 -- and package documentation for examples and usages.
@@ -522,7 +522,7 @@ backprop bp i = (x, prodAlong i g)
     (x, g) = BP.backprop' (toSummers i) (toUnities i) bp (vecToProd i)
 
 -- | Simply run the 'BPOp' on an input vector, getting the result without
--- bothering with the gradient or with backpropagation.
+-- bothering with the gradient or with back-propagation.
 evalBPOp
     :: forall n r a. ()
     => (forall s. BPOp s n r a)
@@ -646,7 +646,7 @@ implicitly
 implicitly f = withInps (return . f)
 
 -- | Apply 'OpB' over a 'VecT' of 'BVar's, as inputs. Provides "implicit"
--- backpropagation, with deferred evaluation.
+-- back-propagation, with deferred evaluation.
 --
 -- If you had an @'OpB' s N3 a b@, this function will expect a vector of of
 -- three @'BVar' s n r a@s, and the result will be a @'BVar' s n r b@:

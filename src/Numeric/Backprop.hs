@@ -21,7 +21,7 @@
 --
 -- Provides the 'BP' monad and the 'BVar' type; after manipulating 'BVar's
 -- (inputs to your function) to produce a result, the library tracks internal data
--- dependencies, which are used to perform backpropagation (reverse-mode
+-- dependencies, which are used to perform back-propagation (reverse-mode
 -- automatic differentiation) to calculate the gradient of the output with
 -- respect to the inputs.
 --
@@ -29,9 +29,9 @@
 -- "Numeric.AD.Mode.Reverse", except for a few key differences:
 --
 -- 1. Most importantly, this library implements /heterogeneous/
--- backpropagation, so you can manipulate values of different types (like
+-- back-propagation, so you can manipulate values of different types (like
 -- different matrix and vector types, and product and sum types).  This is
--- essential for things like backpropagation for neural networks.
+-- essential for things like back-propagation for neural networks.
 --
 -- 2. This module allows you to /explicitly/ build your data dependency
 -- graph if you wish, which allows the library to perform optimizations and
@@ -224,7 +224,7 @@ import qualified Generics.SOP              as SOP
 -- is an action that takes an input environment of @rs@ and produces
 -- a 'BVar' containing a value of type @a@.  Because it returns a 'BVar',
 -- the library can track the data dependencies between the 'BVar' and the
--- input environment and perform backpropagation.
+-- input environment and perform back-propagation.
 --
 -- See documentation for 'BP' for an explanation of the phantom type
 -- parameter @s@.
@@ -245,7 +245,7 @@ type BPOp s rs a  = BP s rs (BVar s rs a)
 -- foo (x :< y :< Ø) = x + sqrt y
 -- @
 --
--- If you are exclusively doing implicit backpropagation by combining
+-- If you are exclusively doing implicit back-propagation by combining
 -- 'BVar's and using 'BPOpI's, you are probably better off just importing
 -- "Numeric.Backprop.Implicit", which provides better tools.  This type
 -- synonym exists in "Numeric.Backprop" just for the 'implicitly' function,
@@ -1171,7 +1171,7 @@ backprop' ss us bp env = runST $ do
     grad <- gFunc Nothing
     return (res, grad)
 
--- | Perform backpropagation on the given 'BPOp'.  Returns the result of
+-- | Perform back-propagation on the given 'BPOp'.  Returns the result of
 -- the operation it represents, as well as the gradient of the result with
 -- respect to its inputs.  See module header for "Numeric.Backprop" and
 -- package documentation for examples and usages.
@@ -1211,7 +1211,7 @@ bpOp
 bpOp = bpOp' summers unities
 
 -- | Simply run the 'BPOp' on an input tuple, getting the result without
--- bothering with the gradient or with backpropagation.
+-- bothering with the gradient or with back-propagation.
 evalBPOp
     :: (forall s. BPOp s rs a)  -- ^ 'BPOp' to run
     -> Tuple rs                 -- ^ input
@@ -1407,7 +1407,7 @@ withInps
 withInps = withInps' known
 
 -- | Apply 'OpB' over a 'Prod' of 'BVar's, as inputs. Provides
--- "implicit-graph" backpropagation, with deferred evaluation.
+-- "implicit-graph" back-propagation, with deferred evaluation.
 --
 -- If you had an @'OpB' s '[a, b, c] d@, this function will expect a 3-Prod
 -- of a @'BVar' s rs a@, a @'BVar' s rs b@, and a @'BVar' s rs c@, and the

@@ -1,7 +1,7 @@
 % Neural networks with backprop library
 % Justin Le
 
-The *backprop* library performs backpropagation over a *hetereogeneous*
+The *backprop* library performs back-propagation over a *hetereogeneous*
 system of relationships.  It offers both an implicit ([ad][]-like) and explicit graph
 building usage style.  Let's use it to build neural networks!
 
@@ -124,7 +124,7 @@ specify our graph nodes explicitly.  The results should be the same.
 >     x1 = constVar inp
 
 Now, for the magic of *backprop*:  the library can now take advantage of
-the implicit (or explicit) graph and use it to do backpropagation, too!
+the implicit (or explicit) graph and use it to do back-propagation, too!
 
 > simpleGrad
 >     :: forall m n o. (KnownNat m, KnownNat n, KnownNat o)

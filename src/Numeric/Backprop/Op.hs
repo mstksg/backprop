@@ -22,7 +22,7 @@
 --
 -- Provides the 'Op' (and 'OpM') type and combinators, which represent
 -- differentiable functions/operations on values, and are used by the
--- library to perform backpropagation.
+-- library to perform back-propagation.
 --
 -- Note that 'Op' is a /subset/ or /subtype/ of 'OpM', and so, any function
 -- that expects an @'OpM' m as a@ (or an @'Numeric.Backprop.OpB' s as a@)
@@ -136,7 +136,8 @@ import           Type.Class.Witness
 --     \(\nabla_z \mathbf{x}\).  If the function is given is given
 --     'Nothing', then \(\frac{dz}{dy}\) should be taken to be 1.  In other
 --     words, you would simply need to return \(\nabla_y \mathbf{x}\),
---     unchanged.  The "final result" is just \(f(\mathbf{x})\), and not
+--     unchanged.  That is, an input of 'Nothing' indicates that the "final
+--     result" is just simply \(f(\mathbf{x})\), and not some
 --     \(g(f(\mathbf{x}))\).
 --
 -- This is done so that 'Op's can easily be "chained" together, one after
