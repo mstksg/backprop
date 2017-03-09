@@ -699,6 +699,11 @@ module Numeric.Backprop
 --   with <a>backprop</a> or <a>gradBPOp</a>, it'll return a gradient on
 --   the inputs (<a>Int</a>, <a>Double</a>, and <a>Double</a>) and produce
 --   a value of type <a>Double</a>.
+--   
+--   Now, one powerful thing about this type is that a <a>BP</a> is itself
+--   an <a>Op</a> (or more precisely, an <a>OpB</a>, which is a subtype of
+--   <a>OpM</a>). So, once you create your fancy <a>BP</a> computation, you
+--   can transform it into an <a>OpM</a> using <a>bpOp</a>.
 data BP s rs a
 
 -- | A handy type synonym representing a <a>BP</a> action that returns a
@@ -978,6 +983,10 @@ inpVars :: Known Length rs => Prod (BVar s rs) rs
 --   taking an <tt>rs</tt> and returning an <tt>a</tt>, with all of the
 --   powers and utility of an <a>Op</a>, including all of its
 --   gradient-finding glory.
+--   
+--   Really just reveals the fact that any <tt><a>BPOp</a> s rs a</tt> is
+--   itself an <a>Op</a>, an <tt><a>OpB</a> s rs a</tt>, which makes it a
+--   differentiable function.
 --   
 --   Handy because an <a>OpB</a> can be used with almost all of the
 --   <a>Op</a>-related functions in this moduel, including <a>opVar</a>,
@@ -3221,6 +3230,11 @@ module Numeric.Backprop.Mono
 --   with <a>backprop</a> or <a>gradBPOp</a>, it'll return a gradient on
 --   the inputs (a vector of three <a>Double</a>s) and produce a value of
 --   type <a>Int</a>.
+--   
+--   Now, one powerful thing about this type is that a <a>BP</a> is itself
+--   an <a>Op</a> (or more precisely, an <a>OpM</a>). So, once you create
+--   your fancy <a>BP</a> computation, you can transform it into an
+--   <a>OpM</a> using <a>bpOp</a>.
 type BP s n r = BP s (Replicate n r)
 
 -- | A handy type synonym representing a <a>BP</a> action that returns a
@@ -3465,6 +3479,10 @@ inpVars :: Known Nat n => VecT n (BVar s n r) r
 --   <a>Op</a> taking an <tt>n</tt> <tt>r</tt>s and returning an
 --   <tt>a</tt>, with all of the powers and utility of an <a>Op</a>,
 --   including all of its gradient-finding glory.
+--   
+--   Really just reveals the fact that any <tt><a>BPOp</a> s rs a</tt> is
+--   itself an <a>Op</a>, an <tt><a>OpB</a> s rs a</tt>, which makes it a
+--   differentiable function.
 --   
 --   Handy because an <a>OpB</a> can be used with almost all of the
 --   <a>Op</a>-related functions in this moduel, including <a>opVar</a>,
