@@ -184,6 +184,10 @@ import qualified Numeric.Backprop                 as BP
 --
 -- with 'backprop' or 'gradBPOp', it'll return a gradient on the inputs (a
 -- vector of three 'Double's) and produce a value of type 'Int'.
+--
+-- Now, one powerful thing about this type is that a 'BP' is itself an
+-- 'Op' (or more precisely, an 'OpM').  So, once you create your fancy 'BP'
+-- computation, you can transform it into an 'OpM' using 'bpOp'.
 type BP s n r      = BP.BP s (Replicate n r)
 
 -- | The basic unit of manipulation inside 'BP' (or inside an
@@ -539,6 +543,9 @@ gradBPOp bp = snd . backprop bp
 -- @r@s and producing an @a@ into an 'Op' taking an @n@ @r@s and returning
 -- an @a@, with all of the powers and utility of an 'Op', including all of
 -- its gradient-finding glory.
+--
+-- Really just reveals the fact that any @'BPOp' s rs a@ is itself an 'Op',
+-- an @'OpB' s rs a@, which makes it a differentiable function.
 --
 -- Handy because an 'OpB' can be used with almost all of
 -- the 'Op'-related functions in this moduel, including 'opVar', '~$', etc.

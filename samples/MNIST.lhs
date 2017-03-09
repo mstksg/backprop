@@ -103,6 +103,12 @@ These are pretty straightforward container types...pretty much exactly the
 type you'd make to represent these networks!  Note that, following true
 Haskell form, we separate out logic from data.  This should be all we need.
 
+We derive an instance of `SOP.Generic` from the *[generics-sop][]* package,
+which *backprop* uses to propagate derivatives on values inside product
+types.
+
+[generics-sop]: http://hackage.haskell.org/package/generics-sop
+
 Instances
 ---------
 
@@ -114,7 +120,7 @@ little bit of boilerplate.
 >     Layer w1 b1 + Layer w2 b2 = Layer (w1 + w2) (b1 + b2)
 >     Layer w1 b1 - Layer w2 b2 = Layer (w1 - w2) (b1 - b2)
 >     Layer w1 b1 * Layer w2 b2 = Layer (w1 * w2) (b1 * b2)
->     abs    (Layer w b)        = Layer (abs w) (abs b)
+>     abs    (Layer w b)        = Layer (abs    w) (abs    b)
 >     signum (Layer w b)        = Layer (signum w) (signum b)
 >     negate (Layer w b)        = Layer (negate w) (negate b)
 >     fromInteger x             = Layer (fromInteger x) (fromInteger x)
@@ -123,9 +129,9 @@ little bit of boilerplate.
 >     Net a b c + Net d e f = Net (a + d) (b + e) (c + f)
 >     Net a b c - Net d e f = Net (a - d) (b - e) (c - f)
 >     Net a b c * Net d e f = Net (a * d) (b * e) (c * f)
->     negate (Net a b c)    = Net (negate a) (negate b) (negate c)
->     signum (Net a b c)    = Net (signum a) (signum b) (signum c)
 >     abs    (Net a b c)    = Net (abs    a) (abs    b) (abs    c)
+>     signum (Net a b c)    = Net (signum a) (signum b) (signum c)
+>     negate (Net a b c)    = Net (negate a) (negate b) (negate c)
 >     fromInteger x         = Net (fromInteger x) (fromInteger x) (fromInteger x)
 >
 > instance (KnownNat i, KnownNat o) => Fractional (Layer i o) where
@@ -168,6 +174,11 @@ function.
 >                         , \(fromMaybe 1 -> g) ->
 >                              (g `outer` v, tr m #> g)
 >                         )
+>
+> matVecI
+>     :: (KnownNat m, KnownNat n)
+>     => BPOpI s '[L m n, R n] (R m)
+> matVecI = liftB matVec
 
 Dot products would be nice too.
 
@@ -329,7 +340,7 @@ and a target, using `gradBPOp`:
 >     -> Network i h1 h2 o
 > trainStep r !x !t !n = case gradBPOp o (x ::< n ::< Ø) of
 >     _ ::< gN ::< Ø ->
->         n - (realToFrac r * gN)
+>         n + (realToFrac r * gN)
 >   where
 >     o :: BPOp s '[ R i, Network i h1 h2 o ] Double
 >     o = do
@@ -400,7 +411,7 @@ should work fine.
 >
 >         return ((), n')
 >   where
->     rate  = 0.1
+>     rate  = 0.02
 >     batch = 5000
 
 Each iteration of the loop:
@@ -418,11 +429,11 @@ Result
 ------
 
 I haven't put much into optimizing the library yet, but the network (with
-hidden layer sizes 300 and 100) seems to take 30s on my computer to finish
-a batch of 5000 points.  It's slow, but it's a first unoptimized run and a
-proof of concept!  It's my goal to get this down to a point where the
-result has the same performance characteristics as the actual backend
-(*hmatrix*), and so overhead is 0.
+hidden layer sizes 300 and 100) seems to take 25s on my computer to finish
+a batch of 5000 training points.  It's slow (five minutes per 60000 point
+epooch), but it's a first unoptimized run and a proof of concept!  It's my
+goal to get this down to a point where the result has the same performance
+characteristics as the actual backend (*hmatrix*), and so overhead is 0.
 
 Main takeaways
 ==============
@@ -473,7 +484,7 @@ contents of the idx files into *hmatrix* vectors:
 >     mkImage :: VU.Vector Int -> Maybe (R 784)
 >     mkImage = create . VG.convert . VG.map (\i -> fromIntegral i / 255)
 >     mkLabel :: Int -> Maybe (R 9)
->     mkLabel n = create $ LA.build 9 (\i -> if i == fromIntegral n then 1 else 0)
+>     mkLabel n = create $ LA.build 9 (\i -> if round i == n then 1 else 0)
 
 And here are instances to generating random
 vectors/matrices/layers/networks, used for the initialization step.

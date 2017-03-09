@@ -275,8 +275,8 @@ withParts' ss us i r f = f (partsVar' ss us i r)
 --              (\\(i ::\< b ::\< Ø) -\> F i b        )
 --
 -- stuff :: 'BPOp' s '[Foo] a
--- stuff (foo :< Ø) = 'withParts' fooIso foo $ \case
---     i :< b :< Ø ->
+-- stuff (foo :< Ø) = 'withParts' fooIso foo $ \\case
+--     i :\< b :< Ø -\>
 --       -- now, i is a 'BVar' pointing to the 'Int' inside foo
 --       -- and b is a 'BVar' pointing to the 'Bool' inside foo
 --       -- you can do stuff with the i and b here

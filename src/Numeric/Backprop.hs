@@ -1199,6 +1199,9 @@ bpOp' ss us bp = OpM $ backpropWith ss us bp
 -- with all of the powers and utility of an 'Op', including all of its
 -- gradient-finding glory.
 --
+-- Really just reveals the fact that any @'BPOp' s rs a@ is itself an 'Op',
+-- an @'OpB' s rs a@, which makes it a differentiable function.
+--
 -- Handy because an 'OpB' can be used with almost all of
 -- the 'Op'-related functions in this moduel, including 'opVar', '~$', etc.
 bpOp

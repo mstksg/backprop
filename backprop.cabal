@@ -1,8 +1,7 @@
 name:                backprop
 version:             0.1.0.0
-synopsis:            Graph-based, heterogeneous, type-safe backpropagation in
-                     Haskell
-description:         See README.md
+synopsis:            Heterogeneous, type-safe automatic backpropagation in Haskell
+description:         See <https://github.com/mstksg/backprop#readme README.md>
 homepage:            https://github.com/mstksg/backprop
 license:             BSD3
 license-file:        LICENSE

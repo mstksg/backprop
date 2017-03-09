@@ -139,6 +139,11 @@ data BPState :: Type -> [Type] -> Type where
 -- with 'Numeric.Backprop.backprop' or 'Numeric.Backprop.gradBPOp', it'll
 -- return a gradient on the inputs ('Int', 'Double', and 'Double') and
 -- produce a value of type 'Double'.
+--
+-- Now, one powerful thing about this type is that a 'BP' is itself an
+-- 'Op' (or more precisely, an 'Numeric.Backprop.OpB', which is a subtype of
+-- 'OpM').  So, once you create your fancy 'BP' computation, you can
+-- transform it into an 'OpM' using 'Numeric.Backprop.bpOp'.
 newtype BP s rs a = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s)) a }
       deriving ( Functor
                , Applicative
@@ -255,15 +260,15 @@ instance Num a => Num (BVar s rs a) where
     r1 + r2       = BVOp (r1 :< r2 :< Ø) $ op2 (+)
     r1 - r2       = BVOp (r1 :< r2 :< Ø) $ op2 (-)
     r1 * r2       = BVOp (r1 :< r2 :< Ø) $ op2 (*)
-    negate r      = BVOp (r :< Ø)        $ op1 negate
-    signum r      = BVOp (r :< Ø)        $ op1 negate
-    abs r         = BVOp (r :< Ø)        $ op1 abs
+    negate r      = BVOp (r  :< Ø)       $ op1 negate
+    signum r      = BVOp (r  :< Ø)       $ op1 signum
+    abs r         = BVOp (r  :< Ø)       $ op1 abs
     fromInteger x = BVConst (fromInteger x)
 
 -- | See note for 'Num' instance.
 instance Fractional a => Fractional (BVar s rs a) where
     r1 / r2        = BVOp (r1 :< r2 :< Ø) $ op2 (/)
-    recip r        = BVOp (r :< Ø)        $ op1 recip
+    recip r        = BVOp (r  :< Ø)       $ op1 recip
     fromRational x = BVConst (fromRational x)
 
 -- | See note for 'Num' instance.
