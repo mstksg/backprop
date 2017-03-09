@@ -21,17 +21,18 @@ docs].
   [rendered unstable docs]: https://mstksg.github.io/backprop
 
 ``` {.sourceCode .literate .haskell}
-{-# LANGUAGE DeriveGeneric        #-}
-{-# LANGUAGE GADTs                #-}
-{-# LANGUAGE LambdaCase           #-}
-{-# LANGUAGE RankNTypes           #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE StandaloneDeriving   #-}
-{-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE TypeInType           #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE ViewPatterns         #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE DeriveGeneric                 #-}
+{-# LANGUAGE GADTs                         #-}
+{-# LANGUAGE LambdaCase                    #-}
+{-# LANGUAGE RankNTypes                    #-}
+{-# LANGUAGE ScopedTypeVariables           #-}
+{-# LANGUAGE StandaloneDeriving            #-}
+{-# LANGUAGE TypeApplications              #-}
+{-# LANGUAGE TypeInType                    #-}
+{-# LANGUAGE TypeOperators                 #-}
+{-# LANGUAGE ViewPatterns                  #-}
+{-# OPTIONS_GHC -fno-warn-orphans          #-}
+{-# OPTIONS_GHC -fno-warn-unused-top-binds #-}
 
 import           Data.Functor
 import           Data.Kind

@@ -13,17 +13,18 @@ docs][docs].
 [repo]: https://github.com/mstksg/backprop
 [docs]: https://mstksg.github.io/backprop
 
-> {-# LANGUAGE DeriveGeneric        #-}
-> {-# LANGUAGE GADTs                #-}
-> {-# LANGUAGE LambdaCase           #-}
-> {-# LANGUAGE RankNTypes           #-}
-> {-# LANGUAGE ScopedTypeVariables  #-}
-> {-# LANGUAGE StandaloneDeriving   #-}
-> {-# LANGUAGE TypeApplications     #-}
-> {-# LANGUAGE TypeInType           #-}
-> {-# LANGUAGE TypeOperators        #-}
-> {-# LANGUAGE ViewPatterns         #-}
-> {-# OPTIONS_GHC -fno-warn-orphans #-}
+> {-# LANGUAGE DeriveGeneric                 #-}
+> {-# LANGUAGE GADTs                         #-}
+> {-# LANGUAGE LambdaCase                    #-}
+> {-# LANGUAGE RankNTypes                    #-}
+> {-# LANGUAGE ScopedTypeVariables           #-}
+> {-# LANGUAGE StandaloneDeriving            #-}
+> {-# LANGUAGE TypeApplications              #-}
+> {-# LANGUAGE TypeInType                    #-}
+> {-# LANGUAGE TypeOperators                 #-}
+> {-# LANGUAGE ViewPatterns                  #-}
+> {-# OPTIONS_GHC -fno-warn-orphans          #-}
+> {-# OPTIONS_GHC -fno-warn-unused-top-binds #-}
 > 
 > import           Data.Functor
 > import           Data.Kind

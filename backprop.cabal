@@ -1,5 +1,5 @@
 name:                backprop
-version:             0.1.0.0
+version:             0.0.1.0
 synopsis:            Heterogeneous, type-safe automatic backpropagation in Haskell
 description:         See <https://github.com/mstksg/backprop#readme README.md>
 homepage:            https://github.com/mstksg/backprop
@@ -7,10 +7,16 @@ license:             BSD3
 license-file:        LICENSE
 author:              Justin Le
 maintainer:          justin@jle.im
-copyright:           (c) Justin Le 2016
+copyright:           (c) Justin Le 2017
 category:            Web
 build-type:          Simple
 extra-source-files:  README.md
+                     CHANGELOG.md
+                     Build.hs
+                     renders/MNIST.md
+                     renders/MNIST.pdf
+                     renders/NeuralTest.md
+                     renders/NeuralTest.pdf
 cabal-version:       >=1.10
 
 library
