@@ -6,7 +6,7 @@
 --   
 --   See <a>README.md</a>
 @package backprop
-@version 0.1.0.0
+@version 0.0.1.0
 
 
 -- | A poor substitute for the <a>Control.Lens.Iso</a> module in
