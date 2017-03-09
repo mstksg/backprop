@@ -23,10 +23,11 @@ rendered [on github pages][docs]!
 [hackage]: http://hackage.haskell.org/package/backprop
 [docs]: https://mstksg.github.io/backprop
 
-At the moment this project is in **pre-alpha** (*v0.0.1.0*), and is published/put up on
-Hackage as a call for comments and thoughts.  See [the todos section][todos]
-for more information on what's missing, and how one would be able to
-contribute!
+At the moment this project is in **pre-alpha** (*v0.0.1.0*), and is
+published/put up on Hackage as a call for comments and thoughts.  Performance
+was not yet a priority up until this moment, but is now.  (Previously, highest
+priority was API/usability).  See [the todos section][todos] for more
+information on what's missing, and how one would be able to contribute!
 
 [todos]: https://github.com/mstksg/backprop#todo
 
