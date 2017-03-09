@@ -150,7 +150,7 @@ Todo
 3.  Benchmark against competing back-propagation libraries like *ad*, and
     auto-differentiating tensor libraries like *[grenade][]*
 
-    [grenade]: https://github.com/HuwCampbell/grenade
+[grenade]: https://github.com/HuwCampbell/grenade
 
 4.  Explore opportunities for parallelization.  There are some naive ways of
     directly parallelizing right now, but potential overhead should be
