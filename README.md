@@ -43,6 +43,10 @@ Vector/matrix types are from the *hmatrix* package.
 logistic :: Floating a => a -> a
 logistic x = 1 / (1 + exp (-x))
 
+matVec
+    :: (KnownNat m, KnownNat n)
+    => Op '[ L m n, R n ] (R m)
+
 neuralNetImplicit
       :: (KnownNat m, KnownNat n, KnownNat o)
       => R m
@@ -83,6 +87,9 @@ But, in defining `neuralNet`, we also generated a graph that *backprop* can
 use to do backpropagation, too!
 
 ~~~haskell
+dot :: KnownNat n
+    => Op '[ R n  , R n ] Double
+
 netGrad
     :: forall m n o. (KnownNat m, KnownNat n, KnownNat o)
     => R m
@@ -92,7 +99,6 @@ netGrad
 netGrad inp targ params = gradBPOp opError params
   where
     -- calculate squared error, in *explicit* style
-    -- (implicit style also possible)
     opError :: BPOp s '[ L n m, R n, L o n, R o ] Double
     opError = do
         res <- neuralNetExplicit inp
@@ -119,4 +125,6 @@ What's Next
     "implicit-mode" backprop?  It's already possible for the explicit-graph
     mode backprop.
 4.  Consider shifting over the implementation to use `unsafePerformIO` like the
-    *ad* library does to leverage some interesting benefits.
+    *ad* library does to leverage some interesting benefits.  Using
+    `unsafePerformIO` might remove the current need for explicit-graph mode, as
+    well.

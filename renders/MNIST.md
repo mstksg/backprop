@@ -52,7 +52,6 @@ import           Data.Foldable
 import           Data.IDX
 import           Data.List.Split
 import           Data.Maybe
-import           Data.Proxy
 import           Data.Time.Clock
 import           Data.Traversable
 import           Data.Tuple
@@ -65,7 +64,7 @@ import qualified Data.Vector                         as V
 import qualified Data.Vector.Generic                 as VG
 import qualified Data.Vector.Unboxed                 as VU
 import qualified Generics.SOP                        as SOP
-import qualified Numeric.LinearAlgebra               as LA
+import qualified Numeric.LinearAlgebra               as HM
 import qualified System.Random.MWC                   as MWC
 import qualified System.Random.MWC.Distributions     as MWC
 ```
@@ -184,15 +183,10 @@ gradient function.
 matVec
     :: (KnownNat m, KnownNat n)
     => Op '[ L m n, R n ] (R m)
-matVec = op2' $ \m v -> ( m #> v
-                        , \(fromMaybe 1 -> g) ->
-                             (g `outer` v, tr m #> g)
-                        )
-
-matVecI
-    :: (KnownNat m, KnownNat n)
-    => BPOpI s '[L m n, R n] (R m)
-matVecI = liftB matVec
+matVec = op2' $ \m v ->
+  ( m #> v, \(fromMaybe 1 -> g) ->
+              (g `outer` v, tr m #> g)
+  )
 ```
 
 Dot products would be nice too.
@@ -200,36 +194,41 @@ Dot products would be nice too.
 ``` {.sourceCode .literate .haskell}
 dot :: KnownNat n
     => Op '[ R n, R n ] Double
-dot = op2' $ \x y -> ( x <.> y
-                     , \case Nothing -> (y, x)
-                             Just g  -> (konst g * y, x * konst g)
-                     )
+dot = op2' $ \x y ->
+  ( x <.> y, \case Nothing -> (y, x)
+                   Just g  -> (konst g * y, x * konst g)
+  )
 ```
 
-Also a “constant vector” function, which generates a constant vector
-from a given element.
+Also a “scaling” function, scales a vector by a given factor.
 
 ``` {.sourceCode .literate .haskell}
-rkonst
-    :: forall n. KnownNat n
-    => Op '[ Double ] (R n)
-rkonst = op1' $ \x -> (konst x, maybe (fromIntegral (natVal @n Proxy))
-                                      (LA.sumElements . extract)
-                      )
+scale
+    :: KnownNat n
+    => Op '[ Double, R n ] (R n)
+scale = op2' $ \a x ->
+  ( konst a * x
+  , \case Nothing -> (HM.sumElements (extract x      ), konst a    )
+          Just g  -> (HM.sumElements (extract (x * g)), konst a * g)
+  )
 ```
 
 Finally, an operation to sum all of the items in the vector.
 
 ``` {.sourceCode .literate .haskell}
-rsum
+vsum
     :: KnownNat n
     => Op '[ R n ] Double
-rsum = op1' $ \x -> (LA.sumElements (extract x), maybe 1 konst)
+vsum = op1' $ \x -> (HM.sumElements (extract x), maybe 1 konst)
 ```
 
-And why not, here’s a logistic function. We don’t need to define this as
-an `Op` up-front, because the library can automatically promote any
-numeric polymorphic `a -> a` or `a -> a -> a` to an `Op` anyways later.
+And why not, here’s the [logistic function], which we’ll use as an
+activation function for internal layers. We don’t need to define this as
+an `Op` up-front right now, because the library can automatically
+promote any numeric polymorphic function (an `a -> a` or `a -> a -> a`,
+etc.) to an `Op` anyways.
+
+  [logistic function]: https://en.wikipedia.org/wiki/Logistic_function
 
 ``` {.sourceCode .literate .haskell}
 logistic :: Floating a => a -> a
@@ -288,8 +287,8 @@ runNetwork = withInps $ \(x :< n :< Ø) -> do
     softmax :: KnownNat n => BPOp s '[ R n ] (R n)
     softmax = withInps $ \(x :< Ø) -> do
         expX <- bindVar (exp x)
-        totX <- rsum ~$ (expX :< Ø)
-        return $ expX / liftB1 rkonst totX
+        totX <- vsum ~$ (expX   :< Ø)
+        scale        ~$ (1/totX :< expX :< Ø)
 ```
 
 After splitting out the layers in the input `Network`, we run each layer
@@ -374,7 +373,7 @@ trainStep
     -> Network i h1 h2 o
 trainStep r !x !t !n = case gradBPOp o (x ::< n ::< Ø) of
     _ ::< gN ::< Ø ->
-        n + (realToFrac r * gN)
+        n - (realToFrac r * gN)
   where
     o :: BPOp s '[ R i, Network i h1 h2 o ] Double
     o = do
@@ -411,7 +410,7 @@ testNet xs n = sum (map (uncurry test) xs) / fromIntegral (length xs)
   where
     test :: R i -> R o -> Double
     test x (extract->t)
-        | LA.maxIndex t == LA.maxIndex (extract r) = 1
+        | HM.maxIndex t == HM.maxIndex (extract r) = 1
         | otherwise                                = 0
       where
         r :: R o
@@ -530,7 +529,7 @@ loadMNIST fpI fpL = runMaybeT $ do
     mkImage :: VU.Vector Int -> Maybe (R 784)
     mkImage = create . VG.convert . VG.map (\i -> fromIntegral i / 255)
     mkLabel :: Int -> Maybe (R 9)
-    mkLabel n = create $ LA.build 9 (\i -> if round i == n then 1 else 0)
+    mkLabel n = create $ HM.build 9 (\i -> if round i == n then 1 else 0)
 ```
 
 And here are instances to generating random
