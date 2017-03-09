@@ -189,7 +189,7 @@ I :: a -> I a
 
 -- | Provides the <a>Op</a> (and <a>OpM</a>) type and combinators, which
 --   represent differentiable functions/operations on values, and are used
---   by the library to perform backpropagation.
+--   by the library to perform back-propagation.
 --   
 --   Note that <a>Op</a> is a <i>subset</i> or <i>subtype</i> of
 --   <a>OpM</a>, and so, any function that expects an <tt><a>OpM</a> m as
@@ -637,17 +637,18 @@ instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, D
 -- | Provides the <a>BP</a> monad and the <a>BVar</a> type; after
 --   manipulating <a>BVar</a>s (inputs to your function) to produce a
 --   result, the library tracks internal data dependencies, which are used
---   to perform backpropagation (reverse-mode automatic differentiation) to
---   calculate the gradient of the output with respect to the inputs.
+--   to perform back-propagation (reverse-mode automatic differentiation)
+--   to calculate the gradient of the output with respect to the inputs.
 --   
 --   Similar to automatic differentiation from the <i>ad</i> library and
 --   <a>Numeric.AD.Mode.Reverse</a>, except for a few key differences:
 --   
 --   <ol>
 --   <li>Most importantly, this library implements <i>heterogeneous</i>
---   backpropagation, so you can manipulate values of different types (like
---   different matrix and vector types, and product and sum types). This is
---   essential for things like backpropagation for neural networks.</li>
+--   back-propagation, so you can manipulate values of different types
+--   (like different matrix and vector types, and product and sum types).
+--   This is essential for things like back-propagation for neural
+--   networks.</li>
 --   <li>This module allows you to <i>explicitly</i> build your data
 --   dependency graph if you wish, which allows the library to perform
 --   optimizations and reduce extra allocation, which may or may not
@@ -662,7 +663,8 @@ instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, D
 module Numeric.Backprop
 
 -- | A Monad allowing you to explicitly build hetereogeneous data
---   dependency graphs and that the library can perform backpropagation on.
+--   dependency graphs and that the library can perform back-propagation
+--   on.
 --   
 --   A <tt><a>BP</a> s rs a</tt> is a <a>BP</a> action that uses an
 --   environment of <tt>rs</tt> returning a <tt>a</tt>. When "run", it will
@@ -720,7 +722,7 @@ data BP s rs a
 --   produces a <a>BVar</a> containing a value of type <tt>a</tt>. Because
 --   it returns a <a>BVar</a>, the library can track the data dependencies
 --   between the <a>BVar</a> and the input environment and perform
---   backpropagation.
+--   back-propagation.
 --   
 --   See documentation for <a>BP</a> for an explanation of the phantom type
 --   parameter <tt>s</tt>.
@@ -741,7 +743,7 @@ type BPOp s rs a = BP s rs (BVar s rs a)
 --   foo (x :&lt; y :&lt; Ø) = x + sqrt y
 --   </pre>
 --   
---   If you are exclusively doing implicit backpropagation by combining
+--   If you are exclusively doing implicit back-propagation by combining
 --   <a>BVar</a>s and using <a>BPOpI</a>s, you are probably better off just
 --   importing <a>Numeric.Backprop.Implicit</a>, which provides better
 --   tools. This type synonym exists in <a>Numeric.Backprop</a> just for
@@ -755,7 +757,7 @@ type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 --   values, you work with <a>BVar</a>s contating those values. When you
 --   work with a <a>BVar</a>, the <i>backprop</i> library can keep track of
 --   what values refer to which other values, and so can perform
---   backpropagation to compute gradients.
+--   back-propagation to compute gradients.
 --   
 --   A <tt><a>BVar</a> s rs a</tt> refers to a value of type <tt>a</tt>,
 --   with an environment of values of the types <tt>rs</tt>. The phantom
@@ -852,7 +854,7 @@ newtype I a :: * -> *
 I :: a -> I a
 [getI] :: I a -> a
 
--- | Perform backpropagation on the given <a>BPOp</a>. Returns the result
+-- | Perform back-propagation on the given <a>BPOp</a>. Returns the result
 --   of the operation it represents, as well as the gradient of the result
 --   with respect to its inputs. See module header for
 --   <a>Numeric.Backprop</a> and package documentation for examples and
@@ -860,7 +862,7 @@ I :: a -> I a
 backprop :: forall rs a. Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> (a, Tuple rs)
 
 -- | Simply run the <a>BPOp</a> on an input tuple, getting the result
---   without bothering with the gradient or with backpropagation.
+--   without bothering with the gradient or with back-propagation.
 evalBPOp :: (forall s. BPOp s rs a) -> Tuple rs -> a
 
 -- | Run the <a>BPOp</a> on an input tuple and return the gradient of the
@@ -1671,7 +1673,7 @@ sopVar' :: forall s rs bss b. Prod (Prod Summer) bss -> Prod (Prod Unity) bss ->
 gSplits' :: forall s rs b. Generic b => Prod (Prod Summer) (Code b) -> Prod (Prod Unity) (Code b) -> BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) (Code b))
 
 -- | Apply <a>OpB</a> over a <a>Prod</a> of <a>BVar</a>s, as inputs.
---   Provides "implicit-graph" backpropagation, with deferred evaluation.
+--   Provides "implicit-graph" back-propagation, with deferred evaluation.
 --   
 --   If you had an <tt><a>OpB</a> s '[a, b, c] d</tt>, this function will
 --   expect a 3-Prod of a <tt><a>BVar</a> s rs a</tt>, a <tt><a>BVar</a> s
@@ -2037,13 +2039,13 @@ summers' :: Every Num as => Length as -> Prod Summer as
 unities' :: Every Num as => Length as -> Prod Unity as
 
 
--- | Offers full functionality for implicit-graph backpropagation. The
+-- | Offers full functionality for implicit-graph back-propagation. The
 --   intended usage is to write a <a>BPOp</a>, which is a normal Haskell
 --   function from <a>BVar</a>s to a result <a>BVar</a>. These <a>BVar</a>s
 --   can be manipulated using their <a>Num</a> / <a>Fractional</a> /
 --   <a>Floating</a> instances.
 --   
---   The library can then perform backpropagation on the function (using
+--   The library can then perform back-propagation on the function (using
 --   <a>backprop</a> or <a>grad</a>) by using an implicitly built graph.
 --   
 --   This should actually be powerful enough for most use cases, but falls
@@ -2091,7 +2093,7 @@ type BPOp rs a = forall s. Prod (BVar s rs) rs -> BVar s rs a
 --   values, you work with <a>BVar</a>s contating those values. When you
 --   work with a <a>BVar</a>, the <i>backprop</i> library can keep track of
 --   what values refer to which other values, and so can perform
---   backpropagation to compute gradients.
+--   back-propagation to compute gradients.
 --   
 --   A <tt><a>BVar</a> s rs a</tt> refers to a value of type <tt>a</tt>,
 --   with an environment of values of the types <tt>rs</tt>. The phantom
@@ -2188,8 +2190,8 @@ newtype I a :: * -> *
 I :: a -> I a
 [getI] :: I a -> a
 
--- | Run backpropagation on a <a>BPOp</a> function, getting both the result
---   and the gradient of the result with respect to the inputs.
+-- | Run back-propagation on a <a>BPOp</a> function, getting both the
+--   result and the gradient of the result with respect to the inputs.
 --   
 --   <pre>
 --   foo :: <a>BPOp</a> '[Double, Double] Double
@@ -2221,7 +2223,7 @@ backprop :: (Known Length rs, Every Num rs, Num a) => BPOp rs a -> Tuple rs -> (
 grad :: (Known Length rs, Every Num rs, Num a) => BPOp rs a -> Tuple rs -> Tuple rs
 
 -- | Simply run the <a>BPOp</a> on an input tuple, getting the result
---   without bothering with the gradient or with backpropagation.
+--   without bothering with the gradient or with back-propagation.
 --   
 --   <pre>
 --   foo :: <a>BPOp</a> '[Double, Double] Double
@@ -2251,7 +2253,7 @@ grad' :: Prod Summer rs -> Prod Unity rs -> BPOp rs a -> Tuple rs -> Tuple rs
 constVar :: a -> BVar s rs a
 
 -- | Apply <a>OpB</a> over a <a>Prod</a> of <a>BVar</a>s, as inputs.
---   Provides "implicit-graph" backpropagation, with deferred evaluation.
+--   Provides "implicit-graph" back-propagation, with deferred evaluation.
 --   
 --   If you had an <tt><a>OpB</a> s '[a, b, c] d</tt>, this function will
 --   expect a 3-Prod of a <tt><a>BVar</a> s rs a</tt>, a <tt><a>BVar</a> s
@@ -2427,6 +2429,9 @@ liftB3 :: OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar s rs c -> BVa
 --   Also, if you are literally passing a tuple (like <tt><a>BP</a> s
 --   '[Tuple '[Int, Bool]</tt>) then you can give in the identity
 --   isomorphism (<a>id</a>) or use <a>splitVars</a>.
+--   
+--   At the moment, this implicit <a>partsVar</a> is less efficient than
+--   the explicit <a>partsVar</a>, but this might change in the future.
 partsVar :: forall s rs bs a. (Known Length bs, Every Num bs) => Iso' a (Tuple bs) -> BVar s rs a -> Prod (BVar s rs) bs
 
 -- | A continuation-based version of <a>partsVar</a>. Instead of binding
@@ -3176,8 +3181,8 @@ type N10 = S N9
 --   As a comparison, this implements something similar in functionality to
 --   <a>Numeric.AD</a> and <a>Numeric.AD.Mode.Reverse</a> from the
 --   <i>ad</i> package, in that they both offer monomorphic automatic
---   differentiation through backpropagation. This module doesn't allow the
---   computation of jacobians or generalized gradients for &lt;math&gt;
+--   differentiation through back-propagation. This module doesn't allow
+--   the computation of jacobians or generalized gradients for &lt;math&gt;
 --   functions. This module only computs gradients for (mathbb{R}^N
 --   rightarrow mathbb{R})-like functions. This is more of a conscious
 --   design decision in the API of this module rather than a fundamental
@@ -3191,7 +3196,8 @@ type N10 = S N9
 module Numeric.Backprop.Mono
 
 -- | A Monad allowing you to explicitly build hetereogeneous data
---   dependency graphs and that the library can perform backpropagation on.
+--   dependency graphs and that the library can perform back-propagation
+--   on.
 --   
 --   A <tt><a>BP</a> s n r a</tt> is a <a>BP</a> action that uses an
 --   environment <tt>n</tt> values of type <tt>r</tt>, and returns an
@@ -3251,7 +3257,7 @@ type BP s n r = BP s (Replicate n r)
 --   type <tt>r</tt> and produces a <a>BVar</a> containing a value of type
 --   <tt>a</tt>. Because it returns a <a>BVar</a>, the library can track
 --   the data dependencies between the <a>BVar</a> and the input
---   environment and perform backpropagation.
+--   environment and perform back-propagation.
 --   
 --   See documentation for <a>BP</a> for an explanation of the phantom type
 --   parameter <tt>s</tt>.
@@ -3273,7 +3279,7 @@ type BPOp s n r a = BP s n r (BVar s n r a)
 --   foo (x :* y :* ØV) = x + sqrt y
 --   </pre>
 --   
---   If you are exclusively doing implicit backpropagation by combining
+--   If you are exclusively doing implicit back-propagation by combining
 --   <a>BVar</a>s and using <a>BPOpI</a>s, you are probably better off just
 --   importing <a>Numeric.Backprop.Mono.Implicit</a>, which provides better
 --   tools. This type synonym exists in <a>Numeric.Backprop.Mono</a> just
@@ -3287,7 +3293,7 @@ type BPOpI s n r a = VecT n (BVar s n r) r -> BVar s n r a
 --   values, you work with <a>BVar</a>s contating those values. When you
 --   work with a <a>BVar</a>, the <i>backprop</i> library can keep track of
 --   what values refer to which other values, and so can perform
---   backpropagation to compute gradients.
+--   back-propagation to compute gradients.
 --   
 --   A <tt><a>BVar</a> s n r a</tt> refers to a value of type <tt>a</tt>,
 --   with an environment of <tt>n</tt> values of type <tt>r</tt>. The
@@ -3381,7 +3387,7 @@ newtype I a :: * -> *
 I :: a -> I a
 [getI] :: I a -> a
 
--- | Perform backpropagation on the given <a>BPOp</a>. Returns the result
+-- | Perform back-propagation on the given <a>BPOp</a>. Returns the result
 --   of the operation it represents, as well as the gradient of the result
 --   with respect to its inputs. See module header for
 --   <a>Numeric.Backprop.Mono</a> and package documentation for examples
@@ -3389,7 +3395,7 @@ I :: a -> I a
 backprop :: forall n r a. Num r => (forall s. BPOp s n r a) -> Vec n r -> (a, Vec n r)
 
 -- | Simply run the <a>BPOp</a> on an input vector, getting the result
---   without bothering with the gradient or with backpropagation.
+--   without bothering with the gradient or with back-propagation.
 evalBPOp :: forall n r a. (forall s. BPOp s n r a) -> Vec n r -> a
 
 -- | Run the <a>BPOp</a> on an input vector and return the gradient of the
@@ -3674,7 +3680,7 @@ opVar3 :: forall s n r a b. Num b => OpB s N3 a b -> BVar s n r a -> BVar s n r 
 infixr 5 -$
 
 -- | Apply <a>OpB</a> over a <a>VecT</a> of <a>BVar</a>s, as inputs.
---   Provides "implicit" backpropagation, with deferred evaluation.
+--   Provides "implicit" back-propagation, with deferred evaluation.
 --   
 --   If you had an <tt><a>OpB</a> s N3 a b</tt>, this function will expect
 --   a vector of of three <tt><a>BVar</a> s n r a</tt>s, and the result
@@ -3974,13 +3980,13 @@ type N9 = S N8
 type N10 = S N9
 
 
--- | Offers full functionality for implicit-graph backpropagation with
+-- | Offers full functionality for implicit-graph back-propagation with
 --   monomorphic inputs. The intended usage is to write a <a>BPOp</a>,
 --   which is a normal Haskell function from <a>BVar</a>s to a result
 --   <a>BVar</a>. These <a>BVar</a>s can be manipulated using their
 --   <a>Num</a> <i> <a>Fractional</a> </i> <a>Floating</a> instances.
 --   
---   The library can then perform backpropagation on the function (using
+--   The library can then perform back-propagation on the function (using
 --   <a>backprop</a> or <a>grad</a>) by using an implicitly built graph.
 --   
 --   This is an "implicit-only" version of <a>Numeric.Backprop.Mono</a>,
@@ -4002,7 +4008,7 @@ type N10 = S N9
 --   This module implements pretty much the same functionality as
 --   <a>Numeric.AD</a> and <a>Numeric.AD.Mode.Reverse</a> from the
 --   <i>ad</i> package, because it uses the same implicit-graph
---   backpropagation method. It can't compute jacobians/generalized
+--   back-propagation method. It can't compute jacobians/generalized
 --   gradients, however. This isn't a fundamental limitation of the
 --   implementaiton, though, but rather just a conscious design decision
 --   for this module's API.
@@ -4013,7 +4019,7 @@ module Numeric.Backprop.Mono.Implicit
 --   values, you work with <a>BVar</a>s contating those values. When you
 --   work with a <a>BVar</a>, the <i>backprop</i> library can keep track of
 --   what values refer to which other values, and so can perform
---   backpropagation to compute gradients.
+--   back-propagation to compute gradients.
 --   
 --   A <tt><a>BVar</a> s n r a</tt> refers to a value of type <tt>a</tt>,
 --   with an environment of <tt>n</tt> values of type <tt>r</tt>. The
@@ -4127,8 +4133,8 @@ newtype I a :: * -> *
 I :: a -> I a
 [getI] :: I a -> a
 
--- | Run backpropagation on a <a>BPOp</a> function, getting both the result
---   and the gradient of the result with respect to the inputs.
+-- | Run back-propagation on a <a>BPOp</a> function, getting both the
+--   result and the gradient of the result with respect to the inputs.
 --   
 --   <pre>
 --   foo :: <a>BPOp</a> <a>N2</a> Double Double
@@ -4160,7 +4166,7 @@ backprop :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> (b, V
 grad :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> Vec n a
 
 -- | Simply run the <a>BPOp</a> on an input tuple, getting the result
---   without bothering with the gradient or with backpropagation.
+--   without bothering with the gradient or with back-propagation.
 --   
 --   <pre>
 --   foo :: <a>BPOp</a> <a>N2</a> Double Double
@@ -4180,7 +4186,7 @@ eval :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> b
 constVar :: a -> BVar s n r a
 
 -- | Apply <a>OpB</a> over a <a>VecT</a> of <a>BVar</a>s, as inputs.
---   Provides "implicit" backpropagation, with deferred evaluation.
+--   Provides "implicit" back-propagation, with deferred evaluation.
 --   
 --   If you had an <tt><a>OpB</a> s N3 a b</tt>, this function will expect
 --   a vector of of three <tt><a>BVar</a> s n r a</tt>s, and the result

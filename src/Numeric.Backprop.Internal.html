@@ -25,7 +25,7 @@
 </span><a name="line-25"></a><span class="hs-comment">-- Portability : non-portable</span><span>
 </span><a name="line-26"></a><span class="hs-comment">--</span><span>
 </span><a name="line-27"></a><span class="hs-comment">-- Provides the types and instances used for the graph</span><span>
-</span><a name="line-28"></a><span class="hs-comment">-- building/backpropagation for the library.</span><span>
+</span><a name="line-28"></a><span class="hs-comment">-- building/back-propagation for the library.</span><span>
 </span><a name="line-29"></a><span>
 </span><a name="line-30"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">Backprop</span><span class="hs-operator">.</span><span class="hs-identifier">Internal</span><span>
 </span><a name="line-31"></a><span>  </span><span class="hs-special">(</span><span> </span><a href="Numeric.Backprop.Internal.Helper.html#Summer"><span class="hs-identifier hs-type">Summer</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Internal.Helper.html#summers"><span class="hs-identifier hs-var">summers</span></a><span class="hs-special">,</span><span> </span><a href="Numeric.Backprop.Internal.Helper.html#summers%27"><span class="hs-identifier hs-var">summers'</span></a><span>
@@ -103,7 +103,7 @@
 </span><a name="line-103"></a><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BPState"><span class="hs-identifier hs-type">BPState</span></a><span> </span><a href="#local-6989586621679151281"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679151282"><span class="hs-identifier hs-type">rs</span></a><span>
 </span><a name="line-104"></a><span>
 </span><a name="line-105"></a><span class="hs-comment">-- | A Monad allowing you to explicitly build hetereogeneous data</span><span>
-</span><a name="line-106"></a><span class="hs-comment">-- dependency graphs and that the library can perform backpropagation on.</span><span>
+</span><a name="line-106"></a><span class="hs-comment">-- dependency graphs and that the library can perform back-propagation on.</span><span>
 </span><a name="line-107"></a><span class="hs-comment">--</span><span>
 </span><a name="line-108"></a><span class="hs-comment">-- A @'BP' s rs a@ is a 'BP' action that uses an environment of @rs@</span><span>
 </span><a name="line-109"></a><span class="hs-comment">-- returning a @a@.  When &quot;run&quot;, it will compute a gradient that is a tuple</span><span>
@@ -154,7 +154,7 @@
 </span><a name="line-154"></a><span class="hs-comment">-- implicit-graph backprop function).  Instead of directly working with</span><span>
 </span><a name="line-155"></a><span class="hs-comment">-- values, you work with 'BVar's contating those values.  When you work</span><span>
 </span><a name="line-156"></a><span class="hs-comment">-- with a 'BVar', the /backprop/ library can keep track of what values</span><span>
-</span><a name="line-157"></a><span class="hs-comment">-- refer to which other values, and so can perform backpropagation to</span><span>
+</span><a name="line-157"></a><span class="hs-comment">-- refer to which other values, and so can perform back-propagation to</span><span>
 </span><a name="line-158"></a><span class="hs-comment">-- compute gradients.</span><span>
 </span><a name="line-159"></a><span class="hs-comment">--</span><span>
 </span><a name="line-160"></a><span class="hs-comment">-- A @'BVar' s rs a@ refers to a value of type @a@, with an environment</span><span>

@@ -53,7 +53,7 @@
 </span><a name="line-53"></a><span class="hs-comment">-- As a comparison, this implements something similar in functionality to</span><span>
 </span><a name="line-54"></a><span class="hs-comment">-- &quot;Numeric.AD&quot; and &quot;Numeric.AD.Mode.Reverse&quot; from the /ad/ package, in</span><span>
 </span><a name="line-55"></a><span class="hs-comment">-- that they both offer monomorphic automatic differentiation through</span><span>
-</span><a name="line-56"></a><span class="hs-comment">-- backpropagation.  This module doesn't allow the computation of jacobians</span><span>
+</span><a name="line-56"></a><span class="hs-comment">-- back-propagation.  This module doesn't allow the computation of jacobians</span><span>
 </span><a name="line-57"></a><span class="hs-comment">-- or generalized gradients for \(\mathbb{R}^N \rightarrow \mathbb{R}^M\)</span><span>
 </span><a name="line-58"></a><span class="hs-comment">-- functions.  This module only computs gradients for \(\mathbb{R}^N</span><span>
 </span><a name="line-59"></a><span class="hs-comment">-- \rightarrow \mathbb{R}\)-like functions.  This is more of a conscious</span><span>
@@ -150,7 +150,7 @@
 </span><a name="line-150"></a><span class="hs-comment">-- @</span><span>
 </span><a name="line-151"></a><span>
 </span><a name="line-152"></a><span class="hs-comment">-- | A Monad allowing you to explicitly build hetereogeneous data</span><span>
-</span><a name="line-153"></a><span class="hs-comment">-- dependency graphs and that the library can perform backpropagation on.</span><span>
+</span><a name="line-153"></a><span class="hs-comment">-- dependency graphs and that the library can perform back-propagation on.</span><span>
 </span><a name="line-154"></a><span class="hs-comment">--</span><span>
 </span><a name="line-155"></a><span class="hs-comment">-- A @'BP' s n r a@ is a 'BP' action that uses an environment @n@ values of</span><span>
 </span><a name="line-156"></a><span class="hs-comment">-- type @r@, and returns an @a@. When &quot;run&quot;, it will compute a gradient that</span><span>
@@ -194,7 +194,7 @@
 </span><a name="line-194"></a><span class="hs-comment">-- implicit-graph backprop function).  Instead of directly working with</span><span>
 </span><a name="line-195"></a><span class="hs-comment">-- values, you work with 'BVar's contating those values.  When you work</span><span>
 </span><a name="line-196"></a><span class="hs-comment">-- with a 'BVar', the /backprop/ library can keep track of what values</span><span>
-</span><a name="line-197"></a><span class="hs-comment">-- refer to which other values, and so can perform backpropagation to</span><span>
+</span><a name="line-197"></a><span class="hs-comment">-- refer to which other values, and so can perform back-propagation to</span><span>
 </span><a name="line-198"></a><span class="hs-comment">-- compute gradients.</span><span>
 </span><a name="line-199"></a><span class="hs-comment">--</span><span>
 </span><a name="line-200"></a><span class="hs-comment">-- A @'BVar' s n r a@ refers to a value of type @a@, with an environment</span><span>
@@ -232,7 +232,7 @@
 </span><a name="line-232"></a><span class="hs-comment">-- is an action that takes an input environment of @n@ values of type @r@</span><span>
 </span><a name="line-233"></a><span class="hs-comment">-- and produces a 'BVar' containing a value of type @a@.  Because it</span><span>
 </span><a name="line-234"></a><span class="hs-comment">-- returns a 'BVar', the library can track the data dependencies between</span><span>
-</span><a name="line-235"></a><span class="hs-comment">-- the 'BVar' and the input environment and perform backpropagation.</span><span>
+</span><a name="line-235"></a><span class="hs-comment">-- the 'BVar' and the input environment and perform back-propagation.</span><span>
 </span><a name="line-236"></a><span class="hs-comment">--</span><span>
 </span><a name="line-237"></a><span class="hs-comment">-- See documentation for 'BP' for an explanation of the phantom type</span><span>
 </span><a name="line-238"></a><span class="hs-comment">-- parameter @s@.</span><span>
@@ -253,7 +253,7 @@
 </span><a name="line-253"></a><span class="hs-comment">-- foo (x :* y :* &#216;V) = x + sqrt y</span><span>
 </span><a name="line-254"></a><span class="hs-comment">-- @</span><span>
 </span><a name="line-255"></a><span class="hs-comment">--</span><span>
-</span><a name="line-256"></a><span class="hs-comment">-- If you are exclusively doing implicit backpropagation by combining</span><span>
+</span><a name="line-256"></a><span class="hs-comment">-- If you are exclusively doing implicit back-propagation by combining</span><span>
 </span><a name="line-257"></a><span class="hs-comment">-- 'BVar's and using 'BPOpI's, you are probably better off just importing</span><span>
 </span><a name="line-258"></a><span class="hs-comment">-- &quot;Numeric.Backprop.Mono.Implicit&quot;, which provides better tools.  This</span><span>
 </span><a name="line-259"></a><span class="hs-comment">-- type synonym exists in &quot;Numeric.Backprop.Mono&quot; just for the 'implicitly'</span><span>
@@ -508,7 +508,7 @@
 </span><a name="line-508"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Mono.html#BP"><span class="hs-identifier hs-type">BP</span></a><span> </span><a href="#local-6989586621679207851"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679207852"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-6989586621679207853"><span class="hs-identifier hs-type">r</span></a><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Mono.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679207851"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679207852"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-6989586621679207853"><span class="hs-identifier hs-type">r</span></a><span> </span><a href="#local-6989586621679207854"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
 </span><a name="line-509"></a><a name="bindVar"><a href="Numeric.Backprop.Mono.html#bindVar"><span class="hs-identifier">bindVar</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.html#bindVar"><span class="hs-identifier hs-var">BP</span><span class="hs-operator hs-var">.</span><span class="hs-identifier hs-var">bindVar</span></a><span>
 </span><a name="line-510"></a><span>
-</span><a name="line-511"></a><span class="hs-comment">-- | Perform backpropagation on the given 'BPOp'.  Returns the result of</span><span>
+</span><a name="line-511"></a><span class="hs-comment">-- | Perform back-propagation on the given 'BPOp'.  Returns the result of</span><span>
 </span><a name="line-512"></a><span class="hs-comment">-- the operation it represents, as well as the gradient of the result with</span><span>
 </span><a name="line-513"></a><span class="hs-comment">-- respect to its inputs.  See module header for &quot;Numeric.Backprop.Mono&quot;</span><span>
 </span><a name="line-514"></a><span class="hs-comment">-- and package documentation for examples and usages.</span><span>
@@ -522,7 +522,7 @@
 </span><a name="line-522"></a><span>    </span><span class="hs-special">(</span><a name="local-6989586621679207920"><a href="#local-6989586621679207920"><span class="hs-identifier">x</span></a></a><span class="hs-special">,</span><span> </span><a name="local-6989586621679207921"><a href="#local-6989586621679207921"><span class="hs-identifier">g</span></a></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.html#backprop%27"><span class="hs-identifier hs-var">BP</span><span class="hs-operator hs-var">.</span><span class="hs-identifier hs-var">backprop'</span></a><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Mono.html#toSummers"><span class="hs-identifier hs-var">toSummers</span></a><span> </span><a href="#local-6989586621679207919"><span class="hs-identifier hs-var">i</span></a><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Mono.html#toUnities"><span class="hs-identifier hs-var">toUnities</span></a><span> </span><a href="#local-6989586621679207919"><span class="hs-identifier hs-var">i</span></a><span class="hs-special">)</span><span> </span><a href="#local-6989586621679207918"><span class="hs-identifier hs-var">bp</span></a><span> </span><span class="hs-special">(</span><a href="Data.Type.Util.html#vecToProd"><span class="hs-identifier hs-var">vecToProd</span></a><span> </span><a href="#local-6989586621679207919"><span class="hs-identifier hs-var">i</span></a><span class="hs-special">)</span><span>
 </span><a name="line-523"></a><span>
 </span><a name="line-524"></a><span class="hs-comment">-- | Simply run the 'BPOp' on an input vector, getting the result without</span><span>
-</span><a name="line-525"></a><span class="hs-comment">-- bothering with the gradient or with backpropagation.</span><span>
+</span><a name="line-525"></a><span class="hs-comment">-- bothering with the gradient or with back-propagation.</span><span>
 </span><a name="line-526"></a><span class="hs-identifier">evalBPOp</span><span>
 </span><a name="line-527"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679207843"><a href="#local-6989586621679207843"><span class="hs-identifier">n</span></a></a><span> </span><a name="local-6989586621679207844"><a href="#local-6989586621679207844"><span class="hs-identifier">r</span></a></a><span> </span><a name="local-6989586621679207845"><a href="#local-6989586621679207845"><span class="hs-identifier">a</span></a></a><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
 </span><a name="line-528"></a><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679207846"><a href="#local-6989586621679207846"><span class="hs-identifier">s</span></a></a><span class="hs-operator">.</span><span> </span><a href="Numeric.Backprop.Mono.html#BPOp"><span class="hs-identifier hs-type">BPOp</span></a><span> </span><a href="#local-6989586621679207846"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679207843"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-6989586621679207844"><span class="hs-identifier hs-type">r</span></a><span> </span><a href="#local-6989586621679207845"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
@@ -646,7 +646,7 @@
 </span><a name="line-646"></a><a name="implicitly"><a href="Numeric.Backprop.Mono.html#implicitly"><span class="hs-identifier">implicitly</span></a></a><span> </span><a name="local-6989586621679207927"><a href="#local-6989586621679207927"><span class="hs-identifier">f</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Mono.html#withInps"><span class="hs-identifier hs-var">withInps</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">return</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="#local-6989586621679207927"><span class="hs-identifier hs-var">f</span></a><span class="hs-special">)</span><span>
 </span><a name="line-647"></a><span>
 </span><a name="line-648"></a><span class="hs-comment">-- | Apply 'OpB' over a 'VecT' of 'BVar's, as inputs. Provides &quot;implicit&quot;</span><span>
-</span><a name="line-649"></a><span class="hs-comment">-- backpropagation, with deferred evaluation.</span><span>
+</span><a name="line-649"></a><span class="hs-comment">-- back-propagation, with deferred evaluation.</span><span>
 </span><a name="line-650"></a><span class="hs-comment">--</span><span>
 </span><a name="line-651"></a><span class="hs-comment">-- If you had an @'OpB' s N3 a b@, this function will expect a vector of of</span><span>
 </span><a name="line-652"></a><span class="hs-comment">-- three @'BVar' s n r a@s, and the result will be a @'BVar' s n r b@:</span><span>

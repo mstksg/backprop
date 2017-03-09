@@ -21,7 +21,7 @@
 </span><a name="line-21"></a><span class="hs-comment">--</span><span>
 </span><a name="line-22"></a><span class="hs-comment">-- Provides the 'BP' monad and the 'BVar' type; after manipulating 'BVar's</span><span>
 </span><a name="line-23"></a><span class="hs-comment">-- (inputs to your function) to produce a result, the library tracks internal data</span><span>
-</span><a name="line-24"></a><span class="hs-comment">-- dependencies, which are used to perform backpropagation (reverse-mode</span><span>
+</span><a name="line-24"></a><span class="hs-comment">-- dependencies, which are used to perform back-propagation (reverse-mode</span><span>
 </span><a name="line-25"></a><span class="hs-comment">-- automatic differentiation) to calculate the gradient of the output with</span><span>
 </span><a name="line-26"></a><span class="hs-comment">-- respect to the inputs.</span><span>
 </span><a name="line-27"></a><span class="hs-comment">--</span><span>
@@ -29,9 +29,9 @@
 </span><a name="line-29"></a><span class="hs-comment">-- &quot;Numeric.AD.Mode.Reverse&quot;, except for a few key differences:</span><span>
 </span><a name="line-30"></a><span class="hs-comment">--</span><span>
 </span><a name="line-31"></a><span class="hs-comment">-- 1. Most importantly, this library implements /heterogeneous/</span><span>
-</span><a name="line-32"></a><span class="hs-comment">-- backpropagation, so you can manipulate values of different types (like</span><span>
+</span><a name="line-32"></a><span class="hs-comment">-- back-propagation, so you can manipulate values of different types (like</span><span>
 </span><a name="line-33"></a><span class="hs-comment">-- different matrix and vector types, and product and sum types).  This is</span><span>
-</span><a name="line-34"></a><span class="hs-comment">-- essential for things like backpropagation for neural networks.</span><span>
+</span><a name="line-34"></a><span class="hs-comment">-- essential for things like back-propagation for neural networks.</span><span>
 </span><a name="line-35"></a><span class="hs-comment">--</span><span>
 </span><a name="line-36"></a><span class="hs-comment">-- 2. This module allows you to /explicitly/ build your data dependency</span><span>
 </span><a name="line-37"></a><span class="hs-comment">-- graph if you wish, which allows the library to perform optimizations and</span><span>
@@ -224,7 +224,7 @@
 </span><a name="line-224"></a><span class="hs-comment">-- is an action that takes an input environment of @rs@ and produces</span><span>
 </span><a name="line-225"></a><span class="hs-comment">-- a 'BVar' containing a value of type @a@.  Because it returns a 'BVar',</span><span>
 </span><a name="line-226"></a><span class="hs-comment">-- the library can track the data dependencies between the 'BVar' and the</span><span>
-</span><a name="line-227"></a><span class="hs-comment">-- input environment and perform backpropagation.</span><span>
+</span><a name="line-227"></a><span class="hs-comment">-- input environment and perform back-propagation.</span><span>
 </span><a name="line-228"></a><span class="hs-comment">--</span><span>
 </span><a name="line-229"></a><span class="hs-comment">-- See documentation for 'BP' for an explanation of the phantom type</span><span>
 </span><a name="line-230"></a><span class="hs-comment">-- parameter @s@.</span><span>
@@ -245,7 +245,7 @@
 </span><a name="line-245"></a><span class="hs-comment">-- foo (x :&lt; y :&lt; &#216;) = x + sqrt y</span><span>
 </span><a name="line-246"></a><span class="hs-comment">-- @</span><span>
 </span><a name="line-247"></a><span class="hs-comment">--</span><span>
-</span><a name="line-248"></a><span class="hs-comment">-- If you are exclusively doing implicit backpropagation by combining</span><span>
+</span><a name="line-248"></a><span class="hs-comment">-- If you are exclusively doing implicit back-propagation by combining</span><span>
 </span><a name="line-249"></a><span class="hs-comment">-- 'BVar's and using 'BPOpI's, you are probably better off just importing</span><span>
 </span><a name="line-250"></a><span class="hs-comment">-- &quot;Numeric.Backprop.Implicit&quot;, which provides better tools.  This type</span><span>
 </span><a name="line-251"></a><span class="hs-comment">-- synonym exists in &quot;Numeric.Backprop&quot; just for the 'implicitly' function,</span><span>
@@ -1171,7 +1171,7 @@ backprop' ss us bp env = runST $ do
     grad &lt;- gFunc Nothing
     return (res, grad)
 
--- | Perform backpropagation on the given 'BPOp'.  Returns the result of
+-- | Perform back-propagation on the given 'BPOp'.  Returns the result of
 -- the operation it represents, as well as the gradient of the result with
 -- respect to its inputs.  See module header for &quot;Numeric.Backprop&quot; and
 -- package documentation for examples and usages.
@@ -1211,7 +1211,7 @@ bpOp
 bpOp = bpOp' summers unities
 
 -- | Simply run the 'BPOp' on an input tuple, getting the result without
--- bothering with the gradient or with backpropagation.
+-- bothering with the gradient or with back-propagation.
 evalBPOp
     :: (forall s. BPOp s rs a)  -- ^ 'BPOp' to run
     -&gt; Tuple rs                 -- ^ input
@@ -1407,7 +1407,7 @@ withInps
 withInps = withInps' known
 
 -- | Apply 'OpB' over a 'Prod' of 'BVar's, as inputs. Provides
--- &quot;implicit-graph&quot; backpropagation, with deferred evaluation.
+-- &quot;implicit-graph&quot; back-propagation, with deferred evaluation.
 --
 -- If you had an @'OpB' s '[a, b, c] d@, this function will expect a 3-Prod
 -- of a @'BVar' s rs a@, a @'BVar' s rs b@, and a @'BVar' s rs c@, and the
