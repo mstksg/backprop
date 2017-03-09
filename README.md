@@ -17,17 +17,18 @@ gradient descent and other optimization techniques.
 
 [ad]: http://hackage.haskell.org/package/ad
 
-Currently up on [hackage][], but more up-to-date documentation is currently
-rendered [on github pages][docs]!
+Currently up on [hackage][] (with 100% documentation coverage), but more
+up-to-date documentation is currently rendered [on github pages][docs]!
 
 [hackage]: http://hackage.haskell.org/package/backprop
 [docs]: https://mstksg.github.io/backprop
 
 At the moment this project is in **pre-alpha** (*v0.0.1.0*), and is
-published/put up on Hackage as a call for comments and thoughts.  Performance
-was not yet a priority up until this moment, but is now.  (Previously, highest
-priority was API/usability).  See [the todos section][todos] for more
-information on what's missing, and how one would be able to contribute!
+published/put up on Hackage as a call for comments and thoughts.  It has 100%
+documentation coverage at the moment.  Performance was not yet a priority
+before this, but will be from now on.  (Previously, highest priority was
+API/usability). See [the todos section][todos] for more information on what's
+missing, and how one would be able to contribute!
 
 [todos]: https://github.com/mstksg/backprop#todo
 
