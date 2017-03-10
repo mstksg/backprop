@@ -431,7 +431,7 @@ main = MWC.withSystemRandom $ \g -> do
     Just train <- loadMNIST "data/train-images-idx3-ubyte" "data/train-labels-idx1-ubyte"
     Just test  <- loadMNIST "data/t10k-images-idx3-ubyte"  "data/t10k-labels-idx1-ubyte"
     putStrLn "Loaded data."
-    net0 <- MWC.uniformR @(Network 784 300 100 9) (-0.1, 0.1) g
+    net0 <- MWC.uniformR @(Network 784 300 100 9) (-0.5, 0.5) g
     flip evalStateT net0 . forM_ [1..] $ \e -> do
       train' <- liftIO . fmap V.toList $ MWC.uniformShuffle (V.fromList train) g
       liftIO $ printf "[Epoch %d]\n" (e :: Int)
@@ -447,7 +447,7 @@ main = MWC.withSystemRandom $ \g -> do
         let trainScore = testNet chnk n'
             testScore  = testNet test n'
         printf "Training error:   %.2f%%\n" ((1 - trainScore) * 100)
-        printf "Validation error: %.2f%%\n" ((1 - testScore) * 100)
+        printf "Validation error: %.2f%%\n" ((1 - testScore ) * 100)
 
         return ((), n')
   where
