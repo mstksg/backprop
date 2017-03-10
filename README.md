@@ -138,8 +138,11 @@ Todo
 2.  Some simple performance and API tweaks that are probably possible now and
     would clearly benefit: (if you want to contribute)
 
-    a.  Providing optimized `Num`/`Fractional`/`Floating` instances for `BVal`
-        by supplying known gradients directly instead of relying on *ad*.
+    a.  ~~Providing optimized `Num`/`Fractional`/`Floating` instances for `BVal`
+        by supplying known gradients directly instead of relying on *ad*.~~
+        (Now finished, since [b3898ae][optnum])
+
+[optnum]: https://github.com/mstksg/backprop/commit/b3898ae676b8048e03709fb5d3d38a6fedb48e1e
 
     b.  Switch from `ST s` to `IO`, and use `unsafePerformIO` to automatically
         bind `BVal`s (like *ad* does) when using `liftB`.  This might remove
