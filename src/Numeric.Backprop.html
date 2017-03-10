@@ -194,7 +194,7 @@
 </span><a name="line-194"></a><span class="hs-comment">--</span><span>
 </span><a name="line-195"></a><span class="hs-comment">-- A @'Sum' f '[a, b, c]@ contains /either/ an @f a@, an @f b@, /or/ an @f</span><span>
 </span><a name="line-196"></a><span class="hs-comment">-- c@, and is constructed with the constructors 'InL' and 'InR', which are</span><span>
-</span><a name="line-197"></a><span class="hs-comment">-- analogous to 'Left' and 'Right'. </span><span>
+</span><a name="line-197"></a><span class="hs-comment">-- analogous to 'Left' and 'Right'.</span><span>
 </span><a name="line-198"></a><span class="hs-comment">--</span><span>
 </span><a name="line-199"></a><span class="hs-comment">-- For a value of type @'Sum' f '[Int, Bool, String]@, there are three</span><span>
 </span><a name="line-200"></a><span class="hs-comment">-- constructors:</span><span>
@@ -469,7 +469,7 @@ gSplit' ss us = partsVar' ss us gTuple
 --
 -- @
 -- import qualified Generics.SOP as SOP
--- 
+--
 -- data Foo = F Int Bool
 --   deriving Generic
 --
@@ -797,7 +797,7 @@ gSplits' sss uss = sopVar' sss uss gSOP
 --
 -- @
 -- import qualified Generics.SOP as SOP
--- 
+--
 -- data Baz = A Int    Bool
 --          | B String Double
 --   deriving Generic

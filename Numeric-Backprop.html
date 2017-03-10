@@ -466,7 +466,7 @@ stuff = <code><a href="Numeric-Backprop.html#v:withInps">withInps</a></code> $ \
  library, in <a href="../type-combinators-0.2.4.3/Data-Type-Sum.html">Data.Type.Sum</a>) lets you make arbitrary sum types over
  different types and work with them generically.</p><p>A <code><code><a href="Numeric-Backprop.html#t:Sum">Sum</a></code> f '[a, b, c]</code> contains <em>either</em> an <code>f a</code>, an <code>f b</code>, <em>or</em> an <code>f
  c</code>, and is constructed with the constructors <code><a href="Numeric-Backprop.html#v:InL">InL</a></code> and <code><a href="Numeric-Backprop.html#v:InR">InR</a></code>, which are
- analogous to <code><a href="../base-4.9.1.0/Data-Either.html#v:Left">Left</a></code> and <code><a href="../base-4.9.1.0/Data-Either.html#v:Right">Right</a></code>. </p><p>For a value of type <code><code><a href="Numeric-Backprop.html#t:Sum">Sum</a></code> f '[Int, Bool, String]</code>, there are three
+ analogous to <code><a href="../base-4.9.1.0/Data-Either.html#v:Left">Left</a></code> and <code><a href="../base-4.9.1.0/Data-Either.html#v:Right">Right</a></code>.</p><p>For a value of type <code><code><a href="Numeric-Backprop.html#t:Sum">Sum</a></code> f '[Int, Bool, String]</code>, there are three
  constructors:</p><pre><code><a href="Numeric-Backprop.html#v:InL">InL</a></code>             :: f Int    -&gt; <code><a href="Numeric-Backprop.html#t:Sum">Sum</a></code> f '[Int, Bool, String]
 InL . InR       :: f Bool   -&gt; Sum f '[Int, Bool, String]
 InL . InR . InR :: f String -&gt; Sum f '[Int, Bool, String]
