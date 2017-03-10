@@ -257,38 +257,38 @@ _FRInternal f = \case
 -- locations, use 'Numeric.Backprop.bindVar' first to force it and prevent
 -- recomputation.
 instance Num a => Num (BVar s rs a) where
-    r1 + r2       = BVOp (r1 :< r2 :< Ø) $ op2 (+)
-    r1 - r2       = BVOp (r1 :< r2 :< Ø) $ op2 (-)
-    r1 * r2       = BVOp (r1 :< r2 :< Ø) $ op2 (*)
-    negate r      = BVOp (r  :< Ø)       $ op1 negate
-    signum r      = BVOp (r  :< Ø)       $ op1 signum
-    abs r         = BVOp (r  :< Ø)       $ op1 abs
+    r1 + r2       = BVOp (r1 :< r2 :< Ø) (+.)
+    r1 - r2       = BVOp (r1 :< r2 :< Ø) (-.)
+    r1 * r2       = BVOp (r1 :< r2 :< Ø) (*.)
+    negate r      = BVOp (r  :< Ø)       negateOp
+    signum r      = BVOp (r  :< Ø)       signumOp
+    abs r         = BVOp (r  :< Ø)       absOp
     fromInteger x = BVConst (fromInteger x)
 
 -- | See note for 'Num' instance.
 instance Fractional a => Fractional (BVar s rs a) where
-    r1 / r2        = BVOp (r1 :< r2 :< Ø) $ op2 (/)
-    recip r        = BVOp (r  :< Ø)       $ op1 recip
+    r1 / r2        = BVOp (r1 :< r2 :< Ø) (/.)
+    recip r        = BVOp (r  :< Ø)       recipOp
     fromRational x = BVConst (fromRational x)
 
 -- | See note for 'Num' instance.
 instance Floating a => Floating (BVar s rs a) where
     pi            = BVConst pi
-    exp   r       = BVOp (r :< Ø)        $ op1 exp
-    log   r       = BVOp (r :< Ø)        $ op1 log
-    sqrt  r       = BVOp (r :< Ø)        $ op1 sqrt
-    r1 ** r2      = BVOp (r1 :< r2 :< Ø) $ op2 (**)
-    logBase r1 r2 = BVOp (r1 :< r2 :< Ø) $ op2 logBase
-    sin   r       = BVOp (r :< Ø)        $ op1 sin
-    cos   r       = BVOp (r :< Ø)        $ op1 cos
-    tan   r       = BVOp (r :< Ø)        $ op1 tan
-    asin  r       = BVOp (r :< Ø)        $ op1 asin
-    acos  r       = BVOp (r :< Ø)        $ op1 acos
-    atan  r       = BVOp (r :< Ø)        $ op1 atan
-    sinh  r       = BVOp (r :< Ø)        $ op1 sinh
-    cosh  r       = BVOp (r :< Ø)        $ op1 cosh
-    tanh  r       = BVOp (r :< Ø)        $ op1 tanh
-    asinh r       = BVOp (r :< Ø)        $ op1 asinh
-    acosh r       = BVOp (r :< Ø)        $ op1 acosh
-    atanh r       = BVOp (r :< Ø)        $ op1 atanh
+    exp   r       = BVOp (r :< Ø)        expOp
+    log   r       = BVOp (r :< Ø)        logOp
+    sqrt  r       = BVOp (r :< Ø)        sqrtOp
+    r1 ** r2      = BVOp (r1 :< r2 :< Ø) (**.)
+    logBase r1 r2 = BVOp (r1 :< r2 :< Ø) logBaseOp
+    sin   r       = BVOp (r :< Ø)        sinOp
+    cos   r       = BVOp (r :< Ø)        cosOp
+    tan   r       = BVOp (r :< Ø)        tanOp
+    asin  r       = BVOp (r :< Ø)        asinOp
+    acos  r       = BVOp (r :< Ø)        acosOp
+    atan  r       = BVOp (r :< Ø)        atanOp
+    sinh  r       = BVOp (r :< Ø)        sinhOp
+    cosh  r       = BVOp (r :< Ø)        coshOp
+    tanh  r       = BVOp (r :< Ø)        tanhOp
+    asinh r       = BVOp (r :< Ø)        asinhOp
+    acosh r       = BVOp (r :< Ø)        acoshOp
+    atanh r       = BVOp (r :< Ø)        atanhOp
 

@@ -61,6 +61,13 @@ module Numeric.Backprop.Op (
   -- * Utility
   , pattern (:>), only, head'
   , pattern (::<), only_
+  -- * Numeric Ops
+  -- $numops
+  , (+.), (-.), (*.), negateOp, absOp, signumOp
+  , (/.), recipOp
+  , expOp, logOp, sqrtOp, (**.), logBaseOp
+  , sinOp, cosOp, tanOp, asinOp, acosOp, atanOp
+  , sinhOp, coshOp, tanhOp, asinhOp, acoshOp, atanhOp
   ) where
 
 import           Data.Bifunctor
@@ -676,35 +683,136 @@ opN f = Op $ \xs ->
     in  (y, vecToProd . maybe dxs (\q -> (q *) <$> dxs))
 
 instance (Monad m, Known Length as, Every Num as, Num a) => Num (OpM m as a) where
-    o1 + o2       = composeOp (o1 :< o2 :< Ø) $ op2 (+)
-    o1 - o2       = composeOp (o1 :< o2 :< Ø) $ op2 (-)
-    o1 * o2       = composeOp (o1 :< o2 :< Ø) $ op2 (*)
-    negate o      = composeOp (o  :< Ø)       $ op1 negate
-    signum o      = composeOp (o  :< Ø)       $ op1 signum
-    abs    o      = composeOp (o  :< Ø)       $ op1 abs
+    o1 + o2       = composeOp (o1 :< o2 :< Ø) (+.)
+    o1 - o2       = composeOp (o1 :< o2 :< Ø) (-.)
+    o1 * o2       = composeOp (o1 :< o2 :< Ø) (*.)
+    negate o      = composeOp (o  :< Ø)       negateOp
+    signum o      = composeOp (o  :< Ø)       signumOp
+    abs    o      = composeOp (o  :< Ø)       absOp
     fromInteger x = opConst (fromInteger x)
 
 instance (Monad m, Known Length as, Every Fractional as, Every Num as, Fractional a) => Fractional (OpM m as a) where
-    o1 / o2        = composeOp (o1 :< o2 :< Ø) $ op2 (/)
-    recip o        = composeOp (o  :< Ø)       $ op1 recip
+    o1 / o2        = composeOp (o1 :< o2 :< Ø) (/.)
+    recip o        = composeOp (o  :< Ø)       recipOp
     fromRational x = opConst (fromRational x)
 
 instance (Monad m, Known Length as, Every Floating as, Every Fractional as, Every Num as, Floating a) => Floating (OpM m as a) where
     pi            = opConst pi
-    exp   o       = composeOp (o  :< Ø)       $ op1 exp
-    log   o       = composeOp (o  :< Ø)       $ op1 log
-    sqrt  o       = composeOp (o  :< Ø)       $ op1 sqrt
-    o1 ** o2      = composeOp (o1 :< o2 :< Ø) $ op2 (**)
-    logBase o1 o2 = composeOp (o1 :< o2 :< Ø) $ op2 logBase
-    sin   o       = composeOp (o  :< Ø)       $ op1 sin
-    cos   o       = composeOp (o  :< Ø)       $ op1 cos
-    tan   o       = composeOp (o  :< Ø)       $ op1 tan
-    asin  o       = composeOp (o  :< Ø)       $ op1 asin
-    acos  o       = composeOp (o  :< Ø)       $ op1 acos
-    atan  o       = composeOp (o  :< Ø)       $ op1 atan
-    sinh  o       = composeOp (o  :< Ø)       $ op1 sinh
-    cosh  o       = composeOp (o  :< Ø)       $ op1 cosh
-    asinh o       = composeOp (o  :< Ø)       $ op1 asinh
-    acosh o       = composeOp (o  :< Ø)       $ op1 acosh
-    atanh o       = composeOp (o  :< Ø)       $ op1 atanh
+    exp   o       = composeOp (o  :< Ø)       expOp
+    log   o       = composeOp (o  :< Ø)       logOp
+    sqrt  o       = composeOp (o  :< Ø)       sqrtOp
+    o1 ** o2      = composeOp (o1 :< o2 :< Ø) (**.)
+    logBase o1 o2 = composeOp (o1 :< o2 :< Ø) logBaseOp
+    sin   o       = composeOp (o  :< Ø)       sinOp
+    cos   o       = composeOp (o  :< Ø)       cosOp
+    tan   o       = composeOp (o  :< Ø)       tanOp
+    asin  o       = composeOp (o  :< Ø)       asinOp
+    acos  o       = composeOp (o  :< Ø)       acosOp
+    atan  o       = composeOp (o  :< Ø)       atanOp
+    sinh  o       = composeOp (o  :< Ø)       sinhOp
+    cosh  o       = composeOp (o  :< Ø)       coshOp
+    tanh  o       = composeOp (o  :< Ø)       tanhOp
+    asinh o       = composeOp (o  :< Ø)       asinhOp
+    acosh o       = composeOp (o  :< Ø)       acoshOp
+    atanh o       = composeOp (o  :< Ø)       atanhOp
+
+-- $numops
+--
+-- Built-in ops for common numeric operations, implemented directly so
+-- that they are more efficient than using 'op1' \/ 'op2' etc.
+--
+-- The naming scheme is:
+--
+-- @
+-- ('+.') = 'op2' ('+')
+-- 'negateOp' = 'op1' 'negate
+-- @
+--
+-- Note that the operators (like '+.') are meant to be used in prefix
+-- form, like:
+--
+-- @
+-- 'liftB2' ('.+') v1 v2
+-- @
+
+(+.) :: Num a => Op '[a, a] a
+(+.) = op2' $ \x y -> (x + y, maybe (1, 1) (\g -> (g, g)))
+
+(-.) :: Num a => Op '[a, a] a
+(-.) = op2' $ \x y -> (x - y, maybe (1, -1) (\g -> (g, -g)))
+
+(*.) :: Num a => Op '[a, a] a
+(*.) = op2' $ \x y -> (x * y, maybe (y, x) (\g -> (y*g, x*g)))
+
+(/.) :: Fractional a => Op '[a, a] a
+(/.) = op2' $ \x y -> (x / y, maybe (1/y, -x/(y*y)) (\g -> (g/y, -g*x/(y*y))))
+
+(**.) :: Floating a => Op '[a, a] a
+(**.) = op2' $ \x y -> (x ** y, let dx = y*x**(y-1)
+                                    dy = x**y*log(x)
+                                in  maybe (dx, dy) (\g -> (g*dx, g*dy))
+                       )
+
+negateOp :: Num a => Op '[a] a
+negateOp = op1' $ \x -> (negate x, maybe (-1) negate)
+
+signumOp :: Num a => Op '[a] a
+signumOp = op1' $ \x -> (signum x, const 0)
+
+absOp :: Num a => Op '[a] a
+absOp = op1' $ \x -> (abs x, maybe (signum x) (* signum x))
+
+recipOp :: Fractional a => Op '[a] a
+recipOp = op1' $ \x -> (recip x, maybe (-1/(x*x)) ((/(x*x)) . negate))
+
+expOp :: Floating a => Op '[a] a
+expOp = op1' $ \x -> (exp x, maybe (exp x) (exp x *))
+
+logOp :: Floating a => Op '[a] a
+logOp = op1' $ \x -> (log x, maybe (1/x) (/x))
+
+sqrtOp :: Floating a => Op '[a] a
+sqrtOp = op1' $ \x -> (sqrt x, maybe (0.5 * sqrt x) (/ (2 * sqrt x)))
+
+logBaseOp :: Floating a => Op '[a, a] a
+logBaseOp = op2' $ \x y -> (logBase x y, let dx = - logBase x y / (log x * x)
+                                         in  maybe (dx, 1/(y * log x))
+                                                   (\g -> (g*dx, g/(y * log x)))
+                           )
+
+sinOp :: Floating a => Op '[a] a
+sinOp = op1' $ \x -> (sin x, maybe (cos x) (* cos x))
+
+cosOp :: Floating a => Op '[a] a
+cosOp = op1' $ \x -> (cos x, maybe (-sin x) (* (-sin x)))
+
+tanOp :: Floating a => Op '[a] a
+tanOp = op1' $ \x -> (tan x, maybe (1 / cos x^(2::Int)) (/ cos x^(2::Int)))
+
+asinOp :: Floating a => Op '[a] a
+asinOp = op1' $ \x -> (asin x, maybe (1 / sqrt(1 - x*x)) (/ sqrt(1 - x*x)))
+
+acosOp :: Floating a => Op '[a] a
+acosOp = op1' $ \x -> (acos x, maybe (-1 / sqrt(1 - x*x)) ((/ sqrt(1 - x*x)) . negate))
+
+atanOp :: Floating a => Op '[a] a
+atanOp = op1' $ \x -> (atan x, maybe (1/(x*x + 1)) (/ (x*x + 1)))
+
+sinhOp :: Floating a => Op '[a] a
+sinhOp = op1' $ \x -> (sinh x, maybe (cosh x) (* cosh x))
+
+coshOp :: Floating a => Op '[a] a
+coshOp = op1' $ \x -> (cosh x, maybe (sinh x) (* sinh x))
+
+tanhOp :: Floating a => Op '[a] a
+tanhOp = op1' $ \x -> (tanh x, maybe (1 / cosh x^(2::Int)) (/ cosh x^(2::Int)))
+
+asinhOp :: Floating a => Op '[a] a
+asinhOp = op1' $ \x -> (asinh x, maybe (1 / sqrt(x*x + 1)) (/ sqrt(x*x + 1)))
+
+acoshOp :: Floating a => Op '[a] a
+acoshOp = op1' $ \x -> (acosh x, maybe (1 / sqrt(x*x - 1)) (/ sqrt(x*x - 1)))
+
+atanhOp :: Floating a => Op '[a] a
+atanhOp = op1' $ \x -> (atanh x, maybe (1 / (1 - x*x)) (/ (1 - x*x)))
 
