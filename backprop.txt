@@ -629,30 +629,80 @@ infixr 5 ::<
 
 -- | Singleton Tuple.
 only_ :: a -> Tuple ((:) * a ([] *))
+
+-- | Optimized version of <tt><a>op1</a> (<a>+.</a>)</tt>.
 (+.) :: Num a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op1</a> (<a>-.</a>)</tt>.
 (-.) :: Num a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op1</a> (<a>*.</a>)</tt>.
 (*.) :: Num a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>negateOp</a></tt>.
 negateOp :: Num a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>absOp</a></tt>.
 absOp :: Num a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>signumOp</a></tt>.
 signumOp :: Num a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> (<a>/.</a>)</tt>.
 (/.) :: Fractional a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>recipOp</a></tt>.
 recipOp :: Fractional a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>expOp</a></tt>.
 expOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>logOp</a></tt>.
 logOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>sqrtOp</a></tt>.
 sqrtOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> (<a>**.</a>)</tt>.
 (**.) :: Floating a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op2</a> <a>logBaseOp</a></tt>.
 logBaseOp :: Floating a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>sinOp</a></tt>.
 sinOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>cosOp</a></tt>.
 cosOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>tanOp</a></tt>.
 tanOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>asinOp</a></tt>.
 asinOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>acosOp</a></tt>.
 acosOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>atanOp</a></tt>.
 atanOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>sinhOp</a></tt>.
 sinhOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>coshOp</a></tt>.
 coshOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>tanhOp</a></tt>.
 tanhOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>asinhOp</a></tt>.
 asinhOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>acoshOp</a></tt>.
 acoshOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>atanhOp</a></tt>.
 atanhOp :: Floating a => Op '[a] a
 instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Num.Num as, GHC.Num.Num a) => GHC.Num.Num (Numeric.Backprop.Op.OpM m as a)
 instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Real.Fractional as, Data.Type.Index.Every GHC.Num.Num as, GHC.Real.Fractional a) => GHC.Real.Fractional (Numeric.Backprop.Op.OpM m as a)
@@ -2062,30 +2112,80 @@ summers' :: Every Num as => Length as -> Prod Summer as
 -- | Like <a>unities</a>, but requiring an explicit witness for the number
 --   of types in the list <tt>as</tt>.
 unities' :: Every Num as => Length as -> Prod Unity as
+
+-- | Optimized version of <tt><a>op1</a> (<a>+.</a>)</tt>.
 (+.) :: Num a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op1</a> (<a>-.</a>)</tt>.
 (-.) :: Num a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op1</a> (<a>*.</a>)</tt>.
 (*.) :: Num a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>negateOp</a></tt>.
 negateOp :: Num a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>absOp</a></tt>.
 absOp :: Num a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>signumOp</a></tt>.
 signumOp :: Num a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> (<a>/.</a>)</tt>.
 (/.) :: Fractional a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>recipOp</a></tt>.
 recipOp :: Fractional a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>expOp</a></tt>.
 expOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>logOp</a></tt>.
 logOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>sqrtOp</a></tt>.
 sqrtOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> (<a>**.</a>)</tt>.
 (**.) :: Floating a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op2</a> <a>logBaseOp</a></tt>.
 logBaseOp :: Floating a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>sinOp</a></tt>.
 sinOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>cosOp</a></tt>.
 cosOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>tanOp</a></tt>.
 tanOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>asinOp</a></tt>.
 asinOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>acosOp</a></tt>.
 acosOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>atanOp</a></tt>.
 atanOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>sinhOp</a></tt>.
 sinhOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>coshOp</a></tt>.
 coshOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>tanhOp</a></tt>.
 tanhOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>asinhOp</a></tt>.
 asinhOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>acoshOp</a></tt>.
 acoshOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>atanhOp</a></tt>.
 atanhOp :: Floating a => Op '[a] a
 
 
@@ -2803,30 +2903,80 @@ summers' :: Every Num as => Length as -> Prod Summer as
 -- | Like <a>unities</a>, but requiring an explicit witness for the number
 --   of types in the list <tt>as</tt>.
 unities' :: Every Num as => Length as -> Prod Unity as
+
+-- | Optimized version of <tt><a>op1</a> (<a>+.</a>)</tt>.
 (+.) :: Num a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op1</a> (<a>-.</a>)</tt>.
 (-.) :: Num a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op1</a> (<a>*.</a>)</tt>.
 (*.) :: Num a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>negateOp</a></tt>.
 negateOp :: Num a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>absOp</a></tt>.
 absOp :: Num a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>signumOp</a></tt>.
 signumOp :: Num a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> (<a>/.</a>)</tt>.
 (/.) :: Fractional a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>recipOp</a></tt>.
 recipOp :: Fractional a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>expOp</a></tt>.
 expOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>logOp</a></tt>.
 logOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>sqrtOp</a></tt>.
 sqrtOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> (<a>**.</a>)</tt>.
 (**.) :: Floating a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op2</a> <a>logBaseOp</a></tt>.
 logBaseOp :: Floating a => Op '[a, a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>sinOp</a></tt>.
 sinOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>cosOp</a></tt>.
 cosOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>tanOp</a></tt>.
 tanOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>asinOp</a></tt>.
 asinOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>acosOp</a></tt>.
 acosOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>atanOp</a></tt>.
 atanOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>sinhOp</a></tt>.
 sinhOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>coshOp</a></tt>.
 coshOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>tanhOp</a></tt>.
 tanhOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>asinhOp</a></tt>.
 asinhOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>acoshOp</a></tt>.
 acoshOp :: Floating a => Op '[a] a
+
+-- | Optimized version of <tt><a>op1</a> <a>atanhOp</a></tt>.
 atanhOp :: Floating a => Op '[a] a
 
 
@@ -3223,30 +3373,80 @@ type N7 = S N6
 type N8 = S N7
 type N9 = S N8
 type N10 = S N9
+
+-- | Optimized version of <tt><a>op2</a> (<a>+</a>)</tt>.
 (+.) :: Num a => Op N2 a a
+
+-- | Optimized version of <tt><a>op2</a> (<a>-</a>)</tt>.
 (-.) :: Num a => Op N2 a a
+
+-- | Optimized version of <tt><a>op2</a> (<a>*</a>)</tt>.
 (*.) :: Num a => Op N2 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>negate</a></tt>.
 negateOp :: Num a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>absOp</a></tt>.
 absOp :: Num a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>signumOp</a></tt>.
 signumOp :: Num a => Op N1 a a
+
+-- | Optimized version of <tt><a>op2</a> (<a>/</a>)</tt>.
 (/.) :: Fractional a => Op N2 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>recipOp</a></tt>.
 recipOp :: Fractional a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>expOp</a></tt>.
 expOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>logOp</a></tt>.
 logOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>sqrtOp</a></tt>.
 sqrtOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op2</a> (<a>**</a>)</tt>.
 (**.) :: Floating a => Op N2 a a
+
+-- | Optimized version of <tt><a>op2</a> <a>logBaseOp</a></tt>.
 logBaseOp :: Floating a => Op N2 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>sinOp</a></tt>.
 sinOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>cosOp</a></tt>.
 cosOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>tanOp</a></tt>.
 tanOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>asinOp</a></tt>.
 asinOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>acosOp</a></tt>.
 acosOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>atanOp</a></tt>.
 atanOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>sinhOp</a></tt>.
 sinhOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>coshOp</a></tt>.
 coshOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>tanhOp</a></tt>.
 tanhOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>asinhOp</a></tt>.
 asinhOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>acoshOp</a></tt>.
 acoshOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>atanhOp</a></tt>.
 atanhOp :: Floating a => Op N1 a a
 
 
@@ -4078,30 +4278,80 @@ type N7 = S N6
 type N8 = S N7
 type N9 = S N8
 type N10 = S N9
+
+-- | Optimized version of <tt><a>op2</a> (<a>+</a>)</tt>.
 (+.) :: Num a => Op N2 a a
+
+-- | Optimized version of <tt><a>op2</a> (<a>-</a>)</tt>.
 (-.) :: Num a => Op N2 a a
+
+-- | Optimized version of <tt><a>op2</a> (<a>*</a>)</tt>.
 (*.) :: Num a => Op N2 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>negate</a></tt>.
 negateOp :: Num a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>absOp</a></tt>.
 absOp :: Num a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>signumOp</a></tt>.
 signumOp :: Num a => Op N1 a a
+
+-- | Optimized version of <tt><a>op2</a> (<a>/</a>)</tt>.
 (/.) :: Fractional a => Op N2 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>recipOp</a></tt>.
 recipOp :: Fractional a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>expOp</a></tt>.
 expOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>logOp</a></tt>.
 logOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>sqrtOp</a></tt>.
 sqrtOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op2</a> (<a>**</a>)</tt>.
 (**.) :: Floating a => Op N2 a a
+
+-- | Optimized version of <tt><a>op2</a> <a>logBaseOp</a></tt>.
 logBaseOp :: Floating a => Op N2 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>sinOp</a></tt>.
 sinOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>cosOp</a></tt>.
 cosOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>tanOp</a></tt>.
 tanOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>asinOp</a></tt>.
 asinOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>acosOp</a></tt>.
 acosOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>atanOp</a></tt>.
 atanOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>sinhOp</a></tt>.
 sinhOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>coshOp</a></tt>.
 coshOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>tanhOp</a></tt>.
 tanhOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>asinhOp</a></tt>.
 asinhOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>acoshOp</a></tt>.
 acoshOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>atanhOp</a></tt>.
 atanhOp :: Floating a => Op N1 a a
 
 
@@ -4505,28 +4755,78 @@ type N7 = S N6
 type N8 = S N7
 type N9 = S N8
 type N10 = S N9
+
+-- | Optimized version of <tt><a>op2</a> (<a>+</a>)</tt>.
 (+.) :: Num a => Op N2 a a
+
+-- | Optimized version of <tt><a>op2</a> (<a>-</a>)</tt>.
 (-.) :: Num a => Op N2 a a
+
+-- | Optimized version of <tt><a>op2</a> (<a>*</a>)</tt>.
 (*.) :: Num a => Op N2 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>negate</a></tt>.
 negateOp :: Num a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>absOp</a></tt>.
 absOp :: Num a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>signumOp</a></tt>.
 signumOp :: Num a => Op N1 a a
+
+-- | Optimized version of <tt><a>op2</a> (<a>/</a>)</tt>.
 (/.) :: Fractional a => Op N2 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>recipOp</a></tt>.
 recipOp :: Fractional a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>expOp</a></tt>.
 expOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>logOp</a></tt>.
 logOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>sqrtOp</a></tt>.
 sqrtOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op2</a> (<a>**</a>)</tt>.
 (**.) :: Floating a => Op N2 a a
+
+-- | Optimized version of <tt><a>op2</a> <a>logBaseOp</a></tt>.
 logBaseOp :: Floating a => Op N2 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>sinOp</a></tt>.
 sinOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>cosOp</a></tt>.
 cosOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>tanOp</a></tt>.
 tanOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>asinOp</a></tt>.
 asinOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>acosOp</a></tt>.
 acosOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>atanOp</a></tt>.
 atanOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>sinhOp</a></tt>.
 sinhOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>coshOp</a></tt>.
 coshOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>tanhOp</a></tt>.
 tanhOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>asinhOp</a></tt>.
 asinhOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>acoshOp</a></tt>.
 acoshOp :: Floating a => Op N1 a a
+
+-- | Optimized version of <tt><a>op1</a> <a>atanhOp</a></tt>.
 atanhOp :: Floating a => Op N1 a a
