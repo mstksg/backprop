@@ -629,6 +629,31 @@ infixr 5 ::<
 
 -- | Singleton Tuple.
 only_ :: a -> Tuple ((:) * a ([] *))
+(+.) :: Num a => Op '[a, a] a
+(-.) :: Num a => Op '[a, a] a
+(*.) :: Num a => Op '[a, a] a
+negateOp :: Num a => Op '[a] a
+absOp :: Num a => Op '[a] a
+signumOp :: Num a => Op '[a] a
+(/.) :: Fractional a => Op '[a, a] a
+recipOp :: Fractional a => Op '[a] a
+expOp :: Floating a => Op '[a] a
+logOp :: Floating a => Op '[a] a
+sqrtOp :: Floating a => Op '[a] a
+(**.) :: Floating a => Op '[a, a] a
+logBaseOp :: Floating a => Op '[a, a] a
+sinOp :: Floating a => Op '[a] a
+cosOp :: Floating a => Op '[a] a
+tanOp :: Floating a => Op '[a] a
+asinOp :: Floating a => Op '[a] a
+acosOp :: Floating a => Op '[a] a
+atanOp :: Floating a => Op '[a] a
+sinhOp :: Floating a => Op '[a] a
+coshOp :: Floating a => Op '[a] a
+tanhOp :: Floating a => Op '[a] a
+asinhOp :: Floating a => Op '[a] a
+acoshOp :: Floating a => Op '[a] a
+atanhOp :: Floating a => Op '[a] a
 instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Num.Num as, GHC.Num.Num a) => GHC.Num.Num (Numeric.Backprop.Op.OpM m as a)
 instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Real.Fractional as, Data.Type.Index.Every GHC.Num.Num as, GHC.Real.Fractional a) => GHC.Real.Fractional (Numeric.Backprop.Op.OpM m as a)
 instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Float.Floating as, Data.Type.Index.Every GHC.Real.Fractional as, Data.Type.Index.Every GHC.Num.Num as, GHC.Float.Floating a) => GHC.Float.Floating (Numeric.Backprop.Op.OpM m as a)
@@ -2037,6 +2062,31 @@ summers' :: Every Num as => Length as -> Prod Summer as
 -- | Like <a>unities</a>, but requiring an explicit witness for the number
 --   of types in the list <tt>as</tt>.
 unities' :: Every Num as => Length as -> Prod Unity as
+(+.) :: Num a => Op '[a, a] a
+(-.) :: Num a => Op '[a, a] a
+(*.) :: Num a => Op '[a, a] a
+negateOp :: Num a => Op '[a] a
+absOp :: Num a => Op '[a] a
+signumOp :: Num a => Op '[a] a
+(/.) :: Fractional a => Op '[a, a] a
+recipOp :: Fractional a => Op '[a] a
+expOp :: Floating a => Op '[a] a
+logOp :: Floating a => Op '[a] a
+sqrtOp :: Floating a => Op '[a] a
+(**.) :: Floating a => Op '[a, a] a
+logBaseOp :: Floating a => Op '[a, a] a
+sinOp :: Floating a => Op '[a] a
+cosOp :: Floating a => Op '[a] a
+tanOp :: Floating a => Op '[a] a
+asinOp :: Floating a => Op '[a] a
+acosOp :: Floating a => Op '[a] a
+atanOp :: Floating a => Op '[a] a
+sinhOp :: Floating a => Op '[a] a
+coshOp :: Floating a => Op '[a] a
+tanhOp :: Floating a => Op '[a] a
+asinhOp :: Floating a => Op '[a] a
+acoshOp :: Floating a => Op '[a] a
+atanhOp :: Floating a => Op '[a] a
 
 
 -- | Offers full functionality for implicit-graph back-propagation. The
@@ -2753,6 +2803,31 @@ summers' :: Every Num as => Length as -> Prod Summer as
 -- | Like <a>unities</a>, but requiring an explicit witness for the number
 --   of types in the list <tt>as</tt>.
 unities' :: Every Num as => Length as -> Prod Unity as
+(+.) :: Num a => Op '[a, a] a
+(-.) :: Num a => Op '[a, a] a
+(*.) :: Num a => Op '[a, a] a
+negateOp :: Num a => Op '[a] a
+absOp :: Num a => Op '[a] a
+signumOp :: Num a => Op '[a] a
+(/.) :: Fractional a => Op '[a, a] a
+recipOp :: Fractional a => Op '[a] a
+expOp :: Floating a => Op '[a] a
+logOp :: Floating a => Op '[a] a
+sqrtOp :: Floating a => Op '[a] a
+(**.) :: Floating a => Op '[a, a] a
+logBaseOp :: Floating a => Op '[a, a] a
+sinOp :: Floating a => Op '[a] a
+cosOp :: Floating a => Op '[a] a
+tanOp :: Floating a => Op '[a] a
+asinOp :: Floating a => Op '[a] a
+acosOp :: Floating a => Op '[a] a
+atanOp :: Floating a => Op '[a] a
+sinhOp :: Floating a => Op '[a] a
+coshOp :: Floating a => Op '[a] a
+tanhOp :: Floating a => Op '[a] a
+asinhOp :: Floating a => Op '[a] a
+acoshOp :: Floating a => Op '[a] a
+atanhOp :: Floating a => Op '[a] a
 
 
 -- | Provides monomorphic versions of the types and combinators in
@@ -3148,6 +3223,31 @@ type N7 = S N6
 type N8 = S N7
 type N9 = S N8
 type N10 = S N9
+(+.) :: Num a => Op N2 a a
+(-.) :: Num a => Op N2 a a
+(*.) :: Num a => Op N2 a a
+negateOp :: Num a => Op N1 a a
+absOp :: Num a => Op N1 a a
+signumOp :: Num a => Op N1 a a
+(/.) :: Fractional a => Op N2 a a
+recipOp :: Fractional a => Op N1 a a
+expOp :: Floating a => Op N1 a a
+logOp :: Floating a => Op N1 a a
+sqrtOp :: Floating a => Op N1 a a
+(**.) :: Floating a => Op N2 a a
+logBaseOp :: Floating a => Op N2 a a
+sinOp :: Floating a => Op N1 a a
+cosOp :: Floating a => Op N1 a a
+tanOp :: Floating a => Op N1 a a
+asinOp :: Floating a => Op N1 a a
+acosOp :: Floating a => Op N1 a a
+atanOp :: Floating a => Op N1 a a
+sinhOp :: Floating a => Op N1 a a
+coshOp :: Floating a => Op N1 a a
+tanhOp :: Floating a => Op N1 a a
+asinhOp :: Floating a => Op N1 a a
+acoshOp :: Floating a => Op N1 a a
+atanhOp :: Floating a => Op N1 a a
 
 
 -- | Provides a monomorphic interface to the library and to the
@@ -3978,6 +4078,31 @@ type N7 = S N6
 type N8 = S N7
 type N9 = S N8
 type N10 = S N9
+(+.) :: Num a => Op N2 a a
+(-.) :: Num a => Op N2 a a
+(*.) :: Num a => Op N2 a a
+negateOp :: Num a => Op N1 a a
+absOp :: Num a => Op N1 a a
+signumOp :: Num a => Op N1 a a
+(/.) :: Fractional a => Op N2 a a
+recipOp :: Fractional a => Op N1 a a
+expOp :: Floating a => Op N1 a a
+logOp :: Floating a => Op N1 a a
+sqrtOp :: Floating a => Op N1 a a
+(**.) :: Floating a => Op N2 a a
+logBaseOp :: Floating a => Op N2 a a
+sinOp :: Floating a => Op N1 a a
+cosOp :: Floating a => Op N1 a a
+tanOp :: Floating a => Op N1 a a
+asinOp :: Floating a => Op N1 a a
+acosOp :: Floating a => Op N1 a a
+atanOp :: Floating a => Op N1 a a
+sinhOp :: Floating a => Op N1 a a
+coshOp :: Floating a => Op N1 a a
+tanhOp :: Floating a => Op N1 a a
+asinhOp :: Floating a => Op N1 a a
+acoshOp :: Floating a => Op N1 a a
+atanhOp :: Floating a => Op N1 a a
 
 
 -- | Offers full functionality for implicit-graph back-propagation with
@@ -4380,3 +4505,28 @@ type N7 = S N6
 type N8 = S N7
 type N9 = S N8
 type N10 = S N9
+(+.) :: Num a => Op N2 a a
+(-.) :: Num a => Op N2 a a
+(*.) :: Num a => Op N2 a a
+negateOp :: Num a => Op N1 a a
+absOp :: Num a => Op N1 a a
+signumOp :: Num a => Op N1 a a
+(/.) :: Fractional a => Op N2 a a
+recipOp :: Fractional a => Op N1 a a
+expOp :: Floating a => Op N1 a a
+logOp :: Floating a => Op N1 a a
+sqrtOp :: Floating a => Op N1 a a
+(**.) :: Floating a => Op N2 a a
+logBaseOp :: Floating a => Op N2 a a
+sinOp :: Floating a => Op N1 a a
+cosOp :: Floating a => Op N1 a a
+tanOp :: Floating a => Op N1 a a
+asinOp :: Floating a => Op N1 a a
+acosOp :: Floating a => Op N1 a a
+atanOp :: Floating a => Op N1 a a
+sinhOp :: Floating a => Op N1 a a
+coshOp :: Floating a => Op N1 a a
+tanhOp :: Floating a => Op N1 a a
+asinhOp :: Floating a => Op N1 a a
+acoshOp :: Floating a => Op N1 a a
+atanhOp :: Floating a => Op N1 a a
