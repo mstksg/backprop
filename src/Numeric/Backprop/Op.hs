@@ -61,7 +61,7 @@ module Numeric.Backprop.Op (
   -- * Utility
   , pattern (:>), only, head'
   , pattern (::<), only_
-  -- * Numeric Ops
+  -- ** Numeric Ops#numops#
   -- $numops
   , (+.), (-.), (*.), negateOp, absOp, signumOp
   , (/.), recipOp
@@ -732,7 +732,7 @@ instance (Monad m, Known Length as, Every Floating as, Every Fractional as, Ever
 -- form, like:
 --
 -- @
--- 'liftB2' ('.+') v1 v2
+-- 'Numeric.Backprop.liftB2' ('.+') v1 v2
 -- @
 
 (+.) :: Num a => Op '[a, a] a

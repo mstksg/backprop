@@ -99,6 +99,14 @@ module Numeric.Backprop (
   , Summer(..), Unity(..)
   , summers, unities
   , summers', unities'
+  -- ** Numeric Ops
+  -- | Optimized ops for numeric functions.  See
+  -- "Numeric.Backprop.Op#numops" for more information.
+  , (+.), (-.), (*.), negateOp, absOp, signumOp
+  , (/.), recipOp
+  , expOp, logOp, sqrtOp, (**.), logBaseOp
+  , sinOp, cosOp, tanOp, asinOp, acosOp, atanOp
+  , sinhOp, coshOp, tanhOp, asinhOp, acoshOp, atanhOp
   ) where
 
 import           Control.Monad.Base

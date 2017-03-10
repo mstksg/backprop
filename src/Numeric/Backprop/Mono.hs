@@ -97,6 +97,14 @@ module Numeric.Backprop.Mono (
   , pattern (:+), (*:), (+:), head'
   -- ** 'Nat' type synonyms
   , N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10
+  -- ** Numeric Ops
+  -- | Optimized ops for numeric functions.  See
+  -- "Numeric.Backprop.Op.Mono#numops" for more information.
+  , (+.), (-.), (*.), negateOp, absOp, signumOp
+  , (/.), recipOp
+  , expOp, logOp, sqrtOp, (**.), logBaseOp
+  , sinOp, cosOp, tanOp, asinOp, acosOp, atanOp
+  , sinhOp, coshOp, tanhOp, asinhOp, acoshOp, atanhOp
   ) where
 
 import           Data.Type.Fin

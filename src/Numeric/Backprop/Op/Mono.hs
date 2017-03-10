@@ -68,6 +68,13 @@ module Numeric.Backprop.Op.Mono (
   , pattern (:+), (*:), (+:), head'
   -- ** 'Nat' type synonyms
   , N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10
+  -- ** Numeric Ops#numops#
+  -- $numops
+  , (+.), (-.), (*.), negateOp, absOp, signumOp
+  , (/.), recipOp
+  , expOp, logOp, sqrtOp, (**.), logBaseOp
+  , sinOp, cosOp, tanOp, asinOp, acosOp, atanOp
+  , sinhOp, coshOp, tanhOp, asinhOp, acoshOp, atanhOp
  ) where
 
 import           Data.Bifunctor
@@ -482,3 +489,97 @@ infixr 9 ~.
     -> OpM m n a b
     -> OpM m n a c
 f ~. g = composeOp1 @_ @_ @a g f
+
+-- $numops
+--
+-- Built-in ops for common numeric operations, implemented directly so
+-- that they are more efficient than using 'op1' \/ 'op2' etc.
+--
+-- The naming scheme is:
+--
+-- @
+-- ('+.') = 'op2' ('+')
+-- 'negateOp' = 'op1' 'negate
+-- @
+--
+-- Note that the operators (like '+.') are meant to be used in prefix
+-- form, like:
+--
+-- @
+-- 'Numeric.Backprop.Mono.liftB2' ('.+') v1 v2
+-- @
+
+(+.) :: Num a => Op N2 a a
+(+.) = (BP.+.) 
+
+(-.) :: Num a => Op N2 a a
+(-.) = (BP.-.) 
+
+(*.) :: Num a => Op N2 a a
+(*.) = (BP.*.) 
+
+(/.) :: Fractional a => Op N2 a a
+(/.) = (BP./.) 
+
+(**.) :: Floating a => Op N2 a a
+(**.) = (BP.**.) 
+
+negateOp :: Num a => Op N1 a a
+negateOp = BP.negateOp 
+
+signumOp :: Num a => Op N1 a a
+signumOp = BP.signumOp 
+
+absOp :: Num a => Op N1 a a
+absOp = BP.absOp 
+
+recipOp :: Fractional a => Op N1 a a
+recipOp = BP.recipOp 
+
+expOp :: Floating a => Op N1 a a
+expOp = BP.expOp 
+
+logOp :: Floating a => Op N1 a a
+logOp = BP.logOp 
+
+sqrtOp :: Floating a => Op N1 a a
+sqrtOp = BP.sqrtOp 
+
+logBaseOp :: Floating a => Op N2 a a
+logBaseOp = BP.logBaseOp 
+
+sinOp :: Floating a => Op N1 a a
+sinOp = BP.sinOp 
+
+cosOp :: Floating a => Op N1 a a
+cosOp = BP.cosOp 
+
+tanOp :: Floating a => Op N1 a a
+tanOp = BP.tanOp 
+
+asinOp :: Floating a => Op N1 a a
+asinOp = BP.asinOp 
+
+acosOp :: Floating a => Op N1 a a
+acosOp = BP.acosOp 
+
+atanOp :: Floating a => Op N1 a a
+atanOp = BP.atanOp 
+
+sinhOp :: Floating a => Op N1 a a
+sinhOp = BP.sinhOp 
+
+coshOp :: Floating a => Op N1 a a
+coshOp = BP.coshOp 
+
+tanhOp :: Floating a => Op N1 a a
+tanhOp = BP.tanhOp 
+
+asinhOp :: Floating a => Op N1 a a
+asinhOp = BP.asinhOp 
+
+acoshOp :: Floating a => Op N1 a a
+acoshOp = BP.acoshOp 
+
+atanhOp :: Floating a => Op N1 a a
+atanhOp = BP.atanhOp 
