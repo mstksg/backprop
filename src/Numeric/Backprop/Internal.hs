@@ -258,37 +258,65 @@ _FRInternal f = \case
 -- recomputation.
 instance Num a => Num (BVar s rs a) where
     r1 + r2       = BVOp (r1 :< r2 :< Ø) (+.)
+    {-# INLINE (+) #-}
     r1 - r2       = BVOp (r1 :< r2 :< Ø) (-.)
+    {-# INLINE (-) #-}
     r1 * r2       = BVOp (r1 :< r2 :< Ø) (*.)
+    {-# INLINE (*) #-}
     negate r      = BVOp (r  :< Ø)       negateOp
+    {-# INLINE negate #-}
     signum r      = BVOp (r  :< Ø)       signumOp
+    {-# INLINE signum #-}
     abs r         = BVOp (r  :< Ø)       absOp
+    {-# INLINE abs #-}
     fromInteger x = BVConst (fromInteger x)
+    {-# INLINE fromInteger #-}
 
 -- | See note for 'Num' instance.
 instance Fractional a => Fractional (BVar s rs a) where
     r1 / r2        = BVOp (r1 :< r2 :< Ø) (/.)
+    {-# INLINE (/) #-}
     recip r        = BVOp (r  :< Ø)       recipOp
+    {-# INLINE recip #-}
     fromRational x = BVConst (fromRational x)
+    {-# INLINE fromRational #-}
 
 -- | See note for 'Num' instance.
 instance Floating a => Floating (BVar s rs a) where
     pi            = BVConst pi
+    {-# INLINE pi #-}
     exp   r       = BVOp (r :< Ø)        expOp
+    {-# INLINE exp #-}
     log   r       = BVOp (r :< Ø)        logOp
+    {-# INLINE log #-}
     sqrt  r       = BVOp (r :< Ø)        sqrtOp
+    {-# INLINE sqrt #-}
     r1 ** r2      = BVOp (r1 :< r2 :< Ø) (**.)
+    {-# INLINE (**) #-}
     logBase r1 r2 = BVOp (r1 :< r2 :< Ø) logBaseOp
+    {-# INLINE logBase #-}
     sin   r       = BVOp (r :< Ø)        sinOp
+    {-# INLINE sin #-}
     cos   r       = BVOp (r :< Ø)        cosOp
+    {-# INLINE cos #-}
     tan   r       = BVOp (r :< Ø)        tanOp
+    {-# INLINE tan  #-}
     asin  r       = BVOp (r :< Ø)        asinOp
+    {-# INLINE asin #-}
     acos  r       = BVOp (r :< Ø)        acosOp
+    {-# INLINE acos #-}
     atan  r       = BVOp (r :< Ø)        atanOp
+    {-# INLINE atan #-}
     sinh  r       = BVOp (r :< Ø)        sinhOp
+    {-# INLINE sinh #-}
     cosh  r       = BVOp (r :< Ø)        coshOp
+    {-# INLINE cosh #-}
     tanh  r       = BVOp (r :< Ø)        tanhOp
+    {-# INLINE tanh #-}
     asinh r       = BVOp (r :< Ø)        asinhOp
+    {-# INLINE asinh #-}
     acosh r       = BVOp (r :< Ø)        acoshOp
+    {-# INLINE acosh #-}
     atanh r       = BVOp (r :< Ø)        atanhOp
+    {-# INLINE atanh #-}
 

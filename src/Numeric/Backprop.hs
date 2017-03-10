@@ -135,9 +135,10 @@ import qualified Generics.SOP              as SOP
 
 -- $prod
 --
--- 'Prod' is a heterogeneous list/tuple type, which allows you to tuple
--- together multiple values of different types and operate on them
--- generically.
+-- 'Prod', from the <http://hackage.haskell.org/package/type-combinators
+-- type-combinators> library (in "Data.Type.Prod") is a heterogeneous
+-- list/tuple type, which allows you to tuple together multiple values of
+-- different types and operate on them generically.
 --
 -- A @'Prod' f '[a, b, c]@ contains an @f a@, an @f b@, and an @f c@, and
 -- is constructed by consing them together with ':<' (using 'Ø' as nil):
@@ -186,12 +187,14 @@ import qualified Generics.SOP              as SOP
 -- #sum#
 --
 -- Like the 'Prod' type (see mini-tutorial at "Numeric.Backprop#prod"), the
--- 'Sum' type lets you make arbitrary sum types over different types and
--- work with them generically.
+-- 'Sum' type (from the
+-- <http://hackage.haskell.org/package/type-combinators type-combinators>
+-- library, in "Data.Type.Sum") lets you make arbitrary sum types over
+-- different types and work with them generically.
 --
 -- A @'Sum' f '[a, b, c]@ contains /either/ an @f a@, an @f b@, /or/ an @f
 -- c@, and is constructed with the constructors 'InL' and 'InR', which are
--- analogous to 'Left' and 'Right'. 
+-- analogous to 'Left' and 'Right'.
 --
 -- For a value of type @'Sum' f '[Int, Bool, String]@, there are three
 -- constructors:
@@ -466,7 +469,7 @@ gSplit' ss us = partsVar' ss us gTuple
 --
 -- @
 -- import qualified Generics.SOP as SOP
--- 
+--
 -- data Foo = F Int Bool
 --   deriving Generic
 --
@@ -794,7 +797,7 @@ gSplits' sss uss = sopVar' sss uss gSOP
 --
 -- @
 -- import qualified Generics.SOP as SOP
--- 
+--
 -- data Baz = A Int    Bool
 --          | B String Double
 --   deriving Generic

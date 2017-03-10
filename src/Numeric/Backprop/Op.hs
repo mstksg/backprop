@@ -521,6 +521,7 @@ opConst = opConst' summers
 op0 :: a -> Op '[] a
 op0 x = Op $ \case
     Ø -> (x, const Ø)
+{-# INLINE op0 #-}
 
 -- | Create an 'Op' of a function taking one input, by giving its explicit
 -- derivative.  The function should return a tuple containing the result of
@@ -571,6 +572,7 @@ op1' f = Op $ \case
     I x :< Ø ->
       let (y, dx) = f x
       in  (y, only_ . dx)
+{-# INLINE op1' #-}
 
 -- | Create an 'Op' of a function taking two inputs, by giving its explicit
 -- gradient.  The function should return a tuple containing the result of
@@ -623,6 +625,7 @@ op2' f = Op $ \case
     I x :< I y :< Ø ->
       let (z, dxdy) = f x y
       in  (z, (\(dx,dy) -> dx ::< dy ::< Ø) . dxdy)
+{-# INLINE op2' #-}
 
 -- | Create an 'Op' of a function taking three inputs, by giving its explicit
 -- gradient.  See documentation for 'op2'' for more details.
@@ -633,6 +636,7 @@ op3' f = Op $ \case
     I x :< I y :< I z :< Ø ->
       let (q, dxdydz) = f x y z
       in  (q, (\(dx, dy, dz) -> dx ::< dy ::< dz ::< Ø) . dxdydz)
+{-# INLINE op3' #-}
 
 -- | Automatically create an 'Op' of a numerical function taking one
 -- argument.  Uses 'Numeric.AD.diff', and so can take any numerical
@@ -684,37 +688,64 @@ opN f = Op $ \xs ->
 
 instance (Monad m, Known Length as, Every Num as, Num a) => Num (OpM m as a) where
     o1 + o2       = composeOp (o1 :< o2 :< Ø) (+.)
+    {-# INLINE (+) #-}
     o1 - o2       = composeOp (o1 :< o2 :< Ø) (-.)
+    {-# INLINE (-) #-}
     o1 * o2       = composeOp (o1 :< o2 :< Ø) (*.)
+    {-# INLINE (*) #-}
     negate o      = composeOp (o  :< Ø)       negateOp
+    {-# INLINE negate #-}
     signum o      = composeOp (o  :< Ø)       signumOp
+    {-# INLINE signum #-}
     abs    o      = composeOp (o  :< Ø)       absOp
+    {-# INLINE abs #-}
     fromInteger x = opConst (fromInteger x)
+    {-# INLINE fromInteger #-}
 
 instance (Monad m, Known Length as, Every Fractional as, Every Num as, Fractional a) => Fractional (OpM m as a) where
     o1 / o2        = composeOp (o1 :< o2 :< Ø) (/.)
     recip o        = composeOp (o  :< Ø)       recipOp
+    {-# INLINE recip #-}
     fromRational x = opConst (fromRational x)
+    {-# INLINE fromRational #-}
 
 instance (Monad m, Known Length as, Every Floating as, Every Fractional as, Every Num as, Floating a) => Floating (OpM m as a) where
     pi            = opConst pi
+    {-# INLINE pi #-}
     exp   o       = composeOp (o  :< Ø)       expOp
+    {-# INLINE exp #-}
     log   o       = composeOp (o  :< Ø)       logOp
+    {-# INLINE log #-}
     sqrt  o       = composeOp (o  :< Ø)       sqrtOp
+    {-# INLINE sqrt #-}
     o1 ** o2      = composeOp (o1 :< o2 :< Ø) (**.)
+    {-# INLINE (**) #-}
     logBase o1 o2 = composeOp (o1 :< o2 :< Ø) logBaseOp
+    {-# INLINE logBase #-}
     sin   o       = composeOp (o  :< Ø)       sinOp
+    {-# INLINE sin #-}
     cos   o       = composeOp (o  :< Ø)       cosOp
+    {-# INLINE cos #-}
     tan   o       = composeOp (o  :< Ø)       tanOp
+    {-# INLINE tan #-}
     asin  o       = composeOp (o  :< Ø)       asinOp
+    {-# INLINE asin #-}
     acos  o       = composeOp (o  :< Ø)       acosOp
+    {-# INLINE acos #-}
     atan  o       = composeOp (o  :< Ø)       atanOp
+    {-# INLINE atan #-}
     sinh  o       = composeOp (o  :< Ø)       sinhOp
+    {-# INLINE sinh #-}
     cosh  o       = composeOp (o  :< Ø)       coshOp
+    {-# INLINE cosh #-}
     tanh  o       = composeOp (o  :< Ø)       tanhOp
+    {-# INLINE tanh #-}
     asinh o       = composeOp (o  :< Ø)       asinhOp
+    {-# INLINE asinh #-}
     acosh o       = composeOp (o  :< Ø)       acoshOp
+    {-# INLINE acosh #-}
     atanh o       = composeOp (o  :< Ø)       atanhOp
+    {-# INLINE atanh #-}
 
 -- $numops
 --
@@ -735,84 +766,134 @@ instance (Monad m, Known Length as, Every Floating as, Every Fractional as, Ever
 -- 'Numeric.Backprop.liftB2' ('.+') v1 v2
 -- @
 
+-- | Optimized version of @'op1' ('+.')@.
 (+.) :: Num a => Op '[a, a] a
 (+.) = op2' $ \x y -> (x + y, maybe (1, 1) (\g -> (g, g)))
+{-# INLINE (+.) #-}
 
+-- | Optimized version of @'op1' ('-.')@.
 (-.) :: Num a => Op '[a, a] a
 (-.) = op2' $ \x y -> (x - y, maybe (1, -1) (\g -> (g, -g)))
+{-# INLINE (-.) #-}
 
+-- | Optimized version of @'op1' ('*.')@.
 (*.) :: Num a => Op '[a, a] a
 (*.) = op2' $ \x y -> (x * y, maybe (y, x) (\g -> (y*g, x*g)))
+{-# INLINE (*.) #-}
 
+-- | Optimized version of @'op1' ('/.')@.
 (/.) :: Fractional a => Op '[a, a] a
 (/.) = op2' $ \x y -> (x / y, maybe (1/y, -x/(y*y)) (\g -> (g/y, -g*x/(y*y))))
+{-# INLINE (/.) #-}
 
+-- | Optimized version of @'op1' ('**.')@.
 (**.) :: Floating a => Op '[a, a] a
 (**.) = op2' $ \x y -> (x ** y, let dx = y*x**(y-1)
                                     dy = x**y*log(x)
                                 in  maybe (dx, dy) (\g -> (g*dx, g*dy))
                        )
+{-# INLINE (**.) #-}
 
+-- | Optimized version of @'op1' 'negateOp'@.
 negateOp :: Num a => Op '[a] a
 negateOp = op1' $ \x -> (negate x, maybe (-1) negate)
+{-# INLINE negateOp  #-}
 
+-- | Optimized version of @'op1' 'signumOp'@.
 signumOp :: Num a => Op '[a] a
 signumOp = op1' $ \x -> (signum x, const 0)
+{-# INLINE signumOp  #-}
 
+-- | Optimized version of @'op1' 'absOp'@.
 absOp :: Num a => Op '[a] a
 absOp = op1' $ \x -> (abs x, maybe (signum x) (* signum x))
+{-# INLINE absOp #-}
 
+-- | Optimized version of @'op1' 'recipOp'@.
 recipOp :: Fractional a => Op '[a] a
 recipOp = op1' $ \x -> (recip x, maybe (-1/(x*x)) ((/(x*x)) . negate))
+{-# INLINE recipOp #-}
 
+-- | Optimized version of @'op1' 'expOp'@.
 expOp :: Floating a => Op '[a] a
 expOp = op1' $ \x -> (exp x, maybe (exp x) (exp x *))
+{-# INLINE expOp #-}
 
+-- | Optimized version of @'op1' 'logOp'@.
 logOp :: Floating a => Op '[a] a
-logOp = op1' $ \x -> (log x, maybe (1/x) (/x))
+logOp = op1' $ \x -> (log x, (/x) . fromMaybe 1)
+{-# INLINE logOp #-}
 
+-- | Optimized version of @'op1' 'sqrtOp'@.
 sqrtOp :: Floating a => Op '[a] a
 sqrtOp = op1' $ \x -> (sqrt x, maybe (0.5 * sqrt x) (/ (2 * sqrt x)))
+{-# INLINE sqrtOp #-}
 
+-- | Optimized version of @'op2' 'logBaseOp'@.
 logBaseOp :: Floating a => Op '[a, a] a
 logBaseOp = op2' $ \x y -> (logBase x y, let dx = - logBase x y / (log x * x)
                                          in  maybe (dx, 1/(y * log x))
                                                    (\g -> (g*dx, g/(y * log x)))
                            )
+{-# INLINE logBaseOp #-}
 
+-- | Optimized version of @'op1' 'sinOp'@.
 sinOp :: Floating a => Op '[a] a
 sinOp = op1' $ \x -> (sin x, maybe (cos x) (* cos x))
+{-# INLINE sinOp #-}
 
+-- | Optimized version of @'op1' 'cosOp'@.
 cosOp :: Floating a => Op '[a] a
 cosOp = op1' $ \x -> (cos x, maybe (-sin x) (* (-sin x)))
+{-# INLINE cosOp #-}
 
+-- | Optimized version of @'op1' 'tanOp'@.
 tanOp :: Floating a => Op '[a] a
-tanOp = op1' $ \x -> (tan x, maybe (1 / cos x^(2::Int)) (/ cos x^(2::Int)))
+tanOp = op1' $ \x -> (tan x, (/ cos x^(2::Int)) . fromMaybe 1)
+{-# INLINE tanOp #-}
 
+-- | Optimized version of @'op1' 'asinOp'@.
 asinOp :: Floating a => Op '[a] a
-asinOp = op1' $ \x -> (asin x, maybe (1 / sqrt(1 - x*x)) (/ sqrt(1 - x*x)))
+asinOp = op1' $ \x -> (asin x, (/ sqrt(1 - x*x)) . fromMaybe 1)
+{-# INLINE asinOp #-}
 
+-- | Optimized version of @'op1' 'acosOp'@.
 acosOp :: Floating a => Op '[a] a
 acosOp = op1' $ \x -> (acos x, maybe (-1 / sqrt(1 - x*x)) ((/ sqrt(1 - x*x)) . negate))
+{-# INLINE acosOp #-}
 
+-- | Optimized version of @'op1' 'atanOp'@.
 atanOp :: Floating a => Op '[a] a
-atanOp = op1' $ \x -> (atan x, maybe (1/(x*x + 1)) (/ (x*x + 1)))
+atanOp = op1' $ \x -> (atan x, (/ (x*x + 1)) . fromMaybe 1)
+{-# INLINE atanOp #-}
 
+-- | Optimized version of @'op1' 'sinhOp'@.
 sinhOp :: Floating a => Op '[a] a
 sinhOp = op1' $ \x -> (sinh x, maybe (cosh x) (* cosh x))
+{-# INLINE sinhOp #-}
 
+-- | Optimized version of @'op1' 'coshOp'@.
 coshOp :: Floating a => Op '[a] a
 coshOp = op1' $ \x -> (cosh x, maybe (sinh x) (* sinh x))
+{-# INLINE coshOp #-}
 
+-- | Optimized version of @'op1' 'tanhOp'@.
 tanhOp :: Floating a => Op '[a] a
-tanhOp = op1' $ \x -> (tanh x, maybe (1 / cosh x^(2::Int)) (/ cosh x^(2::Int)))
+tanhOp = op1' $ \x -> (tanh x, (/ cosh x^(2::Int)) . fromMaybe 1)
+{-# INLINE tanhOp #-}
 
+-- | Optimized version of @'op1' 'asinhOp'@.
 asinhOp :: Floating a => Op '[a] a
-asinhOp = op1' $ \x -> (asinh x, maybe (1 / sqrt(x*x + 1)) (/ sqrt(x*x + 1)))
+asinhOp = op1' $ \x -> (asinh x, (/ sqrt (x*x + 1)) . fromMaybe 1)
+{-# INLINE asinhOp #-}
 
+-- | Optimized version of @'op1' 'acoshOp'@.
 acoshOp :: Floating a => Op '[a] a
-acoshOp = op1' $ \x -> (acosh x, maybe (1 / sqrt(x*x - 1)) (/ sqrt(x*x - 1)))
+acoshOp = op1' $ \x -> (acosh x, (/ sqrt (x*x - 1)) . fromMaybe 1)
+{-# INLINE acoshOp #-}
 
+-- | Optimized version of @'op1' 'atanhOp'@.
 atanhOp :: Floating a => Op '[a] a
-atanhOp = op1' $ \x -> (atanh x, maybe (1 / (1 - x*x)) (/ (1 - x*x)))
+atanhOp = op1' $ \x -> (atanh x, (/ (1 - x*x)) . fromMaybe 1)
+{-# INLINE atanhOp #-}
 

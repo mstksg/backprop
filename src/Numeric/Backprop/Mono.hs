@@ -119,9 +119,10 @@ import qualified Numeric.Backprop                 as BP
 
 -- $vec
 --
--- A 'VecT' is a fixed-length list of a given type.  It's basically the
--- "monomorphic" version of a 'Prod' (see the mini-tutorial in
--- "Numeric.Backprop#prod").
+-- A 'VecT' (from the <http://hackage.haskell.org/package/type-combinators
+-- type-combinators> library, in "Data.Type.Vector") is a fixed-length
+-- list of a given type.  It's basically the "monomorphic" version of
+-- a 'Prod' (see the mini-tutorial in "Numeric.Backprop#prod").
 --
 -- A @'VecT' n f a@ is a list of @n@ @f a@s, and is constructed by consing
 -- them together with ':*' (using 'ØV' as nil):

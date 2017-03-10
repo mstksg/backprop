@@ -14,10 +14,10 @@ networks and learn mnist!
 
   [ad]: http://hackage.haskell.org/package/ad
 
-Repository source is [on github], and so are the [rendered docs].
+Repository source is [on github], and docs are [on hackage].
 
   [on github]: https://github.com/mstksg/backprop
-  [rendered docs]: https://mstksg.github.io/backprop
+  [on hackage]: http://hackage.haskell.org/package/backprop
 
 If you’re reading this as a literate haskell file, you should know that
 a [rendered pdf version is available on github.]. If you are reading
@@ -78,7 +78,7 @@ $m \times n$ matrices, and a type `R n` for an $n$ vector.
 
   [hmatrix]: http://hackage.haskell.org/package/hmatrix
 
-First thing’s first: let’s define our neural networks as simple
+First things first: let’s define our neural networks as simple
 containers of parameters (weight matrices and bias vectors).
 
 First, a type for layers:
@@ -174,7 +174,7 @@ there isn’t any magic going on. If you’re curious, refer to
 [documentation for `Op`] for more details on how `Op` is implemented and
 how this works.
 
-  [documentation for `Op`]: https://mstksg.github.io/backprop/Numeric-Backprop-Op.html
+  [documentation for `Op`]: http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Op.html
 
 First, matrix-vector multiplication primitive, giving an explicit
 gradient function.
@@ -431,7 +431,7 @@ main = MWC.withSystemRandom $ \g -> do
     Just train <- loadMNIST "data/train-images-idx3-ubyte" "data/train-labels-idx1-ubyte"
     Just test  <- loadMNIST "data/t10k-images-idx3-ubyte"  "data/t10k-labels-idx1-ubyte"
     putStrLn "Loaded data."
-    net0 <- MWC.uniformR @(Network 784 300 100 9) (-1, 1) g
+    net0 <- MWC.uniformR @(Network 784 300 100 9) (-0.1, 0.1) g
     flip evalStateT net0 . forM_ [1..] $ \e -> do
       train' <- liftIO . fmap V.toList $ MWC.uniformShuffle (V.fromList train) g
       liftIO $ printf "[Epoch %d]\n" (e :: Int)
@@ -503,7 +503,7 @@ What now?
 Check out the docs for the [Numeric.Backprop] module for a more detailed
 picture of what’s going on, or find more examples at the [github repo]!
 
-  [Numeric.Backprop]: https://mstksg.github.io/backprop/Numeric-Backprop.html
+  [Numeric.Backprop]: http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop.html
   [github repo]: https://github.com/mstksg/backprop
 
 Boring stuff
