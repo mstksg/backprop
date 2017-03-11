@@ -164,6 +164,14 @@ prodLength = \case
     Ø       -> LZ
     _ :< xs -> LS (prodLength xs)
 
+vecLength
+    :: forall n f a. ()
+    => VecT n f a
+    -> Nat n
+vecLength = \case
+    ØV      -> Z_
+    _ :* xs -> S_ (vecLength xs)
+
 withEvery
     :: forall c f as. (Known Length as, Every c as)
     => (forall a. c a => f a)
@@ -186,3 +194,30 @@ tagSum = \case
     x :< xs -> \case
       InL y  -> InL (x :&: y)
       InR ys -> InR (tagSum xs ys)
+
+replWit
+    :: Nat n
+    -> Wit (c a)
+    -> Wit (Every c (Replicate n a))
+replWit = \case
+    Z_   -> \case
+      Wit -> Wit
+    S_ n -> \case
+      c@Wit -> case replWit n c of
+        Wit -> Wit
+
+replLen
+    :: forall n a. ()
+    => Nat n
+    -> Length (Replicate n a)
+replLen = \case
+    Z_   -> LZ
+    S_ n -> LS (replLen @_ @a n)
+
+lengthProd
+    :: (forall a. f a)
+    -> Length as
+    -> Prod f as
+lengthProd x = \case
+    LZ   -> Ø
+    LS l -> x :< lengthProd x l

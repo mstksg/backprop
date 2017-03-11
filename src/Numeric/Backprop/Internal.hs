@@ -28,13 +28,11 @@
 -- building/back-propagation for the library.
 
 module Numeric.Backprop.Internal
-  ( Summer(..), summers, summers'
-  , Unity(..), unities, unities'
-  , OpB
+  ( OpB
   , BPState(..), bpsSources
   , BP(..)
   , BPInpRef(..)
-  , BPNode(..), bpnOut, bpnRes, bpnGradFunc, bpnGradCache, bpnSummer
+  , BPNode(..), bpnOut, bpnRes, bpnGradFunc, bpnGradCache
   , BPPipe(..), bppOut, bppRes, bppGradFunc, bppGradCache
   , BVar(..)
   , ForwardRefs(..), _FRInternal
@@ -47,9 +45,8 @@ import           Data.Kind
 import           Data.STRef
 import           Data.Type.Index
 import           Data.Type.Product
-import           Lens.Micro hiding                (ix)
+import           Lens.Micro hiding    (ix)
 import           Lens.Micro.TH
-import           Numeric.Backprop.Internal.Helper
 import           Numeric.Backprop.Op
 
 -- | A subclass of 'OpM' (and superclass of 'Op'), representing 'Op's that
@@ -198,7 +195,8 @@ data BVar :: Type -> [Type] -> Type -> Type where
 -- for partial derivatives at usage sites of a given entity.
 data BPInpRef :: Type -> [Type] -> Type -> Type where
     -- | The entity is used in a 'BPNode', and as an Nth input
-    IRNode  :: !(Index bs a)
+    IRNode  :: Every Num cs
+            => !(Index bs a)
             -> !(STRef s (BPNode s rs bs cs))
             -> BPInpRef s rs a
     -- | The entity is used in a 'BPPipe', and as an Nth input
@@ -219,7 +217,6 @@ data BPNode :: Type -> [Type] -> [Type] -> [Type] -> Type where
            , _bpnRes       :: !(Tuple bs)
            , _bpnGradFunc  :: !(Prod Maybe bs -> ST s (Tuple as))
            , _bpnGradCache :: !(Maybe (Tuple as))  -- nothing if is the "final output"
-           , _bpnSummer    :: !(Prod Summer bs)
            }
         -> BPNode s rs as bs
 

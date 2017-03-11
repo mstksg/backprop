@@ -3,6 +3,7 @@
 {-# LANGUAGE PatternSynonyms     #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
 
@@ -53,7 +54,6 @@ module Numeric.Backprop.Implicit (
   , Prod(..), Tuple, I(..)
   -- * back-propagation
   , backprop, grad, eval
-  , backprop', grad'
   -- * Var manipulation
   , BP.constVar, BP.liftB, (BP..$), BP.liftB1, BP.liftB2, BP.liftB3
   -- ** As Parts
@@ -67,9 +67,6 @@ module Numeric.Backprop.Implicit (
   -- * Utility
   , pattern (:>), only, head'
   , pattern (::<), only_
-  , Summer(..), Unity(..)
-  , summers, unities
-  , summers', unities'
   -- ** Numeric Ops
   -- | Optimized ops for numeric functions.  See
   -- "Numeric.Backprop.Op#numops" for more information.
@@ -92,6 +89,7 @@ import           Numeric.Backprop.Iso
 import           Numeric.Backprop.Op
 import           Type.Class.Higher
 import           Type.Class.Known
+import           Type.Class.Witness
 import qualified Generics.SOP              as SOP
 import qualified Numeric.Backprop          as BP
 
@@ -113,16 +111,6 @@ import qualified Numeric.Backprop          as BP
 -- explicit-graph backprop module "Numeric.Backprop".
 type BPOp rs a = forall s. Prod (BVar s rs) rs -> BVar s rs a
 
--- | A version of 'backprop' taking explicit 'Summer's and 'Unity's, so it
--- can be run with types that aren't instances of 'Num'.
-backprop'
-    :: Prod Summer rs
-    -> Prod Unity rs
-    -> BPOp rs a
-    -> Tuple rs
-    -> (a, Tuple rs)
-backprop' ss us f = BP.backprop' ss us $ BP.withInps' (prodLength ss) (return . f)
-
 -- | Run back-propagation on a 'BPOp' function, getting both the result and
 -- the gradient of the result with respect to the inputs.
 --
@@ -136,21 +124,11 @@ backprop' ss us f = BP.backprop' ss us $ BP.withInps' (prodLength ss) (return . 
 -- >>> 'backprop' foo (2 ::< 3 ::< Ø)
 -- (11.46, 13.73 ::< 6.12 ::< Ø)
 backprop
-    :: (Known Length rs, Every Num rs, Num a)
+    :: Every Num rs
     => BPOp rs a
     -> Tuple rs
     -> (a, Tuple rs)
-backprop f = BP.backprop $ BP.implicitly f
-
--- | A version of 'grad' taking explicit 'Summer's and 'Unity's, so it
--- can be run with types that aren't instances of 'Num'.
-grad'
-    :: Prod Summer rs
-    -> Prod Unity rs
-    -> BPOp rs a
-    -> Tuple rs
-    -> Tuple rs
-grad' ss us f = snd . backprop' ss us f
+backprop f xs = BP.backprop (BP.withInps' (prodLength xs) (return . f)) xs
 
 -- | Run the 'BPOp' on an input tuple and return the gradient of the result
 -- with respect to the input tuple.
@@ -165,7 +143,7 @@ grad' ss us f = snd . backprop' ss us f
 -- >>> grad foo (2 ::< 3 ::< Ø)
 -- 13.73 ::< 6.12 ::< Ø
 grad
-    :: (Known Length rs, Every Num rs, Num a)
+    :: Every Num rs
     => BPOp rs a
     -> Tuple rs
     -> Tuple rs
@@ -184,34 +162,42 @@ grad f = snd . backprop f
 -- >>> eval foo (2 ::< 3 ::< Ø)
 -- 11.46
 eval
-    :: (Known Length rs, Every Num rs, Num a)
+    :: (Known Length rs, Num a)
     => BPOp rs a
     -> Tuple rs
     -> a
 eval f = BP.evalBPOp $ BP.implicitly f
 
--- | A version of 'partsVar' taking explicit 'Summer's and 'Unity's, so it
--- can be run with internal types that aren't instances of 'Num'.
+-- | A version of 'partsVar' taking explicit 'Length', indicating the
+-- number of items in the input tuple and their types.
+--
+-- Requiring an explicit 'Length' is mostly useful for rare "extremely
+-- polymorphic" situations, where GHC can't infer the type and length of
+-- the internal tuple.  If you ever actually explicitly write down @bs@ as
+-- a list of types, you should be able to just use 'partsVar'.
 partsVar'
-    :: forall s rs bs a. ()
-    => Prod Summer bs
-    -> Prod Unity bs
+    :: forall s rs bs a. Every Num bs
+    => Length bs
     -> Iso' a (Tuple bs)
     -> BVar s rs a
     -> Prod (BVar s rs) bs
-partsVar' ss us i r = imap1 (\ix u -> BP.liftB1 (BP.op1' (f ix u)) r) us
+partsVar' l i r = map1 (\ix -> every @_ @Num ix //
+                                 BP.liftB1 (BP.op1' (f ix)) r
+                       ) ixes
   where
-    f :: Index bs b
-      -> Unity b
+    f :: Num b
+      => Index bs b
       -> a
       -> (b, Maybe b -> a)
-    f ix u x = ( getI . index ix . view i $ x
-               , review i
-               . flip (set (indexP ix)) zeroes
-               . maybe (I (getUnity u)) I
-               )
+    f ix x = ( getI . index ix . view i $ x
+             , review i
+             . flip (set (indexP ix)) zeroes
+             . maybe (I 1) I
+             )
     zeroes :: Tuple bs
-    zeroes = map1 (\s -> I $ runSummer s []) ss
+    zeroes = map1 (\ix -> I 0 \\ every @_ @Num ix) ixes
+    ixes :: Prod (Index bs) bs
+    ixes = indices' l
 
 -- | Use an 'Iso' (or compatible 'Control.Lens.Iso.Iso' from the lens
 -- library) to "pull out" the parts of a data type and work with each part
@@ -255,23 +241,27 @@ partsVar' ss us i r = imap1 (\ix u -> BP.liftB1 (BP.op1' (f ix u)) r) us
 -- explicit 'Numeric.Backprop.partsVar', but this might change in the
 -- future.
 partsVar
-    :: forall s rs bs a. (Known Length bs, Every Num bs)
+    :: forall s rs bs a. (Every Num bs, Known Length bs)
     => Iso' a (Tuple bs)
     -> BVar s rs a
     -> Prod (BVar s rs) bs
-partsVar = partsVar' summers unities
+partsVar = partsVar' known
 
--- | A version of 'withParts' taking explicit 'Summer's and 'Unity's, so it
--- can be run with internal types that aren't instances of 'Num'.
+-- | A version of 'withParts' taking explicit 'Length', indicating the
+-- number of internal items and their types.
+--
+-- Requiring an explicit 'Length' is mostly useful for rare "extremely
+-- polymorphic" situations, where GHC can't infer the type and length of
+-- the internal tuple.  If you ever actually explicitly write down @bs@ as
+-- a list of types, you should be able to just use 'withParts'.
 withParts'
-    :: forall s rs bs a r. ()
-    => Prod Summer bs
-    -> Prod Unity bs
+    :: forall s rs bs a r. Every Num bs
+    => Length bs
     -> Iso' a (Tuple bs)
     -> BVar s rs a
     -> (Prod (BVar s rs) bs -> r)
     -> r
-withParts' ss us i r f = f (partsVar' ss us i r)
+withParts' l i r f = f (partsVar' l i r)
 
 -- | A continuation-based version of 'partsVar'.  Instead of binding the
 -- parts and using it in the rest of the block, provide a continuation to
@@ -296,22 +286,26 @@ withParts' ss us i r f = f (partsVar' ss us i r)
 --
 -- Mostly just a stylistic alternative to 'partsVar'.
 withParts
-    :: forall s rs bs a r. (Known Length bs, Every Num bs)
+    :: forall s rs bs a r. (Every Num bs, Known Length bs)
     => Iso' a (Tuple bs)
     -> BVar s rs a
     -> (Prod (BVar s rs) bs -> r)
     -> r
-withParts i r f = f (partsVar i r)
+withParts = withParts' known
 
--- | A version of 'splitVars' taking explicit 'Summer's and 'Unity's, so it
--- can be run with types that aren't instances of 'Num'.
+-- | A version of 'splitVars' taking explicit 'Length', indicating the
+-- number of internal items and their types.
+--
+-- Requiring an explicit 'Length' is mostly useful for rare "extremely
+-- polymorphic" situations, where GHC can't infer the type and length of
+-- the internal tuple.  If you ever actually explicitly write down @as@ as
+-- a list of types, you should be able to just use 'splitVars'.
 splitVars'
-    :: forall s rs as. ()
-    => Prod Summer as
-    -> Prod Unity as
+    :: forall s rs as. Every Num as
+    => Length as
     -> BVar s rs (Tuple as)
     -> Prod (BVar s rs) as
-splitVars' ss us = partsVar' ss us id
+splitVars' l = partsVar' l id
 
 -- | Split out a 'BVar' of a tuple into a tuple ('Prod') of 'BVar's.
 --
@@ -332,20 +326,24 @@ splitVars' ss us = partsVar' ss us id
 -- 'splitVars' = 'partsVar' 'id'
 -- @
 splitVars
-    :: forall s rs as. (Known Length as, Every Num as)
+    :: forall s rs as. (Every Num as, Known Length as)
     => BVar s rs (Tuple as)
     -> Prod (BVar s rs) as
-splitVars = partsVar id
+splitVars = splitVars' known
 
--- | A version of 'gSplit' taking explicit 'Summer's and 'Unity's, so it
--- can be run with internal types that aren't instances of 'Num'.
+-- | A version of 'gSplit' taking explicit 'Length', indicating the
+-- number of internal items and their types.
+--
+-- Requiring an explicit 'Length' is mostly useful for rare "extremely
+-- polymorphic" situations, where GHC can't infer the type and length of
+-- the internal tuple.  If you ever actually explicitly write down @as@ as
+-- a list of types, you should be able to just use 'gSplit'.
 gSplit'
-    :: forall s rs as a. (SOP.Generic a, SOP.Code a ~ '[as])
-    => Prod Summer as
-    -> Prod Unity as
+    :: forall s rs as a. (SOP.Generic a, SOP.Code a ~ '[as], Every Num as)
+    => Length as
     -> BVar s rs a
     -> Prod (BVar s rs) as
-gSplit' ss us = partsVar' ss us gTuple
+gSplit' l = partsVar' l gTuple
 
 -- | Using 'GHC.Generics.Generic' from "GHC.Generics" and
 -- 'Generics.SOP.Generic' from "Generics.SOP", /split/ a 'BVar' containing
@@ -382,9 +380,10 @@ gSplit' ss us = partsVar' ss us gTuple
 -- 'gSplit' = 'splitVars' 'gTuple'
 -- @
 gSplit
-    :: forall s rs as a. (SOP.Generic a, SOP.Code a ~ '[as], Known Length as, Every Num as)
+    :: forall s rs as a. (SOP.Generic a, SOP.Code a ~ '[as], Every Num as, Known Length as)
     => BVar s rs a
     -> Prod (BVar s rs) as
-gSplit = partsVar gTuple
+gSplit = gSplit' known
 
 -- TODO: figure out how to split sums
+-- TODO: refactor these out to not need Known Length

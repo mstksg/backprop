@@ -56,8 +56,7 @@ module Numeric.Backprop.Op (
   -- ** Giving gradients directly
   , op1', op2', op3'
   -- ** From Isomorphisms
-  , opCoerce, opTup, opIso
-  , opCoerce', opTup', opIso'
+  , opCoerce, opTup, opIso, opTup'
   -- * Utility
   , pattern (:>), only, head'
   , pattern (::<), only_
@@ -86,7 +85,6 @@ import           Lens.Micro.Extras
 import           Numeric.AD
 import           Numeric.AD.Internal.Reverse      (Reverse, Tape)
 import           Numeric.AD.Mode.Forward hiding   (grad')
-import           Numeric.Backprop.Internal.Helper
 import           Numeric.Backprop.Iso
 import           Type.Class.Higher
 import           Type.Class.Known
@@ -267,17 +265,23 @@ runOp'
                                 --     the gradient
 runOp' o = (second . fmap) getI . getI . runOpM' o
 
--- | 'composeOp', but taking explicit 'Summer's, for the situation where
--- the @as@ are not instance of 'Num'.
+-- | A version of 'composeOp' taking explicit 'Length', indicating the
+-- number of inputs expected and their types.
+--
+-- Requiring an explicit 'Length' is mostly useful for rare "extremely
+-- polymorphic" situations, where GHC can't infer the type and length of
+-- the the expected input tuple.  If you ever actually explicitly write
+-- down @as@ as a list of types, you should be able to just use
+-- 'composeOp'.
 composeOp'
-    :: Monad m
-    => Prod Summer as       -- ^ Explicit 'Summer's
+    :: forall m as bs c. (Monad m, Every Num as)
+    => Length as
     -> Prod (OpM m as) bs   -- ^ 'Prod' of 'OpM's taking @as@ and returning
                             --     different @b@ in @bs@
     -> OpM m bs c           -- ^ 'OpM' taking eac of the @bs@ from the
                             --     input 'Prod'.
     -> OpM m as c           -- ^ Composed 'OpM'
-composeOp' ss os o = OpM $ \xs -> do
+composeOp' l os o = OpM $ \xs -> do
     (ys, conts) <- fmap unzipP
                  . traverse1 (fmap (\(x, c) -> I x :&: OC c) . flip runOpM' xs)
                  $ os
@@ -287,10 +291,9 @@ composeOp' ss os o = OpM $ \xs -> do
           g2s <- sequenceA
                     . toList (\(oc :&: I g) -> runOpCont oc (Just g))
                     $ conts `zipP` g1
-          return $ map1 (\(s :&: gs) -> I (runSummer s gs))
-                 . zipP ss
+          return $ imap1 (\ix gs -> I (sum gs) \\ every @_ @Num ix)
                  . foldr (\x -> map1 (uncurryFan (\(I y) -> (y:))) . zipP x)
-                         (map1 (const []) ss)
+                         (lengthProd [] l)
                  $ g2s
     return (z, gFunc)
 
@@ -302,33 +305,39 @@ composeOp' ss os o = OpM $ \xs -> do
 -- m as b3@, it can compose them with an @'OpM' m '[b1,b2,b3] c@ to create
 -- an @'OpM' m as c@.
 composeOp
-    :: (Monad m, Known Length as, Every Num as)
+    :: (Monad m, Every Num as, Known Length as)
     => Prod (OpM m as) bs   -- ^ 'Prod' of 'OpM's taking @as@ and returning
                             --     different @b@ in @bs@
     -> OpM m bs c           -- ^ 'OpM' taking eac of the @bs@ from the
                             --     input 'Prod'.
     -> OpM m as c           -- ^ Composed 'OpM'
-composeOp = composeOp' summers
+composeOp = composeOp' known
 
--- | 'composeOp1', but taking explicit 'Summer's, for the situation where
--- the @as@ are not instance of 'Num'.
+-- | A version of 'composeOp1' taking explicit 'Length', indicating the
+-- number of inputs expected and their types.
+--
+-- Requiring an explicit 'Length' is mostly useful for rare "extremely
+-- polymorphic" situations, where GHC can't infer the type and length of
+-- the the expected input tuple.  If you ever actually explicitly write
+-- down @as@ as a list of types, you should be able to just use
+-- 'composeOp1'.
 composeOp1'
-    :: Monad m
-    => Prod Summer as
+    :: (Monad m, Every Num as)
+    => Length as
     -> OpM m as b
     -> OpM m '[b] c
     -> OpM m as c
-composeOp1' ss = composeOp' ss . only
+composeOp1' l = composeOp' l . only
 
--- | Convenient wrappver over 'composeOp' for the case where the second
+-- | Convenient wrapper over 'composeOp' for the case where the second
 -- function only takes one input, so the two 'OpM's can be directly piped
 -- together, like for '.'.
 composeOp1
-    :: (Monad m, Known Length as, Every Num as)
+    :: (Monad m, Every Num as, Known Length as)
     => OpM m as b
     -> OpM m '[b] c
     -> OpM m as c
-composeOp1 = composeOp . only
+composeOp1 = composeOp1' known
 
 -- | Convenient infix synonym for (flipped) 'composeOp1'.  Meant to be used
 -- just like '.':
@@ -445,11 +454,6 @@ gradOpM o i = do
     (_, gF) <- runOpM' o i
     gF Nothing
 
--- | A version of 'opCoerce' that takes an explicit 'Unity', so can be run
--- on values that aren't 'Num' instances.
-opCoerce' :: Coercible a b => Unity a -> Op '[a] b
-opCoerce' u = opIso' u coerced
-
 -- | An 'Op' that coerces an item into another item whose type has the same
 -- runtime representation.  Requires the input to be an instance of 'Num'.
 --
@@ -459,15 +463,22 @@ opCoerce' u = opIso' u coerced
 -- @
 -- 'opCoerce' = 'opIso' 'coerced'
 -- @
-opCoerce :: (Coercible a b, Num a) => Op '[a] b
+opCoerce :: Num a => Coercible a b => Op '[a] b
 opCoerce = opIso coerced
 
--- | A version of 'opTup' that takes explicit 'Unity's, so can be run on
--- values of types that aren't 'Num' instances.
+-- | A version of 'opTup' taking explicit 'Length', indicating the
+-- number of inputs expected and their types.
+--
+-- Requiring an explicit 'Length' is mostly useful for rare "extremely
+-- polymorphic" situations, where GHC can't infer the type and length of
+-- the the expected input tuple.  If you ever actually explicitly write
+-- down @as@ as a list of types, you should be able to just use
+-- 'opTup'.
 opTup'
-    :: Prod Unity as
+    :: Every Num as
+    => Length as
     -> Op as (Tuple as)
-opTup' u = Op $ \xs -> (xs, fromMaybe (map1 (I . getUnity) u))
+opTup' l = Op $ \xs -> (xs, fromMaybe (map1 (I . (1 \\) . every @_ @Num) (indices' l)))
 
 -- | An 'Op' that takes @as@ and returns exactly the input tuple.
 --
@@ -475,13 +486,9 @@ opTup' u = Op $ \xs -> (xs, fromMaybe (map1 (I . getUnity) u))
 -- (1 ::< 2 ::< 3 ::< Ø, 1 ::< 1 ::< 1 ::< Ø)
 opTup
     :: (Every Num as, Known Length as)
-    => Op as (Tuple as)
-opTup = opTup' (map1 ((// known) . every @_ @Num) indices)
-
--- | A version of 'opIso' that takes an explicit 'Unity', so can be run on
--- values of types that aren't 'Num' instances.
-opIso' :: Unity a -> Iso' a b -> Op '[ a ] b
-opIso' u i = op1' $ \x -> (view i x, maybe (getUnity u) (review i))
+    => Length as
+    -> Op as (Tuple as)
+opTup l = Op $ \xs -> (xs, fromMaybe (map1 (I . (1 \\) . every @_ @Num) (indices' l)))
 
 -- | An 'Op' that runs the input value through the isomorphism encoded in
 -- the 'Iso'.  Requires the input to be an instance of 'Num'.
@@ -491,21 +498,27 @@ opIso' u i = op1' $ \x -> (view i x, maybe (getUnity u) (review i))
 -- 'Numeric.Lens.exponentiating'.  Basically, don't use this for any
 -- "numeric" isomorphisms.
 opIso :: Num a => Iso' a b -> Op '[ a ] b
-opIso = opIso' known
+opIso i = op1' $ \x -> (view i x, maybe 1 (review i))
 
--- | A version of 'opConst' that takes explicit 'Summer's, so can be run on
--- values of types that aren't 'Num' instances.
-opConst' :: Prod Summer as -> a -> Op as a
-opConst' ss x = Op $ \_ ->
-    (x , const $ map1 (\s -> I $ runSummer s []) ss)
+-- | A version of 'opConst' taking explicit 'Length', indicating the
+-- number of inputs and their types.
+--
+-- Requiring an explicit 'Length' is mostly useful for rare "extremely
+-- polymorphic" situations, where GHC can't infer the type and length of
+-- the the expected input tuple.  If you ever actually explicitly write
+-- down @as@ as a list of types, you should be able to just use
+-- 'opConst'.
+opConst' :: forall as a. Every Num as => Length as -> a -> Op as a
+opConst' l x = Op $ \_ ->
+    (x , const $ map1 ((0 \\) . every @_ @Num) (indices' l))
 
 -- | An 'Op' that ignores all of its inputs and returns a given constant
 -- value.
 --
 -- >>> gradOp' (opConst 10) (1 ::< 2 ::< 3 ::< Ø)
 -- (10, 0 ::< 0 ::< 0 ::< Ø)
-opConst :: (Every Num as, Known Length as) => a -> Op as a
-opConst = opConst' summers
+opConst :: forall as a. (Every Num as, Known Length as) => a -> Op as a
+opConst = opConst' known
 
 -- | Create an 'Op' that takes no inputs and always returns the given
 -- value.
