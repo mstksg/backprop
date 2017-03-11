@@ -56,7 +56,6 @@ module Numeric.Backprop (
   -- * BP
   -- ** Backprop
   , backprop, evalBPOp, gradBPOp
-  , backprop', gradBPOp'
   -- ** Utility combinators
   , withInps, implicitly
   , withInps', implicitly'
@@ -66,28 +65,20 @@ module Numeric.Backprop (
   , bpOp
   , bindVar
   , inpVars'
-  , bpOp'
-  , bindVar'
   -- ** From Ops
   , opVar, (~$)
   , opVar1, opVar2, opVar3
   , (-$)
-  , opVar'
-  , opVar1', opVar2', opVar3'
   -- ** Var manipulation
   -- *** As parts
   , partsVar, (#<~), withParts
   , splitVars, gSplit, gTuple
-  , partsVar', withParts'
-  , splitVars', gSplit'
   -- *** As sums
   , choicesVar, (?<~), withChoices
-  , choicesVar', withChoices'
   -- $sum
   , Sum(..)
   -- *** As sums of products
   , sopVar, gSplits, gSOP
-  , sopVar', gSplits'
   -- ** Combining
   , liftB, (.$), liftB1, liftB2, liftB3
   -- * Op
@@ -96,9 +87,6 @@ module Numeric.Backprop (
   -- * Utility
   , pattern (:>), only, head'
   , pattern (::<), only_
-  , Summer(..), Unity(..)
-  , summers, unities
-  , summers', unities'
   -- ** Numeric Ops
   -- | Optimized ops for numeric functions.  See
   -- "Numeric.Backprop.Op#numops" for more information.
@@ -265,36 +253,59 @@ type BPOp s rs a  = BP s rs (BVar s rs a)
 type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 
 
--- | A version of 'opVar' taking an explicit 'Summer', so can be used on
--- values of types that aren't instances of 'Num'.
-opVar'
-    :: forall s rs as a. ()
-    => Summer a
-    -> OpB s as a
+-- | Apply an 'OpB' to a 'Prod' (tupling) of 'BVar's.
+--
+-- If you had an @'OpB' s '[a, b, c] d@, this function will expect a 3-Prod
+-- of a @'BVar' s rs a@, a @'BVar' s rs b@, and a @'BVar' s rs c@, and the
+-- result will be a @'BVar' s rs d@:
+--
+-- @
+-- myOp :: 'OpB' s '[a, b, c] d
+-- x    :: 'BVar' s rs a
+-- y    :: 'BVar' s rs b
+-- z    :: 'BVar' s rs c
+--
+-- x :< y :< z :< Ø              :: 'Prod' ('BVar' s rs) '[a, b, c]
+-- 'opVar' myOp (x :< y :< z :< Ø) :: 'BP' s rs ('BVar' s rs d)
+-- @
+--
+-- Note that 'OpB' is a superclass of 'Op', so you can provide any 'Op'
+-- here, as well (like those created by 'op1', 'op2', 'constOp', 'op0'
+-- etc.)
+--
+-- 'opVar' has an infix alias, '~$', so the above example can also be
+-- written as:
+--
+-- @
+-- myOp '~$' (x :< y :< z :< Ø) :: 'BP' s rs ('BVar' s rs d)
+-- @
+--
+-- to let you pretend that you're applying the 'myOp' function to three
+-- inputs.
+--
+-- Also note the relation between 'opVar' and 'liftB' and 'bindVar':
+--
+-- @
+-- 'opVar' o xs = 'bindVar' ('liftB' o xs)
+-- @
+--
+-- 'opVar' can be thought of as a "binding" version of 'liftB'.
+opVar
+    :: forall s rs as a. Num a
+    => OpB s as a
     -> Prod (BVar s rs) as
     -> BP s rs (BVar s rs a)
-opVar' s o i = do
+opVar o i = do
     xs <- traverse1 (fmap I . BP . resolveVar) i
     (res, gf) <- BP . liftBase $ runOpM' o xs
     let bp = BPN { _bpnOut       = only $ FRInternal []
                  , _bpnRes       = only_ res
                  , _bpnGradFunc  = gf . head'
                  , _bpnGradCache = Nothing
-                 , _bpnSummer    = only s
                  }
     r <- BP . liftBase $ newSTRef bp
     itraverse1_ (registerVar . flip IRNode r) i
     return (BVNode IZ r)
-
--- | A version of 'splitVars' taking explicit 'Summer's and 'Unity's, so it
--- can be run with types that aren't instances of 'Num'.
-splitVars'
-    :: forall s rs as. ()
-    => Prod Summer as
-    -> Prod Unity as
-    -> BVar s rs (Tuple as)
-    -> BP s rs (Prod (BVar s rs) as)
-splitVars' ss us = partsVar' ss us id
 
 -- | Split out a 'BVar' of a tuple into a tuple ('Prod') of 'BVar's.
 --
@@ -314,22 +325,10 @@ splitVars' ss us = partsVar' ss us id
 -- 'splitVars' = 'partsVar' 'id'
 -- @
 splitVars
-    :: forall s rs as. (Every Num as, Known Length as)
+    :: forall s rs as. Every Num as
     => BVar s rs (Tuple as)
     -> BP s rs (Prod (BVar s rs) as)
 splitVars = partsVar id
-
--- | A version of 'partsVar' taking explicit 'Summer's and 'Unity's, so it
--- can be run with internal types that aren't instances of 'Num'.
-partsVar'
-    :: forall s rs bs b. ()
-    => Prod Summer bs
-    -> Prod Unity bs
-    -> Iso' b (Tuple bs)
-    -> BVar s rs b
-    -> BP s rs (Prod (BVar s rs) bs)
-partsVar' ss us i =
-    fmap (view sum1) . sopVar' (only ss) (only us) (i . resum1)
 
 -- | Use an 'Iso' (or compatible 'Control.Lens.Iso.Iso' from the lens
 -- library) to "pull out" the parts of a data type and work with each part
@@ -368,11 +367,11 @@ partsVar' ss us i =
 -- @'BP' s '[Tuple '[Int, Bool]@) then you can give in the identity
 -- isomorphism ('id') or use 'splitVars'.
 partsVar
-    :: forall s rs bs b. (Every Num bs, Known Length bs)
+    :: forall s rs bs b. Every Num bs
     => Iso' b (Tuple bs)
     -> BVar s rs b
     -> BP s rs (Prod (BVar s rs) bs)
-partsVar = partsVar' summers unities
+partsVar i = fmap (view sum1) . sopVar (i . resum1)
 
 -- | A useful infix alias for 'partsVar'.
 --
@@ -403,19 +402,6 @@ infixr 1 #<~
     -> BP s rs (Prod (BVar s rs) bs)
 (#<~) = partsVar
 
--- | A version of 'withParts' taking explicit 'Summer's and 'Unity's, so it
--- can be run with internal types that aren't instances of 'Num'.
-withParts'
-    :: Prod Summer bs
-    -> Prod Unity bs
-    -> Iso' b (Tuple bs)
-    -> BVar s rs b
-    -> (Prod (BVar s rs) bs -> BP s rs a)
-    -> BP s rs a
-withParts' ss us i r f = do
-    p <- partsVar' ss us i r
-    f p
-
 -- | A continuation-based version of 'partsVar'.  Instead of binding the
 -- parts and using it in the rest of the block, provide a continuation to
 -- handle do stuff with the parts inside.
@@ -441,7 +427,7 @@ withParts' ss us i r f = do
 -- in a closure, so the parts don't leak out to the rest of your 'BP'.
 -- But, mostly just a stylistic choice.
 withParts
-    :: (Every Num bs, Known Length bs)
+    :: Every Num bs
     => Iso' b (Tuple bs)
     -> BVar s rs b
     -> (Prod (BVar s rs) bs -> BP s rs a)
@@ -449,16 +435,6 @@ withParts
 withParts i r f = do
     p <- partsVar i r
     f p
-
--- | A version of 'gSplit' taking explicit 'Summer's and 'Unity's, so it
--- can be run with internal types that aren't instances of 'Num'.
-gSplit'
-    :: (SOP.Generic b, SOP.Code b ~ '[bs])
-    => Prod Summer bs
-    -> Prod Unity bs
-    -> BVar s rs b
-    -> BP s rs (Prod (BVar s rs) bs)
-gSplit' ss us = partsVar' ss us gTuple
 
 -- | Using 'GHC.Generics.Generic' from "GHC.Generics" and
 -- 'Generics.SOP.Generic' from "Generics.SOP", /split/ a 'BVar' containing
@@ -506,39 +482,10 @@ gSplit' ss us = partsVar' ss us gTuple
 -- @
 --
 gSplit
-    :: (Every Num bs, Known Length bs, SOP.Generic b, SOP.Code b ~ '[bs])
+    :: (Every Num bs, SOP.Generic b, SOP.Code b ~ '[bs])
     => BVar s rs b
     -> BP s rs (Prod (BVar s rs) bs)
-gSplit = gSplit' summers unities
-
--- | A version of 'choicesVar' taking explicit 'Summer's and 'Unity's, so it
--- can be run with internal types that aren't instances of 'Num'.
-choicesVar'
-    :: forall s rs bs b. ()
-    => Prod Summer bs
-    -> Prod Unity bs
-    -> Iso' b (Sum I bs)
-    -> BVar s rs b
-    -> BP s rs (Sum (BVar s rs) bs)
-choicesVar' ss us i r = do
-    x <- BP $ resolveVar r
-    let xs :: Sum I bs
-        xs = view i x
-    ifor1 ((ss `zipP` us) `tagSum` xs) $ \ix ((s :&: u) :&: I (y :: c)) -> do
-      let bp :: BPNode s rs '[b] '[c]
-          bp = BPN { _bpnOut       = only $ FRInternal []
-                   , _bpnRes       = only_ y
-                   , _bpnGradFunc  = return . only_ . review i
-                                   . injectSum ix
-                                   . maybe (I (getUnity u)) I
-                                   . head'
-                   , _bpnGradCache = Nothing
-                   , _bpnSummer    = only s
-                   }
-      r' <- BP . liftBase $ newSTRef bp
-      registerVar (IRNode IZ r') r
-      return $ BVNode IZ r'
--- TODO: cannot implement via sopVar?  oh well.
+gSplit = partsVar gTuple
 
 -- | Use an 'Iso' (or compatible 'Control.Lens.Iso.Iso' from the lens
 -- library) to "pull out" the different constructors of a sum type and
@@ -585,25 +532,29 @@ choicesVar' ss us i r = do
 --
 -- See "Numeric.Backprop#sum" for a mini-tutorial on 'Sum'.
 choicesVar
-    :: forall s rs bs b. (Every Num bs, Known Length bs)
+    :: forall s rs bs b. Every Num bs
     => Iso' b (Sum I bs)
     -> BVar s rs b
     -> BP s rs (Sum (BVar s rs) bs)
-choicesVar = choicesVar' summers unities
-
--- | A version of 'withChoices' taking explicit 'Summer's and 'Unity's, so it
--- can be run with internal types that aren't instances of 'Num'.
-withChoices'
-    :: forall s rs bs b a. ()
-    => Prod Summer bs
-    -> Prod Unity bs
-    -> Iso' b (Sum I bs)
-    -> BVar s rs b
-    -> (Sum (BVar s rs) bs -> BP s rs a)
-    -> BP s rs a
-withChoices' ss us i r f = do
-    c <- choicesVar' ss us i r
-    f c
+choicesVar i r = do
+    x <- BP $ resolveVar r
+    let xs :: Sum I bs
+        xs = view i x
+    ifor1 xs $ \ix (I (y :: c)) -> every @_ @Num ix // do
+      let bp :: BPNode s rs '[b] '[c]
+          bp = BPN { _bpnOut       = only $ FRInternal []
+                   , _bpnRes       = only_ y
+                   , _bpnGradFunc  = return . only_ . review i
+                                   . injectSum ix
+                                   -- . maybe (I (1 \\ every @_ @Num ix)) I
+                                   . maybe (I 1) I
+                                   . head'
+                   , _bpnGradCache = Nothing
+                   }
+      r' <- BP . liftBase $ newSTRef bp
+      registerVar (IRNode IZ r') r
+      return $ BVNode IZ r'
+-- TODO: cannot implement via sopVar?  oh well.
 
 -- | A continuation-based version of 'choicesVar'.  Instead of binding the
 -- parts and using it in the rest of the block, provide a continuation that
@@ -646,7 +597,7 @@ withChoices' ss us i r f = do
 -- directly pattern match in the lambda, so there's a lot less syntactical
 -- noise.
 withChoices
-    :: forall s rs bs b a. (Every Num bs, Known Length bs)
+    :: forall s rs bs b a. Every Num bs
     => Iso' b (Sum I bs)
     -> BVar s rs b
     -> (Sum (BVar s rs) bs -> BP s rs a)
@@ -694,36 +645,6 @@ infixr 1 ?<~
     -> BP s rs (Sum (BVar s rs) bs)
 (?<~) = choicesVar
 
--- | A version of 'sopVar' taking explicit 'Summer's and 'Unity's, so it
--- can be run with internal types that aren't instances of 'Num'.
-sopVar'
-    :: forall s rs bss b. ()
-    => Prod (Prod Summer) bss
-    -> Prod (Prod Unity) bss
-    -> Iso' b (Sum Tuple bss)
-    -> BVar s rs b
-    -> BP s rs (Sum (Prod (BVar s rs)) bss)
-sopVar' sss uss i r = do
-    x <- BP $ resolveVar r
-    let xs :: Sum Tuple bss
-        xs = view i x
-    ifor1 ((sss `zipP` uss) `tagSum` xs) $ \ix ((ss :&: us) :&: (ys :: Tuple bs)) -> do
-      let bp :: BPNode s rs '[b] bs
-          bp = BPN { _bpnOut       = map1 (const (FRInternal [])) ys
-                   , _bpnRes       = ys
-                   , _bpnGradFunc  = return . only_
-                                   . review i . injectSum ix
-                                   . map1 (uncurryFan $ \u ->
-                                             maybe (I (getUnity u)) I
-                                          )
-                                   . zipP us
-                   , _bpnGradCache = Nothing
-                   , _bpnSummer    = ss
-                   }
-      r' <- BP . liftBase $ newSTRef bp
-      registerVar (IRNode IZ r') r
-      return $ imap1 (\ix' _ -> BVNode ix' r') ys
-
 -- | A combination of 'partsVar' and 'choicesVar', that lets you split
 -- a type into a sum of products.  Using an 'Iso' (or compatible
 -- 'Control.Lens.Iso.Iso' from the lens library), you can pull out a type
@@ -770,22 +691,28 @@ sopVar' sss uss i r = do
 --
 -- See "Numeric.Backprop#sum" for a mini-tutorial on 'Sum'.
 sopVar
-    :: forall s rs bss b. (Known Length bss, Every (Every Num ∧ Known Length) bss)
+    :: forall s rs bss b. Every (Every Num) bss
     => Iso' b (Sum Tuple bss)
     -> BVar s rs b
     -> BP s rs (Sum (Prod (BVar s rs)) bss)
-sopVar = sopVar' (withEvery @(Every Num ∧ Known Length) summers)
-                 (withEvery @(Every Num ∧ Known Length) unities)
-
--- | A version of 'gSplits' taking explicit 'Summer's and 'Unity's, so it
--- can be run with internal types that aren't instances of 'Num'.
-gSplits'
-    :: forall s rs b. SOP.Generic b
-    => Prod (Prod Summer) (SOP.Code b)
-    -> Prod (Prod Unity) (SOP.Code b)
-    -> BVar s rs b
-    -> BP s rs (Sum (Prod (BVar s rs)) (SOP.Code b))
-gSplits' sss uss = sopVar' sss uss gSOP
+sopVar i r = do
+    x <- BP $ resolveVar r
+    let xs :: Sum Tuple bss
+        xs = view i x
+    ifor1 xs $ \ix (ys :: Tuple bs) -> every @_ @(Every Num) ix // do
+      let bp :: BPNode s rs '[b] bs
+          bp = BPN { _bpnOut       = map1 (const (FRInternal [])) ys
+                   , _bpnRes       = ys
+                   , _bpnGradFunc  = return . only_
+                                   . review i . injectSum ix
+                                   . imap1 (\ix' -> every @_ @Num ix' //
+                                                      maybe (I 1) I
+                                           )
+                   , _bpnGradCache = Nothing
+                   }
+      r' <- BP . liftBase $ newSTRef bp
+      registerVar (IRNode IZ r') r
+      return $ imap1 (\ix' _ -> BVNode ix' r') ys
 
 -- | Using 'GHC.Generics.Generic' from "GHC.Generics" and
 -- 'Generics.SOP.Generic' from "Generics.SOP", /split/ a 'BVar' containing
@@ -829,15 +756,10 @@ gSplits' sss uss = sopVar' sss uss gSOP
 --
 -- See "Numeric.Backprop#sum" for a mini-tutorial on 'Sum'.
 gSplits
-    :: forall s rs b.
-      ( SOP.Generic b
-      , Known Length (SOP.Code b)
-      , Every (Every Num ∧ Known Length) (SOP.Code b)
-      )
+    :: forall s rs b. (SOP.Generic b, Every (Every Num) (SOP.Code b))
     => BVar s rs b
     -> BP s rs (Sum (Prod (BVar s rs)) (SOP.Code b))
 gSplits = sopVar gSOP
-
 
 resolveVar
     :: (MonadReader (Tuple rs) m, MonadBase (ST s) m)
@@ -875,50 +797,6 @@ registerVar bpir = \case
       r' <- BP . liftBase $ newSTRef bpp
       ifor1_ rs $ \ix' (bpr :: BVar s rs d) ->
         registerVar (IRPipe ix' r') bpr
-
--- | Apply an 'OpB' to a 'Prod' (tupling) of 'BVar's.
---
--- If you had an @'OpB' s '[a, b, c] d@, this function will expect a 3-Prod
--- of a @'BVar' s rs a@, a @'BVar' s rs b@, and a @'BVar' s rs c@, and the
--- result will be a @'BVar' s rs d@:
---
--- @
--- myOp :: 'OpB' s '[a, b, c] d
--- x    :: 'BVar' s rs a
--- y    :: 'BVar' s rs b
--- z    :: 'BVar' s rs c
---
--- x :< y :< z :< Ø              :: 'Prod' ('BVar' s rs) '[a, b, c]
--- 'opVar' myOp (x :< y :< z :< Ø) :: 'BP' s rs ('BVar' s rs d)
--- @
---
--- Note that 'OpB' is a superclass of 'Op', so you can provide any 'Op'
--- here, as well (like those created by 'op1', 'op2', 'constOp', 'op0'
--- etc.)
---
--- 'opVar' has an infix alias, '~$', so the above example can also be
--- written as:
---
--- @
--- myOp '~$' (x :< y :< z :< Ø) :: 'BP' s rs ('BVar' s rs d)
--- @
---
--- to let you pretend that you're applying the 'myOp' function to three
--- inputs.
---
--- Also note the relation between 'opVar' and 'liftB' and 'bindVar':
---
--- @
--- 'opVar' o xs = 'bindVar' ('liftB' o xs)
--- @
---
--- 'opVar' can be thought of as a "binding" version of 'liftB'.
-opVar
-    :: Num a
-    => OpB s as a
-    -> Prod (BVar s rs) as
-    -> BP s rs (BVar s rs a)
-opVar = opVar' known
 
 -- | Infix synonym for 'opVar', which lets you pretend that you're applying
 -- 'OpB's as if they were functions:
@@ -979,15 +857,6 @@ o -$ xs = bpOp o ~$ xs
 constVar :: a -> BVar s rs a
 constVar = BVConst
 
--- | A version of 'opVar1' taking an explicit 'Summer', so can be used on
--- values of types that aren't instances of 'Num'.
-opVar1'
-    :: Summer b
-    -> OpB s '[a] b
-    -> BVar s rs a
-    -> BP s rs (BVar s rs b)
-opVar1' s o = opVar' s o . only
-
 -- | Convenient wrapper over 'opVar' that takes an 'OpB' with one argument
 -- and a single 'BVar' argument.  Lets you not have to type out the entire
 -- 'Prod'.
@@ -1008,17 +877,7 @@ opVar1
     => OpB s '[a] b
     -> BVar s rs a
     -> BP s rs (BVar s rs b)
-opVar1 = opVar1' known
-
--- | A version of 'opVar2' taking an explicit 'Summer', so can be used on
--- values of types that aren't instances of 'Num'.
-opVar2'
-    :: Summer c
-    -> OpB s '[a,b] c
-    -> BVar s rs a
-    -> BVar s rs b
-    -> BP s rs (BVar s rs c)
-opVar2' s o rx ry = opVar' s o (rx :< ry :< Ø)
+opVar1 o = opVar o . only
 
 -- | Convenient wrapper over 'opVar' that takes an 'OpB' with two arguments
 -- and two 'BVar' arguments.  Lets you not have to type out the entire
@@ -1042,18 +901,7 @@ opVar2
     -> BVar s rs a
     -> BVar s rs b
     -> BP s rs (BVar s rs c)
-opVar2 = opVar2' known
-
--- | A version of 'opVar3' taking an explicit 'Summer', so can be used on
--- values of types that aren't instances of 'Num'.
-opVar3'
-    :: Summer d
-    -> OpB s '[a,b,c] d
-    -> BVar s rs a
-    -> BVar s rs b
-    -> BVar s rs c
-    -> BP s rs (BVar s rs d)
-opVar3' s o rx ry rz = opVar' s o (rx :< ry :< rz :< Ø)
+opVar2 o rx ry = opVar o (rx :< ry :< Ø)
 
 -- | Convenient wrapper over 'opVar' that takes an 'OpB' with three arguments
 -- and three 'BVar' arguments.  Lets you not have to type out the entire
@@ -1079,19 +927,7 @@ opVar3
     -> BVar s rs b
     -> BVar s rs c
     -> BP s rs (BVar s rs d)
-opVar3 = opVar3' known
-
--- | A version of 'bindVar' that requires an explicit 'Summer', so that you
--- can use it on values whose types aren't instances of 'Num'.
-bindVar'
-    :: Summer a
-    -> BVar s rs a
-    -> BP s rs (BVar s rs a)
-bindVar' s r = case r of
-    BVNode  _  _ -> return r
-    BVInp   _    -> return r
-    BVConst _    -> return r
-    BVOp    rs o -> opVar' s o rs
+opVar3 o rx ry rz = opVar o (rx :< ry :< rz :< Ø)
 
 -- | Concretizes a delayed 'BVar'.  If you build up a 'BVar' using numeric
 -- functions like '+' or '*' or using 'liftB', it'll defer the evaluation,
@@ -1138,7 +974,11 @@ bindVar
     :: Num a
     => BVar s rs a
     -> BP s rs (BVar s rs a)
-bindVar = bindVar' known
+bindVar r = case r of
+    BVNode  _  _ -> return r
+    BVInp   _    -> return r
+    BVConst _    -> return r
+    BVOp    rs o -> opVar o rs
 
 
 
@@ -1152,14 +992,14 @@ backwardPass = \case
     IRConst g     -> return g
   where
     pullNode
-        :: forall as bs. ()
+        :: forall as bs. Every Num bs
         => STRef s (BPNode s rs as bs)
         -> ST s (Tuple as)
     pullNode r = caching bpnGradCache r $ \BPN{..} -> do
-        totdervs <- for1 (_bpnSummer `zipP` _bpnOut) $ \case
-          s :&: FRInternal rs -> Just . runSummer s
-              <$> traverse backwardPass rs
-          _ :&: FRTerminal g   -> return g
+        totdervs <- ifor1 _bpnOut $ \ix -> every @_ @Num ix // \case
+          FRInternal rs -> Just . sum
+            <$> traverse backwardPass rs
+          FRTerminal g   -> return g
         g <- _bpnGradFunc totdervs
         return g
     pullPipe
@@ -1169,41 +1009,19 @@ backwardPass = \case
     pullPipe r = caching bppGradCache r $ \BPP{..} ->
         _bppGradFunc =<< traverse1 (fmap I . backwardPass) _bppOut
 
--- | A version of 'backprop' taking explicit 'Summer's and 'Unity's, so it
--- can be run with types that aren't instances of 'Num'.
-backprop'
-    :: Prod Summer rs
-    -> Prod Unity rs
-    -> (forall s. BPOp s rs a)
-    -> Tuple rs
-    -> (a, Tuple rs)
-backprop' ss us bp env = runST $ do
-    (res, gFunc) <- backpropWith ss us bp env
-    grad <- gFunc Nothing
-    return (res, grad)
-
 -- | Perform back-propagation on the given 'BPOp'.  Returns the result of
 -- the operation it represents, as well as the gradient of the result with
 -- respect to its inputs.  See module header for "Numeric.Backprop" and
 -- package documentation for examples and usages.
 backprop
-    :: forall rs a. Every Num rs
+    :: Every Num rs
     => (forall s. BPOp s rs a)
     -> Tuple rs
     -> (a, Tuple rs)
-backprop bp xs = backprop' (summers' l) (unities' l) bp xs
-  where
-    l :: Length rs
-    l = prodLength xs
-
--- | 'bpOp', but taking explicit 'Summer's and 'Unity's, for the situation
--- where the @rs@ are not instance of 'Num'.
-bpOp'
-    :: Prod Summer rs
-    -> Prod Unity rs
-    -> BPOp s rs a
-    -> OpB s rs a
-bpOp' ss us bp = OpM $ backpropWith ss us bp
+backprop bp env = runST $ do
+    (res, gFunc) <- backpropWith bp env
+    grad <- gFunc Nothing
+    return (res, grad)
 
 -- | Turn a 'BPOp' into an 'OpB'.  Basically converts a 'BP' taking an @rs@
 -- and producing an @a@ into an 'Op' taking an @rs@ and returning an @a@,
@@ -1216,10 +1034,10 @@ bpOp' ss us bp = OpM $ backpropWith ss us bp
 -- Handy because an 'OpB' can be used with almost all of
 -- the 'Op'-related functions in this moduel, including 'opVar', '~$', etc.
 bpOp
-    :: (Every Num rs, Known Length rs)
+    :: Every Num rs
     => BPOp s rs a
     -> OpB s rs a
-bpOp = bpOp' summers unities
+bpOp bp = OpM $ backpropWith bp
 
 -- | Simply run the 'BPOp' on an input tuple, getting the result without
 -- bothering with the gradient or with back-propagation.
@@ -1232,25 +1050,14 @@ evalBPOp bp env = runST $ do
                     (BPS (map1 (\_ -> FRInternal []) env))
     runReaderT (resolveVar r) env
 
--- | A version of 'gradBPOp' taking explicit 'Summer's and 'Unity's, so it
--- can be run with types that aren't instances of 'Num'.
-gradBPOp'
-    :: Prod Summer rs
-    -> Prod Unity rs
-    -> (forall s. BPOp s rs a)  -- ^ 'BPOp' to differentiate'
-    -> Tuple rs                 -- ^ input
-    -> Tuple rs                 -- ^ gradient
-gradBPOp' ss us bp = snd . backprop' ss us bp
-
 -- | Run the 'BPOp' on an input tuple and return the gradient of the result
 -- with respect to the input tuple.
 gradBPOp
     :: Every Num rs
-    => (forall s. BPOp s rs a)  -- ^ 'BPOp' to differentiate
+    => (forall s. BPOp s rs a)  -- ^ 'BPOp' to differentiate'
     -> Tuple rs                 -- ^ input
     -> Tuple rs                 -- ^ gradient
 gradBPOp bp = snd . backprop bp
-
 
 closeOff
     :: (MonadReader (Tuple rs) m, MonadState (BPState s rs) m, MonadBase (ST s) m)
@@ -1272,37 +1079,35 @@ closeOff isTerminal gOut = \case
        | otherwise  = FRInternal (IRConst <$> maybeToList gOut)
 
 backpropWith
-    :: Prod Summer rs
-    -> Prod Unity rs
-    -> BPOp s rs a
+    :: Every Num rs
+    => BPOp s rs a
     -> Tuple rs
     -> ST s (a, Maybe a -> ST s (Tuple rs))
-backpropWith ss us bp env = do
+backpropWith bp env = do
     (r, bps0) <- runStateT (runReaderT (bpST bp) env)
                            (BPS (map1 (\_ -> FRInternal []) env))
     res <- runReaderT (resolveVar r) env
     let gradFunc gradOut = do
           BPS{..} <- execStateT (runReaderT (closeOff True gradOut r) env) bps0
-          for1 (ss `zipP` us `zipP` _bpsSources) $ \((s :&: u) :&: rs) -> do
+          ifor1 _bpsSources $ \ix rs -> every @_ @Num ix // do
             I <$> case rs of
-              FRInternal rs' -> runSummer s <$> traverse backwardPass rs'
-              FRTerminal g   -> return $ fromMaybe (getUnity u) g
+              FRInternal rs' -> sum <$> traverse backwardPass rs'
+              FRTerminal g   -> return $ fromMaybe 1 g
     return (res, gradFunc)
 
--- | A version of 'implicitly' taking explicit 'Length' and an explicit
--- 'Summer', indicating the number of inputs required and their types, and
--- also allowing it to work on types that aren't instances of 'Num'.
+-- | A version of 'implicitly' taking explicit 'Length', indicating the
+-- number of inputs required and their types.
 --
 -- Requiring an explicit 'Length' is mostly useful for rare "extremely
 -- polymorphic" situations, where GHC can't infer the type and length of
 -- the list of inputs.  If you ever actually explicitly write down @rs@ as
 -- a list of types, you should be able to just use 'implicitly'.
 implicitly'
-    :: Length rs
-    -> Summer a
+    :: Num a
+    => Length rs
     -> BPOpI s rs a
     -> BPOp s rs a
-implicitly' l s f = withInps' l (bindVar' s . f)
+implicitly' l f = withInps' l (bindVar . f)
 
 -- | Convert a 'BPOpI' into a 'BPOp'.  That is, convert a function on
 -- a bundle of 'BVar's (generating an implicit graph) into a fully fledged
@@ -1316,7 +1121,7 @@ implicitly
     :: (Known Length rs, Num a)
     => BPOpI s rs a
     -> BPOp s rs a
-implicitly = implicitly' known known
+implicitly = implicitly' known
 
 -- | Create a 'BVar' given an index into the input environment.  For an
 -- example,

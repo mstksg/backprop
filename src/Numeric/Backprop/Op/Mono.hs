@@ -59,6 +59,7 @@ module Numeric.Backprop.Op.Mono (
   , runOpM, gradOpM, gradOpM', gradOpWithM, gradOpWithM', runOpM'
   -- * Creation
   , op0, opConst, composeOp, composeOp1, (~.)
+  , opConst', composeOp', composeOp1'
   -- ** Automatic creation using the /ad/ library
   , op1, op2, op3, opN
   , Replicate
@@ -78,17 +79,17 @@ module Numeric.Backprop.Op.Mono (
  ) where
 
 import           Data.Bifunctor
-import           Data.Reflection                  (Reifies)
+import           Data.Reflection             (Reifies)
 import           Data.Type.Combinator
 import           Data.Type.Nat
 import           Data.Type.Util
 import           Data.Type.Vector
-import           Numeric.AD.Internal.Reverse      (Reverse, Tape)
-import           Numeric.AD.Mode.Forward          (AD, Forward)
+import           Numeric.AD.Internal.Reverse (Reverse, Tape)
+import           Numeric.AD.Mode.Forward     (AD, Forward)
 import           Type.Class.Known
+import           Type.Class.Witness
 import           Type.Family.Nat
-import qualified Numeric.Backprop.Internal.Helper as BP
-import qualified Numeric.Backprop.Op              as BP
+import qualified Numeric.Backprop.Op         as BP
 
 -- | An @'Op' n a b@ describes a differentiable function from @n@ values of
 -- type @a@ to a value of type @b@.
@@ -195,13 +196,28 @@ pattern OpM runOpM' <- BP.OpM (\f xs -> (fmap . second . fmap . fmap) (prodAlong
 op0 :: a -> Op N0 b a
 op0 x = BP.op0 x
 
+-- | A version of 'opConst' taking explicit 'Nat', indicating the
+-- number of inputs required.
+--
+-- Requiring an explicit 'Nat' is mostly useful for rare "extremely
+-- polymorphic" situations, where GHC can't infer the length of the the
+-- expected input vector.  If you ever actually explicitly write down the
+-- size @n@, you should be able to just use 'opConst'.
+opConst' :: forall n a b. Num b => Nat n -> a -> Op n b a
+opConst' n x = BP.opConst' @_ @a (replLen @n @b n) x
+    \\ replWit n (Wit @(Num b))
+
 -- | An 'Op' that ignores all of its inputs and returns a given constant
 -- value.
 --
 -- >>> gradOp' (opConst 10) (1 :+ 2 :+ 3 :+ ØV)
 -- (10, 0 :+ 0 :+ 0 :+ ØV)
 opConst :: forall n a b. (Known Nat n, Num b) => a -> Op n b a
-opConst x = BP.opConst' (BP.nSummers' @n @b known) x
+opConst = opConst' @n @a @b n
+    \\ replWit n (Wit @(Num b))
+  where
+    n :: Nat n
+    n = known
 
 -- | Automatically create an 'Op' of a numerical function taking one
 -- argument.  Uses 'Numeric.AD.diff', and so can take any numerical
@@ -450,6 +466,22 @@ gradOpWithM o i d = do
     (_, gF) <- runOpM' o i
     gF (Just d)
 
+-- | A version of 'composeOp' taking explicit 'Nat', indicating the
+-- number of inputs expected in the first 'Op's
+--
+-- Requiring an explicit 'Nat' is mostly useful for rare "extremely
+-- polymorphic" situations, where GHC can't infer the length of the the
+-- expected input vector.  If you ever actually explicitly write down the
+-- size @n@, you should be able to just use 'composeOp'.
+composeOp'
+    :: forall m n o a b c. (Monad m, Num a)
+    => Nat n
+    -> VecT o (OpM m n a) b
+    -> OpM m o b c
+    -> OpM m n a c
+composeOp' n v o = BP.composeOp' (replLen @_ @a n) (vecToProd v) o
+                      \\ replWit n (Wit @(Num a))
+
 -- | Compose 'OpM's together, similar to '.'.  But, because all 'OpM's are
 -- \(\mathbb{R}^N \rightarrow \mathbb{R}\), this is more like 'sequence'
 -- for functions, or @liftAN@.
@@ -461,7 +493,18 @@ composeOp
     => VecT o (OpM m n a) b
     -> OpM m o b c
     -> OpM m n a c
-composeOp v o = BP.composeOp' (BP.nSummers' @n @a known) (vecToProd v) o
+composeOp = composeOp' @m @n @o @a @b @c known
+
+-- | Convenient wrappver over 'composeOp' for the case where the second
+-- function only takes one input, so the two 'OpM's can be directly piped
+-- together, like for '.'.
+composeOp1'
+    :: forall m n a b c. (Monad m, Num a)
+    => Nat n
+    -> OpM m n a b
+    -> OpM m N1 b c
+    -> OpM m n a c
+composeOp1' n v o = composeOp' @_ @_ @_ @a n (v :* ØV) o
 
 -- | Convenient wrappver over 'composeOp' for the case where the second
 -- function only takes one input, so the two 'OpM's can be directly piped

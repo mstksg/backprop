@@ -82,7 +82,7 @@ module Numeric.Backprop.Mono (
   -- * Vars
   , constVar
   , inpVar, inpVars
-  , bpOp
+  , bpOp, bpOp'
   , bindVar
   -- ** From Ops
   , opVar, (~$)
@@ -109,12 +109,11 @@ module Numeric.Backprop.Mono (
 
 import           Data.Type.Fin
 import           Data.Type.Nat
-import           Data.Type.Product hiding         (head')
 import           Data.Type.Util
 import           Data.Type.Vector
-import           Numeric.Backprop.Internal.Helper
 import           Numeric.Backprop.Op.Mono
 import           Type.Class.Known
+import           Type.Class.Witness
 import qualified Numeric.Backprop                 as BP
 
 -- $vec
@@ -528,7 +527,8 @@ backprop
     -> (a, Vec n r)
 backprop bp i = (x, prodAlong i g)
   where
-    (x, g) = BP.backprop' (toSummers i) (toUnities i) bp (vecToProd i)
+    (x, g) = BP.backprop bp (vecToProd i)
+              \\ replWit (vecLength i) (Wit @(Num r))
 
 -- | Simply run the 'BPOp' on an input vector, getting the result without
 -- bothering with the gradient or with back-propagation.
@@ -548,6 +548,21 @@ gradBPOp
     -> Vec n r
 gradBPOp bp = snd . backprop bp
 
+-- | A version of 'bpOp'' taking explicit 'Nat', indicating the
+-- size of the input 'VecT'.
+--
+-- Requiring an explicit 'Nat' is mostly useful for rare "extremely
+-- polymorphic" situations, where GHC can't infer the length of the the
+-- expected input vector.  If you ever actually explicitly write down the
+-- size @n@, you should be able to just use 'opConst'.
+bpOp'
+    :: forall s n r a. Num r
+    => Nat n
+    -> BPOp s n r a
+    -> OpB s n r a
+bpOp' n b = BP.bpOp b
+            \\ replWit n (Wit @(Num r))
+
 -- | Turn a 'BPOp' into an 'OpB'.  Basically converts a 'BP' taking @n@
 -- @r@s and producing an @a@ into an 'Op' taking an @n@ @r@s and returning
 -- an @a@, with all of the powers and utility of an 'Op', including all of
@@ -562,10 +577,7 @@ bpOp
     :: forall s n r a. (Num r, Known Nat n)
     => BPOp s n r a
     -> OpB s n r a
-bpOp b = BP.bpOp' (nSummers' @n @r n) (nUnities' @n @r n) b
-  where
-    n :: Nat n
-    n = known
+bpOp = bpOp' @_ @_ @r known
 
 
 -- | Create a 'BVar' given an index ('Fin') into the input environment.  For an
@@ -811,27 +823,3 @@ liftB3
     -> BVar s n r a
     -> BVar s n r a
 liftB3 = BP.liftB3
-
-
-
-
-
-
-
-
-toSummers
-    :: Num a
-    => VecT n f a
-    -> Prod BP.Summer (Replicate n a)
-toSummers = \case
-    ØV      -> Ø
-    _ :* xs -> BP.Summer sum :< toSummers xs
-
-toUnities
-    :: Num a
-    => VecT n f a
-    -> Prod BP.Unity (Replicate n a)
-toUnities = \case
-    ØV      -> Ø
-    _ :* xs -> BP.Unity 1 :< toUnities xs
-
