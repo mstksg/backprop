@@ -14,7 +14,26 @@
 {-# LANGUAGE TypeInType             #-}
 {-# LANGUAGE TypeOperators          #-}
 
-module Data.Type.Util where
+module Data.Type.Util (
+    Replicate
+  , unzipP
+  , zipP
+  , indexP
+  , vecToProd
+  , prodToVec'
+  , prodAlong
+  , lengthProd
+  , prodLength
+  , vecLength
+  , finIndex
+  , replLen
+  , replWit
+  , itraverse1_
+  , ifor1
+  , ifor1_
+  , for1
+  , for1_
+  ) where
 
 import           Control.Applicative
 import           Data.Bifunctor
@@ -151,12 +170,6 @@ indexP = \case
     IS i -> \f -> \case
       x :< xs -> (x :<) <$> indexP i f xs
 
-reIndex
-    :: forall k (f :: k -> Type) (as :: [k]) (a :: k). ()
-    => Index as a
-    -> Index (f <$> as) (f a)
-reIndex = undefined
-
 prodLength
     :: Prod f as
     -> Length as
@@ -171,19 +184,6 @@ vecLength
 vecLength = \case
     ØV      -> Z_
     _ :* xs -> S_ (vecLength xs)
-
-withEvery
-    :: forall c f as. (Known Length as, Every c as)
-    => (forall a. c a => f a)
-    -> Prod f as
-withEvery = withEvery' @c known
-
-withEvery'
-    :: forall c f as. Every c as
-    => Length as
-    -> (forall a. c a => f a)
-    -> Prod f as
-withEvery' l x = map1 ((// x) . every @_ @c) (indices' l)
 
 tagSum
     :: Prod f as
