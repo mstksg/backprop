@@ -214,7 +214,7 @@ main = MWC.withSystemRandom $ \g -> do
     net0 <- MWC.uniformR @(Network 784 300 100 9) (-0.5, 0.5) g
     createDirectoryIfMissing True "bench-results"
     defaultMainWith defaultConfig { reportFile = Just "bench-results/mnist-bench.html"
-                                  , timeLimit  = 8
+                                  , timeLimit  = 10
                                   } [
         bgroup "gradient" [
             let testManual x y = gradNetManual x y net0

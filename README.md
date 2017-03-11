@@ -127,13 +127,37 @@ this gradient to do gradient descent.
 For a more fleshed out example, see the [MNIST tutorial][mnist-lhs] (also
 [rendered as a pdf][mnist-pdf])
 
+Benchmarks
+----------
+
+The current version isn't optimized, but here are some basic benchmarks
+comparing the library's automatic differentiation process to "manual"
+differentiation by hand.  When using the [MNIST tutorial][mnist-lhs] as an
+example:
+
+[benchmarks](http://i.imgur.com/xIZbhHa.png)
+
+Calculating the gradient using *backprop* and calculating it by hand (by manual
+symbolic differentiation) are within an order of magnitude of each-other,
+time-wise.  Using the *backprop* library takes about *6.5x* as long
+in this case.
+
+However, a full *update* step (calculate the gradient and update the neural
+net) adds a lot of constant costs, so for a full training step, the *backprop*
+library takes only *2.7x* as long as manual symbolic differentation.
+
+This means that this library is only about 2.5x slower than implementing it
+directly using only *hmatrix*.
+
+It's still definitely not ideal that more than half of the computation time is
+overhead from the library, but this is just where we stand at the moment.
+Optimization is just now starting!
+
 Todo
 ----
 
-1.  Actual profiling and benchmarking, to gauge how much overhead this library
-    adds over "manual" back-propagation.
-
-    Ideally this can be brought down to 0?
+1.  Profiling, to gauge where the overhead comes from (compared to "manual"
+    back-propagation) and how to bring it down.
 
 2.  Some simple performance and API tweaks that are probably possible now and
     would clearly benefit: (if you want to contribute)
