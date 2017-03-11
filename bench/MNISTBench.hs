@@ -213,24 +213,26 @@ main = MWC.withSystemRandom $ \g -> do
     let test0   = head test
     net0 <- MWC.uniformR @(Network 784 300 100 9) (-0.5, 0.5) g
     createDirectoryIfMissing True "bench-results"
-    defaultMainWith defaultConfig { reportFile = Just "bench-results/mnist-bench.html" } [
-        bgroup "gradient"
-          [ let testManual x y = gradNetManual x y net0
+    defaultMainWith defaultConfig { reportFile = Just "bench-results/mnist-bench.html"
+                                  , timeLimit  = 8
+                                  } [
+        bgroup "gradient" [
+            let testManual x y = gradNetManual x y net0
             in  bench "manual" $ nf (uncurry testManual) test0
           , let testBP     x y = getI . index (IS IZ) $
                   gradBPOp (netErr y) (x ::< net0 ::< Ø)
             in  bench "bp"     $ nf (uncurry testBP) test0
           ]
-      , bgroup "descent"
-          [ let testManual x y = trainStepManual 0.02 x y net0
+      , bgroup "descent" [
+            let testManual x y = trainStepManual 0.02 x y net0
             in  bench "manual" $ nf (uncurry testManual) test0
           , let testBP     x y = trainStep 0.02 x y net0
             in  bench "bp"     $ nf (uncurry testBP) test0
           ]
-      , bgroup "run"
-          [ let testManual x = runNetManual net0 x
+      , bgroup "run" [
+            let testManual x   = runNetManual net0 x
             in  bench "manual" $ nf testManual (fst test0)
-          , let testBP     x = evalBPOp runNetwork (x ::< net0 ::< Ø)
+          , let testBP     x   = evalBPOp runNetwork (x ::< net0 ::< Ø)
             in  bench "bp"     $ nf testBP (fst test0)
           ]
       ]

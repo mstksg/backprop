@@ -1605,4 +1605,5 @@ caching l r f = do
         z <- f x
         modifySTRef r (set l (Just z))
         return z
+{-# INLINE caching #-}
 
