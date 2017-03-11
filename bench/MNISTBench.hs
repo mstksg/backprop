@@ -1,26 +1,23 @@
-{-# LANGUAGE BangPatterns        #-}
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE DeriveGeneric       #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE LambdaCase          #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE ViewPatterns        #-}
+{-# LANGUAGE BangPatterns         #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE DeriveGeneric        #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE LambdaCase           #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE ViewPatterns         #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 import           Control.DeepSeq
 import           Control.Exception
-import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Maybe
-import           Control.Monad.Trans.State
 import           Criterion.Main
+import           Criterion.Types
 import           Data.Bitraversable
-import           Data.Foldable
 import           Data.IDX
-import           Data.List.Split
 import           Data.Maybe
-import           Data.Time.Clock
 import           Data.Traversable
 import           Data.Tuple
 import           Data.Type.Combinator
@@ -30,14 +27,12 @@ import           GHC.Generics                        (Generic)
 import           GHC.TypeLits
 import           Numeric.Backprop
 import           Numeric.LinearAlgebra.Static hiding (dot)
-import           Text.Printf
-import qualified Data.Vector                         as V
+import           System.Directory
 import qualified Data.Vector.Generic                 as VG
 import qualified Data.Vector.Unboxed                 as VU
 import qualified Generics.SOP                        as SOP
 import qualified Numeric.LinearAlgebra               as HM
 import qualified System.Random.MWC                   as MWC
-import qualified System.Random.MWC.Distributions     as MWC
 
 data Layer i o =
     Layer { _lWeights :: !(L o i)
@@ -130,16 +125,8 @@ trainStep
     -> Network i h1 h2 o
     -> Network i h1 h2 o
 trainStep r !x !t !n = case gradBPOp (netErr t) (x ::< n ::< Ø) of
-    _ ::< gN ::< Ø ->
+    _ :< I gN :< Ø ->
         n - (realToFrac r * gN)
-
-trainList
-    :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
-    => Double
-    -> [(R i, R o)]
-    -> Network i h1 h2 o
-    -> Network i h1 h2 o
-trainList r = flip $ foldl' (\n (x,y) -> trainStep r x y n)
 
 runNetManual
     :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
@@ -178,7 +165,7 @@ gradNetManual x t (Net (Layer w1 b1) (Layer w2 b2) (Layer w3 b3)) =
         o0 = exp z3
         o1 = HM.sumElements (extract o0)
         o2 = o0 / konst o1
-        o3 = - (log o2 <.> t)
+        -- o3 = - (log o2 <.> t)
         dEdO3 = 1
         dEdO2 = dEdO3 * (- t / o2)
         dEdO1 = - (dEdO2 <.> o0) / (o1 ** 2)
@@ -211,14 +198,6 @@ trainStepManual r !x !t !n =
     let gN = gradNetManual x t n
     in  n - (realToFrac r * gN)
 
-trainListManual
-    :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
-    => Double
-    -> [(R i, R o)]
-    -> Network i h1 h2 o
-    -> Network i h1 h2 o
-trainListManual r = flip $ foldl' (\n (x,y) -> trainStepManual r x y n)
-
 netErr
     :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
     => R o
@@ -227,29 +206,14 @@ netErr t = do
     y <- runNetwork
     implicitly (crossEntropy t) -$ (y :< Ø)
 
-testNet
-    :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
-    => [(R i, R o)]
-    -> Network i h1 h2 o
-    -> Double
-testNet xs n = sum (map (uncurry test) xs) / fromIntegral (length xs)
-  where
-    test :: R i -> R o -> Double
-    test x (extract->t)
-        | HM.maxIndex t == HM.maxIndex (extract r) = 1
-        | otherwise                                = 0
-      where
-        r :: R o
-        -- r = evalBPOp runNetwork (x ::< n ::< Ø)
-        r = runNetManual n x
-
 main :: IO ()
 main = MWC.withSystemRandom $ \g -> do
     Just test  <- loadMNIST "data/t10k-images-idx3-ubyte"  "data/t10k-labels-idx1-ubyte"
     putStrLn "Loaded data."
     let test0   = head test
     net0 <- MWC.uniformR @(Network 784 300 100 9) (-0.5, 0.5) g
-    defaultMain [
+    createDirectoryIfMissing True "bench-results"
+    defaultMainWith defaultConfig { reportFile = Just "bench-results/mnist-bench.html" } [
         bgroup "gradient"
           [ let testManual x y = gradNetManual x y net0
             in  bench "manual" $ nf (uncurry testManual) test0

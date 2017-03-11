@@ -16,12 +16,13 @@ data Doc = Lab
 main :: IO ()
 main = getDirectoryFilesIO "samples" ["/*.lhs"] >>= \allSamps ->
        getDirectoryFilesIO "src" ["//*.hs"]     >>= \allSrc ->
+       getDirectoryFilesIO "app" ["//*.hs"]     >>= \allApp ->
          shakeArgs opts $ do
 
     want ["all"]
 
     "all" ~>
-      need ["pdf", "md", "haddocks", "gentags"]
+      need ["pdf", "md", "haddocks", "gentags", "install"]
 
     "pdf" ~>
       need (map (\f -> "renders" </> takeFileName f -<.> "pdf") allSamps)
@@ -33,14 +34,18 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>= \allSamps ->
       need (("src" </>) <$> allSrc)
       cmd "jle-git-haddocks"
 
+    "install" ~> do
+      need . concat $ [ ("src" </>)     <$> allSrc
+                      , ("samples" </>) <$> allSamps
+                      , ("app" </>)     <$> allApp
+                      ]
+      cmd "stack install"
+
     "gentags" ~>
       need ["tags", "TAGS"]
 
     ["renders/*.pdf", "renders/*.md"] |%> \f -> do
       let src = "samples" </> takeFileName f -<.> "lhs"
-          fmt = case takeExtension f of
-                  ".md"  -> "--to markdown_github"
-                  _      -> ""
       need [src]
       liftIO $ createDirectoryIfMissing True "renders"
       cmd "pandoc" "-V geometry:margin=1in"
@@ -50,8 +55,6 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>= \allSamps ->
                    "--highlight-style tango"
                    "--reference-links"
                    "--reference-location block"
-                   "--from markdown+lhs"
-                   fmt
                    "-o" f
                    src
 
