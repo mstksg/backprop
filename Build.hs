@@ -29,7 +29,8 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>= \allSamps ->
     "md" ~>
       need (map (\f -> "renders" </> takeFileName f -<.> "md") allSamps)
 
-    "haddocks" ~>
+    "haddocks" ~> do
+      need (("src" </>) <$> allSrc)
       cmd "jle-git-haddocks"
 
     "gentags" ~>
@@ -37,6 +38,9 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>= \allSamps ->
 
     ["renders/*.pdf", "renders/*.md"] |%> \f -> do
       let src = "samples" </> takeFileName f -<.> "lhs"
+          fmt = case takeExtension f of
+                  ".md"  -> "--to markdown_github"
+                  _      -> ""
       need [src]
       liftIO $ createDirectoryIfMissing True "renders"
       cmd "pandoc" "-V geometry:margin=1in"
@@ -46,6 +50,8 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>= \allSamps ->
                    "--highlight-style tango"
                    "--reference-links"
                    "--reference-location block"
+                   "--from markdown+lhs"
+                   fmt
                    "-o" f
                    src
 
