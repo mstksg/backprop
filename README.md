@@ -132,8 +132,10 @@ Benchmarks
 
 The current version isn't optimized, but here are some basic benchmarks
 comparing the library's automatic differentiation process to "manual"
-differentiation by hand.  When using the [MNIST tutorial][mnist-lhs] as an
+differentiation by hand.  When using the [MNIST tutorial][bench] as an
 example:
+
+[bench]: https://github.com/mstksg/backprop/blob/master/bench/MNISTBench.hs
 
 ![benchmarks](http://i.imgur.com/xIZbhHa.png)
 
@@ -146,12 +148,15 @@ However, a full *update* step (calculate the gradient and update the neural
 net) adds a lot of constant costs, so for a full training step, the *backprop*
 library takes only *2.7x* as long as manual symbolic differentation.
 
-This means that this library is only about 2.5x slower than implementing it
-directly using only *hmatrix*.
+This means using this library only slows down your program by a factor of
+about 2.5x, compared to using only *hmatrix*.
 
 It's still definitely not ideal that more than half of the computation time is
 overhead from the library, but this is just where we stand at the moment.
 Optimization is just now starting!
+
+Note that at the moment, simply running the network is only slightly slower
+when using *backprop*.
 
 Todo
 ----

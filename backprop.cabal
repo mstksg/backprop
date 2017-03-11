@@ -29,7 +29,6 @@ library
                        Numeric.Backprop.Op
                        Numeric.Backprop.Op.Mono
   other-modules:       Numeric.Backprop.Internal
-                       -- Numeric.Backprop.Internal.Helper
                        Data.Type.Util
   build-depends:       base >= 4.7 && < 5
                      , ad
@@ -97,13 +96,14 @@ benchmark backprop-mnist-bench
                      , bifunctors
                      , criterion
                      , deepseq
+                     , directory
                      , generics-sop
                      , hmatrix    >= 0.18
                      , mnist-idx
                      , mwc-random
+                     , time
                      , transformers
                      , type-combinators
-                     , directory
                      , vector
   default-language:    Haskell2010
 

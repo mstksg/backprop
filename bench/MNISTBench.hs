@@ -18,6 +18,8 @@ import           Criterion.Types
 import           Data.Bitraversable
 import           Data.IDX
 import           Data.Maybe
+import           Data.Time.Format
+import           Data.Time.LocalTime
 import           Data.Traversable
 import           Data.Tuple
 import           Data.Type.Combinator
@@ -102,12 +104,12 @@ runNetwork = withInps $ \(x :< n :< Ø) -> do
     z <- runLayer -$ (logistic y :< l2 :< Ø)
     r <- runLayer -$ (logistic z :< l3 :< Ø)
     softmax       -$ (r          :< Ø)
-  where
-    softmax :: KnownNat n => BPOp s '[ R n ] (R n)
-    softmax = withInps $ \(x :< Ø) -> do
-        expX <- bindVar (exp x)
-        totX <- vsum ~$ (expX   :< Ø)
-        scale        ~$ (1/totX :< expX :< Ø)
+
+softmax :: KnownNat n => BPOp s '[ R n ] (R n)
+softmax = withInps $ \(x :< Ø) -> do
+    expX <- bindVar (exp x)
+    totX <- vsum ~$ (expX   :< Ø)
+    scale        ~$ (1/totX :< expX :< Ø)
 
 crossEntropy
     :: KnownNat n
@@ -116,6 +118,16 @@ crossEntropy
 crossEntropy targ (r :< Ø) = negate (dot .$ (log r :< t :< Ø))
   where
     t = constVar targ
+
+softMaxCrossEntropy
+    :: KnownNat n
+    => R n
+    -> BPOpI s '[ R n ] Double
+softMaxCrossEntropy targ (r :< Ø) =  realToFrac tsum * log (vsum .$ (r :< Ø))
+                                       - (dot .$ (r :< t :< Ø))
+  where
+    tsum = HM.sumElements . extract $ targ
+    t    = constVar targ
 
 trainStep
     :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
@@ -210,12 +222,15 @@ main :: IO ()
 main = MWC.withSystemRandom $ \g -> do
     Just test  <- loadMNIST "data/t10k-images-idx3-ubyte"  "data/t10k-labels-idx1-ubyte"
     putStrLn "Loaded data."
-    let test0   = head test
     net0 <- MWC.uniformR @(Network 784 300 100 9) (-0.5, 0.5) g
     createDirectoryIfMissing True "bench-results"
-    defaultMainWith defaultConfig { reportFile = Just "bench-results/mnist-bench.html"
-                                  , timeLimit  = 10
-                                  } [
+    t <- getZonedTime
+    let test0   = head test
+        tstr    = formatTime defaultTimeLocale "%Y%m%d-%H%M%S" t
+    defaultMainWith defaultConfig
+          { reportFile = Just $ "bench-results/mnist-bench_" ++ tstr ++ ".html"
+          , timeLimit  = 10
+          } [
         bgroup "gradient" [
             let testManual x y = gradNetManual x y net0
             in  bench "manual" $ nf (uncurry testManual) test0
