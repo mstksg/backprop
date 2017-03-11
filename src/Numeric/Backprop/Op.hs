@@ -156,6 +156,9 @@ import           Type.Class.Witness
 -- 'Op' or 'OpM' explicitly this way.  Instead, libraries should provide
 -- carefuly pre-constructed ones, or provide ways to generate them
 -- automatically (like 'op1', 'op2', and 'op3' here).
+--
+-- For examples of 'Op's implemented from scratch, see the implementations
+-- of '+.', '-.', 'recipOp', 'sinOp', etc.
 
 -- | An @'OpM' m as a@ represents a /differentiable/ (monadic) function
 -- from @as@ to @a@, in the context of a 'Monad' @m@.
@@ -859,7 +862,7 @@ asinOp = op1' $ \x -> (asin x, (/ sqrt(1 - x*x)) . fromMaybe 1)
 
 -- | Optimized version of @'op1' 'acosOp'@.
 acosOp :: Floating a => Op '[a] a
-acosOp = op1' $ \x -> (acos x, maybe (-1 / sqrt(1 - x*x)) ((/ sqrt(1 - x*x)) . negate))
+acosOp = op1' $ \x -> (acos x, (/ sqrt (1 - x*x)) . maybe (-1) negate)
 {-# INLINE acosOp #-}
 
 -- | Optimized version of @'op1' 'atanOp'@.
