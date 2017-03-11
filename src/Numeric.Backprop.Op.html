@@ -862,7 +862,7 @@ asinOp = op1' $ \x -&gt; (asin x, (/ sqrt(1 - x*x)) . fromMaybe 1)
 
 -- | Optimized version of @'op1' 'acosOp'@.
 acosOp :: Floating a =&gt; Op '[a] a
-acosOp = op1' $ \x -&gt; (acos x, maybe (-1 / sqrt(1 - x*x)) ((/ sqrt(1 - x*x)) . negate))
+acosOp = op1' $ \x -&gt; (acos x, (/ sqrt (1 - x*x)) . maybe (-1) negate)
 {-# INLINE acosOp #-}
 
 -- | Optimized version of @'op1' 'atanOp'@.
