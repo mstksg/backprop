@@ -3059,6 +3059,29 @@ composeOp1 :: forall m n a b c. (Monad m, Num a, Known Nat n) => OpM m n a b -> 
 (~.) :: forall m n a b c. (Monad m, Num a, Known Nat n) => OpM m N1 b c -> OpM m n a b -> OpM m n a c
 infixr 9 ~.
 
+-- | A version of <a>opConst</a> taking explicit <a>Nat</a>, indicating the
+--   number of inputs required.
+--   
+--   Requiring an explicit <a>Nat</a> is mostly useful for rare "extremely
+--   polymorphic" situations, where GHC can't infer the length of the the
+--   expected input vector. If you ever actually explicitly write down the
+--   size <tt>n</tt>, you should be able to just use <a>opConst</a>.
+opConst' :: forall n a b. Num b => Nat n -> a -> Op n b a
+
+-- | A version of <a>composeOp</a> taking explicit <a>Nat</a>, indicating
+--   the number of inputs expected in the first <a>Op</a>s
+--   
+--   Requiring an explicit <a>Nat</a> is mostly useful for rare "extremely
+--   polymorphic" situations, where GHC can't infer the length of the the
+--   expected input vector. If you ever actually explicitly write down the
+--   size <tt>n</tt>, you should be able to just use <a>composeOp</a>.
+composeOp' :: forall m n o a b c. (Monad m, Num a) => Nat n -> VecT o (OpM m n a) b -> OpM m o b c -> OpM m n a c
+
+-- | Convenient wrappver over <a>composeOp</a> for the case where the
+--   second function only takes one input, so the two <a>OpM</a>s can be
+--   directly piped together, like for <a>.</a>.
+composeOp1' :: forall m n a b c. (Monad m, Num a) => Nat n -> OpM m n a b -> OpM m N1 b c -> OpM m n a c
+
 -- | Automatically create an <a>Op</a> of a numerical function taking one
 --   argument. Uses <a>diff</a>, and so can take any numerical function
 --   polymorphic over the standard numeric types.
@@ -3627,6 +3650,15 @@ inpVars :: Known Nat n => VecT n (BVar s n r) r
 --   <a>Op</a>-related functions in this moduel, including <a>opVar</a>,
 --   <a>~$</a>, etc.
 bpOp :: forall s n r a. (Num r, Known Nat n) => BPOp s n r a -> OpB s n r a
+
+-- | A version of <a>bpOp'</a> taking explicit <a>Nat</a>, indicating the
+--   size of the input <a>VecT</a>.
+--   
+--   Requiring an explicit <a>Nat</a> is mostly useful for rare "extremely
+--   polymorphic" situations, where GHC can't infer the length of the the
+--   expected input vector. If you ever actually explicitly write down the
+--   size <tt>n</tt>, you should be able to just use <a>opConst</a>.
+bpOp' :: forall s n r a. Num r => Nat n -> BPOp s n r a -> OpB s n r a
 
 -- | Concretizes a delayed <a>BVar</a>. If you build up a <a>BVar</a> using
 --   numeric functions like <a>+</a> or <a>*</a> or using <a>liftB</a>,
