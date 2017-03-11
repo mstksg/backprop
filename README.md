@@ -135,7 +135,7 @@ comparing the library's automatic differentiation process to "manual"
 differentiation by hand.  When using the [MNIST tutorial][mnist-lhs] as an
 example:
 
-[benchmarks](http://i.imgur.com/xIZbhHa.png)
+![benchmarks](http://i.imgur.com/xIZbhHa.png)
 
 Calculating the gradient using *backprop* and calculating it by hand (by manual
 symbolic differentiation) are within an order of magnitude of each-other,
