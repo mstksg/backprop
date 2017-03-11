@@ -41,7 +41,7 @@
 </span><a name="line-41"></a><span class="hs-comment">-- '[Int, Int, Int]</span><span>
 </span><a name="line-42"></a><span class="hs-comment">-- &gt;&gt;&gt; :kind! Replicate N5 Double</span><span>
 </span><a name="line-43"></a><span class="hs-comment">-- '[Double, Double, Double, Double, Double]</span><span>
-</span><a name="line-44"></a><span class="hs-keyword">type</span><span> </span><span class="hs-keyword">family</span><span> </span><a name="Replicate"><a href="Data.Type.Util.html#Replicate"><span class="hs-identifier">Replicate</span></a></a><span> </span><span class="hs-special">(</span><a name="local-6989586621679093388"><a href="#local-6989586621679093388"><span class="hs-identifier">n</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">N</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><a name="local-6989586621679093390"><a href="#local-6989586621679093390"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><a href="#local-6989586621679093389"><span class="hs-identifier hs-type">k</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="hs-keyword">as</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><a href="#local-6989586621679093389"><span class="hs-identifier hs-type">k</span></a><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier">n</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-44"></a><span class="hs-keyword">type</span><span> </span><span class="hs-keyword">family</span><span> </span><a name="Replicate"><a href="Data.Type.Util.html#Replicate"><span class="hs-identifier">Replicate</span></a></a><span> </span><span class="hs-special">(</span><a name="local-6989586621679093392"><a href="#local-6989586621679093392"><span class="hs-identifier">n</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">N</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><a name="local-6989586621679093394"><a href="#local-6989586621679093394"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><a href="#local-6989586621679093393"><span class="hs-identifier hs-type">k</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="hs-keyword">as</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><a href="#local-6989586621679093393"><span class="hs-identifier hs-type">k</span></a><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier">n</span><span> </span><span class="hs-keyword">where</span><span>
 </span><a name="line-45"></a><span>    </span><span class="hs-identifier">Replicate</span><span> </span><span class="hs-char">'Z     a = '[]
     Replicate ('S n) a = a ': Replicate n a
 
@@ -164,6 +164,14 @@ prodLength = \case
     &#216;       -&gt; LZ
     _ :&lt; xs -&gt; LS (prodLength xs)
 
+vecLength
+    :: forall n f a. ()
+    =&gt; VecT n f a
+    -&gt; Nat n
+vecLength = \case
+    &#216;V      -&gt; Z_
+    _ :* xs -&gt; S_ (vecLength xs)
+
 withEvery
     :: forall c f as. (Known Length as, Every c as)
     =&gt; (forall a. c a =&gt; f a)
@@ -186,4 +194,31 @@ tagSum = \case
     x :&lt; xs -&gt; \case
       InL y  -&gt; InL (x :&amp;: y)
       InR ys -&gt; InR (tagSum xs ys)
+
+replWit
+    :: Nat n
+    -&gt; Wit (c a)
+    -&gt; Wit (Every c (Replicate n a))
+replWit = \case
+    Z_   -&gt; \case
+      Wit -&gt; Wit
+    S_ n -&gt; \case
+      c@Wit -&gt; case replWit n c of
+        Wit -&gt; Wit
+
+replLen
+    :: forall n a. ()
+    =&gt; Nat n
+    -&gt; Length (Replicate n a)
+replLen = \case
+    Z_   -&gt; LZ
+    S_ n -&gt; LS (replLen @_ @a n)
+
+lengthProd
+    :: (forall a. f a)
+    -&gt; Length as
+    -&gt; Prod f as
+lengthProd x = \case
+    LZ   -&gt; &#216;
+    LS l -&gt; x :&lt; lengthProd x l
 </span></pre></body></html>

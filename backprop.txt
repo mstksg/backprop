@@ -375,12 +375,12 @@ runOpM' :: OpM m as a -> Tuple as -> m (a, Maybe a -> m (Tuple as))
 --   b2</tt>, and an <tt><a>OpM</a> m as b3</tt>, it can compose them with
 --   an <tt><a>OpM</a> m '[b1,b2,b3] c</tt> to create an <tt><a>OpM</a> m
 --   as c</tt>.
-composeOp :: (Monad m, Known Length as, Every Num as) => Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
+composeOp :: (Monad m, Every Num as, Known Length as) => Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
 
--- | Convenient wrappver over <a>composeOp</a> for the case where the
---   second function only takes one input, so the two <a>OpM</a>s can be
---   directly piped together, like for <a>.</a>.
-composeOp1 :: (Monad m, Known Length as, Every Num as) => OpM m as b -> OpM m '[b] c -> OpM m as c
+-- | Convenient wrapper over <a>composeOp</a> for the case where the second
+--   function only takes one input, so the two <a>OpM</a>s can be directly
+--   piped together, like for <a>.</a>.
+composeOp1 :: (Monad m, Every Num as, Known Length as) => OpM m as b -> OpM m '[b] c -> OpM m as c
 
 -- | Convenient infix synonym for (flipped) <a>composeOp1</a>. Meant to be
 --   used just like <a>.</a>:
@@ -394,13 +394,25 @@ composeOp1 :: (Monad m, Known Length as, Every Num as) => OpM m as b -> OpM m '[
 (~.) :: (Monad m, Known Length as, Every Num as) => OpM m '[b] c -> OpM m as b -> OpM m as c
 infixr 9 ~.
 
--- | <a>composeOp</a>, but taking explicit <a>Summer</a>s, for the
---   situation where the <tt>as</tt> are not instance of <a>Num</a>.
-composeOp' :: Monad m => Prod Summer as -> Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
+-- | A version of <a>composeOp</a> taking explicit <a>Length</a>,
+--   indicating the number of inputs expected and their types.
+--   
+--   Requiring an explicit <a>Length</a> is mostly useful for rare
+--   "extremely polymorphic" situations, where GHC can't infer the type and
+--   length of the the expected input tuple. If you ever actually
+--   explicitly write down <tt>as</tt> as a list of types, you should be
+--   able to just use <a>composeOp</a>.
+composeOp' :: forall m as bs c. (Monad m, Every Num as) => Length as -> Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
 
--- | <a>composeOp1</a>, but taking explicit <a>Summer</a>s, for the
---   situation where the <tt>as</tt> are not instance of <a>Num</a>.
-composeOp1' :: Monad m => Prod Summer as -> OpM m as b -> OpM m '[b] c -> OpM m as c
+-- | A version of <a>composeOp1</a> taking explicit <a>Length</a>,
+--   indicating the number of inputs expected and their types.
+--   
+--   Requiring an explicit <a>Length</a> is mostly useful for rare
+--   "extremely polymorphic" situations, where GHC can't infer the type and
+--   length of the the expected input tuple. If you ever actually
+--   explicitly write down <tt>as</tt> as a list of types, you should be
+--   able to just use <a>composeOp1</a>.
+composeOp1' :: (Monad m, Every Num as) => Length as -> OpM m as b -> OpM m '[b] c -> OpM m as c
 
 -- | Create an <a>Op</a> that takes no inputs and always returns the given
 --   value.
@@ -427,11 +439,17 @@ op0 :: a -> Op '[] a
 --   &gt;&gt;&gt; gradOp' (opConst 10) (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø)
 --   (10, 0 ::&lt; 0 ::&lt; 0 ::&lt; Ø)
 --   </pre>
-opConst :: (Every Num as, Known Length as) => a -> Op as a
+opConst :: forall as a. (Every Num as, Known Length as) => a -> Op as a
 
--- | A version of <a>opConst</a> that takes explicit <a>Summer</a>s, so can
---   be run on values of types that aren't <a>Num</a> instances.
-opConst' :: Prod Summer as -> a -> Op as a
+-- | A version of <a>opConst</a> taking explicit <a>Length</a>, indicating
+--   the number of inputs and their types.
+--   
+--   Requiring an explicit <a>Length</a> is mostly useful for rare
+--   "extremely polymorphic" situations, where GHC can't infer the type and
+--   length of the the expected input tuple. If you ever actually
+--   explicitly write down <tt>as</tt> as a list of types, you should be
+--   able to just use <a>opConst</a>.
+opConst' :: forall as a. Every Num as => Length as -> a -> Op as a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking one
 --   argument. Uses <a>diff</a>, and so can take any numerical function
@@ -574,7 +592,7 @@ op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a, b, c] d
 --   <pre>
 --   <a>opCoerce</a> = <a>opIso</a> <a>coerced</a>
 --   </pre>
-opCoerce :: (Coercible a b, Num a) => Op '[a] b
+opCoerce :: Num a => Coercible a b => Op '[a] b
 
 -- | An <a>Op</a> that takes <tt>as</tt> and returns exactly the input
 --   tuple.
@@ -583,7 +601,7 @@ opCoerce :: (Coercible a b, Num a) => Op '[a] b
 --   &gt;&gt;&gt; gradOp' opTup (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø)
 --   (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø, 1 ::&lt; 1 ::&lt; 1 ::&lt; Ø)
 --   </pre>
-opTup :: (Every Num as, Known Length as) => Op as (Tuple as)
+opTup :: (Every Num as, Known Length as) => Length as -> Op as (Tuple as)
 
 -- | An <a>Op</a> that runs the input value through the isomorphism encoded
 --   in the <a>Iso</a>. Requires the input to be an instance of <a>Num</a>.
@@ -594,17 +612,15 @@ opTup :: (Every Num as, Known Length as) => Op as (Tuple as)
 --   isomorphisms.
 opIso :: Num a => Iso' a b -> Op '[a] b
 
--- | A version of <a>opCoerce</a> that takes an explicit <a>Unity</a>, so
---   can be run on values that aren't <a>Num</a> instances.
-opCoerce' :: Coercible a b => Unity a -> Op '[a] b
-
--- | A version of <a>opTup</a> that takes explicit <a>Unity</a>s, so can be
---   run on values of types that aren't <a>Num</a> instances.
-opTup' :: Prod Unity as -> Op as (Tuple as)
-
--- | A version of <a>opIso</a> that takes an explicit <a>Unity</a>, so can
---   be run on values of types that aren't <a>Num</a> instances.
-opIso' :: Unity a -> Iso' a b -> Op '[a] b
+-- | A version of <a>opTup</a> taking explicit <a>Length</a>, indicating
+--   the number of inputs expected and their types.
+--   
+--   Requiring an explicit <a>Length</a> is mostly useful for rare
+--   "extremely polymorphic" situations, where GHC can't infer the type and
+--   length of the the expected input tuple. If you ever actually
+--   explicitly write down <tt>as</tt> as a list of types, you should be
+--   able to just use <a>opTup</a>.
+opTup' :: Every Num as => Length as -> Op as (Tuple as)
 
 -- | Construct a two element Prod. Since the precedence of (:&gt;) is
 --   higher than (:&lt;), we can conveniently write lists like:
@@ -934,7 +950,7 @@ I :: a -> I a
 --   with respect to its inputs. See module header for
 --   <a>Numeric.Backprop</a> and package documentation for examples and
 --   usages.
-backprop :: forall rs a. Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> (a, Tuple rs)
+backprop :: Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> (a, Tuple rs)
 
 -- | Simply run the <a>BPOp</a> on an input tuple, getting the result
 --   without bothering with the gradient or with back-propagation.
@@ -943,16 +959,6 @@ evalBPOp :: (forall s. BPOp s rs a) -> Tuple rs -> a
 -- | Run the <a>BPOp</a> on an input tuple and return the gradient of the
 --   result with respect to the input tuple.
 gradBPOp :: Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> Tuple rs
-
--- | A version of <a>backprop</a> taking explicit <a>Summer</a>s and
---   <a>Unity</a>s, so it can be run with types that aren't instances of
---   <a>Num</a>.
-backprop' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple rs -> (a, Tuple rs)
-
--- | A version of <a>gradBPOp</a> taking explicit <a>Summer</a>s and
---   <a>Unity</a>s, so it can be run with types that aren't instances of
---   <a>Num</a>.
-gradBPOp' :: Prod Summer rs -> Prod Unity rs -> (forall s. BPOp s rs a) -> Tuple rs -> Tuple rs
 
 -- | Runs a continuation on a <a>Prod</a> of all of the input <a>BVar</a>s.
 --   
@@ -999,17 +1005,15 @@ implicitly :: (Known Length rs, Num a) => BPOpI s rs a -> BPOp s rs a
 --   should be able to just use <a>withInps</a>.
 withInps' :: Length rs -> (Prod (BVar s rs) rs -> BP s rs a) -> BP s rs a
 
--- | A version of <a>implicitly</a> taking explicit <a>Length</a> and an
---   explicit <a>Summer</a>, indicating the number of inputs required and
---   their types, and also allowing it to work on types that aren't
---   instances of <a>Num</a>.
+-- | A version of <a>implicitly</a> taking explicit <a>Length</a>,
+--   indicating the number of inputs required and their types.
 --   
 --   Requiring an explicit <a>Length</a> is mostly useful for rare
 --   "extremely polymorphic" situations, where GHC can't infer the type and
 --   length of the list of inputs. If you ever actually explicitly write
 --   down <tt>rs</tt> as a list of types, you should be able to just use
 --   <a>implicitly</a>.
-implicitly' :: Length rs -> Summer a -> BPOpI s rs a -> BPOp s rs a
+implicitly' :: Num a => Length rs -> BPOpI s rs a -> BPOp s rs a
 
 -- | Create a <a>BVar</a> that represents just a specific value, that
 --   doesn't depend on any other <a>BVar</a>s.
@@ -1068,7 +1072,7 @@ inpVars :: Known Length rs => Prod (BVar s rs) rs
 --   Handy because an <a>OpB</a> can be used with almost all of the
 --   <a>Op</a>-related functions in this moduel, including <a>opVar</a>,
 --   <a>~$</a>, etc.
-bpOp :: (Every Num rs, Known Length rs) => BPOp s rs a -> OpB s rs a
+bpOp :: Every Num rs => BPOp s rs a -> OpB s rs a
 
 -- | Concretizes a delayed <a>BVar</a>. If you build up a <a>BVar</a> using
 --   numeric functions like <a>+</a> or <a>*</a> or using <a>liftB</a>,
@@ -1125,15 +1129,6 @@ bindVar :: Num a => BVar s rs a -> BP s rs (BVar s rs a)
 --   should be able to just use <a>inpVars</a>.
 inpVars' :: Length rs -> Prod (BVar s rs) rs
 
--- | <a>bpOp</a>, but taking explicit <a>Summer</a>s and <a>Unity</a>s, for
---   the situation where the <tt>rs</tt> are not instance of <a>Num</a>.
-bpOp' :: Prod Summer rs -> Prod Unity rs -> BPOp s rs a -> OpB s rs a
-
--- | A version of <a>bindVar</a> that requires an explicit <a>Summer</a>,
---   so that you can use it on values whose types aren't instances of
---   <a>Num</a>.
-bindVar' :: Summer a -> BVar s rs a -> BP s rs (BVar s rs a)
-
 -- | Apply an <a>OpB</a> to a <a>Prod</a> (tupling) of <a>BVar</a>s.
 --   
 --   If you had an <tt><a>OpB</a> s '[a, b, c] d</tt>, this function will
@@ -1173,7 +1168,7 @@ bindVar' :: Summer a -> BVar s rs a -> BP s rs (BVar s rs a)
 --   </pre>
 --   
 --   <a>opVar</a> can be thought of as a "binding" version of <a>liftB</a>.
-opVar :: Num a => OpB s as a -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
+opVar :: forall s rs as a. Num a => OpB s as a -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
 
 -- | Infix synonym for <a>opVar</a>, which lets you pretend that you're
 --   applying <a>OpB</a>s as if they were functions:
@@ -1273,22 +1268,6 @@ opVar3 :: Num d => OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar s rs
 (-$) :: (Every Num as, Known Length as, Num a) => BPOp s as a -> Prod (BVar s rs) as -> BPOp s rs a
 infixr 5 -$
 
--- | A version of <a>opVar</a> taking an explicit <a>Summer</a>, so can be
---   used on values of types that aren't instances of <a>Num</a>.
-opVar' :: forall s rs as a. Summer a -> OpB s as a -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
-
--- | A version of <a>opVar1</a> taking an explicit <a>Summer</a>, so can be
---   used on values of types that aren't instances of <a>Num</a>.
-opVar1' :: Summer b -> OpB s '[a] b -> BVar s rs a -> BP s rs (BVar s rs b)
-
--- | A version of <a>opVar2</a> taking an explicit <a>Summer</a>, so can be
---   used on values of types that aren't instances of <a>Num</a>.
-opVar2' :: Summer c -> OpB s '[a, b] c -> BVar s rs a -> BVar s rs b -> BP s rs (BVar s rs c)
-
--- | A version of <a>opVar3</a> taking an explicit <a>Summer</a>, so can be
---   used on values of types that aren't instances of <a>Num</a>.
-opVar3' :: Summer d -> OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar s rs c -> BP s rs (BVar s rs d)
-
 -- | Use an <a>Iso</a> (or compatible <a>Iso</a> from the lens library) to
 --   "pull out" the parts of a data type and work with each part as a
 --   <a>BVar</a>.
@@ -1326,7 +1305,7 @@ opVar3' :: Summer d -> OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar 
 --   Also, if you are literally passing a tuple (like <tt><a>BP</a> s
 --   '[Tuple '[Int, Bool]</tt>) then you can give in the identity
 --   isomorphism (<a>id</a>) or use <a>splitVars</a>.
-partsVar :: forall s rs bs b. (Every Num bs, Known Length bs) => Iso' b (Tuple bs) -> BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
+partsVar :: forall s rs bs b. Every Num bs => Iso' b (Tuple bs) -> BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
 
 -- | A useful infix alias for <a>partsVar</a>.
 --   
@@ -1377,7 +1356,7 @@ infixr 1 #<~
 --   Useful so that you can work with the internal parts of the data type
 --   in a closure, so the parts don't leak out to the rest of your
 --   <a>BP</a>. But, mostly just a stylistic choice.
-withParts :: (Every Num bs, Known Length bs) => Iso' b (Tuple bs) -> BVar s rs b -> (Prod (BVar s rs) bs -> BP s rs a) -> BP s rs a
+withParts :: Every Num bs => Iso' b (Tuple bs) -> BVar s rs b -> (Prod (BVar s rs) bs -> BP s rs a) -> BP s rs a
 
 -- | Split out a <a>BVar</a> of a tuple into a tuple (<a>Prod</a>) of
 --   <a>BVar</a>s.
@@ -1397,7 +1376,7 @@ withParts :: (Every Num bs, Known Length bs) => Iso' b (Tuple bs) -> BVar s rs b
 --   <pre>
 --   <a>splitVars</a> = <a>partsVar</a> <a>id</a>
 --   </pre>
-splitVars :: forall s rs as. (Every Num as, Known Length as) => BVar s rs (Tuple as) -> BP s rs (Prod (BVar s rs) as)
+splitVars :: forall s rs as. Every Num as => BVar s rs (Tuple as) -> BP s rs (Prod (BVar s rs) as)
 
 -- | Using <a>Generic</a> from <a>GHC.Generics</a> and <a>Generic</a> from
 --   <a>Generics.SOP</a>, <i>split</i> a <a>BVar</a> containing a product
@@ -1443,7 +1422,7 @@ splitVars :: forall s rs as. (Every Num as, Known Length as) => BVar s rs (Tuple
 --       -- and b is a <a>BVar</a> pointing to the <a>Bool</a> inside foo
 --       -- you can do stuff with the i and b here
 --   </pre>
-gSplit :: (Every Num bs, Known Length bs, Generic b, Code b ~ '[bs]) => BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
+gSplit :: (Every Num bs, Generic b, Code b ~ '[bs]) => BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
 
 -- | An <a>Iso</a> between a type that is a product type, and a tuple that
 --   contains all of its components. Uses <a>Generics.SOP</a> and the
@@ -1463,26 +1442,6 @@ gSplit :: (Every Num bs, Known Length bs, Generic b, Code b ~ '[bs]) => BVar s r
 --   A 15 False
 --   </pre>
 gTuple :: (Generic a, Code a ~ '[as]) => Iso' a (Tuple as)
-
--- | A version of <a>partsVar</a> taking explicit <a>Summer</a>s and
---   <a>Unity</a>s, so it can be run with internal types that aren't
---   instances of <a>Num</a>.
-partsVar' :: forall s rs bs b. Prod Summer bs -> Prod Unity bs -> Iso' b (Tuple bs) -> BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
-
--- | A version of <a>withParts</a> taking explicit <a>Summer</a>s and
---   <a>Unity</a>s, so it can be run with internal types that aren't
---   instances of <a>Num</a>.
-withParts' :: Prod Summer bs -> Prod Unity bs -> Iso' b (Tuple bs) -> BVar s rs b -> (Prod (BVar s rs) bs -> BP s rs a) -> BP s rs a
-
--- | A version of <a>splitVars</a> taking explicit <a>Summer</a>s and
---   <a>Unity</a>s, so it can be run with types that aren't instances of
---   <a>Num</a>.
-splitVars' :: forall s rs as. Prod Summer as -> Prod Unity as -> BVar s rs (Tuple as) -> BP s rs (Prod (BVar s rs) as)
-
--- | A version of <a>gSplit</a> taking explicit <a>Summer</a>s and
---   <a>Unity</a>s, so it can be run with internal types that aren't
---   instances of <a>Num</a>.
-gSplit' :: (Generic b, Code b ~ '[bs]) => Prod Summer bs -> Prod Unity bs -> BVar s rs b -> BP s rs (Prod (BVar s rs) bs)
 
 -- | Use an <a>Iso</a> (or compatible <a>Iso</a> from the lens library) to
 --   "pull out" the different constructors of a sum type and return a
@@ -1530,7 +1489,7 @@ gSplit' :: (Generic b, Code b ~ '[bs]) => Prod Summer bs -> Prod Unity bs -> BVa
 --   with.
 --   
 --   See <a>Numeric.Backprop#sum</a> for a mini-tutorial on <a>Sum</a>.
-choicesVar :: forall s rs bs b. (Every Num bs, Known Length bs) => Iso' b (Sum I bs) -> BVar s rs b -> BP s rs (Sum (BVar s rs) bs)
+choicesVar :: forall s rs bs b. Every Num bs => Iso' b (Sum I bs) -> BVar s rs b -> BP s rs (Sum (BVar s rs) bs)
 
 -- | A useful infix alias for <a>choicesVar</a>.
 --   
@@ -1606,17 +1565,7 @@ infixr 1 ?<~
 --   the result a superfluous name before pattern matching on it. You can
 --   just directly pattern match in the lambda, so there's a lot less
 --   syntactical noise.
-withChoices :: forall s rs bs b a. (Every Num bs, Known Length bs) => Iso' b (Sum I bs) -> BVar s rs b -> (Sum (BVar s rs) bs -> BP s rs a) -> BP s rs a
-
--- | A version of <a>choicesVar</a> taking explicit <a>Summer</a>s and
---   <a>Unity</a>s, so it can be run with internal types that aren't
---   instances of <a>Num</a>.
-choicesVar' :: forall s rs bs b. Prod Summer bs -> Prod Unity bs -> Iso' b (Sum I bs) -> BVar s rs b -> BP s rs (Sum (BVar s rs) bs)
-
--- | A version of <a>withChoices</a> taking explicit <a>Summer</a>s and
---   <a>Unity</a>s, so it can be run with internal types that aren't
---   instances of <a>Num</a>.
-withChoices' :: forall s rs bs b a. Prod Summer bs -> Prod Unity bs -> Iso' b (Sum I bs) -> BVar s rs b -> (Sum (BVar s rs) bs -> BP s rs a) -> BP s rs a
+withChoices :: forall s rs bs b a. Every Num bs => Iso' b (Sum I bs) -> BVar s rs b -> (Sum (BVar s rs) bs -> BP s rs a) -> BP s rs a
 data Sum k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
 [InL] :: Sum k f ((:) k a1 as)
 [InR] :: Sum k f ((:) k a1 as)
@@ -1666,7 +1615,7 @@ data Sum k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
 --   with <a>gSOP</a>. See <a>gSplits</a> for more information.
 --   
 --   See <a>Numeric.Backprop#sum</a> for a mini-tutorial on <a>Sum</a>.
-sopVar :: forall s rs bss b. (Known Length bss, Every (Every Num ∧ Known Length) bss) => Iso' b (Sum Tuple bss) -> BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) bss)
+sopVar :: forall s rs bss b. Every (Every Num) bss => Iso' b (Sum Tuple bss) -> BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) bss)
 
 -- | Using <a>Generic</a> from <a>GHC.Generics</a> and <a>Generic</a> from
 --   <a>Generics.SOP</a>, <i>split</i> a <a>BVar</a> containing a sum of
@@ -1710,7 +1659,7 @@ sopVar :: forall s rs bss b. (Known Length bss, Every (Every Num ∧ Known Lengt
 --   </pre>
 --   
 --   See <a>Numeric.Backprop#sum</a> for a mini-tutorial on <a>Sum</a>.
-gSplits :: forall s rs b. (Generic b, Known Length (Code b), Every (Every Num ∧ Known Length) (Code b)) => BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) (Code b))
+gSplits :: forall s rs b. (Generic b, Every (Every Num) (Code b)) => BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) (Code b))
 
 -- | An <a>Iso</a> between a sum type whose constructors are products, and
 --   a sum (<a>Sum</a>) of products (<a>Tuple</a>). Uses
@@ -1736,16 +1685,6 @@ gSplits :: forall s rs b. (Generic b, Known Length (Code b), Every (Every Num �
 --   B "bye" 9.8
 --   </pre>
 gSOP :: Generic a => Iso' a (Sum Tuple (Code a))
-
--- | A version of <a>sopVar</a> taking explicit <a>Summer</a>s and
---   <a>Unity</a>s, so it can be run with internal types that aren't
---   instances of <a>Num</a>.
-sopVar' :: forall s rs bss b. Prod (Prod Summer) bss -> Prod (Prod Unity) bss -> Iso' b (Sum Tuple bss) -> BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) bss)
-
--- | A version of <a>gSplits</a> taking explicit <a>Summer</a>s and
---   <a>Unity</a>s, so it can be run with internal types that aren't
---   instances of <a>Num</a>.
-gSplits' :: forall s rs b. Generic b => Prod (Prod Summer) (Code b) -> Prod (Prod Unity) (Code b) -> BVar s rs b -> BP s rs (Sum (Prod (BVar s rs)) (Code b))
 
 -- | Apply <a>OpB</a> over a <a>Prod</a> of <a>BVar</a>s, as inputs.
 --   Provides "implicit-graph" back-propagation, with deferred evaluation.
@@ -1934,12 +1873,12 @@ opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) 
 --   b2</tt>, and an <tt><a>OpM</a> m as b3</tt>, it can compose them with
 --   an <tt><a>OpM</a> m '[b1,b2,b3] c</tt> to create an <tt><a>OpM</a> m
 --   as c</tt>.
-composeOp :: (Monad m, Known Length as, Every Num as) => Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
+composeOp :: (Monad m, Every Num as, Known Length as) => Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
 
--- | Convenient wrappver over <a>composeOp</a> for the case where the
---   second function only takes one input, so the two <a>OpM</a>s can be
---   directly piped together, like for <a>.</a>.
-composeOp1 :: (Monad m, Known Length as, Every Num as) => OpM m as b -> OpM m '[b] c -> OpM m as c
+-- | Convenient wrapper over <a>composeOp</a> for the case where the second
+--   function only takes one input, so the two <a>OpM</a>s can be directly
+--   piped together, like for <a>.</a>.
+composeOp1 :: (Monad m, Every Num as, Known Length as) => OpM m as b -> OpM m '[b] c -> OpM m as c
 
 -- | Convenient infix synonym for (flipped) <a>composeOp1</a>. Meant to be
 --   used just like <a>.</a>:
@@ -2054,64 +1993,6 @@ infixr 5 ::<
 
 -- | Singleton Tuple.
 only_ :: a -> Tuple ((:) * a ([] *))
-
--- | Instructions on how to "sum" a list of values of a given type.
---   Basically used as an explicit witness for a <a>Num</a> instance.
---   
---   For most types, the only meaningful value of type <tt><a>Summer</a>
---   a</tt> is <tt><a>Summer</a> <a>sum</a></tt>. However, using
---   <a>Summer</a> lets us use <tt>BP</tt> with types that are <i>not</i>
---   instances of <a>Num</a>. Any type can be used, as long as you provide
---   a way to "sum" it!
---   
---   For most of the functions in this library, you can completely ignore
---   this, as they will be generated automatically. You only need to work
---   with this directly if you want to use custom types that <i>aren't</i>
---   instances of <a>Num</a> with this library.
---   
---   If 'Num a' is satisfied, one can create the canonical <a>Summer</a>
---   using <tt><a>known</a> :: <a>Num</a> a =&gt; <a>Summer</a> a</tt>.
-newtype Summer a
-Summer :: ([a] -> a) -> Summer a
-[runSummer] :: Summer a -> [a] -> a
-
--- | A canonical "unity" (the multiplicative identity) for a given type.
---   Basically used as an explicit witness for a <a>Num</a> instance.
---   
---   For most types, the only meaningful value of type <tt><a>Unity</a>
---   a</tt> is <tt><a>Unity</a> 1'</tt>. However, using <a>Unity</a> lets
---   us use <tt>BP</tt> with types that are <i>not</i> instances of
---   <a>Num</a>. Any type can be used, as long as you provide a way to get
---   a multiplicative identity in it!
---   
---   For most of the functions in this library, you can completely ignore
---   this, as they will be generated automatically. You only need to work
---   with this directly if you want to use custom types that <i>aren't</i>
---   instances of <a>Num</a> with this library.
---   
---   If 'Num a' is satisfied, one can create the canonical <a>Unity</a>
---   using <tt><a>known</a> :: <a>Num</a> a =&gt; <a>Unity</a> a</tt>.
-newtype Unity a
-Unity :: a -> Unity a
-[getUnity] :: Unity a -> a
-
--- | If all the types in <tt>as</tt> are instances of <a>Num</a>, generate
---   a <tt><a>Prod</a> <a>Summer</a> as</tt>, or a tuple of <a>Summer</a>s
---   for every type in <tt>as</tt>.
-summers :: (Every Num as, Known Length as) => Prod Summer as
-
--- | If all the types in <tt>as</tt> are instances of <a>Num</a>, generate
---   a <tt><a>Prod</a> <a>Unity</a> as</tt>, or a tuple of <a>Unity</a>s
---   for every type in <tt>as</tt>.
-unities :: (Every Num as, Known Length as) => Prod Unity as
-
--- | Like <a>summers</a>, but requiring an explicit witness for the number
---   of types in the list <tt>as</tt>.
-summers' :: Every Num as => Length as -> Prod Summer as
-
--- | Like <a>unities</a>, but requiring an explicit witness for the number
---   of types in the list <tt>as</tt>.
-unities' :: Every Num as => Length as -> Prod Unity as
 
 -- | Optimized version of <tt><a>op1</a> (<a>+.</a>)</tt>.
 (+.) :: Num a => Op '[a, a] a
@@ -2354,7 +2235,7 @@ I :: a -> I a
 --   &gt;&gt;&gt; 'backprop' foo (2 ::&lt; 3 ::&lt; Ø)
 --   (11.46, 13.73 ::&lt; 6.12 ::&lt; Ø)
 --   </pre>
-backprop :: (Known Length rs, Every Num rs, Num a) => BPOp rs a -> Tuple rs -> (a, Tuple rs)
+backprop :: Every Num rs => BPOp rs a -> Tuple rs -> (a, Tuple rs)
 
 -- | Run the <a>BPOp</a> on an input tuple and return the gradient of the
 --   result with respect to the input tuple.
@@ -2370,7 +2251,7 @@ backprop :: (Known Length rs, Every Num rs, Num a) => BPOp rs a -> Tuple rs -> (
 --   &gt;&gt;&gt; grad foo (2 ::&lt; 3 ::&lt; Ø)
 --   13.73 ::&lt; 6.12 ::&lt; Ø
 --   </pre>
-grad :: (Known Length rs, Every Num rs, Num a) => BPOp rs a -> Tuple rs -> Tuple rs
+grad :: Every Num rs => BPOp rs a -> Tuple rs -> Tuple rs
 
 -- | Simply run the <a>BPOp</a> on an input tuple, getting the result
 --   without bothering with the gradient or with back-propagation.
@@ -2386,17 +2267,7 @@ grad :: (Known Length rs, Every Num rs, Num a) => BPOp rs a -> Tuple rs -> Tuple
 --   &gt;&gt;&gt; eval foo (2 ::&lt; 3 ::&lt; Ø)
 --   11.46
 --   </pre>
-eval :: (Known Length rs, Every Num rs, Num a) => BPOp rs a -> Tuple rs -> a
-
--- | A version of <a>backprop</a> taking explicit <a>Summer</a>s and
---   <a>Unity</a>s, so it can be run with types that aren't instances of
---   <a>Num</a>.
-backprop' :: Prod Summer rs -> Prod Unity rs -> BPOp rs a -> Tuple rs -> (a, Tuple rs)
-
--- | A version of <a>grad</a> taking explicit <a>Summer</a>s and
---   <a>Unity</a>s, so it can be run with types that aren't instances of
---   <a>Num</a>.
-grad' :: Prod Summer rs -> Prod Unity rs -> BPOp rs a -> Tuple rs -> Tuple rs
+eval :: (Known Length rs, Num a) => BPOp rs a -> Tuple rs -> a
 
 -- | Create a <a>BVar</a> that represents just a specific value, that
 --   doesn't depend on any other <a>BVar</a>s.
@@ -2582,7 +2453,7 @@ liftB3 :: OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar s rs c -> BVa
 --   
 --   At the moment, this implicit <a>partsVar</a> is less efficient than
 --   the explicit <a>partsVar</a>, but this might change in the future.
-partsVar :: forall s rs bs a. (Known Length bs, Every Num bs) => Iso' a (Tuple bs) -> BVar s rs a -> Prod (BVar s rs) bs
+partsVar :: forall s rs bs a. (Every Num bs, Known Length bs) => Iso' a (Tuple bs) -> BVar s rs a -> Prod (BVar s rs) bs
 
 -- | A continuation-based version of <a>partsVar</a>. Instead of binding
 --   the parts and using it in the rest of the block, provide a
@@ -2606,7 +2477,7 @@ partsVar :: forall s rs bs a. (Known Length bs, Every Num bs) => Iso' a (Tuple b
 --   </pre>
 --   
 --   Mostly just a stylistic alternative to <a>partsVar</a>.
-withParts :: forall s rs bs a r. (Known Length bs, Every Num bs) => Iso' a (Tuple bs) -> BVar s rs a -> (Prod (BVar s rs) bs -> r) -> r
+withParts :: forall s rs bs a r. (Every Num bs, Known Length bs) => Iso' a (Tuple bs) -> BVar s rs a -> (Prod (BVar s rs) bs -> r) -> r
 
 -- | Split out a <a>BVar</a> of a tuple into a tuple (<a>Prod</a>) of
 --   <a>BVar</a>s.
@@ -2627,7 +2498,7 @@ withParts :: forall s rs bs a r. (Known Length bs, Every Num bs) => Iso' a (Tupl
 --   <pre>
 --   <a>splitVars</a> = <a>partsVar</a> <a>id</a>
 --   </pre>
-splitVars :: forall s rs as. (Known Length as, Every Num as) => BVar s rs (Tuple as) -> Prod (BVar s rs) as
+splitVars :: forall s rs as. (Every Num as, Known Length as) => BVar s rs (Tuple as) -> Prod (BVar s rs) as
 
 -- | Using <a>Generic</a> from <a>GHC.Generics</a> and <a>Generic</a> from
 --   <a>Generics.SOP</a>, <i>split</i> a <a>BVar</a> containing a product
@@ -2663,7 +2534,7 @@ splitVars :: forall s rs as. (Known Length as, Every Num as) => BVar s rs (Tuple
 --   <pre>
 --   <a>gSplit</a> = <a>splitVars</a> <a>gTuple</a>
 --   </pre>
-gSplit :: forall s rs as a. (Generic a, Code a ~ '[as], Known Length as, Every Num as) => BVar s rs a -> Prod (BVar s rs) as
+gSplit :: forall s rs as a. (Generic a, Code a ~ '[as], Every Num as, Known Length as) => BVar s rs a -> Prod (BVar s rs) as
 
 -- | An <a>Iso</a> between a type that is a product type, and a tuple that
 --   contains all of its components. Uses <a>Generics.SOP</a> and the
@@ -2684,25 +2555,45 @@ gSplit :: forall s rs as a. (Generic a, Code a ~ '[as], Known Length as, Every N
 --   </pre>
 gTuple :: (Generic a, Code a ~ '[as]) => Iso' a (Tuple as)
 
--- | A version of <a>partsVar</a> taking explicit <a>Summer</a>s and
---   <a>Unity</a>s, so it can be run with internal types that aren't
---   instances of <a>Num</a>.
-partsVar' :: forall s rs bs a. Prod Summer bs -> Prod Unity bs -> Iso' a (Tuple bs) -> BVar s rs a -> Prod (BVar s rs) bs
+-- | A version of <a>partsVar</a> taking explicit <a>Length</a>, indicating
+--   the number of items in the input tuple and their types.
+--   
+--   Requiring an explicit <a>Length</a> is mostly useful for rare
+--   "extremely polymorphic" situations, where GHC can't infer the type and
+--   length of the internal tuple. If you ever actually explicitly write
+--   down <tt>bs</tt> as a list of types, you should be able to just use
+--   <a>partsVar</a>.
+partsVar' :: forall s rs bs a. Every Num bs => Length bs -> Iso' a (Tuple bs) -> BVar s rs a -> Prod (BVar s rs) bs
 
--- | A version of <a>withParts</a> taking explicit <a>Summer</a>s and
---   <a>Unity</a>s, so it can be run with internal types that aren't
---   instances of <a>Num</a>.
-withParts' :: forall s rs bs a r. Prod Summer bs -> Prod Unity bs -> Iso' a (Tuple bs) -> BVar s rs a -> (Prod (BVar s rs) bs -> r) -> r
+-- | A version of <a>withParts</a> taking explicit <a>Length</a>,
+--   indicating the number of internal items and their types.
+--   
+--   Requiring an explicit <a>Length</a> is mostly useful for rare
+--   "extremely polymorphic" situations, where GHC can't infer the type and
+--   length of the internal tuple. If you ever actually explicitly write
+--   down <tt>bs</tt> as a list of types, you should be able to just use
+--   <a>withParts</a>.
+withParts' :: forall s rs bs a r. Every Num bs => Length bs -> Iso' a (Tuple bs) -> BVar s rs a -> (Prod (BVar s rs) bs -> r) -> r
 
--- | A version of <a>splitVars</a> taking explicit <a>Summer</a>s and
---   <a>Unity</a>s, so it can be run with types that aren't instances of
---   <a>Num</a>.
-splitVars' :: forall s rs as. Prod Summer as -> Prod Unity as -> BVar s rs (Tuple as) -> Prod (BVar s rs) as
+-- | A version of <a>splitVars</a> taking explicit <a>Length</a>,
+--   indicating the number of internal items and their types.
+--   
+--   Requiring an explicit <a>Length</a> is mostly useful for rare
+--   "extremely polymorphic" situations, where GHC can't infer the type and
+--   length of the internal tuple. If you ever actually explicitly write
+--   down <tt>as</tt> as a list of types, you should be able to just use
+--   <a>splitVars</a>.
+splitVars' :: forall s rs as. Every Num as => Length as -> BVar s rs (Tuple as) -> Prod (BVar s rs) as
 
--- | A version of <a>gSplit</a> taking explicit <a>Summer</a>s and
---   <a>Unity</a>s, so it can be run with internal types that aren't
---   instances of <a>Num</a>.
-gSplit' :: forall s rs as a. (Generic a, Code a ~ '[as]) => Prod Summer as -> Prod Unity as -> BVar s rs a -> Prod (BVar s rs) as
+-- | A version of <a>gSplit</a> taking explicit <a>Length</a>, indicating
+--   the number of internal items and their types.
+--   
+--   Requiring an explicit <a>Length</a> is mostly useful for rare
+--   "extremely polymorphic" situations, where GHC can't infer the type and
+--   length of the internal tuple. If you ever actually explicitly write
+--   down <tt>as</tt> as a list of types, you should be able to just use
+--   <a>gSplit</a>.
+gSplit' :: forall s rs as a. (Generic a, Code a ~ '[as], Every Num as) => Length as -> BVar s rs a -> Prod (BVar s rs) as
 
 -- | Automatically create an <a>Op</a> of a numerical function taking one
 --   argument. Uses <a>diff</a>, and so can take any numerical function
@@ -2845,64 +2736,6 @@ infixr 5 ::<
 
 -- | Singleton Tuple.
 only_ :: a -> Tuple ((:) * a ([] *))
-
--- | Instructions on how to "sum" a list of values of a given type.
---   Basically used as an explicit witness for a <a>Num</a> instance.
---   
---   For most types, the only meaningful value of type <tt><a>Summer</a>
---   a</tt> is <tt><a>Summer</a> <a>sum</a></tt>. However, using
---   <a>Summer</a> lets us use <tt>BP</tt> with types that are <i>not</i>
---   instances of <a>Num</a>. Any type can be used, as long as you provide
---   a way to "sum" it!
---   
---   For most of the functions in this library, you can completely ignore
---   this, as they will be generated automatically. You only need to work
---   with this directly if you want to use custom types that <i>aren't</i>
---   instances of <a>Num</a> with this library.
---   
---   If 'Num a' is satisfied, one can create the canonical <a>Summer</a>
---   using <tt><a>known</a> :: <a>Num</a> a =&gt; <a>Summer</a> a</tt>.
-newtype Summer a
-Summer :: ([a] -> a) -> Summer a
-[runSummer] :: Summer a -> [a] -> a
-
--- | A canonical "unity" (the multiplicative identity) for a given type.
---   Basically used as an explicit witness for a <a>Num</a> instance.
---   
---   For most types, the only meaningful value of type <tt><a>Unity</a>
---   a</tt> is <tt><a>Unity</a> 1'</tt>. However, using <a>Unity</a> lets
---   us use <tt>BP</tt> with types that are <i>not</i> instances of
---   <a>Num</a>. Any type can be used, as long as you provide a way to get
---   a multiplicative identity in it!
---   
---   For most of the functions in this library, you can completely ignore
---   this, as they will be generated automatically. You only need to work
---   with this directly if you want to use custom types that <i>aren't</i>
---   instances of <a>Num</a> with this library.
---   
---   If 'Num a' is satisfied, one can create the canonical <a>Unity</a>
---   using <tt><a>known</a> :: <a>Num</a> a =&gt; <a>Unity</a> a</tt>.
-newtype Unity a
-Unity :: a -> Unity a
-[getUnity] :: Unity a -> a
-
--- | If all the types in <tt>as</tt> are instances of <a>Num</a>, generate
---   a <tt><a>Prod</a> <a>Summer</a> as</tt>, or a tuple of <a>Summer</a>s
---   for every type in <tt>as</tt>.
-summers :: (Every Num as, Known Length as) => Prod Summer as
-
--- | If all the types in <tt>as</tt> are instances of <a>Num</a>, generate
---   a <tt><a>Prod</a> <a>Unity</a> as</tt>, or a tuple of <a>Unity</a>s
---   for every type in <tt>as</tt>.
-unities :: (Every Num as, Known Length as) => Prod Unity as
-
--- | Like <a>summers</a>, but requiring an explicit witness for the number
---   of types in the list <tt>as</tt>.
-summers' :: Every Num as => Length as -> Prod Summer as
-
--- | Like <a>unities</a>, but requiring an explicit witness for the number
---   of types in the list <tt>as</tt>.
-unities' :: Every Num as => Length as -> Prod Unity as
 
 -- | Optimized version of <tt><a>op1</a> (<a>+.</a>)</tt>.
 (+.) :: Num a => Op '[a, a] a
@@ -3466,9 +3299,9 @@ atanhOp :: Floating a => Op N1 a a
 --   <a>BP</a> s <a>N3</a> Double Int
 --   </pre>
 --   
---   Instead of dealing with <a>Prod</a>s and <a>Tuple</a>s, this module
---   works with <a>VecT</a>s and <a>Vec</a>s, respectively. These are
---   fixed-length vectors whose length are encoded in their types,
+--   Instead of dealing with <tt>Prod</tt>s and <tt>Tuple</tt>s, this
+--   module works with <a>VecT</a>s and <a>Vec</a>s, respectively. These
+--   are fixed-length vectors whose length are encoded in their types,
 --   constructed with <a>:*</a> (for <a>VecT</a>) or <a>:+</a> (for
 --   <a>Vec</a>).
 --   
@@ -4096,7 +3929,7 @@ liftB2 :: OpB s N2 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a
 
 -- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with
 --   three arguments and three <a>BVar</a> arguments. Lets you not have to
---   type out the entire <a>Prod</a>.
+--   type out the entire <tt>Prod</tt>.
 --   
 --   <pre>
 --   <a>liftB3</a> o x y z = <a>liftB</a> o (x <a>:*</a> y <a>:*</a> z <a>:*</a> 'ØV')
@@ -4677,7 +4510,7 @@ liftB2 :: OpB s N2 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a
 
 -- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with
 --   three arguments and three <a>BVar</a> arguments. Lets you not have to
---   type out the entire <a>Prod</a>.
+--   type out the entire <tt>Prod</tt>.
 --   
 --   <pre>
 --   <a>liftB3</a> o x y z = <a>liftB</a> o (x <a>:*</a> y <a>:*</a> z <a>:*</a> 'ØV')
