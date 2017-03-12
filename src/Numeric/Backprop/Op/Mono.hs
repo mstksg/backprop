@@ -576,78 +576,78 @@ f ~. g = composeOp1 @_ @_ @a g f
 negateOp :: Num a => Op N1 a a
 negateOp = BP.negateOp
 
--- | Optimized version of @'op1' 'signumOp'@.
+-- | Optimized version of @'op1' 'signum'@.
 signumOp :: Num a => Op N1 a a
 signumOp = BP.signumOp
 
--- | Optimized version of @'op1' 'absOp'@.
+-- | Optimized version of @'op1' 'abs'@.
 absOp :: Num a => Op N1 a a
 absOp = BP.absOp
 
--- | Optimized version of @'op1' 'recipOp'@.
+-- | Optimized version of @'op1' 'recip'@.
 recipOp :: Fractional a => Op N1 a a
 recipOp = BP.recipOp
 
--- | Optimized version of @'op1' 'expOp'@.
+-- | Optimized version of @'op1' 'exp'@.
 expOp :: Floating a => Op N1 a a
 expOp = BP.expOp
 
--- | Optimized version of @'op1' 'logOp'@.
+-- | Optimized version of @'op1' 'log'@.
 logOp :: Floating a => Op N1 a a
 logOp = BP.logOp
 
--- | Optimized version of @'op1' 'sqrtOp'@.
+-- | Optimized version of @'op1' 'sqrt'@.
 sqrtOp :: Floating a => Op N1 a a
 sqrtOp = BP.sqrtOp
 
--- | Optimized version of @'op2' 'logBaseOp'@.
+-- | Optimized version of @'op2' 'logBase'@.
 logBaseOp :: Floating a => Op N2 a a
 logBaseOp = BP.logBaseOp
 
--- | Optimized version of @'op1' 'sinOp'@.
+-- | Optimized version of @'op1' 'sin'@.
 sinOp :: Floating a => Op N1 a a
 sinOp = BP.sinOp
 
--- | Optimized version of @'op1' 'cosOp'@.
+-- | Optimized version of @'op1' 'cos'@.
 cosOp :: Floating a => Op N1 a a
 cosOp = BP.cosOp
 
--- | Optimized version of @'op1' 'tanOp'@.
+-- | Optimized version of @'op1' 'tan'@.
 tanOp :: Floating a => Op N1 a a
 tanOp = BP.tanOp
 
--- | Optimized version of @'op1' 'asinOp'@.
+-- | Optimized version of @'op1' 'asin'@.
 asinOp :: Floating a => Op N1 a a
 asinOp = BP.asinOp
 
--- | Optimized version of @'op1' 'acosOp'@.
+-- | Optimized version of @'op1' 'acos'@.
 acosOp :: Floating a => Op N1 a a
 acosOp = BP.acosOp
 
--- | Optimized version of @'op1' 'atanOp'@.
+-- | Optimized version of @'op1' 'atan'@.
 atanOp :: Floating a => Op N1 a a
 atanOp = BP.atanOp
 
--- | Optimized version of @'op1' 'sinhOp'@.
+-- | Optimized version of @'op1' 'sinh'@.
 sinhOp :: Floating a => Op N1 a a
 sinhOp = BP.sinhOp
 
--- | Optimized version of @'op1' 'coshOp'@.
+-- | Optimized version of @'op1' 'cosh'@.
 coshOp :: Floating a => Op N1 a a
 coshOp = BP.coshOp
 
--- | Optimized version of @'op1' 'tanhOp'@.
+-- | Optimized version of @'op1' 'tanh'@.
 tanhOp :: Floating a => Op N1 a a
 tanhOp = BP.tanhOp
 
--- | Optimized version of @'op1' 'asinhOp'@.
+-- | Optimized version of @'op1' 'asinh'@.
 asinhOp :: Floating a => Op N1 a a
 asinhOp = BP.asinhOp
 
--- | Optimized version of @'op1' 'acoshOp'@.
+-- | Optimized version of @'op1' 'acosh'@.
 acoshOp :: Floating a => Op N1 a a
 acoshOp = BP.acoshOp
 
--- | Optimized version of @'op1' 'atanhOp'@.
+-- | Optimized version of @'op1' 'atanh'@.
 atanhOp :: Floating a => Op N1 a a
 atanhOp = BP.atanhOp

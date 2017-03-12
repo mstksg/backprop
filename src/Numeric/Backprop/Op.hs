@@ -782,27 +782,27 @@ instance (Monad m, Known Length as, Every Floating as, Every Fractional as, Ever
 -- 'Numeric.Backprop.liftB2' ('.+') v1 v2
 -- @
 
--- | Optimized version of @'op1' ('+.')@.
+-- | Optimized version of @'op1' ('+')@.
 (+.) :: Num a => Op '[a, a] a
 (+.) = op2' $ \x y -> (x + y, maybe (1, 1) (\g -> (g, g)))
 {-# INLINE (+.) #-}
 
--- | Optimized version of @'op1' ('-.')@.
+-- | Optimized version of @'op1' ('-')@.
 (-.) :: Num a => Op '[a, a] a
 (-.) = op2' $ \x y -> (x - y, maybe (1, -1) (\g -> (g, -g)))
 {-# INLINE (-.) #-}
 
--- | Optimized version of @'op1' ('*.')@.
+-- | Optimized version of @'op1' ('*')@.
 (*.) :: Num a => Op '[a, a] a
 (*.) = op2' $ \x y -> (x * y, maybe (y, x) (\g -> (y*g, x*g)))
 {-# INLINE (*.) #-}
 
--- | Optimized version of @'op1' ('/.')@.
+-- | Optimized version of @'op1' ('/')@.
 (/.) :: Fractional a => Op '[a, a] a
 (/.) = op2' $ \x y -> (x / y, maybe (1/y, -x/(y*y)) (\g -> (g/y, -g*x/(y*y))))
 {-# INLINE (/.) #-}
 
--- | Optimized version of @'op1' ('**.')@.
+-- | Optimized version of @'op1' ('**')@.
 (**.) :: Floating a => Op '[a, a] a
 (**.) = op2' $ \x y -> (x ** y, let dx = y*x**(y-1)
                                     dy = x**y*log(x)
@@ -810,42 +810,42 @@ instance (Monad m, Known Length as, Every Floating as, Every Fractional as, Ever
                        )
 {-# INLINE (**.) #-}
 
--- | Optimized version of @'op1' 'negateOp'@.
+-- | Optimized version of @'op1' 'negate'@.
 negateOp :: Num a => Op '[a] a
 negateOp = op1' $ \x -> (negate x, maybe (-1) negate)
 {-# INLINE negateOp  #-}
 
--- | Optimized version of @'op1' 'signumOp'@.
+-- | Optimized version of @'op1' 'signum'@.
 signumOp :: Num a => Op '[a] a
 signumOp = op1' $ \x -> (signum x, const 0)
 {-# INLINE signumOp  #-}
 
--- | Optimized version of @'op1' 'absOp'@.
+-- | Optimized version of @'op1' 'abs'@.
 absOp :: Num a => Op '[a] a
 absOp = op1' $ \x -> (abs x, maybe (signum x) (* signum x))
 {-# INLINE absOp #-}
 
--- | Optimized version of @'op1' 'recipOp'@.
+-- | Optimized version of @'op1' 'recip'@.
 recipOp :: Fractional a => Op '[a] a
 recipOp = op1' $ \x -> (recip x, maybe (-1/(x*x)) ((/(x*x)) . negate))
 {-# INLINE recipOp #-}
 
--- | Optimized version of @'op1' 'expOp'@.
+-- | Optimized version of @'op1' 'exp'@.
 expOp :: Floating a => Op '[a] a
 expOp = op1' $ \x -> (exp x, maybe (exp x) (exp x *))
 {-# INLINE expOp #-}
 
--- | Optimized version of @'op1' 'logOp'@.
+-- | Optimized version of @'op1' 'log'@.
 logOp :: Floating a => Op '[a] a
 logOp = op1' $ \x -> (log x, (/x) . fromMaybe 1)
 {-# INLINE logOp #-}
 
--- | Optimized version of @'op1' 'sqrtOp'@.
+-- | Optimized version of @'op1' 'sqrt'@.
 sqrtOp :: Floating a => Op '[a] a
 sqrtOp = op1' $ \x -> (sqrt x, maybe (0.5 * sqrt x) (/ (2 * sqrt x)))
 {-# INLINE sqrtOp #-}
 
--- | Optimized version of @'op2' 'logBaseOp'@.
+-- | Optimized version of @'op2' 'logBase'@.
 logBaseOp :: Floating a => Op '[a, a] a
 logBaseOp = op2' $ \x y -> (logBase x y, let dx = - logBase x y / (log x * x)
                                          in  maybe (dx, 1/(y * log x))
@@ -853,62 +853,62 @@ logBaseOp = op2' $ \x y -> (logBase x y, let dx = - logBase x y / (log x * x)
                            )
 {-# INLINE logBaseOp #-}
 
--- | Optimized version of @'op1' 'sinOp'@.
+-- | Optimized version of @'op1' 'sin'@.
 sinOp :: Floating a => Op '[a] a
 sinOp = op1' $ \x -> (sin x, maybe (cos x) (* cos x))
 {-# INLINE sinOp #-}
 
--- | Optimized version of @'op1' 'cosOp'@.
+-- | Optimized version of @'op1' 'cos'@.
 cosOp :: Floating a => Op '[a] a
 cosOp = op1' $ \x -> (cos x, maybe (-sin x) (* (-sin x)))
 {-# INLINE cosOp #-}
 
--- | Optimized version of @'op1' 'tanOp'@.
+-- | Optimized version of @'op1' 'tan'@.
 tanOp :: Floating a => Op '[a] a
 tanOp = op1' $ \x -> (tan x, (/ cos x^(2::Int)) . fromMaybe 1)
 {-# INLINE tanOp #-}
 
--- | Optimized version of @'op1' 'asinOp'@.
+-- | Optimized version of @'op1' 'asin'@.
 asinOp :: Floating a => Op '[a] a
 asinOp = op1' $ \x -> (asin x, (/ sqrt(1 - x*x)) . fromMaybe 1)
 {-# INLINE asinOp #-}
 
--- | Optimized version of @'op1' 'acosOp'@.
+-- | Optimized version of @'op1' 'acos'@.
 acosOp :: Floating a => Op '[a] a
 acosOp = op1' $ \x -> (acos x, (/ sqrt (1 - x*x)) . maybe (-1) negate)
 {-# INLINE acosOp #-}
 
--- | Optimized version of @'op1' 'atanOp'@.
+-- | Optimized version of @'op1' 'atan'@.
 atanOp :: Floating a => Op '[a] a
 atanOp = op1' $ \x -> (atan x, (/ (x*x + 1)) . fromMaybe 1)
 {-# INLINE atanOp #-}
 
--- | Optimized version of @'op1' 'sinhOp'@.
+-- | Optimized version of @'op1' 'sinh'@.
 sinhOp :: Floating a => Op '[a] a
 sinhOp = op1' $ \x -> (sinh x, maybe (cosh x) (* cosh x))
 {-# INLINE sinhOp #-}
 
--- | Optimized version of @'op1' 'coshOp'@.
+-- | Optimized version of @'op1' 'cosh'@.
 coshOp :: Floating a => Op '[a] a
 coshOp = op1' $ \x -> (cosh x, maybe (sinh x) (* sinh x))
 {-# INLINE coshOp #-}
 
--- | Optimized version of @'op1' 'tanhOp'@.
+-- | Optimized version of @'op1' 'tanh'@.
 tanhOp :: Floating a => Op '[a] a
 tanhOp = op1' $ \x -> (tanh x, (/ cosh x^(2::Int)) . fromMaybe 1)
 {-# INLINE tanhOp #-}
 
--- | Optimized version of @'op1' 'asinhOp'@.
+-- | Optimized version of @'op1' 'asinh'@.
 asinhOp :: Floating a => Op '[a] a
 asinhOp = op1' $ \x -> (asinh x, (/ sqrt (x*x + 1)) . fromMaybe 1)
 {-# INLINE asinhOp #-}
 
--- | Optimized version of @'op1' 'acoshOp'@.
+-- | Optimized version of @'op1' 'acosh'@.
 acoshOp :: Floating a => Op '[a] a
 acoshOp = op1' $ \x -> (acosh x, (/ sqrt (x*x - 1)) . fromMaybe 1)
 {-# INLINE acoshOp #-}
 
--- | Optimized version of @'op1' 'atanhOp'@.
+-- | Optimized version of @'op1' 'atanh'@.
 atanhOp :: Floating a => Op '[a] a
 atanhOp = op1' $ \x -> (atanh x, (/ (1 - x*x)) . fromMaybe 1)
 {-# INLINE atanhOp #-}
