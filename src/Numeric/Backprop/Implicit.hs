@@ -42,6 +42,10 @@
 -- similar to "Numeric.AD.Mode.Reverse" from the /ad/ library, except for
 -- the fact that it can handle /heterogeneous/ values.
 --
+-- Note that every type involved has to be an instance of 'Num'.  This is
+-- because gradients all need to be "summable" (which is implemented using
+-- 'sum' and '+'), and we also need to able to generate gradients of '1'
+-- and '0'.
 
 
 module Numeric.Backprop.Implicit (

@@ -44,6 +44,10 @@
 -- in, you can also look directly at the main types, 'BP', 'BPOp', 'BVar',
 -- 'Op', and the main functions, 'backprop' and 'opVar'.
 --
+-- Note that every type involved has to be an instance of 'Num'.  This is
+-- because gradients all need to be "summable" (which is implemented using
+-- 'sum' and '+'), and we also need to able to generate gradients of '1'
+-- and '0'.
 --
 
 module Numeric.Backprop (
