@@ -5,8 +5,13 @@
 -- | Heterogeneous, type-safe automatic backpropagation in Haskell
 --   
 --   See <a>README.md</a>
+--   
+--   At the moment, this project is in pre-alpha, and is published and put
+--   up on Hackage with 100% documentation coverage as a call for comments
+--   and thoughts. See <a>TODO.md</a> section in the README for more
+--   information on what's missing and potential avenues for contribution.
 @package backprop
-@version 0.0.1.0
+@version 0.0.2.0
 
 
 -- | A poor substitute for the <a>Control.Lens.Iso</a> module in
@@ -751,6 +756,11 @@ instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, D
 --   and tutorials. If you want to plunge right in, you can also look
 --   directly at the main types, <a>BP</a>, <a>BPOp</a>, <a>BVar</a>,
 --   <a>Op</a>, and the main functions, <a>backprop</a> and <a>opVar</a>.
+--   
+--   Note that every type involved has to be an instance of <a>Num</a>.
+--   This is because gradients all need to be "summable" (which is
+--   implemented using <a>sum</a> and <a>+</a>), and we also need to able
+--   to generate gradients of '1' and '0'.
 module Numeric.Backprop
 
 -- | A Monad allowing you to explicitly build hetereogeneous data
@@ -2098,6 +2108,11 @@ atanhOp :: Floating a => Op '[a] a
 --   As a comparison, this module offers functionality and an API very
 --   similar to <a>Numeric.AD.Mode.Reverse</a> from the <i>ad</i> library,
 --   except for the fact that it can handle <i>heterogeneous</i> values.
+--   
+--   Note that every type involved has to be an instance of <a>Num</a>.
+--   This is because gradients all need to be "summable" (which is
+--   implemented using <a>sum</a> and <a>+</a>), and we also need to able
+--   to generate gradients of '1' and '0'.
 module Numeric.Backprop.Implicit
 
 -- | An operation on <a>BVar</a>s that can be backpropagated. A value of
