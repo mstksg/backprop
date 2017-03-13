@@ -75,21 +75,21 @@ foo (x <code><a href="Numeric-Backprop-Mono-Implicit.html#v::-42-">:*</a></code>
 foo (x :* y :* &#216;V) =
   let z = x * sqrt y
   in  z + x ** y
-</pre><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>'backprop' foo (2 :+ 3 :+ &#216;V)
+</pre><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>backprop foo (2 :+ 3 :+ &#216;V)
 </code></strong>(11.46, 13.73 :+ 6.12 :+ &#216;V)
 </pre></div></div><div class="top"><p class="src"><a id="v:grad" class="def">grad</a> :: <span class="keyword">forall</span> n a b. (<a href="../base-4.9.1.0/Prelude.html#t:Num">Num</a> a, <a href="../type-combinators-0.2.4.3/Type-Class-Known.html#t:Known">Known</a> <a href="../type-combinators-0.2.4.3/Data-Type-Nat.html#t:Nat">Nat</a> n) =&gt; <a href="Numeric-Backprop-Mono-Implicit.html#t:BPOp">BPOp</a> n a b -&gt; <a href="Numeric-Backprop-Mono-Implicit.html#t:Vec">Vec</a> n a -&gt; <a href="Numeric-Backprop-Mono-Implicit.html#t:Vec">Vec</a> n a <a href="src/Numeric.Backprop.Mono.Implicit.html#grad" class="link">Source</a> <a href="#v:grad" class="selflink">#</a></p><div class="doc"><p>Run the <code><a href="Numeric-Backprop-Mono-Implicit.html#t:BPOp">BPOp</a></code> on an input tuple and return the gradient of the result
  with respect to the input tuple.</p><pre>foo :: <code><a href="Numeric-Backprop-Mono-Implicit.html#t:BPOp">BPOp</a></code> <code><a href="Numeric-Backprop-Mono-Implicit.html#t:N2">N2</a></code> Double Double
 foo (x :* y :* &#216;V) =
   let z = x * sqrt y
   in  z + x ** y
-</pre><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>'grad' foo (2 :+ 3 :+ &#216;V)
+</pre><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>grad foo (2 :+ 3 :+ &#216;V)
 </code></strong>13.73 :+ 6.12 :+ &#216;V
 </pre></div></div><div class="top"><p class="src"><a id="v:eval" class="def">eval</a> :: <span class="keyword">forall</span> n a b. (<a href="../base-4.9.1.0/Prelude.html#t:Num">Num</a> a, <a href="../type-combinators-0.2.4.3/Type-Class-Known.html#t:Known">Known</a> <a href="../type-combinators-0.2.4.3/Data-Type-Nat.html#t:Nat">Nat</a> n) =&gt; <a href="Numeric-Backprop-Mono-Implicit.html#t:BPOp">BPOp</a> n a b -&gt; <a href="Numeric-Backprop-Mono-Implicit.html#t:Vec">Vec</a> n a -&gt; b <a href="src/Numeric.Backprop.Mono.Implicit.html#eval" class="link">Source</a> <a href="#v:eval" class="selflink">#</a></p><div class="doc"><p>Simply run the <code><a href="Numeric-Backprop-Mono-Implicit.html#t:BPOp">BPOp</a></code> on an input tuple, getting the result without
  bothering with the gradient or with back-propagation.</p><pre>foo :: <code><a href="Numeric-Backprop-Mono-Implicit.html#t:BPOp">BPOp</a></code> <code><a href="Numeric-Backprop-Mono-Implicit.html#t:N2">N2</a></code> Double Double
 foo (x :* y :* &#216;V) =
   let z = x * sqrt y
   in  z + x ** y
-</pre><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>'eval' foo (2 :+ 3 :+ &#216;V)
+</pre><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>eval foo (2 :+ 3 :+ &#216;V)
 </code></strong>11.46
 </pre></div></div><h1 id="g:5">Var manipulation</h1><div class="top"><p class="src"><a id="v:constVar" class="def">constVar</a> :: a -&gt; <a href="Numeric-Backprop-Mono-Implicit.html#t:BVar">BVar</a> s n r a <a href="src/Numeric.Backprop.Mono.html#constVar" class="link">Source</a> <a href="#v:constVar" class="selflink">#</a></p><div class="doc"><p>Create a <code><a href="Numeric-Backprop-Mono-Implicit.html#t:BVar">BVar</a></code> that represents just a specific value, that doesn't
  depend on any other <code><a href="Numeric-Backprop-Mono-Implicit.html#t:BVar">BVar</a></code>s.</p></div></div><div class="top"><p class="src"><a id="v:liftB" class="def">liftB</a> :: <span class="keyword">forall</span> s m n a b r. <a href="Numeric-Backprop-Mono-Implicit.html#t:OpB">OpB</a> s m a b -&gt; <a href="Numeric-Backprop-Mono-Implicit.html#t:VecT">VecT</a> m (<a href="Numeric-Backprop-Mono-Implicit.html#t:BVar">BVar</a> s n r) a -&gt; <a href="Numeric-Backprop-Mono-Implicit.html#t:BVar">BVar</a> s n r b <a href="src/Numeric.Backprop.Mono.html#liftB" class="link">Source</a> <a href="#v:liftB" class="selflink">#</a></p><div class="doc"><p>Apply <code><a href="Numeric-Backprop-Mono-Implicit.html#t:OpB">OpB</a></code> over a <code><a href="Numeric-Backprop-Mono-Implicit.html#t:VecT">VecT</a></code> of <code><a href="Numeric-Backprop-Mono-Implicit.html#t:BVar">BVar</a></code>s, as inputs. Provides &quot;implicit&quot;

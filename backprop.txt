@@ -4449,7 +4449,7 @@ I :: a -> I a
 --   </pre>
 --   
 --   <pre>
---   &gt;&gt;&gt; 'backprop' foo (2 :+ 3 :+ ØV)
+--   &gt;&gt;&gt; backprop foo (2 :+ 3 :+ ØV)
 --   (11.46, 13.73 :+ 6.12 :+ ØV)
 --   </pre>
 backprop :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> (b, Vec n a)
@@ -4465,7 +4465,7 @@ backprop :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> (b, V
 --   </pre>
 --   
 --   <pre>
---   &gt;&gt;&gt; 'grad' foo (2 :+ 3 :+ ØV)
+--   &gt;&gt;&gt; grad foo (2 :+ 3 :+ ØV)
 --   13.73 :+ 6.12 :+ ØV
 --   </pre>
 grad :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> Vec n a
@@ -4481,7 +4481,7 @@ grad :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> Vec n a
 --   </pre>
 --   
 --   <pre>
---   &gt;&gt;&gt; 'eval' foo (2 :+ 3 :+ ØV)
+--   &gt;&gt;&gt; eval foo (2 :+ 3 :+ ØV)
 --   11.46
 --   </pre>
 eval :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> b

@@ -106,7 +106,7 @@
 </span><a name="line-106"></a><span class="hs-comment">--   in  z + x ** y</span><span>
 </span><a name="line-107"></a><span class="hs-comment">-- @</span><span>
 </span><a name="line-108"></a><span class="hs-comment">--</span><span>
-</span><a name="line-109"></a><span class="hs-comment">-- &gt;&gt;&gt; 'backprop' foo (2 :+ 3 :+ &#216;V)</span><span>
+</span><a name="line-109"></a><span class="hs-comment">-- &gt;&gt;&gt; backprop foo (2 :+ 3 :+ &#216;V)</span><span>
 </span><a name="line-110"></a><span class="hs-comment">-- (11.46, 13.73 :+ 6.12 :+ &#216;V)</span><span>
 </span><a name="line-111"></a><span class="hs-identifier">backprop</span><span>
 </span><a name="line-112"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679255849"><a href="#local-6989586621679255849"><span class="hs-identifier">n</span></a></a><span> </span><a name="local-6989586621679255850"><a href="#local-6989586621679255850"><span class="hs-identifier">a</span></a></a><span> </span><a name="local-6989586621679255851"><a href="#local-6989586621679255851"><span class="hs-identifier">b</span></a></a><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Num</span><span> </span><a href="#local-6989586621679255850"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Known</span><span> </span><span class="hs-identifier hs-type">Nat</span><span> </span><a href="#local-6989586621679255849"><span class="hs-identifier hs-type">n</span></a><span class="hs-special">)</span><span>
@@ -125,7 +125,7 @@
 </span><a name="line-125"></a><span class="hs-comment">--   in  z + x ** y</span><span>
 </span><a name="line-126"></a><span class="hs-comment">-- @</span><span>
 </span><a name="line-127"></a><span class="hs-comment">--</span><span>
-</span><a name="line-128"></a><span class="hs-comment">-- &gt;&gt;&gt; 'grad' foo (2 :+ 3 :+ &#216;V)</span><span>
+</span><a name="line-128"></a><span class="hs-comment">-- &gt;&gt;&gt; grad foo (2 :+ 3 :+ &#216;V)</span><span>
 </span><a name="line-129"></a><span class="hs-comment">-- 13.73 :+ 6.12 :+ &#216;V</span><span>
 </span><a name="line-130"></a><span class="hs-identifier">grad</span><span>
 </span><a name="line-131"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679255846"><a href="#local-6989586621679255846"><span class="hs-identifier">n</span></a></a><span> </span><a name="local-6989586621679255847"><a href="#local-6989586621679255847"><span class="hs-identifier">a</span></a></a><span> </span><a name="local-6989586621679255848"><a href="#local-6989586621679255848"><span class="hs-identifier">b</span></a></a><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Num</span><span> </span><a href="#local-6989586621679255847"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Known</span><span> </span><span class="hs-identifier hs-type">Nat</span><span> </span><a href="#local-6989586621679255846"><span class="hs-identifier hs-type">n</span></a><span class="hs-special">)</span><span>
@@ -144,7 +144,7 @@
 </span><a name="line-144"></a><span class="hs-comment">--   in  z + x ** y</span><span>
 </span><a name="line-145"></a><span class="hs-comment">-- @</span><span>
 </span><a name="line-146"></a><span class="hs-comment">--</span><span>
-</span><a name="line-147"></a><span class="hs-comment">-- &gt;&gt;&gt; 'eval' foo (2 :+ 3 :+ &#216;V)</span><span>
+</span><a name="line-147"></a><span class="hs-comment">-- &gt;&gt;&gt; eval foo (2 :+ 3 :+ &#216;V)</span><span>
 </span><a name="line-148"></a><span class="hs-comment">-- 11.46</span><span>
 </span><a name="line-149"></a><span class="hs-identifier">eval</span><span>
 </span><a name="line-150"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679255843"><a href="#local-6989586621679255843"><span class="hs-identifier">n</span></a></a><span> </span><a name="local-6989586621679255844"><a href="#local-6989586621679255844"><span class="hs-identifier">a</span></a></a><span> </span><a name="local-6989586621679255845"><a href="#local-6989586621679255845"><span class="hs-identifier">b</span></a></a><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Num</span><span> </span><a href="#local-6989586621679255844"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Known</span><span> </span><span class="hs-identifier hs-type">Nat</span><span> </span><a href="#local-6989586621679255843"><span class="hs-identifier hs-type">n</span></a><span class="hs-special">)</span><span>
