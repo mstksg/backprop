@@ -106,7 +106,7 @@ type BPOp n a b = forall s. VecT n (BVar s n a) a -> BVar s n a b
 --   in  z + x ** y
 -- @
 --
--- >>> 'backprop' foo (2 :+ 3 :+ ØV)
+-- >>> backprop foo (2 :+ 3 :+ ØV)
 -- (11.46, 13.73 :+ 6.12 :+ ØV)
 backprop
     :: forall n a b. (Num a, Known Nat n)
@@ -125,7 +125,7 @@ backprop f = BP.backprop $ BP.withInps (return . f)
 --   in  z + x ** y
 -- @
 --
--- >>> 'grad' foo (2 :+ 3 :+ ØV)
+-- >>> grad foo (2 :+ 3 :+ ØV)
 -- 13.73 :+ 6.12 :+ ØV
 grad
     :: forall n a b. (Num a, Known Nat n)
@@ -144,7 +144,7 @@ grad f = snd . backprop f
 --   in  z + x ** y
 -- @
 --
--- >>> 'eval' foo (2 :+ 3 :+ ØV)
+-- >>> eval foo (2 :+ 3 :+ ØV)
 -- 11.46
 eval
     :: forall n a b. (Num a, Known Nat n)

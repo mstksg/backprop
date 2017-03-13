@@ -1,8 +1,10 @@
 /.stack-work
 /.shake
+/.build
 /tags
 /TAGS
 /data
+/samples-exe
 
 /bench-results
 /prof-results

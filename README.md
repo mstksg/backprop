@@ -39,9 +39,20 @@ Tutorial and example on training on the MNIST data set [available here as a
 literate haskell file][mnist-lhs], or [rendered here as a PDF][mnist-pdf]!
 **Read this first!**
 
-[mnist-lhs]: https://github.com/mstksg/backprop/blob/master/samples/MNIST.lhs
-[mnist-pdf]: https://github.com/mstksg/backprop/blob/master/renders/MNIST.pdf
+[mnist-lhs]: https://github.com/mstksg/backprop/blob/master/samples/backprop-mnist.lhs
+[mnist-pdf]: https://github.com/mstksg/backprop/blob/master/renders/backprop-mnist.pdf
 
+The [literate haskell file][mnist-lhs] is a standalone haskell file that you
+can compile (preferably with `-O2`) on its own with stack or some other
+dependency manager.  It can also be compiled with the build script in the
+project directory (if [stack][] is installed, and appropriate dependencies are
+installed), using
+
+[stack]: http://haskellstack.org/
+
+~~~bash
+$ ./Build.hs exe
+~~~
 
 Brief example
 -------------

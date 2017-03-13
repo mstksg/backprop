@@ -18,8 +18,8 @@ If you're reading this as a literate haskell file, you should know that a
 this as a pdf file, you should know that a [literate haskell version that
 you can run][lhs] is also available on github!
 
-[rendered]: https://github.com/mstksg/backprop/blob/master/renders/MNIST.pdf
-[lhs]: https://github.com/mstksg/backprop/blob/master/samples/MNIST.lhs
+[rendered]: https://github.com/mstksg/backprop/blob/master/renders/backprop-mnist.pdf
+[lhs]: https://github.com/mstksg/backprop/blob/master/samples/backprop-mnist.lhs
 
 
 > {-# LANGUAGE BangPatterns                     #-}

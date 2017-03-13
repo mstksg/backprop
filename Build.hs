@@ -16,19 +16,21 @@ data Doc = Lab
 main :: IO ()
 main = getDirectoryFilesIO "samples" ["/*.lhs"] >>= \allSamps ->
        getDirectoryFilesIO "src" ["//*.hs"]     >>= \allSrc ->
-       getDirectoryFilesIO "app" ["//*.hs"]     >>= \allApp ->
          shakeArgs opts $ do
 
     want ["all"]
 
     "all" ~>
-      need ["pdf", "md", "haddocks", "gentags", "install"]
+      need ["pdf", "md", "haddocks", "gentags", "install", "exe"]
 
     "pdf" ~>
       need (map (\f -> "renders" </> takeFileName f -<.> "pdf") allSamps)
 
     "md" ~>
       need (map (\f -> "renders" </> takeFileName f -<.> "md") allSamps)
+
+    "exe" ~>
+      need (map (\f -> "samples-exe" </> dropExtension f) allSamps)
 
     "haddocks" ~> do
       need (("src" </>) <$> allSrc)
@@ -37,7 +39,6 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>= \allSamps ->
     "install" ~> do
       need . concat $ [ ("src" </>)     <$> allSrc
                       , ("samples" </>) <$> allSamps
-                      , ("app" </>)     <$> allApp
                       ]
       cmd "stack install"
 
@@ -58,6 +59,22 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>= \allSamps ->
                    "-o" f
                    src
 
+    "samples-exe/*" %> \f -> do
+      let src = "samples" </> takeFileName f -<.> "lhs"
+      need ["install", src]
+      liftIO $ do
+        createDirectoryIfMissing True "samples-exe"
+        createDirectoryIfMissing True ".build"
+      removeFilesAfter "samples" ["/*.o"]
+      cmd "stack ghc --" src
+                         "-o" f
+                         "-hidir" ".build"
+                         "-threaded"
+                         "-rtsopts"
+                         "-with-rtsopts=-N"
+                         "-Wall"
+                         "-O2"
+
     ["tags","TAGS"] &%> \_ -> do
       need (("src" </>) <$> allSrc)
       cmd "hasktags" "src/"
@@ -65,4 +82,5 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>= \allSamps ->
     "clean" ~> do
       unit $ cmd "stack clean"
       removeFilesAfter ".shake" ["//*"]
+      removeFilesAfter ".build" ["//*"]
 
