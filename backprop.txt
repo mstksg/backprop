@@ -1696,8 +1696,8 @@ gSplits :: forall s rs b. (Generic b, Every (Every Num) (Code b)) => BVar s rs b
 --   </pre>
 gSOP :: Generic a => Iso' a (Sum Tuple (Code a))
 
--- | Special unsafe combinator that lets you pattern match and work on
---   GADTs.
+-- | Special <b>unsafe</b> combinator that lets you pattern match and work
+--   on GADTs.
 --   
 --   <pre>
 --   data MyGADT :: Bool -&gt; Type where

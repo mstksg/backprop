@@ -538,7 +538,7 @@ stuff = <code><a href="Numeric-Backprop.html#v:withInps">withInps</a></code> $ \
 </code></strong>A 15 False
 <code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>'review' 'gTuple' ('InR' ('InL' (&quot;bye&quot; ::&lt; 9.8 ::&lt; &#216;)))
 </code></strong>B &quot;bye&quot; 9.8
-</pre></div></div><h3 id="g:13">As GADTs</h3><div class="top"><p class="src"><a id="v:withGADT" class="def">withGADT</a> :: <span class="keyword">forall</span> s rs a b. <a href="Numeric-Backprop.html#t:BVar">BVar</a> s rs a -&gt; (a -&gt; <a href="Numeric-Backprop.html#t:BPCont">BPCont</a> s rs a b) -&gt; <a href="Numeric-Backprop.html#t:BP">BP</a> s rs b <a href="src/Numeric.Backprop.html#withGADT" class="link">Source</a> <a href="#v:withGADT" class="selflink">#</a></p><div class="doc"><p>Special unsafe combinator that lets you pattern match and work on
+</pre></div></div><h3 id="g:13">As GADTs</h3><div class="top"><p class="src"><a id="v:withGADT" class="def">withGADT</a> :: <span class="keyword">forall</span> s rs a b. <a href="Numeric-Backprop.html#t:BVar">BVar</a> s rs a -&gt; (a -&gt; <a href="Numeric-Backprop.html#t:BPCont">BPCont</a> s rs a b) -&gt; <a href="Numeric-Backprop.html#t:BP">BP</a> s rs b <a href="src/Numeric.Backprop.html#withGADT" class="link">Source</a> <a href="#v:withGADT" class="selflink">#</a></p><div class="doc"><p>Special <strong>unsafe</strong> combinator that lets you pattern match and work on
  GADTs.</p><pre>data MyGADT :: Bool -&gt; Type where
     A :: String -&gt; Int    -&gt; MyGADT 'True
     B :: Bool   -&gt; Double -&gt; MyGADT 'False

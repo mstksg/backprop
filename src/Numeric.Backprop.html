@@ -1398,7 +1398,7 @@ data BPCont :: Type -&gt; [Type] -&gt; Type -&gt; Type -&gt; Type where
         -&gt; (Prod (BVar s rs) as -&gt; BP s rs b)
         -&gt; BPCont s rs a b
 
--- | Special unsafe combinator that lets you pattern match and work on
+-- | Special __unsafe__ combinator that lets you pattern match and work on
 -- GADTs.
 --
 -- @
