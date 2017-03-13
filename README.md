@@ -192,22 +192,22 @@ Todo
 
 5.  Some open questions:
 
-    a.  Is it possible to offer pattern matching on sum types/with different
-        constructors for implicit-graph backprop?  It's possible for
-        explicit-graph versions already, with `choicesVar`, but not yet with
-        the implicit-graph interface.  Could be similar to an "Applicative vs.
-        Monad" issue where you can only have pre-determined fixed computation
-        paths when using `Applicative`, but I'm not sure.  Still, it would be
-        nice, because if this was possible, we could possibly do away with
-        explicit-graph mode completely.
+    a. Is it possible to offer pattern matching on sum types/with different
+       constructors for implicit-graph backprop?  It's possible for
+       explicit-graph versions already, with `choicesVar`, but not yet with
+       the implicit-graph interface.  Could be similar to an "Applicative vs.
+       Monad" issue where you can only have pre-determined fixed computation
+       paths when using `Applicative`, but I'm not sure.  Still, it would be
+       nice, because if this was possible, we could possibly do away with
+       explicit-graph mode completely.
 
-    b.  Though we already have safe sum type support with explicit-graph mode,
-        we can't support GADTs yet safely.  It'd be nice to see if this is
-        possible, because a lot of dependently typed neural network stuff is
-        made much simpler with GADTs.
+    b. Though we already have safe sum type support with explicit-graph mode,
+       we can't support GADTs yet safely.  It'd be nice to see if this is
+       possible, because a lot of dependently typed neural network stuff is
+       made much simpler with GADTs.
 
-        As of v0.0.3.0, we have a way of dealing with GADTs in explicit-graph
-        mode (using `withGADT`) that is *unsafe*, and requires some ugly manual
-        plumbing by the user that could potentially be confusing.  But it would
-        still be nice to have a way that is safe and doesn't require the manual
-        plumbing and isn't as easy to mess up.
+       As of v0.0.3.0, we have a way of dealing with GADTs in explicit-graph
+       mode (using `withGADT`) that is *unsafe*, and requires some ugly manual
+       plumbing by the user that could potentially be confusing.  But it would
+       still be nice to have a way that is safe and doesn't require the manual
+       plumbing and isn't as easy to mess up.
