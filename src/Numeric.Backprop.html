@@ -858,7 +858,7 @@ infixr 5 -$
     -&gt; Prod (BVar s rs) as
     -&gt; BPOp s rs a
 o -$ xs = bpOp o ~$ xs
-
+        
 -- | Create a 'BVar' that represents just a specific value, that doesn't
 -- depend on any other 'BVar's.
 constVar :: a -&gt; BVar s rs a
@@ -1085,6 +1085,7 @@ closeOff isTerminal gOut = \case
     fr | isTerminal = FRTerminal gOut
        | otherwise  = FRInternal (IRConst &lt;$&gt; maybeToList gOut)
 
+-- | WARNING: the gradient continuation must only be run ONCE!
 backpropWith
     :: Every Num rs
     =&gt; BPOp s rs a
