@@ -18,6 +18,7 @@ module Data.Type.Util (
     Replicate
   , unzipP
   , zipP
+  , tagSum
   , indexP
   , vecToProd
   , prodToVec'
@@ -37,7 +38,7 @@ module Data.Type.Util (
 
 import           Control.Applicative
 import           Data.Bifunctor
-import           Data.Kind
+-- import           Data.Kind
 import           Data.Monoid hiding    (Sum)
 import           Data.Type.Conjunction
 import           Data.Type.Fin
@@ -49,9 +50,9 @@ import           Data.Type.Sum
 import           Data.Type.Vector
 import           Lens.Micro
 import           Type.Class.Higher
-import           Type.Class.Known
+-- import           Type.Class.Known
 import           Type.Class.Witness
-import           Type.Family.List
+-- import           Type.Family.List
 import           Type.Family.Nat
 
 -- | @'Replicate' n a@ is a list of @a@s repeated @n@ times.
@@ -185,6 +186,7 @@ vecLength = \case
     ØV      -> Z_
     _ :* xs -> S_ (vecLength xs)
 
+-- | Currently not used
 tagSum
     :: Prod f as
     -> Sum g as

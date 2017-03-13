@@ -83,6 +83,8 @@ module Numeric.Backprop (
   , Sum(..)
   -- *** As sums of products
   , sopVar, gSplits, gSOP
+  -- *** As GADTs
+  , withGADT, BPCont(..)
   -- ** Combining
   , liftB, (.$), liftB1, liftB2, liftB3
   -- * Op
@@ -105,6 +107,7 @@ import           Control.Monad.Base
 import           Control.Monad.Reader
 import           Control.Monad.ST
 import           Control.Monad.State
+import           Data.Kind
 import           Data.Maybe
 import           Data.Monoid               ((<>))
 import           Data.STRef
@@ -1386,15 +1389,73 @@ liftB3
     -> BVar s rs d
 liftB3 o x y z = liftB o (x :< y :< z :< Ø)
 
+-- | For usage with 'withGADT', to handle constructors of a GADT.  See
+-- documentation for 'withGADT' for more information.
+data BPCont :: Type -> [Type] -> Type -> Type -> Type where
+    BPC :: Every Num as
+        => Tuple as
+        -> (Tuple as -> a)
+        -> (Prod (BVar s rs) as -> BP s rs b)
+        -> BPCont s rs a b
 
-
-
-
-
-
-
-
-
+-- | Special __unsafe__ combinator that lets you pattern match and work on
+-- GADTs.
+--
+-- @
+-- data MyGADT :: Bool -> Type where
+--     A :: String -> Int    -> MyGADT 'True
+--     B :: Bool   -> Double -> MyGADT 'False
+--
+--
+-- foo :: BP s '[ MyGADT b ] a
+-- foo = 'withInps' $ \\( gVar :< Ø ) -\>
+--     withGADT gVar $ \\case
+--       A s i -\> BPC (s ::< i ::< Ø) (\\(s' ::< i' ::< Ø) -\> A s i) $
+--         \\(sVar :< iVar) -> do
+--           -- .. in this 'BP' action, sVar and iVar are 'BPVar's that
+--           -- refer to the String and Int inside the A constructor in
+--           -- gVar
+--       B b d -\> BPC (b ::< d ::< Ø) (\\(b' ::< d' ::< Ø) -\> B b d) $
+--         \\(bVar :< dVar) -> do
+--           -- .. in this 'BP' action, bVar and dVar are 'BPVar's that
+--           -- refer to the Bool and DOuble inside the B constructor in
+--           -- gVar
+-- @
+--
+-- 'withGADT' lets to directly pattern match on the GADT, but as soon as
+-- you pattern match, you must handle the results with a 'BPCont'
+-- containing:
+--
+-- 1.   /All/ of the items inside the GADT constructor, in a 'Tuple'
+-- 2.   A function from a 'Tuple' of items inside the GADT constructor that
+--      assembles them back into the original /same/ constructor.
+-- 3.   A function from a 'Prod' of 'BVar's (that contain the items inside
+--      the constructor) and doing whatever you wanted to do with it,
+--      inside 'BP'.
+--
+-- If you don't provide all of the items inside the GADT into the 'BPC', or
+-- if your "re-assembling" function doesn't properly reassemble things
+-- correctly or changes some of the values, this will not work.
+--
+withGADT
+    :: forall s rs a b. ()
+    => BVar s rs a
+    -> (a -> BPCont s rs a b)
+    -> BP s rs b
+withGADT v f = do
+    x <- BP (resolveVar v)
+    case f x of
+      BPC (xs :: Tuple as) g h -> do
+        let bp :: BPNode s rs '[a] as
+            bp = BPN { _bpnOut       = map1 (const (FRInternal [])) xs
+                     , _bpnRes       = xs
+                     , _bpnGradFunc  = return . only_ . g
+                                     . imap1 (\ix -> every @_ @Num ix // maybe (I 1) I)
+                     , _bpnGradCache = Nothing
+                     }
+        r <- BP . liftBase $ newSTRef bp
+        registerVar (IRNode IZ r) v
+        h $ imap1 (\ix _ -> BVNode ix r) xs
 
 -- | Apply a function to the contents of an STRef, and cache the results
 -- using the given lens.  If already calculated, simply returned the cached

@@ -141,11 +141,9 @@ data BPState :: Type -> [Type] -> Type where
 -- 'Op' (or more precisely, an 'Numeric.Backprop.OpB', which is a subtype of
 -- 'OpM').  So, once you create your fancy 'BP' computation, you can
 -- transform it into an 'OpM' using 'Numeric.Backprop.bpOp'.
-newtype BP s rs a = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s)) a }
-      deriving ( Functor
-               , Applicative
-               , Monad
-               )
+newtype BP s rs a
+    = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s)) a }
+    deriving (Functor, Applicative, Monad)
 
 -- | The basic unit of manipulation inside 'BP' (or inside an
 -- implicit-graph backprop function).  Instead of directly working with
