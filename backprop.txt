@@ -1696,6 +1696,56 @@ gSplits :: forall s rs b. (Generic b, Every (Every Num) (Code b)) => BVar s rs b
 --   </pre>
 gSOP :: Generic a => Iso' a (Sum Tuple (Code a))
 
+-- | Special unsafe combinator that lets you pattern match and work on
+--   GADTs.
+--   
+--   <pre>
+--   data MyGADT :: Bool -&gt; Type where
+--       A :: String -&gt; Int    -&gt; MyGADT 'True
+--       B :: Bool   -&gt; Double -&gt; MyGADT 'False
+--   
+--   
+--   foo :: BP s '[ MyGADT b ] a
+--   foo = <a>withInps</a> $ \( gVar :&lt; Ø ) -&gt;
+--       withGADT gVar $ \case
+--         A s i -&gt; BPC (s ::&lt; i ::&lt; Ø) (\(s' ::&lt; i' ::&lt; Ø) -&gt; A s i) $
+--           \(sVar :<a>-</a> do
+--             -- .. in this <a>BP</a> action, sVar and iVar are <tt>BPVar</tt>s that
+--             -- refer to the String and Int inside the A constructor in
+--             -- gVar
+--         B b d -&gt; BPC (b ::&lt; d ::&lt; Ø) (\(b' ::&lt; d' ::&lt; Ø) -&gt; B b d) $
+--           \(bVar :<a>-</a> do
+--             -- .. in this <a>BP</a> action, bVar and dVar are <tt>BPVar</tt>s that
+--             -- refer to the Bool and DOuble inside the B constructor in
+--             -- gVar
+--   </pre>
+--   
+--   <a>withGADT</a> lets to directly pattern match on the GADT, but as
+--   soon as you pattern match, you must handle the results with a
+--   <a>BPCont</a> containing:
+--   
+--   <ol>
+--   <li><i>All</i> of the items inside the GADT constructor, in a
+--   <a>Tuple</a></li>
+--   <li>A function from a <a>Tuple</a> of items inside the GADT
+--   constructor that assembles them back into the original <i>same</i>
+--   constructor.</li>
+--   <li>A function from a <a>Prod</a> of <a>BVar</a>s (that contain the
+--   items inside the constructor) and doing whatever you wanted to do with
+--   it, inside <a>BP</a>.</li>
+--   </ol>
+--   
+--   If you don't provide all of the items inside the GADT into the
+--   <a>BPC</a>, or if your "re-assembling" function doesn't properly
+--   reassemble things correctly or changes some of the values, this will
+--   not work.
+withGADT :: forall s rs a b. BVar s rs a -> (a -> BPCont s rs a b) -> BP s rs b
+
+-- | For usage with <a>withGADT</a>, to handle constructors of a GADT. See
+--   documentation for <a>withGADT</a> for more information.
+data BPCont :: Type -> [Type] -> Type -> Type -> Type
+[BPC] :: Every Num as => Tuple as -> (Tuple as -> a) -> (Prod (BVar s rs) as -> BP s rs b) -> BPCont s rs a b
+
 -- | Apply <a>OpB</a> over a <a>Prod</a> of <a>BVar</a>s, as inputs.
 --   Provides "implicit-graph" back-propagation, with deferred evaluation.
 --   
