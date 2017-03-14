@@ -1,6 +1,20 @@
 Changelog
 =========
 
+Version 0.0.3.0
+---------------
+
+<https://github.com/mstksg/backprop/releases/tag/v0.0.3.0>
+
+*   Removed samples as registered executables in the cabal file, to reduce
+    dependences to a bare minimum.  For convenience, build script now also
+    compiles the samples into the local directory if *stack* is installed.
+
+*   Added experimental (unsafe) combinators for working with GADTs with
+    existential types, `withGADT`, to *Numeric.Backprop* module.
+
+*   Fixed broken links in Changelog.
+
 Version 0.0.2.0
 ---------------
 

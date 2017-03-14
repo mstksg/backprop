@@ -1,5 +1,5 @@
 name:                backprop
-version:             0.0.2.0
+version:             0.0.3.0
 synopsis:            Heterogeneous, type-safe automatic backpropagation in Haskell
 description:         See <https://github.com/mstksg/backprop#readme README.md>
                      .
@@ -21,10 +21,13 @@ build-type:          Simple
 extra-source-files:  README.md
                      CHANGELOG.md
                      Build.hs
-                     renders/MNIST.md
-                     renders/MNIST.pdf
-                     renders/NeuralTest.md
-                     renders/NeuralTest.pdf
+                     renders/backprop-mnist.md
+                     renders/backprop-mnist.pdf
+                     renders/backprop-neural-test.md
+                     renders/backprop-neural-test.pdf
+                     samples/backprop-mnist.lhs
+                     samples/backprop-monotest.hs
+                     samples/backprop-neural-test.lhs
 cabal-version:       >=1.10
 
 library
