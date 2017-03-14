@@ -6,8 +6,8 @@ description:         See <https://github.com/mstksg/backprop#readme README.md>
                      At the moment, this project is in pre-alpha, and is
                      published and put up on Hackage with 100% documentation
                      coverage as a call for comments and thoughts.  See
-                     <https://github.com/mstksg/backprop#todo TODO.md> section
-                     in the README for more information on what's missing and
+                     <https://github.com/mstksg/backprop#todo TODO> section in
+                     the README for more information on what's missing and
                      potential avenues for contribution.
 homepage:            https://github.com/mstksg/backprop
 bug-reports:         https://github.com/mstksg/backprop/issues

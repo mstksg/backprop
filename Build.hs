@@ -79,6 +79,7 @@ main = getDirectoryFilesIO "samples" ["/*.lhs", "/*.hs"] >>= \allSamps ->
                          "-Wall"
                          "-O2"
                          "-package backprop"
+                         "-package hmatrix"
 
     ["tags","TAGS"] &%> \_ -> do
       need (("src" </>) <$> allSrc)

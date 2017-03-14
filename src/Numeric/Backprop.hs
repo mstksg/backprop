@@ -130,10 +130,10 @@ import qualified Generics.SOP              as SOP
 
 -- $prod
 --
--- 'Prod', from the <http://hackage.haskell.org/package/type-combinators
--- type-combinators> library (in "Data.Type.Prod") is a heterogeneous
--- list/tuple type, which allows you to tuple together multiple values of
--- different types and operate on them generically.
+-- 'Prod', from the <http://hackage.haskell.org/package/type-combinators type-combinators>
+-- library (in "Data.Type.Product") is a heterogeneous list/tuple type, which
+-- allows you to tuple together multiple values of different types and
+-- operate on them generically.
 --
 -- A @'Prod' f '[a, b, c]@ contains an @f a@, an @f b@, and an @f c@, and
 -- is constructed by consing them together with ':<' (using 'Ø' as nil):
@@ -1412,12 +1412,12 @@ data BPCont :: Type -> [Type] -> Type -> Type -> Type where
 -- foo = 'withInps' $ \\( gVar :< Ø ) -\>
 --     withGADT gVar $ \\case
 --       A s i -\> BPC (s ::< i ::< Ø) (\\(s' ::< i' ::< Ø) -\> A s i) $
---         \\(sVar :< iVar) -> do
+--         \\(sVar :\< iVar) -\> do
 --           -- .. in this 'BP' action, sVar and iVar are 'BPVar's that
 --           -- refer to the String and Int inside the A constructor in
 --           -- gVar
 --       B b d -\> BPC (b ::< d ::< Ø) (\\(b' ::< d' ::< Ø) -\> B b d) $
---         \\(bVar :< dVar) -> do
+--         \\(bVar :\< dVar) -\> do
 --           -- .. in this 'BP' action, bVar and dVar are 'BPVar's that
 --           -- refer to the Bool and DOuble inside the B constructor in
 --           -- gVar

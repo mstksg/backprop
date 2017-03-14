@@ -13,7 +13,7 @@ Version 0.0.3.0
 *   Added experimental (unsafe) combinators for working with GADTs with
     existential types, `withGADT`, to *Numeric.Backprop* module.
 
-*   Fixed broken links in Changelog.
+*   Fixed broken links in changelog.
 
 Version 0.0.2.0
 ---------------
