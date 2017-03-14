@@ -14,8 +14,8 @@ opts = shakeOptions { shakeFiles     = ".shake"
 data Doc = Lab
 
 main :: IO ()
-main = getDirectoryFilesIO "samples" ["/*.lhs"] >>= \allSamps ->
-       getDirectoryFilesIO "src" ["//*.hs"]     >>= \allSrc ->
+main = getDirectoryFilesIO "samples" ["/*.lhs", "/*.hs"] >>= \allSamps ->
+       getDirectoryFilesIO "src"     ["//*.hs"]          >>= \allSrc ->
          shakeArgs opts $ do
 
     want ["all"]
@@ -24,10 +24,14 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>= \allSamps ->
       need ["pdf", "md", "haddocks", "gentags", "install", "exe"]
 
     "pdf" ~>
-      need (map (\f -> "renders" </> takeFileName f -<.> "pdf") allSamps)
+      need [ "renders" </> takeFileName f -<.> ".pdf"
+                | f <- allSamps, takeExtension f == ".lhs"
+           ]
 
     "md" ~>
-      need (map (\f -> "renders" </> takeFileName f -<.> "md") allSamps)
+      need [ "renders" </> takeFileName f -<.> ".md"
+                | f <- allSamps, takeExtension f == ".lhs"
+           ]
 
     "exe" ~>
       need (map (\f -> "samples-exe" </> dropExtension f) allSamps)
@@ -60,13 +64,13 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>= \allSamps ->
                    src
 
     "samples-exe/*" %> \f -> do
-      let src = "samples" </> takeFileName f -<.> "lhs"
-      need ["install", src]
+      need ["install"]
+      [src] <- getDirectoryFiles "samples" $ (takeFileName f <.>) <$> ["hs","lhs"]
       liftIO $ do
         createDirectoryIfMissing True "samples-exe"
         createDirectoryIfMissing True ".build"
       removeFilesAfter "samples" ["/*.o"]
-      cmd "stack ghc --" src
+      cmd "stack ghc --" ("samples" </> src)
                          "-o" f
                          "-hidir" ".build"
                          "-threaded"
@@ -74,6 +78,7 @@ main = getDirectoryFilesIO "samples" ["/*.lhs"] >>= \allSamps ->
                          "-with-rtsopts=-N"
                          "-Wall"
                          "-O2"
+                         "-package backprop"
 
     ["tags","TAGS"] &%> \_ -> do
       need (("src" </>) <$> allSrc)

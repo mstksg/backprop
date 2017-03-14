@@ -1085,6 +1085,7 @@ closeOff isTerminal gOut = \case
     fr | isTerminal = FRTerminal gOut
        | otherwise  = FRInternal (IRConst <$> maybeToList gOut)
 
+-- | WARNING: the gradient continuation must only be run ONCE!
 backpropWith
     :: Every Num rs
     => BPOp s rs a
