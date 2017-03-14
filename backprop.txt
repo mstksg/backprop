@@ -11,7 +11,7 @@
 --   and thoughts. See <a>TODO.md</a> section in the README for more
 --   information on what's missing and potential avenues for contribution.
 @package backprop
-@version 0.0.2.0
+@version 0.0.3.0
 
 
 -- | A poor substitute for the <a>Control.Lens.Iso</a> module in
