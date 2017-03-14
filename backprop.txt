@@ -8,7 +8,7 @@
 --   
 --   At the moment, this project is in pre-alpha, and is published and put
 --   up on Hackage with 100% documentation coverage as a call for comments
---   and thoughts. See <a>TODO.md</a> section in the README for more
+--   and thoughts. See <a>TODO</a> section in the README for more
 --   information on what's missing and potential avenues for contribution.
 @package backprop
 @version 0.0.3.0
@@ -1709,12 +1709,12 @@ gSOP :: Generic a => Iso' a (Sum Tuple (Code a))
 --   foo = <a>withInps</a> $ \( gVar :&lt; Ø ) -&gt;
 --       withGADT gVar $ \case
 --         A s i -&gt; BPC (s ::&lt; i ::&lt; Ø) (\(s' ::&lt; i' ::&lt; Ø) -&gt; A s i) $
---           \(sVar :<a>-</a> do
+--           \(sVar :&lt; iVar) -&gt; do
 --             -- .. in this <a>BP</a> action, sVar and iVar are <tt>BPVar</tt>s that
 --             -- refer to the String and Int inside the A constructor in
 --             -- gVar
 --         B b d -&gt; BPC (b ::&lt; d ::&lt; Ø) (\(b' ::&lt; d' ::&lt; Ø) -&gt; B b d) $
---           \(bVar :<a>-</a> do
+--           \(bVar :&lt; dVar) -&gt; do
 --             -- .. in this <a>BP</a> action, bVar and dVar are <tt>BPVar</tt>s that
 --             -- refer to the Bool and DOuble inside the B constructor in
 --             -- gVar

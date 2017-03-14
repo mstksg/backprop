@@ -102,10 +102,10 @@ foo (x :&lt; y :&lt; &#216;) = x + sqrt y
  a <code><a href="../base-4.9.1.0/Prelude.html#t:Double">Double</a></code> and produces a <code><a href="../base-4.9.1.0/Data-Bool.html#t:Bool">Bool</a></code>, and does it in a differentiable way.</p><p><code><a href="Numeric-Backprop.html#t:OpB">OpB</a></code> is a <em>superset</em> of <code><a href="Numeric-Backprop.html#t:Op">Op</a></code>, so, if you see any function
  that expects an <code><a href="Numeric-Backprop.html#t:OpB">OpB</a></code> (like <code><a href="Numeric-Backprop.html#v:opVar-39-">opVar'</a></code> and
  <code><a href="Numeric-Backprop.html#v:-126--36-">~$</a></code>, for example), you can give them an <code><a href="Numeric-Backprop.html#t:Op">Op</a></code>, as well.</p><p>You can think of <code><a href="Numeric-Backprop.html#t:OpB">OpB</a></code> as a superclass/parent class of <code><a href="Numeric-Backprop.html#t:Op">Op</a></code> in this
- sense, and of <code><a href="Numeric-Backprop.html#t:Op">Op</a></code> as a subclass of <code><a href="Numeric-Backprop.html#t:OpB">OpB</a></code>.</p></div></div><h2 id="g:3">Tuple types<a id="prod"></a></h2><div class="doc"><p><code><a href="Numeric-Backprop.html#t:Prod">Prod</a></code>, from the &lt;<a href="http://hackage.haskell.org/package/type-combinators">http://hackage.haskell.org/package/type-combinators</a>
- type-combinators&gt; library (in <a href="Data-Type-Prod.html">Data.Type.Prod</a>) is a heterogeneous
- list/tuple type, which allows you to tuple together multiple values of
- different types and operate on them generically.</p><p>A <code><code><a href="Numeric-Backprop.html#t:Prod">Prod</a></code> f '[a, b, c]</code> contains an <code>f a</code>, an <code>f b</code>, and an <code>f c</code>, and
+ sense, and of <code><a href="Numeric-Backprop.html#t:Op">Op</a></code> as a subclass of <code><a href="Numeric-Backprop.html#t:OpB">OpB</a></code>.</p></div></div><h2 id="g:3">Tuple types<a id="prod"></a></h2><div class="doc"><p><code><a href="Numeric-Backprop.html#t:Prod">Prod</a></code>, from the <a href="http://hackage.haskell.org/package/type-combinators">type-combinators</a>
+ library (in <a href="../type-combinators-0.2.4.3/Data-Type-Product.html">Data.Type.Product</a>) is a heterogeneous list/tuple type, which
+ allows you to tuple together multiple values of different types and
+ operate on them generically.</p><p>A <code><code><a href="Numeric-Backprop.html#t:Prod">Prod</a></code> f '[a, b, c]</code> contains an <code>f a</code>, an <code>f b</code>, and an <code>f c</code>, and
  is constructed by consing them together with <code><a href="Numeric-Backprop.html#v::-60-">:&lt;</a></code> (using '&#216;' as nil):</p><pre><code><a href="Numeric-Backprop.html#t:I">I</a></code> &quot;hello&quot; <code><a href="Numeric-Backprop.html#v::-60-">:&lt;</a></code> I True :&lt; I 7.8 :&lt; &#216;    :: <code><a href="Numeric-Backprop.html#t:Prod">Prod</a></code> <code><a href="Numeric-Backprop.html#t:I">I</a></code> '[String, Bool, Double]
 <code><a href="../type-combinators-0.2.4.3/Data-Type-Combinator.html#t:C">C</a></code> &quot;hello&quot; :&lt; C &quot;world&quot; :&lt; C &quot;ok&quot; :&lt; &#216;  :: <code><a href="Numeric-Backprop.html#t:Prod">Prod</a></code> (<code><a href="../type-combinators-0.2.4.3/Data-Type-Combinator.html#t:C">C</a></code> String) '[a, b, c]
 <code>Proxy</code> :&lt; Proxy :&lt; Proxy :&lt; &#216;           :: <code><a href="Numeric-Backprop.html#t:Prod">Prod</a></code> <code>Proxy</code> '[a, b, c]
@@ -548,12 +548,12 @@ foo :: BP s '[ MyGADT b ] a
 foo = <code><a href="Numeric-Backprop.html#v:withInps">withInps</a></code> $ \( gVar :&lt; &#216; ) -&gt;
     withGADT gVar $ \case
       A s i -&gt; BPC (s ::&lt; i ::&lt; &#216;) (\(s' ::&lt; i' ::&lt; &#216;) -&gt; A s i) $
-        \(sVar :<a href="iVar)">-</a> do
+        \(sVar :&lt; iVar) -&gt; do
           -- .. in this <code><a href="Numeric-Backprop.html#t:BP">BP</a></code> action, sVar and iVar are <code>BPVar</code>s that
           -- refer to the String and Int inside the A constructor in
           -- gVar
       B b d -&gt; BPC (b ::&lt; d ::&lt; &#216;) (\(b' ::&lt; d' ::&lt; &#216;) -&gt; B b d) $
-        \(bVar :<a href="dVar)">-</a> do
+        \(bVar :&lt; dVar) -&gt; do
           -- .. in this <code><a href="Numeric-Backprop.html#t:BP">BP</a></code> action, bVar and dVar are <code>BPVar</code>s that
           -- refer to the Bool and DOuble inside the B constructor in
           -- gVar

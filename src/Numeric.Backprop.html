@@ -130,10 +130,10 @@
 </span><a name="line-130"></a><span>
 </span><a name="line-131"></a><span class="hs-comment">-- $prod</span><span>
 </span><a name="line-132"></a><span class="hs-comment">--</span><span>
-</span><a name="line-133"></a><span class="hs-comment">-- 'Prod', from the &lt;http://hackage.haskell.org/package/type-combinators</span><span>
-</span><a name="line-134"></a><span class="hs-comment">-- type-combinators&gt; library (in &quot;Data.Type.Prod&quot;) is a heterogeneous</span><span>
-</span><a name="line-135"></a><span class="hs-comment">-- list/tuple type, which allows you to tuple together multiple values of</span><span>
-</span><a name="line-136"></a><span class="hs-comment">-- different types and operate on them generically.</span><span>
+</span><a name="line-133"></a><span class="hs-comment">-- 'Prod', from the &lt;http://hackage.haskell.org/package/type-combinators type-combinators&gt;</span><span>
+</span><a name="line-134"></a><span class="hs-comment">-- library (in &quot;Data.Type.Product&quot;) is a heterogeneous list/tuple type, which</span><span>
+</span><a name="line-135"></a><span class="hs-comment">-- allows you to tuple together multiple values of different types and</span><span>
+</span><a name="line-136"></a><span class="hs-comment">-- operate on them generically.</span><span>
 </span><a name="line-137"></a><span class="hs-comment">--</span><span>
 </span><a name="line-138"></a><span class="hs-comment">-- A @'Prod' f '[a, b, c]@ contains an @f a@, an @f b@, and an @f c@, and</span><span>
 </span><a name="line-139"></a><span class="hs-comment">-- is constructed by consing them together with ':&lt;' (using '&#216;' as nil):</span><span>
@@ -1412,12 +1412,12 @@ data BPCont :: Type -&gt; [Type] -&gt; Type -&gt; Type -&gt; Type where
 -- foo = 'withInps' $ \\( gVar :&lt; &#216; ) -\&gt;
 --     withGADT gVar $ \\case
 --       A s i -\&gt; BPC (s ::&lt; i ::&lt; &#216;) (\\(s' ::&lt; i' ::&lt; &#216;) -\&gt; A s i) $
---         \\(sVar :&lt; iVar) -&gt; do
+--         \\(sVar :\&lt; iVar) -\&gt; do
 --           -- .. in this 'BP' action, sVar and iVar are 'BPVar's that
 --           -- refer to the String and Int inside the A constructor in
 --           -- gVar
 --       B b d -\&gt; BPC (b ::&lt; d ::&lt; &#216;) (\\(b' ::&lt; d' ::&lt; &#216;) -\&gt; B b d) $
---         \\(bVar :&lt; dVar) -&gt; do
+--         \\(bVar :\&lt; dVar) -\&gt; do
 --           -- .. in this 'BP' action, bVar and dVar are 'BPVar's that
 --           -- refer to the Bool and DOuble inside the B constructor in
 --           -- gVar
