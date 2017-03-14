@@ -858,7 +858,7 @@ infixr 5 -$
     -&gt; Prod (BVar s rs) as
     -&gt; BPOp s rs a
 o -$ xs = bpOp o ~$ xs
-        
+
 -- | Create a 'BVar' that represents just a specific value, that doesn't
 -- depend on any other 'BVar's.
 constVar :: a -&gt; BVar s rs a
