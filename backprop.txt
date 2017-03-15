@@ -128,6 +128,8 @@ view :: Getting a s a -> s -> a
 -- | A useful <a>Iso</a> between two types with the same runtime
 --   representation.
 coerced :: Coercible s a => Iso' s a
+tup2 :: forall a b. Iso' (a, b) (Tuple '[a, b])
+tup3 :: forall a b c. Iso' (a, b, c) (Tuple '[a, b, c])
 
 -- | An <a>Iso</a> between a type that is a product type, and a tuple that
 --   contains all of its components. Uses <a>Generics.SOP</a> and the
