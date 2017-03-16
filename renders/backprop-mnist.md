@@ -219,9 +219,7 @@ Finally, an operation to sum all of the items in the vector.
 vsum
     :: KnownNat n
     => Op '[ R n ] Double
-vsum = op1' $ \x -> (norm_1 x, \case Nothing -> signum x
-                                     Just g  -> konst g * signum x
-                    )
+vsum = op1' $ \x -> (HM.sumElements (extract x), maybe 1 konst)
 ```
 
 And why not, here’s the [logistic function], which we’ll use as an
