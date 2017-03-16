@@ -154,7 +154,7 @@ import qualified Numeric.Backprop                 as BP
 -- z :: a
 -- k :: a
 --
--- x '::<' y ::< z ::< k ::< ØV :: 'Vec' 'N4' a
+-- x ':+' y :+ z :+ k :+ ØV :: 'Vec' 'N4' a
 -- @
 
 -- | A Monad allowing you to explicitly build hetereogeneous data
