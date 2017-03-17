@@ -31,7 +31,7 @@ module Numeric.Backprop.Iso (
   , from, review, view
   -- * Useful Isos
   , coerced
-  , tup2, tup3
+  , tup1, tup2, tup3
   , gTuple, gSOP
   , sum1, resum1
   -- * Utility types
@@ -207,6 +207,14 @@ nsSum = iso to_ from_
     from_ = \case
       InL x  -> SOP.Z x
       InR xs -> SOP.S (from_ xs)
+
+tup1 :: forall a b. Iso' a (Tuple '[a])
+tup1 = iso to_ from_
+  where
+    to_   :: a -> Tuple '[a]
+    to_   = only_
+    from_ :: Tuple '[a] -> a
+    from_ = getI . head'
 
 tup2 :: forall a b. Iso' (a, b) (Tuple '[a, b])
 tup2 = iso to_ from_
