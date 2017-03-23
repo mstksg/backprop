@@ -128,6 +128,7 @@ view :: Getting a s a -> s -> a
 -- | A useful <a>Iso</a> between two types with the same runtime
 --   representation.
 coerced :: Coercible s a => Iso' s a
+tup1 :: forall a b. Iso' a (Tuple '[a])
 tup2 :: forall a b. Iso' (a, b) (Tuple '[a, b])
 tup3 :: forall a b c. Iso' (a, b, c) (Tuple '[a, b, c])
 
@@ -1216,6 +1217,12 @@ opVar3 :: Num d => OpB s '[a, b, c] '[d] -> BVar s rs a -> BVar s rs b -> BVar s
 --   <a>BVar</a>s from your current environment.
 (-$) :: (Every Num as, Known Length as, Num a) => BPOp s as '[a] -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
 infixr 5 -$
+opVarMulti :: forall s rs as bs. Every Num bs => OpB s as bs -> Prod (BVar s rs) as -> BP s rs (Prod (BVar s rs) bs)
+(~$$) :: Every Num bs => OpB s as bs -> Prod (BVar s rs) as -> BP s rs (Prod (BVar s rs) bs)
+infixr 5 ~$$
+(-$$) :: (Every Num as, Known Length as, Every Num bs) => BPOp s as bs -> Prod (BVar s rs) as -> BP s rs (Prod (BVar s rs) bs)
+infixr 5 -$$
+isoVar :: forall s rs as bs. (Every Num bs) => Iso' (Tuple as) (Tuple bs) -> Prod (BVar s rs) as -> BPOp s rs bs
 
 -- | Use an <a>Iso</a> (or compatible <a>Iso</a> from the lens library) to
 --   "pull out" the parts of a data type and work with each part as a
@@ -3602,7 +3609,7 @@ inpVars :: Known Nat n => VecT n (BVar s n r) r
 --   Handy because an <a>OpB</a> can be used with almost all of the
 --   <a>Op</a>-related functions in this moduel, including <a>opVar</a>,
 --   <a>~$</a>, etc.
-bpOp :: forall s n r a. (Num r, Known Nat n) => BPOp s n N1 r a -> OpB s n N1 r a
+bpOp :: forall s n m r a. (Num r, Known Nat n) => BPOp s n m r a -> OpB s n m r a
 
 -- | A version of <a>bpOp'</a> taking explicit <a>Nat</a>, indicating the
 --   size of the input <a>VecT</a>.
@@ -3796,6 +3803,11 @@ opVar3 :: forall s n r a b. Num b => OpB s N3 N1 a b -> BVar s n r a -> BVar s n
 --   <a>BVar</a>s from your current environment.
 (-$) :: forall s m n r a b. (Num a, Num b, Known Nat m) => BPOp s m N1 a b -> VecT m (BVar s n r) a -> BP s n r (BVar s n r b)
 infixr 5 -$
+opVarMulti :: forall s m n o r a b. (Num b, Known Nat n) => OpB s m n a b -> VecT m (BVar s o r) a -> BP s o r (VecT n (BVar s o r) b)
+(~$$) :: forall s m n o r a b. (Num b, Known Nat n) => OpB s m n a b -> VecT m (BVar s o r) a -> BP s o r (VecT n (BVar s o r) b)
+infixr 5 ~$$
+(-$$) :: forall s m n o r a b. (Num b, Known Nat n, Num a, Known Nat m) => BPOp s m n a b -> VecT m (BVar s o r) a -> BP s o r (VecT n (BVar s o r) b)
+infixr 5 -$$
 
 -- | Apply <a>OpB</a> over a <a>VecT</a> of <a>BVar</a>s, as inputs.
 --   Provides "implicit" back-propagation, with deferred evaluation.
