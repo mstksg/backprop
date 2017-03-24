@@ -241,7 +241,7 @@ module Numeric.Backprop.Op
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
 --   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
 --   you can provide an <tt><a>Op</a> as a</tt>.
-type Op as bs = forall m. Monad m => OpM m as bs
+type Op as a = forall m. Monad m => OpM m as a
 
 -- | Construct an <a>Op</a> by giving a function creating the result, and
 --   also a continuation on how to create the gradient, given the total
@@ -271,7 +271,7 @@ type Op as bs = forall m. Monad m => OpM m as bs
 --   
 --   See <a>runOpM</a>, <a>gradOpM</a>, and <a>gradOpWithM</a> for examples
 --   on how to run it.
-newtype OpM m as bs
+newtype OpM m as a
 
 -- | Construct an <a>OpM</a> by giving a (monadic) function creating the
 --   result, and also a continuation on how to create the gradient, given
@@ -279,7 +279,7 @@ newtype OpM m as bs
 --   
 --   See the module documentation for <a>Numeric.Backprop.Op</a> for more
 --   details on the function that this constructor and <a>Op</a> expect.
-OpM :: (Tuple as -> m (Tuple bs, Prod Maybe bs -> m (Tuple as))) -> OpM m as bs
+OpM :: (Tuple as -> m (a, Maybe a -> m (Tuple as))) -> OpM m as a
 data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
 [Ø] :: Prod k f ([] k)
 [:<] :: Prod k f ((:) k a1 as)
@@ -296,7 +296,7 @@ I :: a -> I a
 --   &gt;&gt;&gt; runOp (op2 (*)) (3 ::&lt; 5 ::&lt; Ø)
 --   15
 --   </pre>
-runOp :: Op as bs -> Tuple as -> Tuple bs
+runOp :: Op as a -> Tuple as -> a
 
 -- | Run the function that an <a>Op</a> encodes, and get the gradient of
 --   the output with respect to the inputs.
@@ -306,7 +306,7 @@ runOp :: Op as bs -> Tuple as -> Tuple bs
 --   5 ::&lt; 3 ::&lt; Ø
 --   -- the gradient of x*y is (y, x)
 --   </pre>
-gradOp :: Known Length bs => Op as bs -> Tuple as -> Tuple as
+gradOp :: Op as a -> Tuple as -> Tuple as
 
 -- | Run the function that an <a>Op</a> encodes, to get the resulting
 --   output and also its gradient with respect to the inputs.
@@ -315,7 +315,7 @@ gradOp :: Known Length bs => Op as bs -> Tuple as -> Tuple as
 --   &gt;&gt;&gt; gradOpM' (op2 (*)) (3 ::&lt; 5 ::&lt; Ø) :: IO (Int, Tuple '[Int, Int])
 --   (15, 5 ::&lt; 3 ::&lt; Ø)
 --   </pre>
-gradOp' :: Known Length bs => Op as bs -> Tuple as -> (Tuple bs, Tuple as)
+gradOp' :: Op as a -> Tuple as -> (a, Tuple as)
 
 -- | Run the function that an <a>Op</a> encodes, and get the gradient of a
 --   "final result" with respect to the inputs, given the total derivative
@@ -323,7 +323,7 @@ gradOp' :: Known Length bs => Op as bs -> Tuple as -> (Tuple bs, Tuple as)
 --   
 --   See <a>gradOp</a> and the module documentaiton for
 --   <a>Numeric.Backprop.Op</a> for more information.
-gradOpWith :: Op as bs -> Tuple as -> Tuple bs -> Tuple as
+gradOpWith :: Op as a -> Tuple as -> a -> Tuple as
 
 -- | A combination of <a>gradOp</a> and <a>gradOpWith</a>. The third
 --   argument is (optionally) the total derivative the result. Give
@@ -335,7 +335,7 @@ gradOpWith :: Op as bs -> Tuple as -> Tuple bs -> Tuple as
 --   
 --   See <a>gradOp</a> and the module documentaiton for
 --   <a>Numeric.Backprop.Op</a> for more information.
-gradOpWith' :: Op as bs -> Tuple as -> Prod Maybe bs -> Tuple as
+gradOpWith' :: Op as a -> Tuple as -> Maybe a -> Tuple as
 
 -- | A combination of <a>runOp</a> and <a>gradOpWith'</a>. Given an
 --   <a>Op</a> and inputs, returns the result of the <a>Op</a> and a
@@ -344,7 +344,7 @@ gradOpWith' :: Op as bs -> Tuple as -> Prod Maybe bs -> Tuple as
 --   The continuation takes the total derivative of the result as input.
 --   See documenation for <a>gradOpWith'</a> and module documentation for
 --   <a>Numeric.Backprop.Op</a> for more information.
-runOp' :: Op as bs -> Tuple as -> (Tuple bs, Prod Maybe bs -> Tuple as)
+runOp' :: Op as a -> Tuple as -> (a, Maybe a -> Tuple as)
 
 -- | The monadic version of <a>runOp</a>, for <a>OpM</a>s.
 --   
@@ -352,19 +352,19 @@ runOp' :: Op as bs -> Tuple as -> (Tuple bs, Prod Maybe bs -> Tuple as)
 --   &gt;&gt;&gt; runOpM (op2 (*)) (3 ::&lt; 5 ::&lt; Ø) :: IO Int
 --   15
 --   </pre>
-runOpM :: Functor m => OpM m as bs -> Tuple as -> m (Tuple bs)
+runOpM :: Functor m => OpM m as a -> Tuple as -> m a
 
 -- | The monadic version of <a>gradOp</a>, for <a>OpM</a>s.
-gradOpM :: (Known Length bs, Monad m) => OpM m as bs -> Tuple as -> m (Tuple as)
+gradOpM :: Monad m => OpM m as a -> Tuple as -> m (Tuple as)
 
 -- | The monadic version of <a>gradOp'</a>, for <a>OpM</a>s.
-gradOpM' :: (Monad m, Known Length bs) => OpM m as bs -> Tuple as -> m (Tuple bs, Tuple as)
+gradOpM' :: Monad m => OpM m as a -> Tuple as -> m (a, Tuple as)
 
 -- | The monadic version of <a>gradOpWith</a>, for <a>OpM</a>s.
-gradOpWithM :: Monad m => OpM m as bs -> Tuple as -> Tuple bs -> m (Tuple as)
+gradOpWithM :: Monad m => OpM m as a -> Tuple as -> a -> m (Tuple as)
 
 -- | The monadic version of <a>gradOpWith'</a>, for <a>OpM</a>s.
-gradOpWithM' :: Monad m => OpM m as bs -> Tuple as -> Prod Maybe bs -> m (Tuple as)
+gradOpWithM' :: Monad m => OpM m as a -> Tuple as -> Maybe a -> m (Tuple as)
 
 -- | A combination of <a>runOpM</a> and <a>gradOpWithM'</a>. Given an
 --   <a>OpM</a> and inputs, returns the result of the <a>OpM</a> and a
@@ -373,10 +373,54 @@ gradOpWithM' :: Monad m => OpM m as bs -> Tuple as -> Prod Maybe bs -> m (Tuple 
 --   The continuation takes the total derivative of the result as input.
 --   See documenation for <a>gradOpWithM'</a> and module documentation for
 --   <a>Numeric.Backprop.Op</a> for more information.
-runOpM' :: OpM m as bs -> Tuple as -> m (Tuple bs, Prod Maybe bs -> m (Tuple as))
-composeOp :: forall m as bs cs. Monad m => OpM m as bs -> OpM m bs cs -> OpM m as cs
-(~.) :: forall m as bs cs. Monad m => OpM m bs cs -> OpM m as bs -> OpM m as cs
+runOpM' :: OpM m as a -> Tuple as -> m (a, Maybe a -> m (Tuple as))
+
+-- | Compose <a>OpM</a>s together, similar to <a>.</a>. But, because all
+--   <a>OpM</a>s are &lt;math&gt;, this is more like <a>sequence</a> for
+--   functions, or <tt>liftAN</tt>.
+--   
+--   That is, given an <tt><a>OpM</a> m as b1</tt>, an <tt><a>OpM</a> m as
+--   b2</tt>, and an <tt><a>OpM</a> m as b3</tt>, it can compose them with
+--   an <tt><a>OpM</a> m '[b1,b2,b3] c</tt> to create an <tt><a>OpM</a> m
+--   as c</tt>.
+composeOp :: (Monad m, Every Num as, Known Length as) => Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
+
+-- | Convenient wrapper over <a>composeOp</a> for the case where the second
+--   function only takes one input, so the two <a>OpM</a>s can be directly
+--   piped together, like for <a>.</a>.
+composeOp1 :: (Monad m, Every Num as, Known Length as) => OpM m as b -> OpM m '[b] c -> OpM m as c
+
+-- | Convenient infix synonym for (flipped) <a>composeOp1</a>. Meant to be
+--   used just like <a>.</a>:
+--   
+--   <pre>
+--   <a>op1</a> negate            :: <a>Op</a> '[a]   a
+--   <a>op2</a> (+)               :: Op '[a,a] a
+--   
+--   op1 negate <a>~.</a> op2 (+) :: Op '[a, a] a
+--   </pre>
+(~.) :: (Monad m, Known Length as, Every Num as) => OpM m '[b] c -> OpM m as b -> OpM m as c
 infixr 9 ~.
+
+-- | A version of <a>composeOp</a> taking explicit <a>Length</a>,
+--   indicating the number of inputs expected and their types.
+--   
+--   Requiring an explicit <a>Length</a> is mostly useful for rare
+--   "extremely polymorphic" situations, where GHC can't infer the type and
+--   length of the the expected input tuple. If you ever actually
+--   explicitly write down <tt>as</tt> as a list of types, you should be
+--   able to just use <a>composeOp</a>.
+composeOp' :: forall m as bs c. (Monad m, Every Num as) => Length as -> Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
+
+-- | A version of <a>composeOp1</a> taking explicit <a>Length</a>,
+--   indicating the number of inputs expected and their types.
+--   
+--   Requiring an explicit <a>Length</a> is mostly useful for rare
+--   "extremely polymorphic" situations, where GHC can't infer the type and
+--   length of the the expected input tuple. If you ever actually
+--   explicitly write down <tt>as</tt> as a list of types, you should be
+--   able to just use <a>composeOp1</a>.
+composeOp1' :: (Monad m, Every Num as) => Length as -> OpM m as b -> OpM m '[b] c -> OpM m as c
 
 -- | Create an <a>Op</a> that takes no inputs and always returns the given
 --   value.
@@ -394,7 +438,7 @@ infixr 9 ~.
 --   
 --   Note that because this returns an <a>Op</a>, it can be used with any
 --   function that expects an <a>OpM</a> or <a>OpB</a>, as well.
-op0 :: Tuple as -> Op '[] as
+op0 :: a -> Op '[] a
 
 -- | An <a>Op</a> that ignores all of its inputs and returns a given
 --   constant value.
@@ -403,7 +447,7 @@ op0 :: Tuple as -> Op '[] as
 --   &gt;&gt;&gt; gradOp' (opConst 10) (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø)
 --   (10, 0 ::&lt; 0 ::&lt; 0 ::&lt; Ø)
 --   </pre>
-opConst :: forall as bs. (Every Num as, Known Length as) => Tuple bs -> Op as bs
+opConst :: forall as a. (Every Num as, Known Length as) => a -> Op as a
 
 -- | A version of <a>opConst</a> taking explicit <a>Length</a>, indicating
 --   the number of inputs and their types.
@@ -413,7 +457,7 @@ opConst :: forall as bs. (Every Num as, Known Length as) => Tuple bs -> Op as bs
 --   length of the the expected input tuple. If you ever actually
 --   explicitly write down <tt>as</tt> as a list of types, you should be
 --   able to just use <a>opConst</a>.
-opConst' :: forall as bs. Every Num as => Length as -> Tuple bs -> Op as bs
+opConst' :: forall as a. Every Num as => Length as -> a -> Op as a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking one
 --   argument. Uses <a>diff</a>, and so can take any numerical function
@@ -423,7 +467,7 @@ opConst' :: forall as bs. Every Num as => Length as -> Tuple bs -> Op as bs
 --   &gt;&gt;&gt; gradOp' (op1 (recip . negate)) (5 ::&lt; Ø)
 --   (-0.2, 0.04 ::&lt; Ø)
 --   </pre>
-op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] '[a]
+op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking two
 --   arguments. Uses <a>grad</a>, and so can take any numerical function
@@ -433,7 +477,7 @@ op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] '[a]
 --   &gt;&gt;&gt; gradOp' (op2 (\x y -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
 --   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
 --   </pre>
-op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] '[a]
+op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking three
 --   arguments. Uses <a>grad</a>, and so can take any numerical function
@@ -443,7 +487,7 @@ op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   &gt;&gt;&gt; gradOp' (op3 (\x y z -&gt; (x * sqrt y)**z)) (3 ::&lt; 4 ::&lt; 2 ::&lt; Ø)
 --   (36.0, 24.0 ::&lt; 9.0 ::&lt; 64.503 ::&lt; Ø)
 --   </pre>
-op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] '[a]
+op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking
 --   multiple arguments. Uses <a>grad</a>, and so can take any numerical
@@ -453,7 +497,7 @@ op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   &gt;&gt;&gt; gradOp' (opN (\(x :+ y :+ Ø) -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
 --   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
 --   </pre>
-opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) '[a]
+opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
 
 -- | <tt><a>Replicate</a> n a</tt> is a list of <tt>a</tt>s repeated
 --   <tt>n</tt> times.
@@ -501,7 +545,7 @@ opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) 
 --   
 --   For numeric functions, single-input <a>Op</a>s can be generated
 --   automatically using <a>op1</a>.
-op1' :: (a -> (Tuple bs, Prod Maybe bs -> a)) -> Op '[a] bs
+op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
 
 -- | Create an <a>Op</a> of a function taking two inputs, by giving its
 --   explicit gradient. The function should return a tuple containing the
@@ -538,11 +582,11 @@ op1' :: (a -> (Tuple bs, Prod Maybe bs -> a)) -> Op '[a] bs
 --   
 --   For numeric functions, two-input <a>Op</a>s can be generated
 --   automatically using <a>op2</a>.
-op2' :: (a -> b -> (Tuple cs, Prod Maybe cs -> (a, b))) -> Op '[a, b] cs
+op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a, b] c
 
 -- | Create an <a>Op</a> of a function taking three inputs, by giving its
 --   explicit gradient. See documentation for <a>op2'</a> for more details.
-op3' :: (a -> b -> c -> (Tuple ds, Prod Maybe ds -> (a, b, c))) -> Op '[a, b, c] ds
+op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a, b, c] d
 
 -- | An <a>Op</a> that coerces an item into another item whose type has the
 --   same runtime representation. Requires the input to be an instance of
@@ -556,7 +600,16 @@ op3' :: (a -> b -> c -> (Tuple ds, Prod Maybe ds -> (a, b, c))) -> Op '[a, b, c]
 --   <pre>
 --   <a>opCoerce</a> = <a>opIso</a> <a>coerced</a>
 --   </pre>
-opCoerce :: Num a => Coercible a b => Op '[a] '[b]
+opCoerce :: Num a => Coercible a b => Op '[a] b
+
+-- | An <a>Op</a> that takes <tt>as</tt> and returns exactly the input
+--   tuple.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' opTup (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø)
+--   (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø, 1 ::&lt; 1 ::&lt; 1 ::&lt; Ø)
+--   </pre>
+opTup :: (Every Num as, Known Length as) => Length as -> Op as (Tuple as)
 
 -- | An <a>Op</a> that runs the input value through the isomorphism encoded
 --   in the <a>Iso</a>. Requires the input to be an instance of <a>Num</a>.
@@ -565,7 +618,17 @@ opCoerce :: Num a => Coercible a b => Op '[a] '[b]
 --   have derivative 1, so will break for things like
 --   <a>exponentiating</a>. Basically, don't use this for any "numeric"
 --   isomorphisms.
-opIso :: Num a => Iso' a b -> Op '[a] '[b]
+opIso :: Num a => Iso' a b -> Op '[a] b
+
+-- | A version of <a>opTup</a> taking explicit <a>Length</a>, indicating
+--   the number of inputs expected and their types.
+--   
+--   Requiring an explicit <a>Length</a> is mostly useful for rare
+--   "extremely polymorphic" situations, where GHC can't infer the type and
+--   length of the the expected input tuple. If you ever actually
+--   explicitly write down <tt>as</tt> as a list of types, you should be
+--   able to just use <a>opTup</a>.
+opTup' :: Every Num as => Length as -> Op as (Tuple as)
 
 -- | Construct a two element Prod. Since the precedence of (:&gt;) is
 --   higher than (:&lt;), we can conveniently write lists like:
@@ -592,82 +655,82 @@ infixr 5 ::<
 only_ :: a -> Tuple ((:) * a ([] *))
 
 -- | Optimized version of <tt><a>op1</a> (<a>+</a>)</tt>.
-(+.) :: Num a => Op '[a, a] '[a]
+(+.) :: Num a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op1</a> (<a>-</a>)</tt>.
-(-.) :: Num a => Op '[a, a] '[a]
+(-.) :: Num a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op1</a> (<a>*</a>)</tt>.
-(*.) :: Num a => Op '[a, a] '[a]
+(*.) :: Num a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>negate</a></tt>.
-negateOp :: Num a => Op '[a] '[a]
+negateOp :: Num a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>abs</a></tt>.
-absOp :: Num a => Op '[a] '[a]
+absOp :: Num a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>signum</a></tt>.
-signumOp :: Num a => Op '[a] '[a]
+signumOp :: Num a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> (<a>/</a>)</tt>.
-(/.) :: Fractional a => Op '[a, a] '[a]
+(/.) :: Fractional a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>recip</a></tt>.
-recipOp :: Fractional a => Op '[a] '[a]
+recipOp :: Fractional a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>exp</a></tt>.
-expOp :: Floating a => Op '[a] '[a]
+expOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>log</a></tt>.
-logOp :: Floating a => Op '[a] '[a]
+logOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>sqrt</a></tt>.
-sqrtOp :: Floating a => Op '[a] '[a]
+sqrtOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> (<a>**</a>)</tt>.
-(**.) :: Floating a => Op '[a, a] '[a]
+(**.) :: Floating a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op2</a> <a>logBase</a></tt>.
-logBaseOp :: Floating a => Op '[a, a] '[a]
+logBaseOp :: Floating a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>sin</a></tt>.
-sinOp :: Floating a => Op '[a] '[a]
+sinOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>cos</a></tt>.
-cosOp :: Floating a => Op '[a] '[a]
+cosOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>tan</a></tt>.
-tanOp :: Floating a => Op '[a] '[a]
+tanOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>asin</a></tt>.
-asinOp :: Floating a => Op '[a] '[a]
+asinOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>acos</a></tt>.
-acosOp :: Floating a => Op '[a] '[a]
+acosOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>atan</a></tt>.
-atanOp :: Floating a => Op '[a] '[a]
+atanOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>sinh</a></tt>.
-sinhOp :: Floating a => Op '[a] '[a]
+sinhOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>cosh</a></tt>.
-coshOp :: Floating a => Op '[a] '[a]
+coshOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>tanh</a></tt>.
-tanhOp :: Floating a => Op '[a] '[a]
+tanhOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>asinh</a></tt>.
-asinhOp :: Floating a => Op '[a] '[a]
+asinhOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>acosh</a></tt>.
-acoshOp :: Floating a => Op '[a] '[a]
+acoshOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>atanh</a></tt>.
-atanhOp :: Floating a => Op '[a] '[a]
-instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Num.Num as, GHC.Num.Num a) => GHC.Num.Num (Numeric.Backprop.Op.OpM m as '[a])
-instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Real.Fractional as, Data.Type.Index.Every GHC.Num.Num as, GHC.Real.Fractional a) => GHC.Real.Fractional (Numeric.Backprop.Op.OpM m as '[a])
-instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Float.Floating as, Data.Type.Index.Every GHC.Real.Fractional as, Data.Type.Index.Every GHC.Num.Num as, GHC.Float.Floating a) => GHC.Float.Floating (Numeric.Backprop.Op.OpM m as '[a])
+atanhOp :: Floating a => Op '[a] a
+instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Num.Num as, GHC.Num.Num a) => GHC.Num.Num (Numeric.Backprop.Op.OpM m as a)
+instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Real.Fractional as, Data.Type.Index.Every GHC.Num.Num as, GHC.Real.Fractional a) => GHC.Real.Fractional (Numeric.Backprop.Op.OpM m as a)
+instance (GHC.Base.Monad m, Type.Class.Known.Known Data.Type.Length.Length as, Data.Type.Index.Every GHC.Float.Floating as, Data.Type.Index.Every GHC.Real.Fractional as, Data.Type.Index.Every GHC.Num.Num as, GHC.Float.Floating a) => GHC.Float.Floating (Numeric.Backprop.Op.OpM m as a)
 
 
 -- | Provides the <a>BP</a> monad and the <a>BVar</a> type; after
@@ -767,7 +830,7 @@ data BP s rs a
 --   
 --   See documentation for <a>BP</a> for an explanation of the phantom type
 --   parameter <tt>s</tt>.
-type BPOp s rs as = BP s rs (Prod (BVar s rs) as)
+type BPOp s rs a = BP s rs (BVar s rs a)
 
 -- | An "implicit" operation on <a>BVar</a>s that can be backpropagated. A
 --   value of type:
@@ -791,7 +854,7 @@ type BPOp s rs as = BP s rs (Prod (BVar s rs) as)
 --   the <a>implicitly</a> function, which can convert "implicit" backprop
 --   functions like a <tt><a>BPOpI</a> s rs a</tt> into an "explicit" graph
 --   backprop function, a <tt><a>BPOp</a> s rs a</tt>.
-type BPOpI s rs as = Prod (BVar s rs) rs -> Prod (BVar s rs) as
+type BPOpI s rs a = Prod (BVar s rs) rs -> BVar s rs a
 
 -- | The basic unit of manipulation inside <a>BP</a> (or inside an
 --   implicit-graph backprop function). Instead of directly working with
@@ -859,7 +922,7 @@ data BVar :: Type -> [Type] -> Type -> Type
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
 --   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
 --   you can provide an <tt><a>Op</a> as a</tt>.
-type Op as bs = forall m. Monad m => OpM m as bs
+type Op as a = forall m. Monad m => OpM m as a
 
 -- | A subclass of <a>OpM</a> (and superclass of <a>Op</a>), representing
 --   <a>Op</a>s that the <i>backprop</i> library uses to perform
@@ -884,7 +947,7 @@ type Op as bs = forall m. Monad m => OpM m as bs
 --   
 --   You can think of <a>OpB</a> as a superclass/parent class of <a>Op</a>
 --   in this sense, and of <a>Op</a> as a subclass of <a>OpB</a>.
-type OpB s = OpM (ST s)
+type OpB s as a = OpM (ST s) as a
 data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
 [Ø] :: Prod k f ([] k)
 [:<] :: Prod k f ((:) k a1 as)
@@ -900,11 +963,11 @@ I :: a -> I a
 --   with respect to its inputs. See module header for
 --   <a>Numeric.Backprop</a> and package documentation for examples and
 --   usages.
-backprop :: Every Num rs => (forall s. BPOp s rs as) -> Tuple rs -> (Tuple as, Tuple rs)
+backprop :: Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> (a, Tuple rs)
 
 -- | Simply run the <a>BPOp</a> on an input tuple, getting the result
 --   without bothering with the gradient or with back-propagation.
-evalBPOp :: (forall s. BPOp s rs as) -> Tuple rs -> Tuple as
+evalBPOp :: (forall s. BPOp s rs a) -> Tuple rs -> a
 
 -- | Run the <a>BPOp</a> on an input tuple and return the gradient of the
 --   result with respect to the input tuple.
@@ -944,7 +1007,7 @@ withInps :: Known Length rs => (Prod (BVar s rs) rs -> BP s rs a) -> BP s rs a
 --   operations, it might be more convenient to use
 --   <a>Numeric.Backprop.Implicit</a> instead, which is geared around that
 --   use case.
-implicitly :: (Known Length rs, Every Num as) => BPOpI s rs as -> BPOp s rs as
+implicitly :: (Known Length rs, Num a) => BPOpI s rs a -> BPOp s rs a
 
 -- | A version of <a>withInps</a> taking explicit <a>Length</a>, indicating
 --   the number of inputs required and their types.
@@ -963,7 +1026,7 @@ withInps' :: Length rs -> (Prod (BVar s rs) rs -> BP s rs a) -> BP s rs a
 --   length of the list of inputs. If you ever actually explicitly write
 --   down <tt>rs</tt> as a list of types, you should be able to just use
 --   <a>implicitly</a>.
-implicitly' :: Every Num as => Length rs -> BPOpI s rs as -> BPOp s rs as
+implicitly' :: Num a => Length rs -> BPOpI s rs a -> BPOp s rs a
 
 -- | Create a <a>BVar</a> that represents just a specific value, that
 --   doesn't depend on any other <a>BVar</a>s.
@@ -1022,7 +1085,7 @@ inpVars :: Known Length rs => Prod (BVar s rs) rs
 --   Handy because an <a>OpB</a> can be used with almost all of the
 --   <a>Op</a>-related functions in this moduel, including <a>opVar</a>,
 --   <a>~$</a>, etc.
-bpOp :: Every Num rs => BPOp s rs as -> OpB s rs as
+bpOp :: Every Num rs => BPOp s rs a -> OpB s rs a
 
 -- | Concretizes a delayed <a>BVar</a>. If you build up a <a>BVar</a> using
 --   numeric functions like <a>+</a> or <a>*</a> or using <a>liftB</a>,
@@ -1118,7 +1181,7 @@ inpVars' :: Length rs -> Prod (BVar s rs) rs
 --   </pre>
 --   
 --   <a>opVar</a> can be thought of as a "binding" version of <a>liftB</a>.
-opVar :: forall s rs as a. Num a => OpB s as '[a] -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
+opVar :: forall s rs as a. Num a => OpB s as a -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
 
 -- | Infix synonym for <a>opVar</a>, which lets you pretend that you're
 --   applying <a>OpB</a>s as if they were functions:
@@ -1142,7 +1205,7 @@ opVar :: forall s rs as a. Num a => OpB s as '[a] -> Prod (BVar s rs) as -> BP s
 --   <pre>
 --   o <a>~$</a> xs = <a>bindVar</a> (o <a>.$</a> xs)
 --   </pre>
-(~$) :: Num a => OpB s as '[a] -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
+(~$) :: Num a => OpB s as a -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
 infixr 5 ~$
 
 -- | Convenient wrapper over <a>opVar</a> that takes an <a>OpB</a> with one
@@ -1160,7 +1223,7 @@ infixr 5 ~$
 --   
 --   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
 --   an <a>Op</a> here (like one made with <a>op1</a>) as well.
-opVar1 :: Num b => OpB s '[a] '[b] -> BVar s rs a -> BP s rs (BVar s rs b)
+opVar1 :: Num b => OpB s '[a] b -> BVar s rs a -> BP s rs (BVar s rs b)
 
 -- | Convenient wrapper over <a>opVar</a> that takes an <a>OpB</a> with two
 --   arguments and two <a>BVar</a> arguments. Lets you not have to type out
@@ -1178,7 +1241,7 @@ opVar1 :: Num b => OpB s '[a] '[b] -> BVar s rs a -> BP s rs (BVar s rs b)
 --   
 --   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
 --   an <a>Op</a> here (like one made with <a>op2</a>) as well.
-opVar2 :: Num c => OpB s '[a, b] '[c] -> BVar s rs a -> BVar s rs b -> BP s rs (BVar s rs c)
+opVar2 :: Num c => OpB s '[a, b] c -> BVar s rs a -> BVar s rs b -> BP s rs (BVar s rs c)
 
 -- | Convenient wrapper over <a>opVar</a> that takes an <a>OpB</a> with
 --   three arguments and three <a>BVar</a> arguments. Lets you not have to
@@ -1197,7 +1260,7 @@ opVar2 :: Num c => OpB s '[a, b] '[c] -> BVar s rs a -> BVar s rs b -> BP s rs (
 --   
 --   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
 --   an <a>Op</a> here (like one made with <a>op3</a>) as well.
-opVar3 :: Num d => OpB s '[a, b, c] '[d] -> BVar s rs a -> BVar s rs b -> BVar s rs c -> BP s rs (BVar s rs d)
+opVar3 :: Num d => OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar s rs c -> BP s rs (BVar s rs d)
 
 -- | Lets you treat a <tt><a>BPOp</a> s as b</tt> as an <tt><a>Op</a> as
 --   b</tt>, and "apply" arguments to it just like you would with an
@@ -1215,14 +1278,8 @@ opVar3 :: Num d => OpB s '[a, b, c] '[d] -> BVar s rs a -> BVar s rs b -> BVar s
 --   Useful for running a <tt><a>BPOp</a> s as b</tt> that you got from a
 --   different function, and "plugging in" its <tt>as</tt> inputs with
 --   <a>BVar</a>s from your current environment.
-(-$) :: (Every Num as, Known Length as, Num a) => BPOp s as '[a] -> Prod (BVar s rs) as -> BP s rs (BVar s rs a)
+(-$) :: (Every Num as, Known Length as, Num a) => BPOp s as a -> Prod (BVar s rs) as -> BPOp s rs a
 infixr 5 -$
-opVarMulti :: forall s rs as bs. Every Num bs => OpB s as bs -> Prod (BVar s rs) as -> BP s rs (Prod (BVar s rs) bs)
-(~$$) :: Every Num bs => OpB s as bs -> Prod (BVar s rs) as -> BP s rs (Prod (BVar s rs) bs)
-infixr 5 ~$$
-(-$$) :: (Every Num as, Known Length as, Every Num bs) => BPOp s as bs -> Prod (BVar s rs) as -> BP s rs (Prod (BVar s rs) bs)
-infixr 5 -$$
-isoVar :: forall s rs as bs. (Every Num bs) => Iso' (Tuple as) (Tuple bs) -> Prod (BVar s rs) as -> BPOp s rs bs
 
 -- | Use an <a>Iso</a> (or compatible <a>Iso</a> from the lens library) to
 --   "pull out" the parts of a data type and work with each part as a
@@ -1737,7 +1794,7 @@ data BPCont :: Type -> [Type] -> Type -> Type -> Type
 --   
 --   <a>liftB</a> can be thought of as a "deferred evaluation" version of
 --   <a>opVar</a>.
-liftB :: OpB s as '[a] -> Prod (BVar s rs) as -> BVar s rs a
+liftB :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
 
 -- | Infix synonym for <a>liftB</a>, which lets you pretend that you're
 --   applying <a>OpB</a>s as if they were functions:
@@ -1765,7 +1822,7 @@ liftB :: OpB s as '[a] -> Prod (BVar s rs) as -> BVar s rs a
 --   <pre>
 --   o <a>~$</a> xs = <a>bindVar</a> (o <a>.$</a> xs)
 --   </pre>
-(.$) :: OpB s as '[a] -> Prod (BVar s rs) as -> BVar s rs a
+(.$) :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
 infixr 5 .$
 
 -- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with one
@@ -1786,7 +1843,7 @@ infixr 5 .$
 --   
 --   See the documentation for <a>liftB</a> for caveats and potential
 --   problematic situations with this.
-liftB1 :: OpB s '[a] '[b] -> BVar s rs a -> BVar s rs b
+liftB1 :: OpB s '[a] b -> BVar s rs a -> BVar s rs b
 
 -- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with two
 --   arguments and two <a>BVar</a> arguments. Lets you not have to type out
@@ -1807,7 +1864,7 @@ liftB1 :: OpB s '[a] '[b] -> BVar s rs a -> BVar s rs b
 --   
 --   See the documentation for <a>liftB</a> for caveats and potential
 --   problematic situations with this.
-liftB2 :: OpB s '[a, b] '[c] -> BVar s rs a -> BVar s rs b -> BVar s rs c
+liftB2 :: OpB s '[a, b] c -> BVar s rs a -> BVar s rs b -> BVar s rs c
 
 -- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with
 --   three arguments and three <a>BVar</a> arguments. Lets you not have to
@@ -1829,7 +1886,7 @@ liftB2 :: OpB s '[a, b] '[c] -> BVar s rs a -> BVar s rs b -> BVar s rs c
 --   
 --   See the documentation for <a>liftB</a> for caveats and potential
 --   problematic situations with this.
-liftB3 :: OpB s '[a, b, c] '[d] -> BVar s rs a -> BVar s rs b -> BVar s rs c -> BVar s rs d
+liftB3 :: OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar s rs c -> BVar s rs d
 
 -- | Automatically create an <a>Op</a> of a numerical function taking one
 --   argument. Uses <a>diff</a>, and so can take any numerical function
@@ -1839,7 +1896,7 @@ liftB3 :: OpB s '[a, b, c] '[d] -> BVar s rs a -> BVar s rs b -> BVar s rs c -> 
 --   &gt;&gt;&gt; gradOp' (op1 (recip . negate)) (5 ::&lt; Ø)
 --   (-0.2, 0.04 ::&lt; Ø)
 --   </pre>
-op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] '[a]
+op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking two
 --   arguments. Uses <a>grad</a>, and so can take any numerical function
@@ -1849,7 +1906,7 @@ op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] '[a]
 --   &gt;&gt;&gt; gradOp' (op2 (\x y -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
 --   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
 --   </pre>
-op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] '[a]
+op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking three
 --   arguments. Uses <a>grad</a>, and so can take any numerical function
@@ -1859,7 +1916,7 @@ op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   &gt;&gt;&gt; gradOp' (op3 (\x y z -&gt; (x * sqrt y)**z)) (3 ::&lt; 4 ::&lt; 2 ::&lt; Ø)
 --   (36.0, 24.0 ::&lt; 9.0 ::&lt; 64.503 ::&lt; Ø)
 --   </pre>
-op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] '[a]
+op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking
 --   multiple arguments. Uses <a>grad</a>, and so can take any numerical
@@ -1869,9 +1926,33 @@ op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   &gt;&gt;&gt; gradOp' (opN (\(x :+ y :+ Ø) -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
 --   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
 --   </pre>
-opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) '[a]
-composeOp :: forall m as bs cs. Monad m => OpM m as bs -> OpM m bs cs -> OpM m as cs
-(~.) :: forall m as bs cs. Monad m => OpM m bs cs -> OpM m as bs -> OpM m as cs
+opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
+
+-- | Compose <a>OpM</a>s together, similar to <a>.</a>. But, because all
+--   <a>OpM</a>s are &lt;math&gt;, this is more like <a>sequence</a> for
+--   functions, or <tt>liftAN</tt>.
+--   
+--   That is, given an <tt><a>OpM</a> m as b1</tt>, an <tt><a>OpM</a> m as
+--   b2</tt>, and an <tt><a>OpM</a> m as b3</tt>, it can compose them with
+--   an <tt><a>OpM</a> m '[b1,b2,b3] c</tt> to create an <tt><a>OpM</a> m
+--   as c</tt>.
+composeOp :: (Monad m, Every Num as, Known Length as) => Prod (OpM m as) bs -> OpM m bs c -> OpM m as c
+
+-- | Convenient wrapper over <a>composeOp</a> for the case where the second
+--   function only takes one input, so the two <a>OpM</a>s can be directly
+--   piped together, like for <a>.</a>.
+composeOp1 :: (Monad m, Every Num as, Known Length as) => OpM m as b -> OpM m '[b] c -> OpM m as c
+
+-- | Convenient infix synonym for (flipped) <a>composeOp1</a>. Meant to be
+--   used just like <a>.</a>:
+--   
+--   <pre>
+--   <a>op1</a> negate            :: <a>Op</a> '[a]   a
+--   <a>op2</a> (+)               :: Op '[a,a] a
+--   
+--   op1 negate <a>~.</a> op2 (+) :: Op '[a, a] a
+--   </pre>
+(~.) :: (Monad m, Known Length as, Every Num as) => OpM m '[b] c -> OpM m as b -> OpM m as c
 infixr 9 ~.
 
 -- | Create an <a>Op</a> of a function taking one input, by giving its
@@ -1909,7 +1990,7 @@ infixr 9 ~.
 --   
 --   For numeric functions, single-input <a>Op</a>s can be generated
 --   automatically using <a>op1</a>.
-op1' :: (a -> (Tuple bs, Prod Maybe bs -> a)) -> Op '[a] bs
+op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
 
 -- | Create an <a>Op</a> of a function taking two inputs, by giving its
 --   explicit gradient. The function should return a tuple containing the
@@ -1946,11 +2027,11 @@ op1' :: (a -> (Tuple bs, Prod Maybe bs -> a)) -> Op '[a] bs
 --   
 --   For numeric functions, two-input <a>Op</a>s can be generated
 --   automatically using <a>op2</a>.
-op2' :: (a -> b -> (Tuple cs, Prod Maybe cs -> (a, b))) -> Op '[a, b] cs
+op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a, b] c
 
 -- | Create an <a>Op</a> of a function taking three inputs, by giving its
 --   explicit gradient. See documentation for <a>op2'</a> for more details.
-op3' :: (a -> b -> c -> (Tuple ds, Prod Maybe ds -> (a, b, c))) -> Op '[a, b, c] ds
+op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a, b, c] d
 
 -- | Construct a two element Prod. Since the precedence of (:&gt;) is
 --   higher than (:&lt;), we can conveniently write lists like:
@@ -1977,79 +2058,79 @@ infixr 5 ::<
 only_ :: a -> Tuple ((:) * a ([] *))
 
 -- | Optimized version of <tt><a>op1</a> (<a>+</a>)</tt>.
-(+.) :: Num a => Op '[a, a] '[a]
+(+.) :: Num a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op1</a> (<a>-</a>)</tt>.
-(-.) :: Num a => Op '[a, a] '[a]
+(-.) :: Num a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op1</a> (<a>*</a>)</tt>.
-(*.) :: Num a => Op '[a, a] '[a]
+(*.) :: Num a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>negate</a></tt>.
-negateOp :: Num a => Op '[a] '[a]
+negateOp :: Num a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>abs</a></tt>.
-absOp :: Num a => Op '[a] '[a]
+absOp :: Num a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>signum</a></tt>.
-signumOp :: Num a => Op '[a] '[a]
+signumOp :: Num a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> (<a>/</a>)</tt>.
-(/.) :: Fractional a => Op '[a, a] '[a]
+(/.) :: Fractional a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>recip</a></tt>.
-recipOp :: Fractional a => Op '[a] '[a]
+recipOp :: Fractional a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>exp</a></tt>.
-expOp :: Floating a => Op '[a] '[a]
+expOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>log</a></tt>.
-logOp :: Floating a => Op '[a] '[a]
+logOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>sqrt</a></tt>.
-sqrtOp :: Floating a => Op '[a] '[a]
+sqrtOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> (<a>**</a>)</tt>.
-(**.) :: Floating a => Op '[a, a] '[a]
+(**.) :: Floating a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op2</a> <a>logBase</a></tt>.
-logBaseOp :: Floating a => Op '[a, a] '[a]
+logBaseOp :: Floating a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>sin</a></tt>.
-sinOp :: Floating a => Op '[a] '[a]
+sinOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>cos</a></tt>.
-cosOp :: Floating a => Op '[a] '[a]
+cosOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>tan</a></tt>.
-tanOp :: Floating a => Op '[a] '[a]
+tanOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>asin</a></tt>.
-asinOp :: Floating a => Op '[a] '[a]
+asinOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>acos</a></tt>.
-acosOp :: Floating a => Op '[a] '[a]
+acosOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>atan</a></tt>.
-atanOp :: Floating a => Op '[a] '[a]
+atanOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>sinh</a></tt>.
-sinhOp :: Floating a => Op '[a] '[a]
+sinhOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>cosh</a></tt>.
-coshOp :: Floating a => Op '[a] '[a]
+coshOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>tanh</a></tt>.
-tanhOp :: Floating a => Op '[a] '[a]
+tanhOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>asinh</a></tt>.
-asinhOp :: Floating a => Op '[a] '[a]
+asinhOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>acosh</a></tt>.
-acoshOp :: Floating a => Op '[a] '[a]
+acoshOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>atanh</a></tt>.
-atanhOp :: Floating a => Op '[a] '[a]
+atanhOp :: Floating a => Op '[a] a
 
 
 -- | Offers full functionality for implicit-graph back-propagation. The
@@ -2104,7 +2185,7 @@ module Numeric.Backprop.Implicit
 --   
 --   <a>BPOp</a> here is related to <a>BPOpI</a> from the normal
 --   explicit-graph backprop module <a>Numeric.Backprop</a>.
-type BPOp rs as = forall s. Prod (BVar s rs) rs -> Prod (BVar s rs) as
+type BPOp rs a = forall s. Prod (BVar s rs) rs -> BVar s rs a
 
 -- | The basic unit of manipulation inside <a>BP</a> (or inside an
 --   implicit-graph backprop function). Instead of directly working with
@@ -2172,7 +2253,7 @@ data BVar :: Type -> [Type] -> Type -> Type
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
 --   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
 --   you can provide an <tt><a>Op</a> as a</tt>.
-type Op as bs = forall m. Monad m => OpM m as bs
+type Op as a = forall m. Monad m => OpM m as a
 
 -- | A subclass of <a>OpM</a> (and superclass of <a>Op</a>), representing
 --   <a>Op</a>s that the <i>backprop</i> library uses to perform
@@ -2197,7 +2278,7 @@ type Op as bs = forall m. Monad m => OpM m as bs
 --   
 --   You can think of <a>OpB</a> as a superclass/parent class of <a>Op</a>
 --   in this sense, and of <a>Op</a> as a subclass of <a>OpB</a>.
-type OpB s = OpM (ST s)
+type OpB s as a = OpM (ST s) as a
 data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
 [Ø] :: Prod k f ([] k)
 [:<] :: Prod k f ((:) k a1 as)
@@ -2222,7 +2303,7 @@ I :: a -> I a
 --   &gt;&gt;&gt; 'backprop' foo (2 ::&lt; 3 ::&lt; Ø)
 --   (11.46, 13.73 ::&lt; 6.12 ::&lt; Ø)
 --   </pre>
-backprop :: Every Num rs => BPOp rs as -> Tuple rs -> (Tuple as, Tuple rs)
+backprop :: Every Num rs => BPOp rs a -> Tuple rs -> (a, Tuple rs)
 
 -- | Run the <a>BPOp</a> on an input tuple and return the gradient of the
 --   result with respect to the input tuple.
@@ -2254,7 +2335,7 @@ grad :: Every Num rs => BPOp rs a -> Tuple rs -> Tuple rs
 --   &gt;&gt;&gt; eval foo (2 ::&lt; 3 ::&lt; Ø)
 --   11.46
 --   </pre>
-eval :: (Known Length rs, Every Num as) => BPOp rs as -> Tuple rs -> Tuple as
+eval :: (Known Length rs, Num a) => BPOp rs a -> Tuple rs -> a
 
 -- | Create a <a>BVar</a> that represents just a specific value, that
 --   doesn't depend on any other <a>BVar</a>s.
@@ -2305,7 +2386,7 @@ constVar :: a -> BVar s rs a
 --   
 --   <a>liftB</a> can be thought of as a "deferred evaluation" version of
 --   <a>opVar</a>.
-liftB :: OpB s as '[a] -> Prod (BVar s rs) as -> BVar s rs a
+liftB :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
 
 -- | Infix synonym for <a>liftB</a>, which lets you pretend that you're
 --   applying <a>OpB</a>s as if they were functions:
@@ -2333,7 +2414,7 @@ liftB :: OpB s as '[a] -> Prod (BVar s rs) as -> BVar s rs a
 --   <pre>
 --   o <a>~$</a> xs = <a>bindVar</a> (o <a>.$</a> xs)
 --   </pre>
-(.$) :: OpB s as '[a] -> Prod (BVar s rs) as -> BVar s rs a
+(.$) :: OpB s as a -> Prod (BVar s rs) as -> BVar s rs a
 infixr 5 .$
 
 -- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with one
@@ -2354,7 +2435,7 @@ infixr 5 .$
 --   
 --   See the documentation for <a>liftB</a> for caveats and potential
 --   problematic situations with this.
-liftB1 :: OpB s '[a] '[b] -> BVar s rs a -> BVar s rs b
+liftB1 :: OpB s '[a] b -> BVar s rs a -> BVar s rs b
 
 -- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with two
 --   arguments and two <a>BVar</a> arguments. Lets you not have to type out
@@ -2375,7 +2456,7 @@ liftB1 :: OpB s '[a] '[b] -> BVar s rs a -> BVar s rs b
 --   
 --   See the documentation for <a>liftB</a> for caveats and potential
 --   problematic situations with this.
-liftB2 :: OpB s '[a, b] '[c] -> BVar s rs a -> BVar s rs b -> BVar s rs c
+liftB2 :: OpB s '[a, b] c -> BVar s rs a -> BVar s rs b -> BVar s rs c
 
 -- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with
 --   three arguments and three <a>BVar</a> arguments. Lets you not have to
@@ -2397,7 +2478,7 @@ liftB2 :: OpB s '[a, b] '[c] -> BVar s rs a -> BVar s rs b -> BVar s rs c
 --   
 --   See the documentation for <a>liftB</a> for caveats and potential
 --   problematic situations with this.
-liftB3 :: OpB s '[a, b, c] '[d] -> BVar s rs a -> BVar s rs b -> BVar s rs c -> BVar s rs d
+liftB3 :: OpB s '[a, b, c] d -> BVar s rs a -> BVar s rs b -> BVar s rs c -> BVar s rs d
 
 -- | Use an <a>Iso</a> (or compatible <a>Iso</a> from the lens library) to
 --   "pull out" the parts of a data type and work with each part as a
@@ -2590,7 +2671,7 @@ gSplit' :: forall s rs as a. (Generic a, Code a ~ '[as], Every Num as) => Length
 --   &gt;&gt;&gt; gradOp' (op1 (recip . negate)) (5 ::&lt; Ø)
 --   (-0.2, 0.04 ::&lt; Ø)
 --   </pre>
-op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] '[a]
+op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking two
 --   arguments. Uses <a>grad</a>, and so can take any numerical function
@@ -2600,7 +2681,7 @@ op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] '[a]
 --   &gt;&gt;&gt; gradOp' (op2 (\x y -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
 --   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
 --   </pre>
-op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] '[a]
+op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking three
 --   arguments. Uses <a>grad</a>, and so can take any numerical function
@@ -2610,7 +2691,7 @@ op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   &gt;&gt;&gt; gradOp' (op3 (\x y z -&gt; (x * sqrt y)**z)) (3 ::&lt; 4 ::&lt; 2 ::&lt; Ø)
 --   (36.0, 24.0 ::&lt; 9.0 ::&lt; 64.503 ::&lt; Ø)
 --   </pre>
-op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] '[a]
+op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking
 --   multiple arguments. Uses <a>grad</a>, and so can take any numerical
@@ -2620,7 +2701,7 @@ op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   &gt;&gt;&gt; gradOp' (opN (\(x :+ y :+ Ø) -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
 --   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
 --   </pre>
-opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) '[a]
+opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
 
 -- | Create an <a>Op</a> of a function taking one input, by giving its
 --   explicit derivative. The function should return a tuple containing the
@@ -2657,7 +2738,7 @@ opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) 
 --   
 --   For numeric functions, single-input <a>Op</a>s can be generated
 --   automatically using <a>op1</a>.
-op1' :: (a -> (Tuple bs, Prod Maybe bs -> a)) -> Op '[a] bs
+op1' :: (a -> (b, Maybe b -> a)) -> Op '[a] b
 
 -- | Create an <a>Op</a> of a function taking two inputs, by giving its
 --   explicit gradient. The function should return a tuple containing the
@@ -2694,11 +2775,11 @@ op1' :: (a -> (Tuple bs, Prod Maybe bs -> a)) -> Op '[a] bs
 --   
 --   For numeric functions, two-input <a>Op</a>s can be generated
 --   automatically using <a>op2</a>.
-op2' :: (a -> b -> (Tuple cs, Prod Maybe cs -> (a, b))) -> Op '[a, b] cs
+op2' :: (a -> b -> (c, Maybe c -> (a, b))) -> Op '[a, b] c
 
 -- | Create an <a>Op</a> of a function taking three inputs, by giving its
 --   explicit gradient. See documentation for <a>op2'</a> for more details.
-op3' :: (a -> b -> c -> (Tuple ds, Prod Maybe ds -> (a, b, c))) -> Op '[a, b, c] ds
+op3' :: (a -> b -> c -> (d, Maybe d -> (a, b, c))) -> Op '[a, b, c] d
 
 -- | Construct a two element Prod. Since the precedence of (:&gt;) is
 --   higher than (:&lt;), we can conveniently write lists like:
@@ -2725,79 +2806,79 @@ infixr 5 ::<
 only_ :: a -> Tuple ((:) * a ([] *))
 
 -- | Optimized version of <tt><a>op1</a> (<a>+</a>)</tt>.
-(+.) :: Num a => Op '[a, a] '[a]
+(+.) :: Num a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op1</a> (<a>-</a>)</tt>.
-(-.) :: Num a => Op '[a, a] '[a]
+(-.) :: Num a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op1</a> (<a>*</a>)</tt>.
-(*.) :: Num a => Op '[a, a] '[a]
+(*.) :: Num a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>negate</a></tt>.
-negateOp :: Num a => Op '[a] '[a]
+negateOp :: Num a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>abs</a></tt>.
-absOp :: Num a => Op '[a] '[a]
+absOp :: Num a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>signum</a></tt>.
-signumOp :: Num a => Op '[a] '[a]
+signumOp :: Num a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> (<a>/</a>)</tt>.
-(/.) :: Fractional a => Op '[a, a] '[a]
+(/.) :: Fractional a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>recip</a></tt>.
-recipOp :: Fractional a => Op '[a] '[a]
+recipOp :: Fractional a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>exp</a></tt>.
-expOp :: Floating a => Op '[a] '[a]
+expOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>log</a></tt>.
-logOp :: Floating a => Op '[a] '[a]
+logOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>sqrt</a></tt>.
-sqrtOp :: Floating a => Op '[a] '[a]
+sqrtOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> (<a>**</a>)</tt>.
-(**.) :: Floating a => Op '[a, a] '[a]
+(**.) :: Floating a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op2</a> <a>logBase</a></tt>.
-logBaseOp :: Floating a => Op '[a, a] '[a]
+logBaseOp :: Floating a => Op '[a, a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>sin</a></tt>.
-sinOp :: Floating a => Op '[a] '[a]
+sinOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>cos</a></tt>.
-cosOp :: Floating a => Op '[a] '[a]
+cosOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>tan</a></tt>.
-tanOp :: Floating a => Op '[a] '[a]
+tanOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>asin</a></tt>.
-asinOp :: Floating a => Op '[a] '[a]
+asinOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>acos</a></tt>.
-acosOp :: Floating a => Op '[a] '[a]
+acosOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>atan</a></tt>.
-atanOp :: Floating a => Op '[a] '[a]
+atanOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>sinh</a></tt>.
-sinhOp :: Floating a => Op '[a] '[a]
+sinhOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>cosh</a></tt>.
-coshOp :: Floating a => Op '[a] '[a]
+coshOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>tanh</a></tt>.
-tanhOp :: Floating a => Op '[a] '[a]
+tanhOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>asinh</a></tt>.
-asinhOp :: Floating a => Op '[a] '[a]
+asinhOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>acosh</a></tt>.
-acoshOp :: Floating a => Op '[a] '[a]
+acoshOp :: Floating a => Op '[a] a
 
 -- | Optimized version of <tt><a>op1</a> <a>atanh</a></tt>.
-atanhOp :: Floating a => Op '[a] '[a]
+atanhOp :: Floating a => Op '[a] a
 
 
 -- | Provides monomorphic versions of the types and combinators in
@@ -2863,7 +2944,7 @@ module Numeric.Backprop.Op.Mono
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
 --   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
 --   you can provide an <tt><a>Op</a> as a</tt>.
-type Op q r a b = Op (Replicate q a) (Replicate r b)
+type Op n a b = Op (Replicate n a) b
 
 -- | Construct an <a>Op</a> by giving a function creating the result, and
 --   also a continuation on how to create the gradient, given the total
@@ -2893,7 +2974,7 @@ type Op q r a b = Op (Replicate q a) (Replicate r b)
 --   
 --   See <a>runOpM</a>, <a>gradOpM</a>, and <a>gradOpWithM</a> for examples
 --   on how to run it.
-type OpM m q r a b = OpM m (Replicate q a) (Replicate r b)
+type OpM m n a = OpM m (Replicate n a)
 
 -- | Construct an <a>OpM</a> by giving a (monadic) function creating the
 --   result, and also a continuation on how to create the gradient, given
@@ -2915,7 +2996,7 @@ I :: a -> I a
 --   &gt;&gt;&gt; runOp (op2 (*)) (3 :+ 5 :+ Ø)
 --   15
 --   </pre>
-runOp :: Known Nat r => Op q r a b -> Vec q a -> Vec r b
+runOp :: Op n a b -> Vec n a -> b
 
 -- | Run the function that an <a>Op</a> encodes, and get the gradient of
 --   the output with respect to the inputs.
@@ -2925,7 +3006,7 @@ runOp :: Known Nat r => Op q r a b -> Vec q a -> Vec r b
 --   5 :+ 3 :+ ØV
 --   -- the gradient of x*y is (y, x)
 --   </pre>
-gradOp :: forall q r a b. Known Nat r => Op q r a b -> Vec q a -> Vec q a
+gradOp :: Op n a b -> Vec n a -> Vec n a
 
 -- | Run the function that an <a>Op</a> encodes, to get the resulting
 --   output and also its gradient with respect to the inputs.
@@ -2934,7 +3015,7 @@ gradOp :: forall q r a b. Known Nat r => Op q r a b -> Vec q a -> Vec q a
 --   &gt;&gt;&gt; gradOpM' (op2 (*)) (3 :+ 5 :+ ØV) :: IO (Int, Vec N2 Int)
 --   (15, 5 :+ 3 :+ ØV)
 --   </pre>
-gradOp' :: Known Nat r => Op q r a b -> Vec q a -> (Vec r b, Vec q a)
+gradOp' :: Op n a b -> Vec n a -> (b, Vec n a)
 
 -- | Run the function that an <a>Op</a> encodes, and get the gradient of a
 --   "final result" with respect to the inputs, given the total derivative
@@ -2942,7 +3023,7 @@ gradOp' :: Known Nat r => Op q r a b -> Vec q a -> (Vec r b, Vec q a)
 --   
 --   See <a>gradOp</a> and the module documentaiton for
 --   <a>Numeric.Backprop.Op</a> for more information.
-gradOpWith :: forall q r a b. Known Nat r => Op q r a b -> Vec q a -> Vec r b -> Vec q a
+gradOpWith :: Op n a b -> Vec n a -> b -> Vec n a
 
 -- | A combination of <a>gradOp</a> and <a>gradOpWith</a>. The third
 --   argument is (optionally) the total derivative the result. Give
@@ -2954,7 +3035,7 @@ gradOpWith :: forall q r a b. Known Nat r => Op q r a b -> Vec q a -> Vec r b ->
 --   
 --   See <a>gradOp</a> and the module documentaiton for
 --   <a>Numeric.Backprop.Op</a> for more information.
-gradOpWith' :: forall q r a b. Known Nat r => Op q r a b -> Vec q a -> VecT r Maybe b -> Vec q a
+gradOpWith' :: Op n a b -> Vec n a -> Maybe b -> Vec n a
 
 -- | A combination of <a>runOp</a> and <a>gradOpWith'</a>. Given an
 --   <a>Op</a> and inputs, returns the result of the <a>Op</a> and a
@@ -2963,7 +3044,7 @@ gradOpWith' :: forall q r a b. Known Nat r => Op q r a b -> Vec q a -> VecT r Ma
 --   The continuation takes the total derivative of the result as input.
 --   See documenation for <a>gradOpWith'</a> and module documentation for
 --   <a>Numeric.Backprop.Op</a> for more information.
-runOp' :: Known Nat r => Op q r a b -> Vec q a -> (Vec r b, VecT r Maybe b -> Vec q a)
+runOp' :: Op n a b -> Vec n a -> (b, Maybe b -> Vec n a)
 
 -- | The monadic version of <a>runOp</a>, for <a>OpM</a>s.
 --   
@@ -2971,19 +3052,19 @@ runOp' :: Known Nat r => Op q r a b -> Vec q a -> (Vec r b, VecT r Maybe b -> Ve
 --   &gt;&gt;&gt; runOpM (op2 (*)) (3 :+ 5 :+ ØV) :: IO Int
 --   15
 --   </pre>
-runOpM :: (Functor m, Known Nat r) => OpM m q r a b -> Vec q a -> m (Vec r b)
+runOpM :: Functor m => OpM m n a b -> Vec n a -> m b
 
 -- | The monadic version of <a>gradOp</a>, for <a>OpM</a>s.
-gradOpM :: forall m q r a b. (Monad m, Known Nat r) => OpM m q r a b -> Vec q a -> m (Vec q a)
+gradOpM :: Monad m => OpM m n a b -> Vec n a -> m (Vec n a)
 
 -- | The monadic version of <a>gradOp'</a>, for <a>OpM</a>s.
-gradOpM' :: (Monad m, Known Nat r) => OpM m q r a b -> Vec q a -> m (Vec r b, Vec q a)
+gradOpM' :: Monad m => OpM m n a b -> Vec n a -> m (b, Vec n a)
 
 -- | The monadic version of <a>gradOpWith</a>, for <a>OpM</a>s.
-gradOpWithM :: Monad m => OpM m q r a b -> Vec q a -> Vec r b -> m (Vec q a)
+gradOpWithM :: Monad m => OpM m n a b -> Vec n a -> b -> m (Vec n a)
 
 -- | The monadic version of <a>gradOpWith'</a>, for <a>OpM</a>s.
-gradOpWithM' :: Monad m => OpM m q r a b -> Vec q a -> VecT r Maybe b -> m (Vec q a)
+gradOpWithM' :: Monad m => OpM m n a b -> Vec n a -> Maybe b -> m (Vec n a)
 
 -- | The monadic version of <a>runOp</a>, for <a>OpM</a>s.
 --   
@@ -2991,7 +3072,7 @@ gradOpWithM' :: Monad m => OpM m q r a b -> Vec q a -> VecT r Maybe b -> m (Vec 
 --   &gt;&gt;&gt; runOpM (op2 (*)) (3 :+ 5 :+ ØV) :: IO Int
 --   15
 --   </pre>
-runOpM' :: forall m q r a b. (Functor m, Known Nat r) => OpM m q r a b -> Vec q a -> m (Vec r b, VecT r Maybe b -> m (Vec q a))
+runOpM' :: Functor m => OpM m n a b -> Vec n a -> m (b, Maybe b -> m (Vec n a))
 
 -- | Create an <a>Op</a> that takes no inputs and always returns the given
 --   value.
@@ -3009,7 +3090,7 @@ runOpM' :: forall m q r a b. (Functor m, Known Nat r) => OpM m q r a b -> Vec q 
 --   
 --   Note that because this returns an <a>Op</a>, it can be used with any
 --   function that expects an <a>OpM</a> or <a>OpB</a>, as well.
-op0 :: Vec r a -> Op N0 r b a
+op0 :: a -> Op N0 b a
 
 -- | An <a>Op</a> that ignores all of its inputs and returns a given
 --   constant value.
@@ -3018,10 +3099,23 @@ op0 :: Vec r a -> Op N0 r b a
 --   &gt;&gt;&gt; gradOp' (opConst 10) (1 :+ 2 :+ 3 :+ ØV)
 --   (10, 0 :+ 0 :+ 0 :+ ØV)
 --   </pre>
-opConst :: forall q r a b. (Known Nat q, Num b) => Vec r a -> Op q r b a
-composeOp :: forall m q r s a b c. Monad m => OpM m q r a b -> OpM m r s b c -> OpM m q s a c
+opConst :: forall n a b. (Known Nat n, Num b) => a -> Op n b a
 
--- | Convenient infix synonym for (flipped) <a>composeOp</a>. Meant to be
+-- | Compose <a>OpM</a>s together, similar to <a>.</a>. But, because all
+--   <a>OpM</a>s are &lt;math&gt;, this is more like <a>sequence</a> for
+--   functions, or <tt>liftAN</tt>.
+--   
+--   That is, given an <tt>o</tt> of <tt><a>OpM</a> m n a b</tt>s, it can
+--   compose them with an <tt><a>OpM</a> m o b c</tt> to create an
+--   <tt><a>OpM</a> m o a c</tt>.
+composeOp :: forall m n o a b c. (Monad m, Num a, Known Nat n) => VecT o (OpM m n a) b -> OpM m o b c -> OpM m n a c
+
+-- | Convenient wrappver over <a>composeOp</a> for the case where the
+--   second function only takes one input, so the two <a>OpM</a>s can be
+--   directly piped together, like for <a>.</a>.
+composeOp1 :: forall m n a b c. (Monad m, Num a, Known Nat n) => OpM m n a b -> OpM m N1 b c -> OpM m n a c
+
+-- | Convenient infix synonym for (flipped) <a>composeOp1</a>. Meant to be
 --   used just like <a>.</a>:
 --   
 --   <pre>
@@ -3030,7 +3124,7 @@ composeOp :: forall m q r s a b c. Monad m => OpM m q r a b -> OpM m r s b c -> 
 --   
 --   op1 negate <a>~.</a> op2 (+) :: Op '[a, a] a
 --   </pre>
-(~.) :: forall m q r s a b c. Monad m => OpM m r s b c -> OpM m q r a b -> OpM m q s a c
+(~.) :: forall m n a b c. (Monad m, Num a, Known Nat n) => OpM m N1 b c -> OpM m n a b -> OpM m n a c
 infixr 9 ~.
 
 -- | A version of <a>opConst</a> taking explicit <a>Nat</a>, indicating the
@@ -3040,7 +3134,21 @@ infixr 9 ~.
 --   polymorphic" situations, where GHC can't infer the length of the the
 --   expected input vector. If you ever actually explicitly write down the
 --   size <tt>n</tt>, you should be able to just use <a>opConst</a>.
-opConst' :: forall q r a b. Num b => Nat q -> Vec r a -> Op q r b a
+opConst' :: forall n a b. Num b => Nat n -> a -> Op n b a
+
+-- | A version of <a>composeOp</a> taking explicit <a>Nat</a>, indicating
+--   the number of inputs expected in the first <a>Op</a>s
+--   
+--   Requiring an explicit <a>Nat</a> is mostly useful for rare "extremely
+--   polymorphic" situations, where GHC can't infer the length of the the
+--   expected input vector. If you ever actually explicitly write down the
+--   size <tt>n</tt>, you should be able to just use <a>composeOp</a>.
+composeOp' :: forall m n o a b c. (Monad m, Num a) => Nat n -> VecT o (OpM m n a) b -> OpM m o b c -> OpM m n a c
+
+-- | Convenient wrappver over <a>composeOp</a> for the case where the
+--   second function only takes one input, so the two <a>OpM</a>s can be
+--   directly piped together, like for <a>.</a>.
+composeOp1' :: forall m n a b c. (Monad m, Num a) => Nat n -> OpM m n a b -> OpM m N1 b c -> OpM m n a c
 
 -- | Automatically create an <a>Op</a> of a numerical function taking one
 --   argument. Uses <a>diff</a>, and so can take any numerical function
@@ -3050,7 +3158,7 @@ opConst' :: forall q r a b. Num b => Nat q -> Vec r a -> Op q r b a
 --   &gt;&gt;&gt; gradOp' (op1 (recip . negate)) (5 :+ ØV)
 --   (-0.2, 0.04 :+ ØV)
 --   </pre>
-op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op N1 N1 a a
+op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op N1 a a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking two
 --   arguments. Uses <a>grad</a>, and so can take any numerical function
@@ -3060,7 +3168,7 @@ op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op N1 N1 a a
 --   &gt;&gt;&gt; gradOp' (op2 (\x y -&gt; x * sqrt y)) (3 :+ 4 :+ ØV)
 --   (6.0, 2.0 :+ 0.75 :+ ØV)
 --   </pre>
-op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op N2 N1 a a
+op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op N2 a a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking three
 --   arguments. Uses <a>grad</a>, and so can take any numerical function
@@ -3070,7 +3178,7 @@ op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   &gt;&gt;&gt; gradOp' (op3 (\x y z -&gt; (x * sqrt y)**z)) (3 :+ 4 :+ 2 :+ ØV)
 --   (36.0, 24.0 :+ 9.0 :+ 64.503 :+ ØV)
 --   </pre>
-op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op N3 N1 a a
+op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op N3 a a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking
 --   multiple arguments. Uses <a>grad</a>, and so can take any numerical
@@ -3080,7 +3188,7 @@ op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   &gt;&gt;&gt; gradOp' (opN (\(x :+ y :+ Ø) -&gt; x * sqrt y)) (3 :+ 4 :+ ØV)
 --   (6.0, 2.0 :+ 0.75 :+ ØV)
 --   </pre>
-opN :: (Num a, Known Nat q) => (forall s. Reifies s Tape => Vec q (Reverse s a) -> Reverse s a) -> Op q N1 a a
+opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op n a a
 
 -- | <tt><a>Replicate</a> n a</tt> is a list of <tt>a</tt>s repeated
 --   <tt>n</tt> times.
@@ -3128,7 +3236,7 @@ opN :: (Num a, Known Nat q) => (forall s. Reifies s Tape => Vec q (Reverse s a) 
 --   
 --   For numeric functions, single-input <a>Op</a>s can be generated
 --   automatically using <a>op1</a>.
-op1' :: (a -> (Vec r b, VecT r Maybe b -> a)) -> Op N1 r a b
+op1' :: (a -> (b, Maybe b -> a)) -> Op N1 a b
 
 -- | Create an <a>Op</a> of a function taking two inputs, by giving its
 --   explicit gradient. The function should return a tuple containing the
@@ -3165,11 +3273,11 @@ op1' :: (a -> (Vec r b, VecT r Maybe b -> a)) -> Op N1 r a b
 --   
 --   For numeric functions, two-input <a>Op</a>s can be generated
 --   automatically using <a>op2</a>.
-op2' :: (a -> a -> (Vec r b, VecT r Maybe b -> (a, a))) -> Op N2 r a b
+op2' :: (a -> a -> (b, Maybe b -> (a, a))) -> Op N2 a b
 
 -- | Create an <a>Op</a> of a function taking three inputs, by giving its
 --   explicit gradient. See documentation for <a>op2'</a> for more details.
-op3' :: (a -> a -> a -> (Vec r b, VecT r Maybe b -> (a, a, a))) -> Op N3 r a b
+op3' :: (a -> a -> a -> (b, Maybe b -> (a, a, a))) -> Op N3 a b
 infixr 4 :+
 (*:) :: f a -> f a -> VecT k (S (S Z)) f a
 infix 5 *:
@@ -3191,79 +3299,79 @@ type N9 = S N8
 type N10 = S N9
 
 -- | Optimized version of <tt><a>op2</a> (<a>+</a>)</tt>.
-(+.) :: Num a => Op N2 N1 a a
+(+.) :: Num a => Op N2 a a
 
 -- | Optimized version of <tt><a>op2</a> (<a>-</a>)</tt>.
-(-.) :: Num a => Op N2 N1 a a
+(-.) :: Num a => Op N2 a a
 
 -- | Optimized version of <tt><a>op2</a> (<a>*</a>)</tt>.
-(*.) :: Num a => Op N2 N1 a a
+(*.) :: Num a => Op N2 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>negate</a></tt>.
-negateOp :: Num a => Op N1 N1 a a
+negateOp :: Num a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>abs</a></tt>.
-absOp :: Num a => Op N1 N1 a a
+absOp :: Num a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>signum</a></tt>.
-signumOp :: Num a => Op N1 N1 a a
+signumOp :: Num a => Op N1 a a
 
 -- | Optimized version of <tt><a>op2</a> (<a>/</a>)</tt>.
-(/.) :: Fractional a => Op N2 N1 a a
+(/.) :: Fractional a => Op N2 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>recip</a></tt>.
-recipOp :: Fractional a => Op N1 N1 a a
+recipOp :: Fractional a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>exp</a></tt>.
-expOp :: Floating a => Op N1 N1 a a
+expOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>log</a></tt>.
-logOp :: Floating a => Op N1 N1 a a
+logOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>sqrt</a></tt>.
-sqrtOp :: Floating a => Op N1 N1 a a
+sqrtOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op2</a> (<a>**</a>)</tt>.
-(**.) :: Floating a => Op N2 N1 a a
+(**.) :: Floating a => Op N2 a a
 
 -- | Optimized version of <tt><a>op2</a> <a>logBase</a></tt>.
-logBaseOp :: Floating a => Op N2 N1 a a
+logBaseOp :: Floating a => Op N2 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>sin</a></tt>.
-sinOp :: Floating a => Op N1 N1 a a
+sinOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>cos</a></tt>.
-cosOp :: Floating a => Op N1 N1 a a
+cosOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>tan</a></tt>.
-tanOp :: Floating a => Op N1 N1 a a
+tanOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>asin</a></tt>.
-asinOp :: Floating a => Op N1 N1 a a
+asinOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>acos</a></tt>.
-acosOp :: Floating a => Op N1 N1 a a
+acosOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>atan</a></tt>.
-atanOp :: Floating a => Op N1 N1 a a
+atanOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>sinh</a></tt>.
-sinhOp :: Floating a => Op N1 N1 a a
+sinhOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>cosh</a></tt>.
-coshOp :: Floating a => Op N1 N1 a a
+coshOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>tanh</a></tt>.
-tanhOp :: Floating a => Op N1 N1 a a
+tanhOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>asinh</a></tt>.
-asinhOp :: Floating a => Op N1 N1 a a
+asinhOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>acosh</a></tt>.
-acoshOp :: Floating a => Op N1 N1 a a
+acoshOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>atanh</a></tt>.
-atanhOp :: Floating a => Op N1 N1 a a
+atanhOp :: Floating a => Op N1 a a
 
 
 -- | Provides a monomorphic interface to the library and to the
@@ -3377,7 +3485,7 @@ type BP s n r = BP s (Replicate n r)
 --   
 --   See documentation for <a>BP</a> for an explanation of the phantom type
 --   parameter <tt>s</tt>.
-type BPOp s n m r a = BP s n r (VecT m (BVar s n r) a)
+type BPOp s n r a = BP s n r (BVar s n r a)
 
 -- | An "implicit" operation on <a>BVar</a>s that can be backpropagated. A
 --   value of type:
@@ -3402,7 +3510,7 @@ type BPOp s n m r a = BP s n r (VecT m (BVar s n r) a)
 --   for the <a>implicitly</a> function, which can convert "implicit"
 --   backprop functions like a <tt><a>BPOpI</a> s rs a</tt> into an
 --   "explicit" graph backprop function, a <tt><a>BPOp</a> s rs a</tt>.
-type BPOpI s n m r a = VecT n (BVar s n r) r -> VecT m (BVar s n r) a
+type BPOpI s n r a = VecT n (BVar s n r) r -> BVar s n r a
 
 -- | The basic unit of manipulation inside <a>BP</a> (or inside an
 --   implicit-graph backprop function). Instead of directly working with
@@ -3469,7 +3577,7 @@ type BVar s n a = BVar s (Replicate n a)
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
 --   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
 --   you can provide an <tt><a>Op</a> as a</tt>.
-type Op q r a b = Op (Replicate q a) (Replicate r b)
+type Op n a b = Op (Replicate n a) b
 
 -- | A subclass of <a>OpM</a> (and superclass of <a>Op</a>), representing
 --   <a>Op</a>s that the <i>backprop</i> library uses to perform
@@ -3494,7 +3602,7 @@ type Op q r a b = Op (Replicate q a) (Replicate r b)
 --   
 --   You can think of <a>OpB</a> as a superclass/parent class of <a>Op</a>
 --   in this sense, and of <a>Op</a> as a subclass of <a>OpB</a>.
-type OpB s q r a b = OpB s (Replicate q a) (Replicate r b)
+type OpB s n a b = OpB s (Replicate n a) b
 data VecT k (n :: N) (f :: k -> *) (a :: k) :: forall k. N -> (k -> *) -> k -> *
 [ØV] :: VecT k Z f a
 [:*] :: VecT k (S n1) f a
@@ -3508,15 +3616,15 @@ I :: a -> I a
 --   with respect to its inputs. See module header for
 --   <a>Numeric.Backprop.Mono</a> and package documentation for examples
 --   and usages.
-backprop :: forall n m r a. (Num r, Known Nat m) => (forall s. BPOp s n m r a) -> Vec n r -> (Vec m a, Vec n r)
+backprop :: forall n r a. Num r => (forall s. BPOp s n r a) -> Vec n r -> (a, Vec n r)
 
 -- | Simply run the <a>BPOp</a> on an input vector, getting the result
 --   without bothering with the gradient or with back-propagation.
-evalBPOp :: forall n m r a. Known Nat m => (forall s. BPOp s n m r a) -> Vec n r -> Vec m a
+evalBPOp :: forall n r a. (forall s. BPOp s n r a) -> Vec n r -> a
 
 -- | Run the <a>BPOp</a> on an input vector and return the gradient of the
 --   result with respect to the input vector
-gradBPOp :: forall n m r a. (Num r, Known Nat m) => (forall s. BPOp s n m r a) -> Vec n r -> Vec n r
+gradBPOp :: forall n r a. Num r => (forall s. BPOp s n r a) -> Vec n r -> Vec n r
 
 -- | Runs a continuation on a <a>Vec</a> of all of the input <a>BVar</a>s.
 --   
@@ -3552,7 +3660,7 @@ withInps :: Known Nat n => (VecT n (BVar s n r) r -> BP s n r a) -> BP s n r a
 --   operations, it might be more convenient to use
 --   <a>Numeric.Backprop.Mono.Implicit</a> instead, which is geared around
 --   that use case.
-implicitly :: Known Nat n => BPOpI s n m r a -> BPOp s n m r a
+implicitly :: Known Nat n => BPOpI s n r a -> BPOp s n r a
 
 -- | Create a <a>BVar</a> that represents just a specific value, that
 --   doesn't depend on any other <a>BVar</a>s.
@@ -3609,7 +3717,7 @@ inpVars :: Known Nat n => VecT n (BVar s n r) r
 --   Handy because an <a>OpB</a> can be used with almost all of the
 --   <a>Op</a>-related functions in this moduel, including <a>opVar</a>,
 --   <a>~$</a>, etc.
-bpOp :: forall s n m r a. (Num r, Known Nat n) => BPOp s n m r a -> OpB s n m r a
+bpOp :: forall s n r a. (Num r, Known Nat n) => BPOp s n r a -> OpB s n r a
 
 -- | A version of <a>bpOp'</a> taking explicit <a>Nat</a>, indicating the
 --   size of the input <a>VecT</a>.
@@ -3618,7 +3726,7 @@ bpOp :: forall s n m r a. (Num r, Known Nat n) => BPOp s n m r a -> OpB s n m r 
 --   polymorphic" situations, where GHC can't infer the length of the the
 --   expected input vector. If you ever actually explicitly write down the
 --   size <tt>n</tt>, you should be able to just use <a>opConst</a>.
-bpOp' :: forall s n m r a. Num r => Nat n -> BPOp s n m r a -> OpB s n m r a
+bpOp' :: forall s n r a. Num r => Nat n -> BPOp s n r a -> OpB s n r a
 
 -- | Concretizes a delayed <a>BVar</a>. If you build up a <a>BVar</a> using
 --   numeric functions like <a>+</a> or <a>*</a> or using <a>liftB</a>,
@@ -3704,7 +3812,7 @@ bindVar :: forall s n r a. Num a => BVar s n r a -> BP s n r (BVar s n r a)
 --   </pre>
 --   
 --   <a>opVar</a> can be thought of as a "binding" version of <a>liftB</a>.
-opVar :: forall s m n r a b. Num b => OpB s m N1 a b -> VecT m (BVar s n r) a -> BP s n r (BVar s n r b)
+opVar :: forall s m n r a b. Num b => OpB s m a b -> VecT m (BVar s n r) a -> BP s n r (BVar s n r b)
 
 -- | Infix synonym for <a>opVar</a>, which lets you pretend that you're
 --   applying <a>OpB</a>s as if they were functions:
@@ -3728,7 +3836,7 @@ opVar :: forall s m n r a b. Num b => OpB s m N1 a b -> VecT m (BVar s n r) a ->
 --   <pre>
 --   o <a>~$</a> xs = <a>bindVar</a> (o <a>.$</a> xs)
 --   </pre>
-(~$) :: forall s m n r a b. Num b => OpB s m N1 a b -> VecT m (BVar s n r) a -> BP s n r (BVar s n r b)
+(~$) :: forall s m n r a b. Num b => OpB s m a b -> VecT m (BVar s n r) a -> BP s n r (BVar s n r b)
 infixr 5 ~$
 
 -- | Convenient wrapper over <a>opVar</a> that takes an <a>OpB</a> with one
@@ -3746,7 +3854,7 @@ infixr 5 ~$
 --   
 --   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
 --   an <a>Op</a> here (like one made with <a>op1</a>) as well.
-opVar1 :: forall s n r a b. Num b => OpB s N1 N1 a b -> BVar s n r a -> BP s n r (BVar s n r b)
+opVar1 :: forall s n r a b. Num b => OpB s N1 a b -> BVar s n r a -> BP s n r (BVar s n r b)
 
 -- | Convenient wrapper over <a>opVar</a> that takes an <a>OpB</a> with two
 --   arguments and two <a>BVar</a> arguments. Lets you not have to type out
@@ -3764,7 +3872,7 @@ opVar1 :: forall s n r a b. Num b => OpB s N1 N1 a b -> BVar s n r a -> BP s n r
 --   
 --   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
 --   an <a>Op</a> here (like one made with <a>op2</a>) as well.
-opVar2 :: forall s n r a b. Num b => OpB s N2 N1 a b -> BVar s n r a -> BVar s n r a -> BP s n r (BVar s n r b)
+opVar2 :: forall s n r a b. Num b => OpB s N2 a b -> BVar s n r a -> BVar s n r a -> BP s n r (BVar s n r b)
 
 -- | Convenient wrapper over <a>opVar</a> that takes an <a>OpB</a> with
 --   three arguments and three <a>BVar</a> arguments. Lets you not have to
@@ -3783,7 +3891,7 @@ opVar2 :: forall s n r a b. Num b => OpB s N2 N1 a b -> BVar s n r a -> BVar s n
 --   
 --   Note that <a>OpB</a> is a superclass of <a>Op</a>, so you can pass in
 --   an <a>Op</a> here (like one made with <a>op3</a>) as well.
-opVar3 :: forall s n r a b. Num b => OpB s N3 N1 a b -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BP s n r (BVar s n r b)
+opVar3 :: forall s n r a b. Num b => OpB s N3 a b -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BP s n r (BVar s n r b)
 
 -- | Lets you treat a <tt><a>BPOp</a> s n a b</tt> as an <tt><a>Op</a> n a
 --   b</tt>, and "apply" arguments to it just like you would with an
@@ -3801,13 +3909,8 @@ opVar3 :: forall s n r a b. Num b => OpB s N3 N1 a b -> BVar s n r a -> BVar s n
 --   Useful for running a <tt><a>BPOp</a> s n a b</tt> that you got from a
 --   different function, and "plugging in" its <tt>a</tt> inputs with
 --   <a>BVar</a>s from your current environment.
-(-$) :: forall s m n r a b. (Num a, Num b, Known Nat m) => BPOp s m N1 a b -> VecT m (BVar s n r) a -> BP s n r (BVar s n r b)
+(-$) :: forall s m n r a b. (Num a, Num b, Known Nat m) => BPOp s m a b -> VecT m (BVar s n r) a -> BP s n r (BVar s n r b)
 infixr 5 -$
-opVarMulti :: forall s m n o r a b. (Num b, Known Nat n) => OpB s m n a b -> VecT m (BVar s o r) a -> BP s o r (VecT n (BVar s o r) b)
-(~$$) :: forall s m n o r a b. (Num b, Known Nat n) => OpB s m n a b -> VecT m (BVar s o r) a -> BP s o r (VecT n (BVar s o r) b)
-infixr 5 ~$$
-(-$$) :: forall s m n o r a b. (Num b, Known Nat n, Num a, Known Nat m) => BPOp s m n a b -> VecT m (BVar s o r) a -> BP s o r (VecT n (BVar s o r) b)
-infixr 5 -$$
 
 -- | Apply <a>OpB</a> over a <a>VecT</a> of <a>BVar</a>s, as inputs.
 --   Provides "implicit" back-propagation, with deferred evaluation.
@@ -3853,7 +3956,7 @@ infixr 5 -$$
 --   
 --   <a>liftB</a> can be thought of as a "deferred evaluation" version of
 --   <a>opVar</a>.
-liftB :: forall s m n a b r. OpB s m N1 a b -> VecT m (BVar s n r) a -> BVar s n r b
+liftB :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
 
 -- | Infix synonym for <a>liftB</a>, which lets you pretend that you're
 --   applying <a>OpB</a>s as if they were functions:
@@ -3881,7 +3984,7 @@ liftB :: forall s m n a b r. OpB s m N1 a b -> VecT m (BVar s n r) a -> BVar s n
 --   <pre>
 --   o <a>~$</a> xs = <a>bindVar</a> (o <a>.$</a> xs)
 --   </pre>
-(.$) :: forall s m n a b r. OpB s m N1 a b -> VecT m (BVar s n r) a -> BVar s n r b
+(.$) :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
 
 -- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with one
 --   argument and a single <a>BVar</a> argument. Lets you not have to type
@@ -3901,7 +4004,7 @@ liftB :: forall s m n a b r. OpB s m N1 a b -> VecT m (BVar s n r) a -> BVar s n
 --   
 --   See the documentation for <a>liftB</a> for caveats and potential
 --   problematic situations with this.
-liftB1 :: OpB s N1 N1 a a -> BVar s n r a -> BVar s n r a
+liftB1 :: OpB s N1 a a -> BVar s n r a -> BVar s n r a
 
 -- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with two
 --   arguments and two <a>BVar</a> arguments. Lets you not have to type out
@@ -3922,7 +4025,7 @@ liftB1 :: OpB s N1 N1 a a -> BVar s n r a -> BVar s n r a
 --   
 --   See the documentation for <a>liftB</a> for caveats and potential
 --   problematic situations with this.
-liftB2 :: OpB s N2 N1 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a
+liftB2 :: OpB s N2 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a
 
 -- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with
 --   three arguments and three <a>BVar</a> arguments. Lets you not have to
@@ -3944,7 +4047,7 @@ liftB2 :: OpB s N2 N1 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a
 --   
 --   See the documentation for <a>liftB</a> for caveats and potential
 --   problematic situations with this.
-liftB3 :: OpB s N3 N1 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BVar s n r a
+liftB3 :: OpB s N3 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BVar s n r a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking one
 --   argument. Uses <a>diff</a>, and so can take any numerical function
@@ -3954,7 +4057,7 @@ liftB3 :: OpB s N3 N1 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BVa
 --   &gt;&gt;&gt; gradOp' (op1 (recip . negate)) (5 :+ ØV)
 --   (-0.2, 0.04 :+ ØV)
 --   </pre>
-op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op N1 N1 a a
+op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op N1 a a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking two
 --   arguments. Uses <a>grad</a>, and so can take any numerical function
@@ -3964,7 +4067,7 @@ op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op N1 N1 a a
 --   &gt;&gt;&gt; gradOp' (op2 (\x y -&gt; x * sqrt y)) (3 :+ 4 :+ ØV)
 --   (6.0, 2.0 :+ 0.75 :+ ØV)
 --   </pre>
-op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op N2 N1 a a
+op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op N2 a a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking three
 --   arguments. Uses <a>grad</a>, and so can take any numerical function
@@ -3974,7 +4077,7 @@ op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   &gt;&gt;&gt; gradOp' (op3 (\x y z -&gt; (x * sqrt y)**z)) (3 :+ 4 :+ 2 :+ ØV)
 --   (36.0, 24.0 :+ 9.0 :+ 64.503 :+ ØV)
 --   </pre>
-op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op N3 N1 a a
+op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op N3 a a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking
 --   multiple arguments. Uses <a>grad</a>, and so can take any numerical
@@ -3984,10 +4087,23 @@ op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   &gt;&gt;&gt; gradOp' (opN (\(x :+ y :+ Ø) -&gt; x * sqrt y)) (3 :+ 4 :+ ØV)
 --   (6.0, 2.0 :+ 0.75 :+ ØV)
 --   </pre>
-opN :: (Num a, Known Nat q) => (forall s. Reifies s Tape => Vec q (Reverse s a) -> Reverse s a) -> Op q N1 a a
-composeOp :: forall m q r s a b c. Monad m => OpM m q r a b -> OpM m r s b c -> OpM m q s a c
+opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op n a a
 
--- | Convenient infix synonym for (flipped) <a>composeOp</a>. Meant to be
+-- | Compose <a>OpM</a>s together, similar to <a>.</a>. But, because all
+--   <a>OpM</a>s are &lt;math&gt;, this is more like <a>sequence</a> for
+--   functions, or <tt>liftAN</tt>.
+--   
+--   That is, given an <tt>o</tt> of <tt><a>OpM</a> m n a b</tt>s, it can
+--   compose them with an <tt><a>OpM</a> m o b c</tt> to create an
+--   <tt><a>OpM</a> m o a c</tt>.
+composeOp :: forall m n o a b c. (Monad m, Num a, Known Nat n) => VecT o (OpM m n a) b -> OpM m o b c -> OpM m n a c
+
+-- | Convenient wrappver over <a>composeOp</a> for the case where the
+--   second function only takes one input, so the two <a>OpM</a>s can be
+--   directly piped together, like for <a>.</a>.
+composeOp1 :: forall m n a b c. (Monad m, Num a, Known Nat n) => OpM m n a b -> OpM m N1 b c -> OpM m n a c
+
+-- | Convenient infix synonym for (flipped) <a>composeOp1</a>. Meant to be
 --   used just like <a>.</a>:
 --   
 --   <pre>
@@ -3996,7 +4112,7 @@ composeOp :: forall m q r s a b c. Monad m => OpM m q r a b -> OpM m r s b c -> 
 --   
 --   op1 negate <a>~.</a> op2 (+) :: Op '[a, a] a
 --   </pre>
-(~.) :: forall m q r s a b c. Monad m => OpM m r s b c -> OpM m q r a b -> OpM m q s a c
+(~.) :: forall m n a b c. (Monad m, Num a, Known Nat n) => OpM m N1 b c -> OpM m n a b -> OpM m n a c
 infixr 9 ~.
 
 -- | Create an <a>Op</a> of a function taking one input, by giving its
@@ -4034,7 +4150,7 @@ infixr 9 ~.
 --   
 --   For numeric functions, single-input <a>Op</a>s can be generated
 --   automatically using <a>op1</a>.
-op1' :: (a -> (Vec r b, VecT r Maybe b -> a)) -> Op N1 r a b
+op1' :: (a -> (b, Maybe b -> a)) -> Op N1 a b
 
 -- | Create an <a>Op</a> of a function taking two inputs, by giving its
 --   explicit gradient. The function should return a tuple containing the
@@ -4071,11 +4187,11 @@ op1' :: (a -> (Vec r b, VecT r Maybe b -> a)) -> Op N1 r a b
 --   
 --   For numeric functions, two-input <a>Op</a>s can be generated
 --   automatically using <a>op2</a>.
-op2' :: (a -> a -> (Vec r b, VecT r Maybe b -> (a, a))) -> Op N2 r a b
+op2' :: (a -> a -> (b, Maybe b -> (a, a))) -> Op N2 a b
 
 -- | Create an <a>Op</a> of a function taking three inputs, by giving its
 --   explicit gradient. See documentation for <a>op2'</a> for more details.
-op3' :: (a -> a -> a -> (Vec r b, VecT r Maybe b -> (a, a, a))) -> Op N3 r a b
+op3' :: (a -> a -> a -> (b, Maybe b -> (a, a, a))) -> Op N3 a b
 infixr 4 :+
 (*:) :: f a -> f a -> VecT k (S (S Z)) f a
 infix 5 *:
@@ -4097,79 +4213,79 @@ type N9 = S N8
 type N10 = S N9
 
 -- | Optimized version of <tt><a>op2</a> (<a>+</a>)</tt>.
-(+.) :: Num a => Op N2 N1 a a
+(+.) :: Num a => Op N2 a a
 
 -- | Optimized version of <tt><a>op2</a> (<a>-</a>)</tt>.
-(-.) :: Num a => Op N2 N1 a a
+(-.) :: Num a => Op N2 a a
 
 -- | Optimized version of <tt><a>op2</a> (<a>*</a>)</tt>.
-(*.) :: Num a => Op N2 N1 a a
+(*.) :: Num a => Op N2 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>negate</a></tt>.
-negateOp :: Num a => Op N1 N1 a a
+negateOp :: Num a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>abs</a></tt>.
-absOp :: Num a => Op N1 N1 a a
+absOp :: Num a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>signum</a></tt>.
-signumOp :: Num a => Op N1 N1 a a
+signumOp :: Num a => Op N1 a a
 
 -- | Optimized version of <tt><a>op2</a> (<a>/</a>)</tt>.
-(/.) :: Fractional a => Op N2 N1 a a
+(/.) :: Fractional a => Op N2 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>recip</a></tt>.
-recipOp :: Fractional a => Op N1 N1 a a
+recipOp :: Fractional a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>exp</a></tt>.
-expOp :: Floating a => Op N1 N1 a a
+expOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>log</a></tt>.
-logOp :: Floating a => Op N1 N1 a a
+logOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>sqrt</a></tt>.
-sqrtOp :: Floating a => Op N1 N1 a a
+sqrtOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op2</a> (<a>**</a>)</tt>.
-(**.) :: Floating a => Op N2 N1 a a
+(**.) :: Floating a => Op N2 a a
 
 -- | Optimized version of <tt><a>op2</a> <a>logBase</a></tt>.
-logBaseOp :: Floating a => Op N2 N1 a a
+logBaseOp :: Floating a => Op N2 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>sin</a></tt>.
-sinOp :: Floating a => Op N1 N1 a a
+sinOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>cos</a></tt>.
-cosOp :: Floating a => Op N1 N1 a a
+cosOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>tan</a></tt>.
-tanOp :: Floating a => Op N1 N1 a a
+tanOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>asin</a></tt>.
-asinOp :: Floating a => Op N1 N1 a a
+asinOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>acos</a></tt>.
-acosOp :: Floating a => Op N1 N1 a a
+acosOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>atan</a></tt>.
-atanOp :: Floating a => Op N1 N1 a a
+atanOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>sinh</a></tt>.
-sinhOp :: Floating a => Op N1 N1 a a
+sinhOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>cosh</a></tt>.
-coshOp :: Floating a => Op N1 N1 a a
+coshOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>tanh</a></tt>.
-tanhOp :: Floating a => Op N1 N1 a a
+tanhOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>asinh</a></tt>.
-asinhOp :: Floating a => Op N1 N1 a a
+asinhOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>acosh</a></tt>.
-acoshOp :: Floating a => Op N1 N1 a a
+acoshOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>atanh</a></tt>.
-atanhOp :: Floating a => Op N1 N1 a a
+atanhOp :: Floating a => Op N1 a a
 
 
 -- | Offers full functionality for implicit-graph back-propagation with
@@ -4254,7 +4370,7 @@ type BVar s n a = BVar s (Replicate n a)
 --   
 --   <a>BPOp</a> here is related to <a>BPOpI</a> from the normal
 --   explicit-graph backprop module <a>Numeric.Backprop.Mono</a>.
-type BPOp n m a b = forall s. VecT n (BVar s n a) a -> VecT m (BVar s n a) b
+type BPOp n a b = forall s. VecT n (BVar s n a) a -> BVar s n a b
 
 -- | An <tt><a>Op</a> n a b</tt> describes a differentiable function from
 --   <tt>n</tt> values of type <tt>a</tt> to a value of type <tt>b</tt>.
@@ -4291,7 +4407,7 @@ type BPOp n m a b = forall s. VecT n (BVar s n a) a -> VecT m (BVar s n a) b
 --   Many functions in this library will expect an <tt><a>OpM</a> m as
 --   a</tt> (or an <tt><a>OpB</a> s as a</tt>), and in all of these cases,
 --   you can provide an <tt><a>Op</a> as a</tt>.
-type Op q r a b = Op (Replicate q a) (Replicate r b)
+type Op n a b = Op (Replicate n a) b
 
 -- | A subclass of <a>OpM</a> (and superclass of <a>Op</a>), representing
 --   <a>Op</a>s that the <i>backprop</i> library uses to perform
@@ -4316,7 +4432,7 @@ type Op q r a b = Op (Replicate q a) (Replicate r b)
 --   
 --   You can think of <a>OpB</a> as a superclass/parent class of <a>Op</a>
 --   in this sense, and of <a>Op</a> as a subclass of <a>OpB</a>.
-type OpB s q r a b = OpB s (Replicate q a) (Replicate r b)
+type OpB s n a b = OpB s (Replicate n a) b
 data VecT k (n :: N) (f :: k -> *) (a :: k) :: forall k. N -> (k -> *) -> k -> *
 [ØV] :: VecT k Z f a
 [:*] :: VecT k (S n1) f a
@@ -4339,7 +4455,7 @@ I :: a -> I a
 --   &gt;&gt;&gt; backprop foo (2 :+ 3 :+ ØV)
 --   (11.46, 13.73 :+ 6.12 :+ ØV)
 --   </pre>
-backprop :: forall n m a b. (Num a, Known Nat n, Known Nat m) => BPOp n m a b -> Vec n a -> (Vec m b, Vec n a)
+backprop :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> (b, Vec n a)
 
 -- | Run the <a>BPOp</a> on an input tuple and return the gradient of the
 --   result with respect to the input tuple.
@@ -4355,7 +4471,7 @@ backprop :: forall n m a b. (Num a, Known Nat n, Known Nat m) => BPOp n m a b ->
 --   &gt;&gt;&gt; grad foo (2 :+ 3 :+ ØV)
 --   13.73 :+ 6.12 :+ ØV
 --   </pre>
-grad :: forall n m a b. (Num a, Known Nat n, Known Nat m) => BPOp n m a b -> Vec n a -> Vec n a
+grad :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> Vec n a
 
 -- | Simply run the <a>BPOp</a> on an input tuple, getting the result
 --   without bothering with the gradient or with back-propagation.
@@ -4371,7 +4487,7 @@ grad :: forall n m a b. (Num a, Known Nat n, Known Nat m) => BPOp n m a b -> Vec
 --   &gt;&gt;&gt; eval foo (2 :+ 3 :+ ØV)
 --   11.46
 --   </pre>
-eval :: forall n m a b. (Num a, Known Nat n, Known Nat m) => BPOp n m a b -> Vec n a -> Vec m b
+eval :: forall n a b. (Num a, Known Nat n) => BPOp n a b -> Vec n a -> b
 
 -- | Create a <a>BVar</a> that represents just a specific value, that
 --   doesn't depend on any other <a>BVar</a>s.
@@ -4421,7 +4537,7 @@ constVar :: a -> BVar s n r a
 --   
 --   <a>liftB</a> can be thought of as a "deferred evaluation" version of
 --   <a>opVar</a>.
-liftB :: forall s m n a b r. OpB s m N1 a b -> VecT m (BVar s n r) a -> BVar s n r b
+liftB :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
 
 -- | Infix synonym for <a>liftB</a>, which lets you pretend that you're
 --   applying <a>OpB</a>s as if they were functions:
@@ -4449,7 +4565,7 @@ liftB :: forall s m n a b r. OpB s m N1 a b -> VecT m (BVar s n r) a -> BVar s n
 --   <pre>
 --   o <a>~$</a> xs = <a>bindVar</a> (o <a>.$</a> xs)
 --   </pre>
-(.$) :: forall s m n a b r. OpB s m N1 a b -> VecT m (BVar s n r) a -> BVar s n r b
+(.$) :: forall s m n a b r. OpB s m a b -> VecT m (BVar s n r) a -> BVar s n r b
 
 -- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with one
 --   argument and a single <a>BVar</a> argument. Lets you not have to type
@@ -4469,7 +4585,7 @@ liftB :: forall s m n a b r. OpB s m N1 a b -> VecT m (BVar s n r) a -> BVar s n
 --   
 --   See the documentation for <a>liftB</a> for caveats and potential
 --   problematic situations with this.
-liftB1 :: OpB s N1 N1 a a -> BVar s n r a -> BVar s n r a
+liftB1 :: OpB s N1 a a -> BVar s n r a -> BVar s n r a
 
 -- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with two
 --   arguments and two <a>BVar</a> arguments. Lets you not have to type out
@@ -4490,7 +4606,7 @@ liftB1 :: OpB s N1 N1 a a -> BVar s n r a -> BVar s n r a
 --   
 --   See the documentation for <a>liftB</a> for caveats and potential
 --   problematic situations with this.
-liftB2 :: OpB s N2 N1 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a
+liftB2 :: OpB s N2 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a
 
 -- | Convenient wrapper over <a>liftB</a> that takes an <a>OpB</a> with
 --   three arguments and three <a>BVar</a> arguments. Lets you not have to
@@ -4512,7 +4628,7 @@ liftB2 :: OpB s N2 N1 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a
 --   
 --   See the documentation for <a>liftB</a> for caveats and potential
 --   problematic situations with this.
-liftB3 :: OpB s N3 N1 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BVar s n r a
+liftB3 :: OpB s N3 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BVar s n r a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking one
 --   argument. Uses <a>diff</a>, and so can take any numerical function
@@ -4522,7 +4638,7 @@ liftB3 :: OpB s N3 N1 a a -> BVar s n r a -> BVar s n r a -> BVar s n r a -> BVa
 --   &gt;&gt;&gt; gradOp' (op1 (recip . negate)) (5 :+ ØV)
 --   (-0.2, 0.04 :+ ØV)
 --   </pre>
-op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op N1 N1 a a
+op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op N1 a a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking two
 --   arguments. Uses <a>grad</a>, and so can take any numerical function
@@ -4532,7 +4648,7 @@ op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op N1 N1 a a
 --   &gt;&gt;&gt; gradOp' (op2 (\x y -&gt; x * sqrt y)) (3 :+ 4 :+ ØV)
 --   (6.0, 2.0 :+ 0.75 :+ ØV)
 --   </pre>
-op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op N2 N1 a a
+op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op N2 a a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking three
 --   arguments. Uses <a>grad</a>, and so can take any numerical function
@@ -4542,7 +4658,7 @@ op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   &gt;&gt;&gt; gradOp' (op3 (\x y z -&gt; (x * sqrt y)**z)) (3 :+ 4 :+ 2 :+ ØV)
 --   (36.0, 24.0 :+ 9.0 :+ 64.503 :+ ØV)
 --   </pre>
-op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op N3 N1 a a
+op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op N3 a a
 
 -- | Automatically create an <a>Op</a> of a numerical function taking
 --   multiple arguments. Uses <a>grad</a>, and so can take any numerical
@@ -4552,7 +4668,7 @@ op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Rever
 --   &gt;&gt;&gt; gradOp' (opN (\(x :+ y :+ Ø) -&gt; x * sqrt y)) (3 :+ 4 :+ ØV)
 --   (6.0, 2.0 :+ 0.75 :+ ØV)
 --   </pre>
-opN :: (Num a, Known Nat q) => (forall s. Reifies s Tape => Vec q (Reverse s a) -> Reverse s a) -> Op q N1 a a
+opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op n a a
 infixr 4 :+
 (*:) :: f a -> f a -> VecT k (S (S Z)) f a
 infix 5 *:
@@ -4574,76 +4690,76 @@ type N9 = S N8
 type N10 = S N9
 
 -- | Optimized version of <tt><a>op2</a> (<a>+</a>)</tt>.
-(+.) :: Num a => Op N2 N1 a a
+(+.) :: Num a => Op N2 a a
 
 -- | Optimized version of <tt><a>op2</a> (<a>-</a>)</tt>.
-(-.) :: Num a => Op N2 N1 a a
+(-.) :: Num a => Op N2 a a
 
 -- | Optimized version of <tt><a>op2</a> (<a>*</a>)</tt>.
-(*.) :: Num a => Op N2 N1 a a
+(*.) :: Num a => Op N2 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>negate</a></tt>.
-negateOp :: Num a => Op N1 N1 a a
+negateOp :: Num a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>abs</a></tt>.
-absOp :: Num a => Op N1 N1 a a
+absOp :: Num a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>signum</a></tt>.
-signumOp :: Num a => Op N1 N1 a a
+signumOp :: Num a => Op N1 a a
 
 -- | Optimized version of <tt><a>op2</a> (<a>/</a>)</tt>.
-(/.) :: Fractional a => Op N2 N1 a a
+(/.) :: Fractional a => Op N2 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>recip</a></tt>.
-recipOp :: Fractional a => Op N1 N1 a a
+recipOp :: Fractional a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>exp</a></tt>.
-expOp :: Floating a => Op N1 N1 a a
+expOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>log</a></tt>.
-logOp :: Floating a => Op N1 N1 a a
+logOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>sqrt</a></tt>.
-sqrtOp :: Floating a => Op N1 N1 a a
+sqrtOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op2</a> (<a>**</a>)</tt>.
-(**.) :: Floating a => Op N2 N1 a a
+(**.) :: Floating a => Op N2 a a
 
 -- | Optimized version of <tt><a>op2</a> <a>logBase</a></tt>.
-logBaseOp :: Floating a => Op N2 N1 a a
+logBaseOp :: Floating a => Op N2 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>sin</a></tt>.
-sinOp :: Floating a => Op N1 N1 a a
+sinOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>cos</a></tt>.
-cosOp :: Floating a => Op N1 N1 a a
+cosOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>tan</a></tt>.
-tanOp :: Floating a => Op N1 N1 a a
+tanOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>asin</a></tt>.
-asinOp :: Floating a => Op N1 N1 a a
+asinOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>acos</a></tt>.
-acosOp :: Floating a => Op N1 N1 a a
+acosOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>atan</a></tt>.
-atanOp :: Floating a => Op N1 N1 a a
+atanOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>sinh</a></tt>.
-sinhOp :: Floating a => Op N1 N1 a a
+sinhOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>cosh</a></tt>.
-coshOp :: Floating a => Op N1 N1 a a
+coshOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>tanh</a></tt>.
-tanhOp :: Floating a => Op N1 N1 a a
+tanhOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>asinh</a></tt>.
-asinhOp :: Floating a => Op N1 N1 a a
+asinhOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>acosh</a></tt>.
-acoshOp :: Floating a => Op N1 N1 a a
+acoshOp :: Floating a => Op N1 a a
 
 -- | Optimized version of <tt><a>op1</a> <a>atanh</a></tt>.
-atanhOp :: Floating a => Op N1 N1 a a
+atanhOp :: Floating a => Op N1 a a
