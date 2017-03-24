@@ -48,7 +48,7 @@ module Numeric.Backprop.Op (
   , composeOp, composeOp1, (~.)
   , composeOp', composeOp1'
   -- * Creation
-  , op0, opConst
+  , op0, opConst, idOp
   , opConst'
   -- ** Automatic creation using the /ad/ library
   , op1, op2, op3, opN
@@ -465,6 +465,15 @@ gradOpM o i = do
 -- @
 opCoerce :: Num a => Coercible a b => Op '[a] b
 opCoerce = opIso coerced
+
+-- | An 'Op' that just returns whatever it receives.  The identity
+-- function.
+--
+-- @
+-- 'idOp' = 'opIso' 'id'
+-- @
+idOp :: Num a => Op '[a] a
+idOp = op1' $ \x -> (x, fromMaybe 1)
 
 -- | A version of 'opTup' taking explicit 'Length', indicating the
 -- number of inputs expected and their types.
