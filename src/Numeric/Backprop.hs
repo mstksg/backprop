@@ -60,6 +60,7 @@ module Numeric.Backprop (
   -- * BP
   -- ** Backprop
   , backprop, evalBPOp, gradBPOp
+  , runOpB, gradOpB, gradOpB'
   -- ** Utility combinators
   , withInps, implicitly
   , withInps', implicitly'

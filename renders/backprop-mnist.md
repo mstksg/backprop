@@ -431,7 +431,7 @@ main = MWC.withSystemRandom $ \g -> do
     Just train <- loadMNIST "data/train-images-idx3-ubyte" "data/train-labels-idx1-ubyte"
     Just test  <- loadMNIST "data/t10k-images-idx3-ubyte"  "data/t10k-labels-idx1-ubyte"
     putStrLn "Loaded data."
-    net0 <- MWC.uniformR @(Network 784 300 100 9) (-0.5, 0.5) g
+    net0 <- MWC.uniformR @(Network 784 300 100 10) (-0.5, 0.5) g
     flip evalStateT net0 . forM_ [1..] $ \e -> do
       train' <- liftIO . fmap V.toList $ MWC.uniformShuffle (V.fromList train) g
       liftIO $ printf "[Epoch %d]\n" (e :: Int)
@@ -518,7 +518,7 @@ the contents of the idx files into *hmatrix* vectors:
 loadMNIST
     :: FilePath
     -> FilePath
-    -> IO (Maybe [(R 784, R 9)])
+    -> IO (Maybe [(R 784, R 10)])
 loadMNIST fpI fpL = runMaybeT $ do
     i <- MaybeT          $ decodeIDXFile       fpI
     l <- MaybeT          $ decodeIDXLabelsFile fpL
@@ -528,8 +528,8 @@ loadMNIST fpI fpL = runMaybeT $ do
   where
     mkImage :: VU.Vector Int -> Maybe (R 784)
     mkImage = create . VG.convert . VG.map (\i -> fromIntegral i / 255)
-    mkLabel :: Int -> Maybe (R 9)
-    mkLabel n = create $ HM.build 9 (\i -> if round i == n then 1 else 0)
+    mkLabel :: Int -> Maybe (R 10)
+    mkLabel n = create $ HM.build 10 (\i -> if round i == n then 1 else 0)
 ```
 
 And here are instances to generating random
