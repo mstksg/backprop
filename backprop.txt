@@ -312,7 +312,7 @@ gradOp :: Op as a -> Tuple as -> Tuple as
 --   output and also its gradient with respect to the inputs.
 --   
 --   <pre>
---   &gt;&gt;&gt; gradOpM' (op2 (*)) (3 ::&lt; 5 ::&lt; Ø) :: IO (Int, Tuple '[Int, Int])
+--   &gt;&gt;&gt; gradOp' (op2 (*)) (3 ::&lt; 5 ::&lt; Ø)
 --   (15, 5 ::&lt; 3 ::&lt; Ø)
 --   </pre>
 gradOp' :: Op as a -> Tuple as -> (a, Tuple as)
@@ -448,6 +448,14 @@ op0 :: a -> Op '[] a
 --   (10, 0 ::&lt; 0 ::&lt; 0 ::&lt; Ø)
 --   </pre>
 opConst :: forall as a. (Every Num as, Known Length as) => a -> Op as a
+
+-- | An <a>Op</a> that just returns whatever it receives. The identity
+--   function.
+--   
+--   <pre>
+--   <a>idOp</a> = <a>opIso</a> <a>id</a>
+--   </pre>
+idOp :: Num a => Op '[a] a
 
 -- | A version of <a>opConst</a> taking explicit <a>Length</a>, indicating
 --   the number of inputs and their types.
@@ -948,6 +956,10 @@ type Op as a = forall m. Monad m => OpM m as a
 --   You can think of <a>OpB</a> as a superclass/parent class of <a>Op</a>
 --   in this sense, and of <a>Op</a> as a subclass of <a>OpB</a>.
 type OpB s as a = OpM (ST s) as a
+
+-- | Convenient wrapper over a <tt>forall s. <a>OpB</a> s as a</tt>, to
+--   work around lack of impredicative types in GHC
+data OpBS as a
 data Prod k (f :: k -> *) (a :: [k]) :: forall k. (k -> *) -> [k] -> *
 [Ø] :: Prod k f ([] k)
 [:<] :: Prod k f ((:) k a1 as)
@@ -972,6 +984,36 @@ evalBPOp :: (forall s. BPOp s rs a) -> Tuple rs -> a
 -- | Run the <a>BPOp</a> on an input tuple and return the gradient of the
 --   result with respect to the input tuple.
 gradBPOp :: Every Num rs => (forall s. BPOp s rs a) -> Tuple rs -> Tuple rs
+
+-- | A version of <a>runOp</a> for <a>OpB</a>: runs the function that an
+--   <a>OpB</a> encodes, returning the result.
+--   
+--   <pre>
+--   &gt;&gt;&gt; runOpB (op2 (*)) (3 ::&lt; 5 ::&lt; Ø)
+--   15
+--   </pre>
+runOpB :: (forall s. OpB s as a) -> Tuple as -> a
+
+-- | A version of <a>gradOp</a> for <a>OpB</a>: runs the function that an
+--   <a>OpB</a> encodes, getting the gradient of the output with respect to
+--   the inputs.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOpB (op2 (*)) (3 ::&lt; 5 ::&lt; Ø)
+--   5 ::&lt; 3 ::&lt; Ø
+--   -- the gradient of x*y is (y, x)
+--   </pre>
+gradOpB :: (forall s. OpB s as a) -> Tuple as -> Tuple as
+
+-- | A version of <a>gradOp'</a> for <a>OpB</a>: runs the function that an
+--   <a>OpB</a> encodes, getting the result along with the gradient of the
+--   output with respect to the inputs.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOpB' (op2 (*)) (3 ::&lt; 5 ::&lt; Ø)
+--   (15, 5 ::&lt; 3 ::&lt; Ø)
+--   </pre>
+gradOpB' :: (forall s. OpB s as a) -> Tuple as -> (a, Tuple as)
 
 -- | Runs a continuation on a <a>Prod</a> of all of the input <a>BVar</a>s.
 --   
