@@ -28,7 +28,7 @@
 -- building/back-propagation for the library.
 
 module Numeric.Backprop.Internal
-  ( OpB
+  ( OpB, OpBS(..)
   , runOpB, gradOpB, gradOpB'
   , BPState(..), bpsSources
   , BP(..)
@@ -71,6 +71,10 @@ import           Numeric.Backprop.Op
 -- You can think of 'OpB' as a superclass/parent class of 'Op' in this
 -- sense, and of 'Op' as a subclass of 'OpB'.
 type OpB s as a = OpM (ST s) as a
+
+-- | Convenience wrapper over a @forall s. 'OpB' s as a@, to work around
+-- lack of impredicative types in GHC
+newtype OpBS as a = OpBS { runOpBS :: forall s. OpB s as a }
 
 -- | A version of 'runOp' for 'OpB': runs the function that an 'OpB'
 -- encodes, returning the result.

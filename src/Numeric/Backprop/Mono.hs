@@ -70,7 +70,7 @@ module Numeric.Backprop.Mono (
   -- * Types
   -- ** Backprop types
     BP, BPOp, BPOpI, BVar
-  , Op, OpB
+  , Op, OpB, OpBS(..)
   -- ** Vectors#vec#
   -- $vec
   , VecT(..), Vec, I(..)
@@ -292,6 +292,11 @@ type BPOpI s n r a = VecT n (BVar s n r) r -> BVar s n r a
 -- You can think of 'OpB' as a superclass/parent class of 'Op' in this
 -- sense, and of 'Op' as a subclass of 'OpB'.
 type OpB s n a b   = BP.OpB s (Replicate n a) b
+
+-- | Convenience wrapper over a @forall s. 'OpB' s n a b@, to work around
+-- lack of impredicative types in GHC
+newtype OpBS n a b = OpBS { runOpBS :: forall s. OpB s n a b }
+
 
 -- | Apply an 'OpB' to a 'VecT' (vector) of 'BVar's.
 --

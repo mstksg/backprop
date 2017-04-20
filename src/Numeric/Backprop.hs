@@ -53,7 +53,7 @@
 module Numeric.Backprop (
   -- * Types
   -- ** Backprop types
-    BP, BPOp, BPOpI, BVar, Op, OpB
+    BP, BPOp, BPOpI, BVar, Op, OpB, OpBS(..)
   -- ** Tuple types#prod#
   -- $prod
   , Prod(..), Tuple, I(..)

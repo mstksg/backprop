@@ -208,7 +208,7 @@ nsSum = iso to_ from_
       InL x  -> SOP.Z x
       InR xs -> SOP.S (from_ xs)
 
-tup1 :: forall a b. Iso' a (Tuple '[a])
+tup1 :: forall a. Iso' a (Tuple '[a])
 tup1 = iso to_ from_
   where
     to_   :: a -> Tuple '[a]
