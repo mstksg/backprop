@@ -56,7 +56,7 @@ module Numeric.Backprop (
     BP, BPOp, BPOpI, BVar, Op, OpB, OpBS(..)
   -- ** Tuple types#prod#
   -- $prod
-  , Prod(..), Tuple, I(..)
+  , Prod(..), Tuple, I(..), nil
   -- * BP
   -- ** Backprop
   , backprop, evalBPOp, gradBPOp
@@ -163,6 +163,13 @@ import qualified Generics.SOP              as SOP
 -- x :< y :< only z :: Prod f '[a, b, c]
 -- @
 --
+-- or, when pattern matching, you may use the 'nil' alias:
+--
+-- @
+-- foo :: Prod I '[a, b] -> (a, b)
+-- foo (I a :< I b :< nil) = (a, b)
+-- @
+--
 -- 'Tuple' is provided as a convenient type synonym for 'Prod' 'I', and has
 -- a convenient pattern synonym '::<' (and 'only_'), which can also be used
 -- for pattern matching:
@@ -177,6 +184,8 @@ import qualified Generics.SOP              as SOP
 -- x ::< y ::< only_ z :: 'Tuple' '[a, b, c]
 -- @
 
+nil :: Prod f '[]
+nil = Ø
 
 -- $sum
 --
