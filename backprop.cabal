@@ -34,7 +34,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Numeric.Backprop
                        -- Numeric.Backprop.Implicit
-                       -- Numeric.Backprop.Iso
+                       Numeric.Backprop.Iso
                        -- Numeric.Backprop.Mono
                        -- Numeric.Backprop.Mono.Implicit
                        Numeric.Backprop.Op
@@ -72,8 +72,10 @@ benchmark backprop-mnist-bench
                      , directory
                      , generics-sop
                      , hmatrix    >= 0.18
+                     , lens
                      , mnist-idx
                      , mwc-random
+                     , reflection
                      , time
                      , transformers
                      , type-combinators

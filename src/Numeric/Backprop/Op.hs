@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns         #-}
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
@@ -598,7 +599,7 @@ op1
 op1 f = Op $ \case
     I x :< Ø ->
       let (y, dx) = f x
-      in  (y, only_ . dx)
+      in  (y, \(!d) -> only_ . dx $ d)
 {-# INLINE op1 #-}
 
 -- | Create an 'Op' of a function taking two inputs, by giving its explicit
@@ -651,7 +652,7 @@ op2
 op2 f = Op $ \case
     I x :< I y :< Ø ->
       let (z, dxdy) = f x y
-      in  (z, (\(dx,dy) -> dx ::< dy ::< Ø) . dxdy)
+      in  (z, (\(!dx,!dy) -> dx ::< dy ::< Ø) . dxdy)
 {-# INLINE op2 #-}
 
 -- | Create an 'Op' of a function taking three inputs, by giving its explicit
@@ -662,7 +663,7 @@ op3
 op3 f = Op $ \case
     I x :< I y :< I z :< Ø ->
       let (q, dxdydz) = f x y z
-      in  (q, (\(dx, dy, dz) -> dx ::< dy ::< dz ::< Ø) . dxdydz)
+      in  (q, (\(!dx, !dy, !dz) -> dx ::< dy ::< dz ::< Ø) . dxdydz)
 {-# INLINE op3 #-}
 
 -- | Automatically create an 'Op' of a numerical function taking one

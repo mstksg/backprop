@@ -53,9 +53,11 @@
 module Numeric.Backprop (
     BVar
   , W
+  , constVar
   , liftOpN
   , liftOp1, liftOp2, liftOp3, liftOp4
   , lensVar, (^^.)
+  , uncurryVar
   , backprop, runBP, gradBP
   , Op(..)
   , Prod(..), Tuple, I(..)
@@ -119,6 +121,7 @@ module Numeric.Backprop (
 -- import           Control.Monad.ST
 -- import           Control.Monad.State
 -- import           Data.Kind
+-- import           Data.Kind
 -- import           Data.Maybe
 -- import           Data.Monoid            ((<>))
 -- import           Data.STRef
@@ -136,25 +139,26 @@ module Numeric.Backprop (
 -- import           Type.Class.Witness
 -- import qualified Generics.SOP           as SOP
 import           Data.Reflection
-import           Lens.Micro hiding         (ix)
+import           Lens.Micro
 import           Numeric.Backprop.Internal
 import           Numeric.Backprop.Op
 import           Type.Reflection
 
 runBP
     :: forall a b. (Num a, Typeable a, Num b, Typeable b)
-    => (forall k (s :: k). Reifies s W => BVar s a -> BVar s b)
+    => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> b
 runBP f = fst . backprop f
 
 gradBP
     :: forall a b. (Num a, Typeable a, Num b, Typeable b)
-    => (forall k (s :: k). Reifies s W => BVar s a -> BVar s b)
+    => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> a
 gradBP f = snd . backprop f
 
+infixl 8 ^^.
 (^^.)
     :: forall a b s. (Reifies s W, Num b, Typeable b, Num a, Typeable a)
     => BVar s b
@@ -162,6 +166,11 @@ gradBP f = snd . backprop f
     -> BVar s a
 x ^^. l = lensVar l x
 
+uncurryVar
+    :: (Num a, Typeable a, Num b, Typeable b, Num (a,b))
+    => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
+    -> (forall s. Reifies s W => BVar s (a, b) -> BVar s c)
+uncurryVar f xy = f (xy ^^. _1) (xy ^^. _2)
 
 
 ---- $prod

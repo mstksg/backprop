@@ -33,6 +33,7 @@
 module Numeric.Backprop.Internal (
     BVar
   , W
+  , constVar
   , liftOpN
   , liftOp1, liftOp2, liftOp3, liftOp4
   , lensVar
@@ -62,9 +63,10 @@ import           Type.Class.Witness
 import           Type.Reflection
 import qualified Data.Vector.Mutable           as MV
 
-data BVar s a = BVInp
-              | BVIx Int
-              | BVConst a
+data BVar (s :: Type) (a :: Type)
+        = BVInp
+        | BVIx Int
+        | BVConst a
 
 data InpRef :: Type -> Type where
     IR :: Num a
@@ -98,6 +100,9 @@ insertNode
     -> IO (BVar s a)
 insertNode tn w = fmap BVIx . atomicModifyIORef (wRef w) $ \(n,t) ->
     ((n+1,STN typeRep tn:t), n)
+
+constVar :: a -> BVar s a
+constVar = BVConst
 
 liftOpN_
     :: forall s as b. (Reifies s W, Num b, Typeable b, Every Typeable as, Every Num as)
@@ -320,11 +325,11 @@ registerOut
     :: (Reifies s W, Num a, Typeable a)
     => BVar s a
     -> IO ()
-registerOut = void . liftOp1_ idOp . join seq
+registerOut !v = void . liftOp1_ idOp $ v
 
 backprop
     :: forall a b. (Num a, Typeable a, Num b, Typeable b)
-    => (forall k (s :: k). Reifies s W => BVar s a -> BVar s b)
+    => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> (b, a)
 backprop f = \x -> runST (go x)
