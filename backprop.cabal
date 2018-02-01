@@ -33,12 +33,12 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Numeric.Backprop
-                       Numeric.Backprop.Implicit
-                       Numeric.Backprop.Iso
-                       Numeric.Backprop.Mono
-                       Numeric.Backprop.Mono.Implicit
+                       -- Numeric.Backprop.Implicit
+                       -- Numeric.Backprop.Iso
+                       -- Numeric.Backprop.Mono
+                       -- Numeric.Backprop.Mono.Implicit
                        Numeric.Backprop.Op
-                       Numeric.Backprop.Op.Mono
+                       -- Numeric.Backprop.Op.Mono
   other-modules:       Numeric.Backprop.Internal
                        Data.Type.Util
   build-depends:       base >= 4.7 && < 5
@@ -48,13 +48,16 @@ library
                      , microlens-mtl
                      , microlens-th
                      , mtl
+                     , primitive
                      , profunctors
                      , reflection
                      , tagged
+                     , transformers
                      , transformers-base
                      , type-combinators
+                     , vector
   default-language:    Haskell2010
-  ghc-options:         -Wall
+  ghc-options:         -Wall -fprint-explicit-kinds
 
 benchmark backprop-mnist-bench
   type:                exitcode-stdio-1.0

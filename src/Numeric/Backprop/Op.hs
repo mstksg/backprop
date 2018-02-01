@@ -9,7 +9,6 @@
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE ViewPatterns         #-}
 
 -- |
 -- Module      : Numeric.Backprop.Op
@@ -34,16 +33,16 @@ module Numeric.Backprop.Op (
   -- $opdoc
   -- * Types
   -- ** Op and Synonyms
-    Op, pattern Op, OpM(..)
+    Op(..)
   -- ** Tuple Types
   -- | See "Numeric.Backprop#prod" for a mini-tutorial on 'Prod' and
   -- 'Tuple'
   , Prod(..), Tuple, I(..)
   -- * Running
   -- ** Pure
-  , runOp, gradOp, gradOp', gradOpWith, gradOpWith', runOp'
+  , runOp, evalOp, gradOp, gradOpWith
   -- ** Monadic
-  , runOpM, gradOpM, gradOpM', gradOpWithM, gradOpWithM', runOpM'
+  -- , runOpM, gradOpM, gradOpM', gradOpWithM, gradOpWithM', runOpM'
   -- * Manipulation
   , composeOp, composeOp1, (~.)
   , composeOp', composeOp1'
@@ -56,7 +55,7 @@ module Numeric.Backprop.Op (
   -- ** Giving gradients directly
   , op1', op2', op3'
   -- ** From Isomorphisms
-  , opCoerce, opTup, opIso, opTup'
+  , opCoerce, opTup, opIso
   -- * Utility
   , pattern (:>), only, head'
   , pattern (::<), only_
@@ -71,7 +70,6 @@ module Numeric.Backprop.Op (
 
 import           Data.Bifunctor
 import           Data.Coerce
-import           Data.Maybe
 import           Data.Reflection                  (Reifies)
 import           Data.Type.Combinator
 import           Data.Type.Conjunction
@@ -177,14 +175,15 @@ import           Type.Class.Witness
 --
 -- See 'runOpM', 'gradOpM', and 'gradOpWithM' for examples on how to run
 -- it.
-newtype OpM m as a =
+newtype Op as a =
     -- | Construct an 'OpM' by giving a (monadic) function creating the
     -- result, and also a continuation on how to create the gradient, given
     -- the total derivative of @a@.
     --
     -- See the module documentation for "Numeric.Backprop.Op" for more
     -- details on the function that this constructor and 'Op' expect.
-    OpM (Tuple as -> m (a, Maybe a -> m (Tuple as)))
+    Op { runOpWith :: Tuple as -> (a, a -> Tuple as)
+       }
 
 -- | An @'Op' as a@ describes a differentiable function from @as@ to @a@.
 --
@@ -221,35 +220,35 @@ newtype OpM m as a =
 -- Many functions in this library will expect an @'OpM' m as a@ (or
 -- an @'Numeric.Backprop.OpB' s as a@), and in all of these cases, you can
 -- provide an @'Op' as a@.
-type Op as a = forall m. Monad m => OpM m as a
+-- type Op as a = forall m. Monad m => OpM m as a
 
 -- | Helper wrapper used for the implementation of 'composeOp'.
-newtype OpCont m as a = OC { runOpCont :: Maybe a -> m (Tuple as) }
+newtype OpCont as a = OC { runOpCont :: a -> Tuple as }
 
--- | Construct an 'Op' by giving a function creating the result, and also
--- a continuation on how to create the gradient, given the total derivative
--- of @a@.
---
--- See the module documentation for "Numeric.Backprop.Op" for more details
--- on the function that this constructor and 'OpM' expect.
-pattern Op :: (Tuple as -> (a, Maybe a -> Tuple as)) -> Op as a
-pattern Op runOp' <- OpM (\f -> (second . fmap) getI . getI . f -> runOp')
-  where
-    Op f = OpM (pure . (second . fmap) pure . f)
+---- | Construct an 'Op' by giving a function creating the result, and also
+---- a continuation on how to create the gradient, given the total derivative
+---- of @a@.
+----
+---- See the module documentation for "Numeric.Backprop.Op" for more details
+---- on the function that this constructor and 'OpM' expect.
+--pattern Op :: (Tuple as -> (a, Maybe a -> Tuple as)) -> Op as a
+--pattern Op runOp' <- OpM (\f -> (second . fmap) getI . getI . f -> runOp')
+--  where
+--    Op f = OpM (pure . (second . fmap) pure . f)
 
--- | A combination of 'runOpM' and 'gradOpWithM''.  Given an 'OpM' and
--- inputs, returns the result of the 'OpM' and a continuation that gives
--- its gradient.
---
--- The continuation takes the total derivative of the result as input.  See
--- documenation for 'gradOpWithM'' and module documentation for
--- "Numeric.Backprop.Op" for more information.
-runOpM'
-    :: OpM m as a                       -- ^ 'OpM' to run
-    -> Tuple as                         -- ^ Inputs
-    -> m (a, Maybe a -> m (Tuple as))   -- ^ Result, and continuation to
-                                        --     get the gradient
-runOpM' (OpM f) = f
+---- | A combination of 'runOpM' and 'gradOpWithM''.  Given an 'OpM' and
+---- inputs, returns the result of the 'OpM' and a continuation that gives
+---- its gradient.
+----
+---- The continuation takes the total derivative of the result as input.  See
+---- documenation for 'gradOpWithM'' and module documentation for
+---- "Numeric.Backprop.Op" for more information.
+--runOpM'
+--    :: OpM m as a                       -- ^ 'OpM' to run
+--    -> Tuple as                         -- ^ Inputs
+--    -> m (a, Maybe a -> m (Tuple as))   -- ^ Result, and continuation to
+--                                        --     get the gradient
+--runOpM' (OpM f) = f
 
 -- | A combination of 'runOp' and 'gradOpWith''.  Given an 'Op' and inputs,
 -- returns the result of the 'Op' and a continuation that gives its
@@ -258,12 +257,13 @@ runOpM' (OpM f) = f
 -- The continuation takes the total derivative of the result as input.  See
 -- documenation for 'gradOpWith'' and module documentation for
 -- "Numeric.Backprop.Op" for more information.
-runOp'
-    :: Op as a                  -- ^ 'Op' to run
-    -> Tuple as                 -- ^ Inputs
-    -> (a, Maybe a -> Tuple as) -- ^ Result, and continuation to get
-                                --     the gradient
-runOp' o = (second . fmap) getI . getI . runOpM' o
+-- runOp'
+--     :: Op as a                  -- ^ 'Op' to run
+--     -> Tuple as                 -- ^ Inputs
+--     -> (a, a -> Tuple as) -- ^ Result, and continuation to get
+--                                 --     the gradient
+-- -- runOp' o = (second . fmap) getI . getI . runOp' o
+-- runOp' (Op f) = f
 
 -- | A version of 'composeOp' taking explicit 'Length', indicating the
 -- number of inputs expected and their types.
@@ -274,28 +274,30 @@ runOp' o = (second . fmap) getI . getI . runOpM' o
 -- down @as@ as a list of types, you should be able to just use
 -- 'composeOp'.
 composeOp'
-    :: forall m as bs c. (Monad m, Every Num as)
+    :: forall as bs c. Every Num as
     => Length as
-    -> Prod (OpM m as) bs   -- ^ 'Prod' of 'OpM's taking @as@ and returning
+    -> Prod (Op as) bs   -- ^ 'Prod' of 'OpM's taking @as@ and returning
                             --     different @b@ in @bs@
-    -> OpM m bs c           -- ^ 'OpM' taking eac of the @bs@ from the
+    -> Op bs c           -- ^ 'OpM' taking eac of the @bs@ from the
                             --     input 'Prod'.
-    -> OpM m as c           -- ^ Composed 'OpM'
-composeOp' l os o = OpM $ \xs -> do
-    (ys, conts) <- fmap unzipP
-                 . traverse1 (fmap (\(x, c) -> I x :&: OC c) . flip runOpM' xs)
-                 $ os
-    (z, gFz) <- runOpM' o ys
-    let gFunc g0 = do
-          g1  <- gFz g0
-          g2s <- sequenceA
-                    . toList (\(oc :&: I g) -> runOpCont oc (Just g))
-                    $ conts `zipP` g1
-          return $ imap1 (\ix gs -> I (sum gs) \\ every @_ @Num ix)
+    -> Op as c           -- ^ Composed 'OpM'
+composeOp' l os o = Op $ \xs ->
+    let (ys, conts) = unzipP
+                    . map1 ((\(x, c) -> I x :&: OC c) . flip runOpWith xs)
+                    $ os
+        (z, gFz) = runOpWith o ys
+        gFunc g0 =
+          let g1 = gFz g0
+              g2s = toList (\(oc :&: I g) -> runOpCont oc g)
+                  $ conts `zipP` g1
+          -- g2s <- sequenceA
+          --           . toList (\(oc :&: I g) -> runOpCont oc (Just g))
+          --           $ conts `zipP` g1
+          in  imap1 (\ix gs -> I (sum gs) \\ every @_ @Num ix)
                  . foldr (\x -> map1 (uncurryFan (\(I y) -> (y:))) . zipP x)
                          (lengthProd [] l)
                  $ g2s
-    return (z, gFunc)
+    in (z, gFunc)
 
 -- | Compose 'OpM's together, similar to '.'.  But, because all 'OpM's are
 -- \(\mathbb{R}^N \rightarrow \mathbb{R}\), this is more like 'sequence'
@@ -305,12 +307,12 @@ composeOp' l os o = OpM $ \xs -> do
 -- m as b3@, it can compose them with an @'OpM' m '[b1,b2,b3] c@ to create
 -- an @'OpM' m as c@.
 composeOp
-    :: (Monad m, Every Num as, Known Length as)
-    => Prod (OpM m as) bs   -- ^ 'Prod' of 'OpM's taking @as@ and returning
+    :: (Every Num as, Known Length as)
+    => Prod (Op as) bs   -- ^ 'Prod' of 'OpM's taking @as@ and returning
                             --     different @b@ in @bs@
-    -> OpM m bs c           -- ^ 'OpM' taking eac of the @bs@ from the
+    -> Op bs c           -- ^ 'OpM' taking eac of the @bs@ from the
                             --     input 'Prod'.
-    -> OpM m as c           -- ^ Composed 'OpM'
+    -> Op as c           -- ^ Composed 'OpM'
 composeOp = composeOp' known
 
 -- | A version of 'composeOp1' taking explicit 'Length', indicating the
@@ -322,21 +324,21 @@ composeOp = composeOp' known
 -- down @as@ as a list of types, you should be able to just use
 -- 'composeOp1'.
 composeOp1'
-    :: (Monad m, Every Num as)
+    :: Every Num as
     => Length as
-    -> OpM m as b
-    -> OpM m '[b] c
-    -> OpM m as c
+    -> Op as b
+    -> Op '[b] c
+    -> Op as c
 composeOp1' l = composeOp' l . only
 
 -- | Convenient wrapper over 'composeOp' for the case where the second
 -- function only takes one input, so the two 'OpM's can be directly piped
 -- together, like for '.'.
 composeOp1
-    :: (Monad m, Every Num as, Known Length as)
-    => OpM m as b
-    -> OpM m '[b] c
-    -> OpM m as c
+    :: (Every Num as, Known Length as)
+    => Op as b
+    -> Op '[b] c
+    -> Op as c
 composeOp1 = composeOp1' known
 
 -- | Convenient infix synonym for (flipped) 'composeOp1'.  Meant to be used
@@ -350,10 +352,10 @@ composeOp1 = composeOp1' known
 -- @
 infixr 9 ~.
 (~.)
-    :: (Monad m, Known Length as, Every Num as)
-    => OpM m '[b] c
-    -> OpM m as b
-    -> OpM m as c
+    :: (Known Length as, Every Num as)
+    => Op '[b] c
+    -> Op as b
+    -> Op as c
 (~.) = flip composeOp1
 
 
@@ -361,30 +363,30 @@ infixr 9 ~.
 --
 -- >>> runOp (op2 (*)) (3 ::< 5 ::< Ø)
 -- 15
-runOp :: Op as a -> Tuple as -> a
-runOp o = fst . runOp' o
+evalOp :: Op as a -> Tuple as -> a
+evalOp o = fst . runOpWith o
 
 -- | Run the function that an 'Op' encodes, to get the resulting output and
 -- also its gradient with respect to the inputs.
 --
 -- >>> gradOp' (op2 (*)) (3 ::< 5 ::< Ø)
 -- (15, 5 ::< 3 ::< Ø)
-gradOp' :: Op as a -> Tuple as -> (a, Tuple as)
-gradOp' o = second ($ Nothing) . runOp' o
+runOp :: Num a => Op as a -> Tuple as -> (a, Tuple as)
+runOp o = second ($ 1) . runOpWith o
 
--- | The monadic version of 'runOp', for 'OpM's.
---
--- >>> runOpM (op2 (*)) (3 ::< 5 ::< Ø) :: IO Int
--- 15
-runOpM :: Functor m => OpM m as a -> Tuple as -> m a
-runOpM o = fmap fst . runOpM' o
+---- | The monadic version of 'runOp', for 'OpM's.
+----
+---- >>> runOpM (op2 (*)) (3 ::< 5 ::< Ø) :: IO Int
+---- 15
+--runOpM :: Functor m => OpM m as a -> Tuple as -> m a
+--runOpM o = fmap fst . runOpM' o
 
--- | The monadic version of 'gradOp'', for 'OpM's.
-gradOpM' :: Monad m => OpM m as a -> Tuple as -> m (a, Tuple as)
-gradOpM' o x = do
-    (y, gF) <- runOpM' o x
-    g <- gF Nothing
-    return (y, g)
+-- -- | The monadic version of 'gradOp'', for 'OpM's.
+-- gradOpM' :: Monad m => OpM m as a -> Tuple as -> m (a, Tuple as)
+-- gradOpM' o x = do
+--     (y, gF) <- runOpM' o x
+--     g <- gF Nothing
+--     return (y, g)
 
 -- | A combination of 'gradOp' and 'gradOpWith'.  The third argument is
 -- (optionally) the total derivative the result.  Give 'Nothing' and it is
@@ -395,49 +397,49 @@ gradOpM' o x = do
 --
 -- See 'gradOp' and the module documentaiton for "Numeric.Backprop.Op" for
 -- more information.
-gradOpWith'
-    :: Op as a      -- ^ 'Op' to run
-    -> Tuple as     -- ^ Inputs to run it with
-    -> Maybe a      -- ^ If 'Just', taken as the total derivative of the
-                    --     result.  If 'Nothing', assumes that the result is
-                    --     the final result.
-    -> Tuple as     -- ^ The gradient
-gradOpWith' o = snd . runOp' o
-
--- | The monadic version of 'gradOpWith'', for 'OpM's.
-gradOpWithM'
-    :: Monad m
-    => OpM m as a       -- ^ 'OpM' to run
-    -> Tuple as         -- ^ Inputs to run it with
-    -> Maybe a          -- ^ If 'Just', taken as the total derivative of the
-                        --     result.  If 'Nothing', assumes that the result is
-                        --     the final result.
-    -> m (Tuple as)     -- ^ The gradient
-gradOpWithM' o xs g = do
-    (_, f) <- runOpM' o xs
-    f g
-
--- | Run the function that an 'Op' encodes, and get the gradient of
--- a "final result" with respect to the inputs, given the total derivative
--- of the output with the final result.
---
--- See 'gradOp' and the module documentaiton for "Numeric.Backprop.Op" for
--- more information.
 gradOpWith
     :: Op as a      -- ^ 'Op' to run
     -> Tuple as     -- ^ Inputs to run it with
-    -> a            -- ^ The total derivative of the result
+    -> a      -- ^ If 'Just', taken as the total derivative of the
+                    --     result.  If 'Nothing', assumes that the result is
+                    --     the final result.
     -> Tuple as     -- ^ The gradient
-gradOpWith o i = gradOpWith' o i . Just
+gradOpWith o = snd . runOpWith o
 
--- | The monadic version of 'gradOpWith', for 'OpM's.
-gradOpWithM
-    :: Monad m
-    => OpM m as a       -- ^ 'OpM' to run
-    -> Tuple as         -- ^ Inputs to run it with
-    -> a                -- ^ The total derivative of the result
-    -> m (Tuple as)     -- ^ the gradient
-gradOpWithM o i = gradOpWithM' o i . Just
+-- -- | The monadic version of 'gradOpWith'', for 'OpM's.
+-- gradOpWithM'
+--     :: Monad m
+--     => OpM m as a       -- ^ 'OpM' to run
+--     -> Tuple as         -- ^ Inputs to run it with
+--     -> Maybe a          -- ^ If 'Just', taken as the total derivative of the
+--                         --     result.  If 'Nothing', assumes that the result is
+--                         --     the final result.
+--     -> m (Tuple as)     -- ^ The gradient
+-- gradOpWithM' o xs g = do
+--     (_, f) <- runOpM' o xs
+--     f g
+
+---- | Run the function that an 'Op' encodes, and get the gradient of
+---- a "final result" with respect to the inputs, given the total derivative
+---- of the output with the final result.
+----
+---- See 'gradOp' and the module documentaiton for "Numeric.Backprop.Op" for
+---- more information.
+--gradOpWith
+--    :: Op as a      -- ^ 'Op' to run
+--    -> Tuple as     -- ^ Inputs to run it with
+--    -> a            -- ^ The total derivative of the result
+--    -> Tuple as     -- ^ The gradient
+--gradOpWith = gradOpWith'
+
+-- -- | The monadic version of 'gradOpWith', for 'OpM's.
+-- gradOpWithM
+--     :: Monad m
+--     => OpM m as a       -- ^ 'OpM' to run
+--     -> Tuple as         -- ^ Inputs to run it with
+--     -> a                -- ^ The total derivative of the result
+--     -> m (Tuple as)     -- ^ the gradient
+-- gradOpWithM o i = gradOpWithM' o i . Just
 
 -- | Run the function that an 'Op' encodes, and get the gradient of the
 -- output with respect to the inputs.
@@ -445,14 +447,14 @@ gradOpWithM o i = gradOpWithM' o i . Just
 -- >>> gradOp (op2 (*)) (3 ::< 5 ::< Ø)
 -- 5 ::< 3 ::< Ø
 -- -- the gradient of x*y is (y, x)
-gradOp :: Op as a -> Tuple as -> Tuple as
-gradOp o i = gradOpWith' o i Nothing
+gradOp :: Num a => Op as a -> Tuple as -> Tuple as
+gradOp o i = gradOpWith o i 1
 
--- | The monadic version of 'gradOp', for 'OpM's.
-gradOpM :: Monad m => OpM m as a -> Tuple as -> m (Tuple as)
-gradOpM o i = do
-    (_, gF) <- runOpM' o i
-    gF Nothing
+-- -- | The monadic version of 'gradOp', for 'OpM's.
+-- gradOpM :: Monad m => OpM m as a -> Tuple as -> m (Tuple as)
+-- gradOpM o i = do
+--     (_, gF) <- runOpM' o i
+--     gF Nothing
 
 -- | An 'Op' that coerces an item into another item whose type has the same
 -- runtime representation.  Requires the input to be an instance of 'Num'.
@@ -473,21 +475,21 @@ opCoerce = opIso coerced
 -- 'idOp' = 'opIso' 'id'
 -- @
 idOp :: Num a => Op '[a] a
-idOp = op1' $ \x -> (x, fromMaybe 1)
+idOp = op1' $ \x -> (x, id)
 
--- | A version of 'opTup' taking explicit 'Length', indicating the
--- number of inputs expected and their types.
---
--- Requiring an explicit 'Length' is mostly useful for rare "extremely
--- polymorphic" situations, where GHC can't infer the type and length of
--- the the expected input tuple.  If you ever actually explicitly write
--- down @as@ as a list of types, you should be able to just use
--- 'opTup'.
-opTup'
-    :: Every Num as
-    => Length as
-    -> Op as (Tuple as)
-opTup' l = Op $ \xs -> (xs, fromMaybe (map1 (I . (1 \\) . every @_ @Num) (indices' l)))
+---- | A version of 'opTup' taking explicit 'Length', indicating the
+---- number of inputs expected and their types.
+----
+---- Requiring an explicit 'Length' is mostly useful for rare "extremely
+---- polymorphic" situations, where GHC can't infer the type and length of
+---- the the expected input tuple.  If you ever actually explicitly write
+---- down @as@ as a list of types, you should be able to just use
+---- 'opTup'.
+--opTup'
+--    :: Every Num as
+--    => Length as
+--    -> Op as (Tuple as)
+--opTup' l = Op $ \xs -> (xs, id)
 
 -- | An 'Op' that takes @as@ and returns exactly the input tuple.
 --
@@ -495,9 +497,8 @@ opTup' l = Op $ \xs -> (xs, fromMaybe (map1 (I . (1 \\) . every @_ @Num) (indice
 -- (1 ::< 2 ::< 3 ::< Ø, 1 ::< 1 ::< 1 ::< Ø)
 opTup
     :: (Every Num as, Known Length as)
-    => Length as
-    -> Op as (Tuple as)
-opTup l = Op $ \xs -> (xs, fromMaybe (map1 (I . (1 \\) . every @_ @Num) (indices' l)))
+    => Op as (Tuple as)
+opTup = Op $ \xs -> (xs, id)
 
 -- | An 'Op' that runs the input value through the isomorphism encoded in
 -- the 'Iso'.  Requires the input to be an instance of 'Num'.
@@ -507,7 +508,7 @@ opTup l = Op $ \xs -> (xs, fromMaybe (map1 (I . (1 \\) . every @_ @Num) (indices
 -- 'Numeric.Lens.exponentiating'.  Basically, don't use this for any
 -- "numeric" isomorphisms.
 opIso :: Num a => Iso' a b -> Op '[ a ] b
-opIso i = op1' $ \x -> (view i x, maybe 1 (review i))
+opIso i = op1' $ \x -> (view i x, review i)
 
 -- | A version of 'opConst' taking explicit 'Length', indicating the
 -- number of inputs and their types.
@@ -518,7 +519,7 @@ opIso i = op1' $ \x -> (view i x, maybe 1 (review i))
 -- down @as@ as a list of types, you should be able to just use
 -- 'opConst'.
 opConst' :: forall as a. Every Num as => Length as -> a -> Op as a
-opConst' l x = Op $ \_ ->
+opConst' l x = Op $ const
     (x , const $ map1 ((0 \\) . every @_ @Num) (indices' l))
 
 -- | An 'Op' that ignores all of its inputs and returns a given constant
@@ -591,7 +592,7 @@ op0 x = Op $ \case
 -- For numeric functions, single-input 'Op's can be generated automatically
 -- using 'op1'.
 op1'
-    :: (a -> (b, Maybe b -> a))
+    :: (a -> (b, b -> a))
     -> Op '[a] b
 op1' f = Op $ \case
     I x :< Ø ->
@@ -644,7 +645,7 @@ op1' f = Op $ \case
 -- For numeric functions, two-input 'Op's can be generated automatically
 -- using 'op2'.
 op2'
-    :: (a -> b -> (c, Maybe c -> (a, b)))
+    :: (a -> b -> (c, c -> (a, b)))
     -> Op '[a,b] c
 op2' f = Op $ \case
     I x :< I y :< Ø ->
@@ -655,7 +656,7 @@ op2' f = Op $ \case
 -- | Create an 'Op' of a function taking three inputs, by giving its explicit
 -- gradient.  See documentation for 'op2'' for more details.
 op3'
-    :: (a -> b -> c -> (d, Maybe d -> (a, b, c)))
+    :: (a -> b -> c -> (d, d -> (a, b, c)))
     -> Op '[a,b,c] d
 op3' f = Op $ \case
     I x :< I y :< I z :< Ø ->
@@ -674,7 +675,7 @@ op1 :: Num a
     -> Op '[a] a
 op1 f = op1' $ \x ->
     let (z, dx) = diff' f x
-    in  (z, maybe dx (* dx))
+    in  (z, (* dx))
 
 -- | Automatically create an 'Op' of a numerical function taking two
 -- arguments.  Uses 'Numeric.AD.grad', and so can take any numerical function
@@ -709,9 +710,9 @@ opN :: (Num a, Known Nat n)
     -> Op (Replicate n a) a
 opN f = Op $ \xs ->
     let (y, dxs) = grad' f (prodToVec' known xs)
-    in  (y, vecToProd . maybe dxs (\q -> (q *) <$> dxs))
+    in  (y, vecToProd . \q -> (q *) <$> dxs)
 
-instance (Monad m, Known Length as, Every Num as, Num a) => Num (OpM m as a) where
+instance (Known Length as, Every Num as, Num a) => Num (Op as a) where
     o1 + o2       = composeOp (o1 :< o2 :< Ø) (+.)
     {-# INLINE (+) #-}
     o1 - o2       = composeOp (o1 :< o2 :< Ø) (-.)
@@ -727,14 +728,14 @@ instance (Monad m, Known Length as, Every Num as, Num a) => Num (OpM m as a) whe
     fromInteger x = opConst (fromInteger x)
     {-# INLINE fromInteger #-}
 
-instance (Monad m, Known Length as, Every Fractional as, Every Num as, Fractional a) => Fractional (OpM m as a) where
+instance (Known Length as, Every Fractional as, Every Num as, Fractional a) => Fractional (Op as a) where
     o1 / o2        = composeOp (o1 :< o2 :< Ø) (/.)
     recip o        = composeOp (o  :< Ø)       recipOp
     {-# INLINE recip #-}
     fromRational x = opConst (fromRational x)
     {-# INLINE fromRational #-}
 
-instance (Monad m, Known Length as, Every Floating as, Every Fractional as, Every Num as, Floating a) => Floating (OpM m as a) where
+instance (Known Length as, Every Floating as, Every Fractional as, Every Num as, Floating a) => Floating (Op as a) where
     pi            = opConst pi
     {-# INLINE pi #-}
     exp   o       = composeOp (o  :< Ø)       expOp
@@ -793,35 +794,36 @@ instance (Monad m, Known Length as, Every Floating as, Every Fractional as, Ever
 
 -- | Optimized version of @'op1' ('+')@.
 (+.) :: Num a => Op '[a, a] a
-(+.) = op2' $ \x y -> (x + y, maybe (1, 1) (\g -> (g, g)))
+(+.) = op2' $ \x y -> (x + y, \g -> (g, g))
 {-# INLINE (+.) #-}
 
 -- | Optimized version of @'op1' ('-')@.
 (-.) :: Num a => Op '[a, a] a
-(-.) = op2' $ \x y -> (x - y, maybe (1, -1) (\g -> (g, -g)))
+(-.) = op2' $ \x y -> (x - y, \g -> (g, -g))
 {-# INLINE (-.) #-}
 
 -- | Optimized version of @'op1' ('*')@.
 (*.) :: Num a => Op '[a, a] a
-(*.) = op2' $ \x y -> (x * y, maybe (y, x) (\g -> (y*g, x*g)))
+(*.) = op2' $ \x y -> (x * y, \g -> (y*g, x*g))
 {-# INLINE (*.) #-}
 
 -- | Optimized version of @'op1' ('/')@.
 (/.) :: Fractional a => Op '[a, a] a
-(/.) = op2' $ \x y -> (x / y, maybe (1/y, -x/(y*y)) (\g -> (g/y, -g*x/(y*y))))
+(/.) = op2' $ \x y -> (x / y, \g -> (g/y, -g*x/(y*y)))
 {-# INLINE (/.) #-}
 
 -- | Optimized version of @'op1' ('**')@.
 (**.) :: Floating a => Op '[a, a] a
-(**.) = op2' $ \x y -> (x ** y, let dx = y*x**(y-1)
-                                    dy = x**y*log(x)
-                                in  maybe (dx, dy) (\g -> (g*dx, g*dy))
+(**.) = op2' $ \x y -> ( x ** y
+                       , let dx = y*x**(y-1)
+                             dy = x**y*log x
+                         in  \g -> (g*dx, g*dy)
                        )
 {-# INLINE (**.) #-}
 
 -- | Optimized version of @'op1' 'negate'@.
 negateOp :: Num a => Op '[a] a
-negateOp = op1' $ \x -> (negate x, maybe (-1) negate)
+negateOp = op1' $ \x -> (negate x, negate)
 {-# INLINE negateOp  #-}
 
 -- | Optimized version of @'op1' 'signum'@.
@@ -831,94 +833,94 @@ signumOp = op1' $ \x -> (signum x, const 0)
 
 -- | Optimized version of @'op1' 'abs'@.
 absOp :: Num a => Op '[a] a
-absOp = op1' $ \x -> (abs x, maybe (signum x) (* signum x))
+absOp = op1' $ \x -> (abs x, (* signum x))
 {-# INLINE absOp #-}
 
 -- | Optimized version of @'op1' 'recip'@.
 recipOp :: Fractional a => Op '[a] a
-recipOp = op1' $ \x -> (recip x, maybe (-1/(x*x)) ((/(x*x)) . negate))
+recipOp = op1' $ \x -> (recip x, (/(x*x)) . negate)
 {-# INLINE recipOp #-}
 
 -- | Optimized version of @'op1' 'exp'@.
 expOp :: Floating a => Op '[a] a
-expOp = op1' $ \x -> (exp x, maybe (exp x) (exp x *))
+expOp = op1' $ \x -> (exp x, (exp x *))
 {-# INLINE expOp #-}
 
 -- | Optimized version of @'op1' 'log'@.
 logOp :: Floating a => Op '[a] a
-logOp = op1' $ \x -> (log x, (/x) . fromMaybe 1)
+logOp = op1' $ \x -> (log x, (/x))
 {-# INLINE logOp #-}
 
 -- | Optimized version of @'op1' 'sqrt'@.
 sqrtOp :: Floating a => Op '[a] a
-sqrtOp = op1' $ \x -> (sqrt x, maybe (0.5 * sqrt x) (/ (2 * sqrt x)))
+sqrtOp = op1' $ \x -> (sqrt x, (/ (2 * sqrt x)))
 {-# INLINE sqrtOp #-}
 
 -- | Optimized version of @'op2' 'logBase'@.
 logBaseOp :: Floating a => Op '[a, a] a
-logBaseOp = op2' $ \x y -> (logBase x y, let dx = - logBase x y / (log x * x)
-                                         in  maybe (dx, 1/(y * log x))
-                                                   (\g -> (g*dx, g/(y * log x)))
+logBaseOp = op2' $ \x y -> ( logBase x y
+                           , let dx = - logBase x y / (log x * x)
+                             in  \g -> (g*dx, g/(y * log x))
                            )
 {-# INLINE logBaseOp #-}
 
 -- | Optimized version of @'op1' 'sin'@.
 sinOp :: Floating a => Op '[a] a
-sinOp = op1' $ \x -> (sin x, maybe (cos x) (* cos x))
+sinOp = op1' $ \x -> (sin x, (* cos x))
 {-# INLINE sinOp #-}
 
 -- | Optimized version of @'op1' 'cos'@.
 cosOp :: Floating a => Op '[a] a
-cosOp = op1' $ \x -> (cos x, maybe (-sin x) (* (-sin x)))
+cosOp = op1' $ \x -> (cos x, (* (-sin x)))
 {-# INLINE cosOp #-}
 
 -- | Optimized version of @'op1' 'tan'@.
 tanOp :: Floating a => Op '[a] a
-tanOp = op1' $ \x -> (tan x, (/ cos x^(2::Int)) . fromMaybe 1)
+tanOp = op1' $ \x -> (tan x, (/ cos x^(2::Int)))
 {-# INLINE tanOp #-}
 
 -- | Optimized version of @'op1' 'asin'@.
 asinOp :: Floating a => Op '[a] a
-asinOp = op1' $ \x -> (asin x, (/ sqrt(1 - x*x)) . fromMaybe 1)
+asinOp = op1' $ \x -> (asin x, (/ sqrt(1 - x*x)))
 {-# INLINE asinOp #-}
 
 -- | Optimized version of @'op1' 'acos'@.
 acosOp :: Floating a => Op '[a] a
-acosOp = op1' $ \x -> (acos x, (/ sqrt (1 - x*x)) . maybe (-1) negate)
+acosOp = op1' $ \x -> (acos x, (/ sqrt (1 - x*x)) . negate)
 {-# INLINE acosOp #-}
 
 -- | Optimized version of @'op1' 'atan'@.
 atanOp :: Floating a => Op '[a] a
-atanOp = op1' $ \x -> (atan x, (/ (x*x + 1)) . fromMaybe 1)
+atanOp = op1' $ \x -> (atan x, (/ (x*x + 1)))
 {-# INLINE atanOp #-}
 
 -- | Optimized version of @'op1' 'sinh'@.
 sinhOp :: Floating a => Op '[a] a
-sinhOp = op1' $ \x -> (sinh x, maybe (cosh x) (* cosh x))
+sinhOp = op1' $ \x -> (sinh x, (* cosh x))
 {-# INLINE sinhOp #-}
 
 -- | Optimized version of @'op1' 'cosh'@.
 coshOp :: Floating a => Op '[a] a
-coshOp = op1' $ \x -> (cosh x, maybe (sinh x) (* sinh x))
+coshOp = op1' $ \x -> (cosh x, (* sinh x))
 {-# INLINE coshOp #-}
 
 -- | Optimized version of @'op1' 'tanh'@.
 tanhOp :: Floating a => Op '[a] a
-tanhOp = op1' $ \x -> (tanh x, (/ cosh x^(2::Int)) . fromMaybe 1)
+tanhOp = op1' $ \x -> (tanh x, (/ cosh x^(2::Int)))
 {-# INLINE tanhOp #-}
 
 -- | Optimized version of @'op1' 'asinh'@.
 asinhOp :: Floating a => Op '[a] a
-asinhOp = op1' $ \x -> (asinh x, (/ sqrt (x*x + 1)) . fromMaybe 1)
+asinhOp = op1' $ \x -> (asinh x, (/ sqrt (x*x + 1)))
 {-# INLINE asinhOp #-}
 
 -- | Optimized version of @'op1' 'acosh'@.
 acoshOp :: Floating a => Op '[a] a
-acoshOp = op1' $ \x -> (acosh x, (/ sqrt (x*x - 1)) . fromMaybe 1)
+acoshOp = op1' $ \x -> (acosh x, (/ sqrt (x*x - 1)))
 {-# INLINE acoshOp #-}
 
 -- | Optimized version of @'op1' 'atanh'@.
 atanhOp :: Floating a => Op '[a] a
-atanhOp = op1' $ \x -> (atanh x, (/ (1 - x*x)) . fromMaybe 1)
+atanhOp = op1' $ \x -> (atanh x, (/ (1 - x*x)))
 {-# INLINE atanhOp #-}
 
