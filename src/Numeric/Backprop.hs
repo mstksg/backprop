@@ -137,22 +137,22 @@ module Numeric.Backprop (
 -- import           Type.Class.Higher
 -- import           Type.Class.Known
 -- import           Type.Class.Witness
+-- import           Type.Reflection
 -- import qualified Generics.SOP           as SOP
 import           Data.Reflection
 import           Lens.Micro
 import           Numeric.Backprop.Internal
 import           Numeric.Backprop.Op
-import           Type.Reflection
 
 runBP
-    :: forall a b. (Num a, Typeable a, Num b, Typeable b)
+    :: forall a b. (Num a, Num b)
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> b
 runBP f = fst . backprop f
 
 gradBP
-    :: forall a b. (Num a, Typeable a, Num b, Typeable b)
+    :: forall a b. (Num a, Num b)
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> a
@@ -160,14 +160,14 @@ gradBP f = snd . backprop f
 
 infixl 8 ^^.
 (^^.)
-    :: forall a b s. (Reifies s W, Num b, Typeable b, Num a, Typeable a)
+    :: forall a b s. (Reifies s W, Num b, Num a)
     => BVar s b
     -> Lens' b a
     -> BVar s a
 x ^^. l = lensVar l x
 
 uncurryVar
-    :: (Num a, Typeable a, Num b, Typeable b, Num (a,b))
+    :: (Num a, Num b, Num (a,b))
     => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
     -> (forall s. Reifies s W => BVar s (a, b) -> BVar s c)
 uncurryVar f xy = f (xy ^^. _1) (xy ^^. _2)
