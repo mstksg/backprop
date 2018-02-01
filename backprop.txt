@@ -226,7 +226,16 @@ module Numeric.Backprop.Op
 --   
 --   See <tt>runOpM</tt>, <tt>gradOpM</tt>, and <tt>gradOpWithM</tt> for
 --   examples on how to run it.
-data Op as a
+newtype Op as a
+
+-- | Construct an <tt>OpM</tt> by giving a (monadic) function creating the
+--   result, and also a continuation on how to create the gradient, given
+--   the total derivative of <tt>a</tt>.
+--   
+--   See the module documentation for <a>Numeric.Backprop.Op</a> for more
+--   details on the function that this constructor and <a>Op</a> expect.
+Op :: (Tuple as -> (a, a -> Tuple as)) -> Op as a
+[runOpWith] :: Op as a -> Tuple as -> (a, a -> Tuple as)
 data Prod k (f :: k -> *) (a :: [k]) :: forall k. () => (k -> *) -> [k] -> *
 [Ø] :: Prod k f [] k
 [:<] :: Prod k f (:) k a1 as
@@ -237,13 +246,22 @@ newtype I a :: * -> *
 I :: a -> I a
 [getI] :: I a -> a
 
+-- | Run the function that an <a>Op</a> encodes, to get the resulting
+--   output and also its gradient with respect to the inputs.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op2 (*)) (3 ::&lt; 5 ::&lt; Ø)
+--   (15, 5 ::&lt; 3 ::&lt; Ø)
+--   </pre>
+runOp :: Num a => Op as a -> Tuple as -> (a, Tuple as)
+
 -- | Run the function that an <a>Op</a> encodes, to get the result.
 --   
 --   <pre>
 --   &gt;&gt;&gt; runOp (op2 (*)) (3 ::&lt; 5 ::&lt; Ø)
 --   15
 --   </pre>
-runOp :: Op as a -> Tuple as -> a
+evalOp :: Op as a -> Tuple as -> a
 
 -- | Run the function that an <a>Op</a> encodes, and get the gradient of
 --   the output with respect to the inputs.
@@ -254,15 +272,6 @@ runOp :: Op as a -> Tuple as -> a
 --   -- the gradient of x*y is (y, x)
 --   </pre>
 gradOp :: Num a => Op as a -> Tuple as -> Tuple as
-
--- | Run the function that an <a>Op</a> encodes, to get the resulting
---   output and also its gradient with respect to the inputs.
---   
---   <pre>
---   &gt;&gt;&gt; gradOp' (op2 (*)) (3 ::&lt; 5 ::&lt; Ø)
---   (15, 5 ::&lt; 3 ::&lt; Ø)
---   </pre>
-gradOp' :: Num a => Op as a -> Tuple as -> (a, Tuple as)
 
 -- | A combination of <a>gradOp</a> and <a>gradOpWith</a>. The third
 --   argument is (optionally) the total derivative the result. Give
@@ -275,15 +284,6 @@ gradOp' :: Num a => Op as a -> Tuple as -> (a, Tuple as)
 --   See <a>gradOp</a> and the module documentaiton for
 --   <a>Numeric.Backprop.Op</a> for more information.
 gradOpWith :: Op as a -> Tuple as -> a -> Tuple as
-
--- | A combination of <a>runOp</a> and <tt>gradOpWith'</tt>. Given an
---   <a>Op</a> and inputs, returns the result of the <a>Op</a> and a
---   continuation that gives its gradient.
---   
---   The continuation takes the total derivative of the result as input.
---   See documenation for <tt>gradOpWith'</tt> and module documentation for
---   <a>Numeric.Backprop.Op</a> for more information.
-runOp' :: Op as a -> Tuple as -> (a, a -> Tuple as)
 
 -- | Compose <tt>OpM</tt>s together, similar to <a>.</a>. But, because all
 --   <tt>OpM</tt>s are &lt;math&gt;, this is more like <a>sequence</a> for
@@ -312,7 +312,18 @@ composeOp1 :: (Every Num as, Known Length as) => Op as b -> Op '[b] c -> Op as c
 (~.) :: (Known Length as, Every Num as) => Op '[b] c -> Op as b -> Op as c
 infixr 9 ~.
 
--- | A version of <a>composeOp</a> taking explicit <a>Length</a>,
+-- | A combination of <a>runOp</a> and <tt>gradOpWith'</tt>. Given an
+--   <a>Op</a> and inputs, returns the result of the <a>Op</a> and a
+--   continuation that gives its gradient.
+--   
+--   The continuation takes the total derivative of the result as input.
+--   See documenation for <tt>gradOpWith'</tt> and module documentation for
+--   <a>Numeric.Backprop.Op</a> for more information. runOp' :: Op as a --
+--   ^ <a>Op</a> to run -&gt; Tuple as -- ^ Inputs -&gt; (a, a -&gt; Tuple
+--   as) -- ^ Result, and continuation to get -- the gradient -- runOp' o =
+--   (second . fmap) getI . getI . runOp' o runOp' (Op f) = f
+--   
+--   A version of <a>composeOp</a> taking explicit <a>Length</a>,
 --   indicating the number of inputs expected and their types.
 --   
 --   Requiring an explicit <a>Length</a> is mostly useful for rare
