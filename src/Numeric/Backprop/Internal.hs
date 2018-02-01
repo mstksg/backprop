@@ -332,7 +332,7 @@ backprop f = \x -> runST (go x)
     !tp@(!_,!_) = unsafePerformIO $ do
       w <- initWengert
       reify w $ \(Proxy :: Proxy s) ->
-        registerOut =<< evaluate (f BVInp :: BVar s b)
+        registerOut =<< evaluate (f (BVInp @s))
       readIORef (wRef w)
     go :: a -> ST s (b, a)
     go x = do

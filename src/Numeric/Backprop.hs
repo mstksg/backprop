@@ -51,14 +51,24 @@
 --
 
 module Numeric.Backprop (
-  -- -- * Types
-  -- -- ** Backprop types
-  --   BP, BPOp, BPOpI, BVar, Op, OpB, OpBS(..)
-  -- -- ** Tuple types#prod#
-  -- -- $prod
-  -- , Prod(..), Tuple, I(..)
-  -- -- * BP
-  -- -- ** Backprop
+    BVar
+  , W
+  , liftOpN
+  , liftOp1, liftOp2, liftOp3, liftOp4
+  , lensVar, (^^.)
+  , backprop, runBP, gradBP
+  , Op(..)
+  , Prod(..), Tuple, I(..)
+  -- * Creation
+  , op0, opConst, idOp
+  , opConst'
+  -- ** Giving gradients directly
+  , op1, op2, op3
+  -- ** Automatic creation using the /ad/ library
+  , op1', op2', op3', opN'
+  , Replicate
+  -- ** From Isomorphisms
+  , opCoerce, opTup, opIso, opLens
   -- , backprop, evalBPOp, gradBPOp
   -- , runOpB, gradOpB, gradOpB'
   -- -- ** Utility combinators
@@ -104,30 +114,55 @@ module Numeric.Backprop (
   -- , sinhOp, coshOp, tanhOp, asinhOp, acoshOp, atanhOp
   ) where
 
-import           Control.Monad.Base
-import           Control.Monad.Reader
-import           Control.Monad.ST
-import           Control.Monad.State
-import           Data.Kind
-import           Data.Maybe
-import           Data.Monoid               ((<>))
-import           Data.STRef
-import           Data.Type.Combinator
-import           Data.Type.Conjunction
-import           Data.Type.Index
-import           Data.Type.Length
-import           Data.Type.Product
-import           Data.Type.Sum hiding      (index)
-import           Data.Type.Util
+-- import           Control.Monad.Base
+-- import           Control.Monad.Reader
+-- import           Control.Monad.ST
+-- import           Control.Monad.State
+-- import           Data.Kind
+-- import           Data.Maybe
+-- import           Data.Monoid            ((<>))
+-- import           Data.STRef
+-- import           Data.Type.Combinator
+-- import           Data.Type.Conjunction
+-- import           Data.Type.Index
+-- import           Data.Type.Length
+-- import           Data.Type.Product
+-- import           Data.Type.Sum hiding   (index)
+-- import           Data.Type.Util
+-- import           Lens.Micro.Mtl hiding  (view)
+-- import           Numeric.Backprop.Iso
+-- import           Type.Class.Higher
+-- import           Type.Class.Known
+-- import           Type.Class.Witness
+-- import qualified Generics.SOP           as SOP
+import           Data.Reflection
 import           Lens.Micro hiding         (ix)
-import           Lens.Micro.Mtl hiding     (view)
 import           Numeric.Backprop.Internal
-import           Numeric.Backprop.Iso
 import           Numeric.Backprop.Op
-import           Type.Class.Higher
-import           Type.Class.Known
-import           Type.Class.Witness
-import qualified Generics.SOP              as SOP
+import           Type.Reflection
+
+runBP
+    :: forall a b. (Num a, Typeable a, Num b, Typeable b)
+    => (forall k (s :: k). Reifies s W => BVar s a -> BVar s b)
+    -> a
+    -> b
+runBP f = fst . backprop f
+
+gradBP
+    :: forall a b. (Num a, Typeable a, Num b, Typeable b)
+    => (forall k (s :: k). Reifies s W => BVar s a -> BVar s b)
+    -> a
+    -> a
+gradBP f = snd . backprop f
+
+(^^.)
+    :: forall a b s. (Reifies s W, Num b, Typeable b, Num a, Typeable a)
+    => BVar s b
+    -> Lens' b a
+    -> BVar s a
+x ^^. l = lensVar l x
+
+
 
 ---- $prod
 ----

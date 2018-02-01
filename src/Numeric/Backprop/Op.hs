@@ -49,13 +49,13 @@ module Numeric.Backprop.Op (
   -- * Creation
   , op0, opConst, idOp
   , opConst'
-  -- ** Automatic creation using the /ad/ library
-  , op1, op2, op3, opN
-  , Replicate
   -- ** Giving gradients directly
-  , op1', op2', op3'
+  , op1, op2, op3
+  -- ** Automatic creation using the /ad/ library
+  , op1', op2', op3', opN'
+  , Replicate
   -- ** From Isomorphisms
-  , opCoerce, opTup, opIso
+  , opCoerce, opTup, opIso, opLens
   -- * Utility
   , pattern (:>), only, head'
   , pattern (::<), only_
@@ -70,7 +70,7 @@ module Numeric.Backprop.Op (
 
 import           Data.Bifunctor
 import           Data.Coerce
-import           Data.Reflection                  (Reifies)
+import           Data.Reflection                (Reifies)
 import           Data.Type.Combinator
 import           Data.Type.Conjunction
 import           Data.Type.Index
@@ -78,11 +78,12 @@ import           Data.Type.Length
 import           Data.Type.Nat
 import           Data.Type.Product
 import           Data.Type.Util
-import           Data.Type.Vector hiding          (head')
+import           Data.Type.Vector hiding        (head')
+import           Lens.Micro
 import           Lens.Micro.Extras
 import           Numeric.AD
-import           Numeric.AD.Internal.Reverse      (Reverse, Tape)
-import           Numeric.AD.Mode.Forward hiding   (grad')
+import           Numeric.AD.Internal.Reverse    (Reverse, Tape)
+import           Numeric.AD.Mode.Forward hiding (grad')
 import           Numeric.Backprop.Iso
 import           Type.Class.Higher
 import           Type.Class.Known
@@ -290,10 +291,7 @@ composeOp' l os o = Op $ \xs ->
           let g1 = gFz g0
               g2s = toList (\(oc :&: I g) -> runOpCont oc g)
                   $ conts `zipP` g1
-          -- g2s <- sequenceA
-          --           . toList (\(oc :&: I g) -> runOpCont oc (Just g))
-          --           $ conts `zipP` g1
-          in  imap1 (\ix gs -> I (sum gs) \\ every @_ @Num ix)
+          in  imap1 (\i gs -> I (sum gs) \\ every @_ @Num i)
                  . foldr (\x -> map1 (uncurryFan (\(I y) -> (y:))) . zipP x)
                          (lengthProd [] l)
                  $ g2s
@@ -475,7 +473,7 @@ opCoerce = opIso coerced
 -- 'idOp' = 'opIso' 'id'
 -- @
 idOp :: Num a => Op '[a] a
-idOp = op1' $ \x -> (x, id)
+idOp = op1 $ \x -> (x, id)
 
 ---- | A version of 'opTup' taking explicit 'Length', indicating the
 ---- number of inputs expected and their types.
@@ -507,8 +505,11 @@ opTup = Op $ \xs -> (xs, id)
 -- have derivative 1, so will break for things like
 -- 'Numeric.Lens.exponentiating'.  Basically, don't use this for any
 -- "numeric" isomorphisms.
-opIso :: Num a => Iso' a b -> Op '[ a ] b
-opIso i = op1' $ \x -> (view i x, review i)
+opIso :: Iso' a b -> Op '[ a ] b
+opIso i = op1 $ \x -> (view i x, review i)
+
+opLens :: Num a => Lens' a b -> Op '[ a ] b
+opLens l = op1 $ \x -> (view l x, \d -> set l d 0)
 
 -- | A version of 'opConst' taking explicit 'Length', indicating the
 -- number of inputs and their types.
@@ -591,14 +592,14 @@ op0 x = Op $ \case
 --
 -- For numeric functions, single-input 'Op's can be generated automatically
 -- using 'op1'.
-op1'
+op1
     :: (a -> (b, b -> a))
     -> Op '[a] b
-op1' f = Op $ \case
+op1 f = Op $ \case
     I x :< Ø ->
       let (y, dx) = f x
       in  (y, only_ . dx)
-{-# INLINE op1' #-}
+{-# INLINE op1 #-}
 
 -- | Create an 'Op' of a function taking two inputs, by giving its explicit
 -- gradient.  The function should return a tuple containing the result of
@@ -644,25 +645,25 @@ op1' f = Op $ \case
 --
 -- For numeric functions, two-input 'Op's can be generated automatically
 -- using 'op2'.
-op2'
+op2
     :: (a -> b -> (c, c -> (a, b)))
     -> Op '[a,b] c
-op2' f = Op $ \case
+op2 f = Op $ \case
     I x :< I y :< Ø ->
       let (z, dxdy) = f x y
       in  (z, (\(dx,dy) -> dx ::< dy ::< Ø) . dxdy)
-{-# INLINE op2' #-}
+{-# INLINE op2 #-}
 
 -- | Create an 'Op' of a function taking three inputs, by giving its explicit
 -- gradient.  See documentation for 'op2'' for more details.
-op3'
+op3
     :: (a -> b -> c -> (d, d -> (a, b, c)))
     -> Op '[a,b,c] d
-op3' f = Op $ \case
+op3 f = Op $ \case
     I x :< I y :< I z :< Ø ->
       let (q, dxdydz) = f x y z
       in  (q, (\(dx, dy, dz) -> dx ::< dy ::< dz ::< Ø) . dxdydz)
-{-# INLINE op3' #-}
+{-# INLINE op3 #-}
 
 -- | Automatically create an 'Op' of a numerical function taking one
 -- argument.  Uses 'Numeric.AD.diff', and so can take any numerical
@@ -670,10 +671,10 @@ op3' f = Op $ \case
 --
 -- >>> gradOp' (op1 (recip . negate)) (5 ::< Ø)
 -- (-0.2, 0.04 ::< Ø)
-op1 :: Num a
+op1' :: Num a
     => (forall s. AD s (Forward a) -> AD s (Forward a))
     -> Op '[a] a
-op1 f = op1' $ \x ->
+op1' f = op1 $ \x ->
     let (z, dx) = diff' f x
     in  (z, (* dx))
 
@@ -683,10 +684,10 @@ op1 f = op1' $ \x ->
 --
 -- >>> gradOp' (op2 (\x y -> x * sqrt y)) (3 ::< 4 ::< Ø)
 -- (6.0, 2.0 ::< 0.75 ::< Ø)
-op2 :: Num a
+op2' :: Num a
     => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a)
     -> Op '[a,a] a
-op2 f = opN $ \case I x :* I y :* ØV -> f x y
+op2' f = opN' $ \case I x :* I y :* ØV -> f x y
 
 -- | Automatically create an 'Op' of a numerical function taking three
 -- arguments.  Uses 'Numeric.AD.grad', and so can take any numerical function
@@ -694,10 +695,10 @@ op2 f = opN $ \case I x :* I y :* ØV -> f x y
 --
 -- >>> gradOp' (op3 (\x y z -> (x * sqrt y)**z)) (3 ::< 4 ::< 2 ::< Ø)
 -- (36.0, 24.0 ::< 9.0 ::< 64.503 ::< Ø)
-op3 :: Num a
+op3' :: Num a
     => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a)
     -> Op '[a,a,a] a
-op3 f = opN $ \case I x :* I y :* I z :* ØV -> f x y z
+op3' f = opN' $ \case I x :* I y :* I z :* ØV -> f x y z
 
 -- | Automatically create an 'Op' of a numerical function taking multiple
 -- arguments.  Uses 'Numeric.AD.grad', and so can take any numerical
@@ -705,10 +706,10 @@ op3 f = opN $ \case I x :* I y :* I z :* ØV -> f x y z
 --
 -- >>> gradOp' (opN (\(x :+ y :+ Ø) -> x * sqrt y)) (3 ::< 4 ::< Ø)
 -- (6.0, 2.0 ::< 0.75 ::< Ø)
-opN :: (Num a, Known Nat n)
+opN' :: (Num a, Known Nat n)
     => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a)
     -> Op (Replicate n a) a
-opN f = Op $ \xs ->
+opN' f = Op $ \xs ->
     let (y, dxs) = grad' f (prodToVec' known xs)
     in  (y, vecToProd . \q -> (q *) <$> dxs)
 
@@ -794,133 +795,133 @@ instance (Known Length as, Every Floating as, Every Fractional as, Every Num as,
 
 -- | Optimized version of @'op1' ('+')@.
 (+.) :: Num a => Op '[a, a] a
-(+.) = op2' $ \x y -> (x + y, \g -> (g, g))
+(+.) = op2 $ \x y -> (x + y, \g -> (g, g))
 {-# INLINE (+.) #-}
 
 -- | Optimized version of @'op1' ('-')@.
 (-.) :: Num a => Op '[a, a] a
-(-.) = op2' $ \x y -> (x - y, \g -> (g, -g))
+(-.) = op2 $ \x y -> (x - y, \g -> (g, -g))
 {-# INLINE (-.) #-}
 
 -- | Optimized version of @'op1' ('*')@.
 (*.) :: Num a => Op '[a, a] a
-(*.) = op2' $ \x y -> (x * y, \g -> (y*g, x*g))
+(*.) = op2 $ \x y -> (x * y, \g -> (y*g, x*g))
 {-# INLINE (*.) #-}
 
 -- | Optimized version of @'op1' ('/')@.
 (/.) :: Fractional a => Op '[a, a] a
-(/.) = op2' $ \x y -> (x / y, \g -> (g/y, -g*x/(y*y)))
+(/.) = op2 $ \x y -> (x / y, \g -> (g/y, -g*x/(y*y)))
 {-# INLINE (/.) #-}
 
 -- | Optimized version of @'op1' ('**')@.
 (**.) :: Floating a => Op '[a, a] a
-(**.) = op2' $ \x y -> ( x ** y
-                       , let dx = y*x**(y-1)
-                             dy = x**y*log x
-                         in  \g -> (g*dx, g*dy)
-                       )
+(**.) = op2 $ \x y -> ( x ** y
+                      , let dx = y*x**(y-1)
+                            dy = x**y*log x
+                        in  \g -> (g*dx, g*dy)
+                      )
 {-# INLINE (**.) #-}
 
 -- | Optimized version of @'op1' 'negate'@.
 negateOp :: Num a => Op '[a] a
-negateOp = op1' $ \x -> (negate x, negate)
+negateOp = op1 $ \x -> (negate x, negate)
 {-# INLINE negateOp  #-}
 
 -- | Optimized version of @'op1' 'signum'@.
 signumOp :: Num a => Op '[a] a
-signumOp = op1' $ \x -> (signum x, const 0)
+signumOp = op1 $ \x -> (signum x, const 0)
 {-# INLINE signumOp  #-}
 
 -- | Optimized version of @'op1' 'abs'@.
 absOp :: Num a => Op '[a] a
-absOp = op1' $ \x -> (abs x, (* signum x))
+absOp = op1 $ \x -> (abs x, (* signum x))
 {-# INLINE absOp #-}
 
 -- | Optimized version of @'op1' 'recip'@.
 recipOp :: Fractional a => Op '[a] a
-recipOp = op1' $ \x -> (recip x, (/(x*x)) . negate)
+recipOp = op1 $ \x -> (recip x, (/(x*x)) . negate)
 {-# INLINE recipOp #-}
 
 -- | Optimized version of @'op1' 'exp'@.
 expOp :: Floating a => Op '[a] a
-expOp = op1' $ \x -> (exp x, (exp x *))
+expOp = op1 $ \x -> (exp x, (exp x *))
 {-# INLINE expOp #-}
 
 -- | Optimized version of @'op1' 'log'@.
 logOp :: Floating a => Op '[a] a
-logOp = op1' $ \x -> (log x, (/x))
+logOp = op1 $ \x -> (log x, (/x))
 {-# INLINE logOp #-}
 
 -- | Optimized version of @'op1' 'sqrt'@.
 sqrtOp :: Floating a => Op '[a] a
-sqrtOp = op1' $ \x -> (sqrt x, (/ (2 * sqrt x)))
+sqrtOp = op1 $ \x -> (sqrt x, (/ (2 * sqrt x)))
 {-# INLINE sqrtOp #-}
 
 -- | Optimized version of @'op2' 'logBase'@.
 logBaseOp :: Floating a => Op '[a, a] a
-logBaseOp = op2' $ \x y -> ( logBase x y
-                           , let dx = - logBase x y / (log x * x)
-                             in  \g -> (g*dx, g/(y * log x))
-                           )
+logBaseOp = op2 $ \x y -> ( logBase x y
+                          , let dx = - logBase x y / (log x * x)
+                            in  \g -> (g*dx, g/(y * log x))
+                          )
 {-# INLINE logBaseOp #-}
 
 -- | Optimized version of @'op1' 'sin'@.
 sinOp :: Floating a => Op '[a] a
-sinOp = op1' $ \x -> (sin x, (* cos x))
+sinOp = op1 $ \x -> (sin x, (* cos x))
 {-# INLINE sinOp #-}
 
 -- | Optimized version of @'op1' 'cos'@.
 cosOp :: Floating a => Op '[a] a
-cosOp = op1' $ \x -> (cos x, (* (-sin x)))
+cosOp = op1 $ \x -> (cos x, (* (-sin x)))
 {-# INLINE cosOp #-}
 
 -- | Optimized version of @'op1' 'tan'@.
 tanOp :: Floating a => Op '[a] a
-tanOp = op1' $ \x -> (tan x, (/ cos x^(2::Int)))
+tanOp = op1 $ \x -> (tan x, (/ cos x^(2::Int)))
 {-# INLINE tanOp #-}
 
 -- | Optimized version of @'op1' 'asin'@.
 asinOp :: Floating a => Op '[a] a
-asinOp = op1' $ \x -> (asin x, (/ sqrt(1 - x*x)))
+asinOp = op1 $ \x -> (asin x, (/ sqrt(1 - x*x)))
 {-# INLINE asinOp #-}
 
 -- | Optimized version of @'op1' 'acos'@.
 acosOp :: Floating a => Op '[a] a
-acosOp = op1' $ \x -> (acos x, (/ sqrt (1 - x*x)) . negate)
+acosOp = op1 $ \x -> (acos x, (/ sqrt (1 - x*x)) . negate)
 {-# INLINE acosOp #-}
 
 -- | Optimized version of @'op1' 'atan'@.
 atanOp :: Floating a => Op '[a] a
-atanOp = op1' $ \x -> (atan x, (/ (x*x + 1)))
+atanOp = op1 $ \x -> (atan x, (/ (x*x + 1)))
 {-# INLINE atanOp #-}
 
 -- | Optimized version of @'op1' 'sinh'@.
 sinhOp :: Floating a => Op '[a] a
-sinhOp = op1' $ \x -> (sinh x, (* cosh x))
+sinhOp = op1 $ \x -> (sinh x, (* cosh x))
 {-# INLINE sinhOp #-}
 
 -- | Optimized version of @'op1' 'cosh'@.
 coshOp :: Floating a => Op '[a] a
-coshOp = op1' $ \x -> (cosh x, (* sinh x))
+coshOp = op1 $ \x -> (cosh x, (* sinh x))
 {-# INLINE coshOp #-}
 
 -- | Optimized version of @'op1' 'tanh'@.
 tanhOp :: Floating a => Op '[a] a
-tanhOp = op1' $ \x -> (tanh x, (/ cosh x^(2::Int)))
+tanhOp = op1 $ \x -> (tanh x, (/ cosh x^(2::Int)))
 {-# INLINE tanhOp #-}
 
 -- | Optimized version of @'op1' 'asinh'@.
 asinhOp :: Floating a => Op '[a] a
-asinhOp = op1' $ \x -> (asinh x, (/ sqrt (x*x + 1)))
+asinhOp = op1 $ \x -> (asinh x, (/ sqrt (x*x + 1)))
 {-# INLINE asinhOp #-}
 
 -- | Optimized version of @'op1' 'acosh'@.
 acoshOp :: Floating a => Op '[a] a
-acoshOp = op1' $ \x -> (acosh x, (/ sqrt (x*x - 1)))
+acoshOp = op1 $ \x -> (acosh x, (/ sqrt (x*x - 1)))
 {-# INLINE acoshOp #-}
 
 -- | Optimized version of @'op1' 'atanh'@.
 atanhOp :: Floating a => Op '[a] a
-atanhOp = op1' $ \x -> (atanh x, (/ (1 - x*x)))
+atanhOp = op1 $ \x -> (atanh x, (/ (1 - x*x)))
 {-# INLINE atanhOp #-}
 
