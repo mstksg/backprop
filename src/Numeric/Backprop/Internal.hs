@@ -41,7 +41,6 @@ module Numeric.Backprop.Internal (
   , backprop
   ) where
 
--- import           Type.Reflection
 import           Control.Applicative.Backwards
 import           Control.Exception
 import           Control.Monad.Primitive
@@ -68,7 +67,11 @@ import qualified Data.Vector.Mutable           as MV
 data BVar (s :: Type) (a :: Type)
         = BVInp
         | BVIx Int
-        | BVConst a
+        | BVC a
+
+isBVC :: BVar s a -> Maybe a
+isBVC (BVC x) = Just x
+isBVC _       = Nothing
 
 data InpRef :: Type -> Type where
     IR :: Num a
@@ -102,20 +105,22 @@ insertNode tn w = fmap BVIx . atomicModifyIORef (wRef w) $ \(n,t) ->
     ((n+1,STN tn:t), n)
 
 constVar :: a -> BVar s a
-constVar = BVConst
+constVar = BVC
 
 liftOpN_
     :: forall s as b. (Reifies s W, Num b, Every Num as)
     => Op as b
     -> Prod (BVar s) as
     -> IO (BVar s b)
-liftOpN_ o !vs = insertNode tn (reflect (Proxy @s))
+liftOpN_ o !vs = case traverse1 (fmap I . isBVC) vs of
+                   Just xs -> return $ BVC (evalOp o xs)
+                   Nothing -> insertNode tn (reflect (Proxy @s))
   where
     tn = TN { _tnInputs = imap1 go vs
             , _tnOp     = o
             }
     go :: forall a. Index as a -> BVar s a -> InpRef a
-    go i !v = IR v id \\ every @_ @Num      i
+    go i !v = IR v id \\ every @_ @Num i
 
 liftOpN
     :: forall s as b. (Reifies s W, Num b, Every Num as)
@@ -129,6 +134,7 @@ liftOp1_
     => Op '[a] b
     -> BVar s a
     -> IO (BVar s b)
+liftOp1_ o (BVC x) = return . BVC . evalOp o $ (x ::< Ø)
 liftOp1_ o !v = insertNode tn (reflect (Proxy @s))
   where
     tn = TN { _tnInputs = IR v id :< Ø
@@ -148,6 +154,7 @@ liftOp2_
     -> BVar s a
     -> BVar s b
     -> IO (BVar s c)
+liftOp2_ o (BVC x) (BVC y) = return . BVC . evalOp o $ x ::< y ::< Ø
 liftOp2_ o !v !u = insertNode tn (reflect (Proxy @s))
   where
     tn = TN { _tnInputs = IR v id :< IR u id :< Ø
@@ -169,12 +176,11 @@ liftOp3_
     -> BVar s b
     -> BVar s c
     -> IO (BVar s d)
+liftOp3_ o (BVC x) (BVC y) (BVC z) = return . BVC . evalOp o
+                                   $ x ::< y ::< z ::< Ø
 liftOp3_ o !v !u !w = insertNode tn (reflect (Proxy @s))
   where
-    tn = TN { _tnInputs = IR v id
-                       :< IR u id
-                       :< IR w id
-                       :< Ø
+    tn = TN { _tnInputs = IR v id :< IR u id :< IR w id :< Ø
             , _tnOp     = o
             }
 
@@ -195,13 +201,11 @@ liftOp4_
     -> BVar s c
     -> BVar s d
     -> IO (BVar s e)
+liftOp4_ o (BVC x) (BVC y) (BVC z) (BVC w) = return . BVC . evalOp o
+                                           $ x ::< y ::< z ::< w ::< Ø
 liftOp4_ o !v !u !w !x = insertNode tn (reflect (Proxy @s))
   where
-    tn = TN { _tnInputs = IR v id
-                       :< IR u id
-                       :< IR w id
-                       :< IR x id
-                       :< Ø
+    tn = TN { _tnInputs = IR v id :< IR u id :< IR w id :< IR x id :< Ø
             , _tnOp     = o
             }
 
@@ -279,7 +283,7 @@ evalRunner R{..} (n, stns) x = do
         BVIx i -> do
           SN _ y <- MV.read _rRes i
           return $ unsafeCoerce y
-        BVConst y -> return y
+        BVC y -> return y
       return $ targ ^. ln
 
 gradRunner
@@ -306,7 +310,7 @@ gradRunner _ R{..} (n,stns) dx = do
       BVIx i    -> flip (MV.modify _rDelta) i $ \case
         SN p y -> SN p $ unsafeCoerce y & ln %~ (+ d)
                                         & unsafeCoerce
-      BVConst _ -> return ()
+      BVC _ -> return ()
 
 registerOut
     :: (Reifies s W, Num a)
@@ -347,7 +351,7 @@ instance (Num a, Reifies s W) => Num (BVar s a) where
     {-# INLINE signum #-}
     abs         = liftOp1 absOp
     {-# INLINE abs #-}
-    fromInteger = BVConst . fromInteger
+    fromInteger = BVC . fromInteger
     {-# INLINE fromInteger #-}
 
 instance (Fractional a, Reifies s W) => Fractional (BVar s a) where
@@ -355,11 +359,11 @@ instance (Fractional a, Reifies s W) => Fractional (BVar s a) where
     {-# INLINE (/) #-}
     recip        = liftOp1 recipOp
     {-# INLINE recip #-}
-    fromRational = BVConst . fromRational
+    fromRational = BVC . fromRational
     {-# INLINE fromRational #-}
 
 instance (Floating a, Reifies s W) => Floating (BVar s a) where
-    pi      = BVConst pi
+    pi      = BVC pi
     {-# INLINE pi #-}
     exp     = liftOp1 expOp
     {-# INLINE exp #-}
@@ -558,7 +562,7 @@ instance (Floating a, Reifies s W) => Floating (BVar s a) where
 --    BVInp   :: !(Index rs a)
 --            -> BVar s rs a
 --    -- | A constant BVar that refers to a specific Haskell value
---    BVConst :: !a
+--    BVC :: !a
 --            -> BVar s rs a
 --    -- | A BVar that combines several other BVars using a function (an
 --    -- 'Op').  Essentially a branch of a tree.
@@ -641,7 +645,7 @@ instance (Floating a, Reifies s W) => Floating (BVar s a) where
 --    {-# INLINE signum #-}
 --    abs r         = BVOp (r  :< Ø)       absOp
 --    {-# INLINE abs #-}
---    fromInteger x = BVConst (fromInteger x)
+--    fromInteger x = BVC (fromInteger x)
 --    {-# INLINE fromInteger #-}
 
 ---- | See note for 'Num' instance.
@@ -650,12 +654,12 @@ instance (Floating a, Reifies s W) => Floating (BVar s a) where
 --    {-# INLINE (/) #-}
 --    recip r        = BVOp (r  :< Ø)       recipOp
 --    {-# INLINE recip #-}
---    fromRational x = BVConst (fromRational x)
+--    fromRational x = BVC (fromRational x)
 --    {-# INLINE fromRational #-}
 
 ---- | See note for 'Num' instance.
 --instance Floating a => Floating (BVar s rs a) where
---    pi            = BVConst pi
+--    pi            = BVC pi
 --    {-# INLINE pi #-}
 --    exp   r       = BVOp (r :< Ø)        expOp
 --    {-# INLINE exp #-}
