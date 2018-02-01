@@ -388,57 +388,6 @@ idOp :: Num a => Op '[a] a
 --   able to just use <a>opConst</a>.
 opConst' :: forall as a. Every Num as => Length as -> a -> Op as a
 
--- | Automatically create an <a>Op</a> of a numerical function taking one
---   argument. Uses <a>diff</a>, and so can take any numerical function
---   polymorphic over the standard numeric types.
---   
---   <pre>
---   &gt;&gt;&gt; gradOp' (op1 (recip . negate)) (5 ::&lt; Ø)
---   (-0.2, 0.04 ::&lt; Ø)
---   </pre>
-op1 :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
-
--- | Automatically create an <a>Op</a> of a numerical function taking two
---   arguments. Uses <a>grad</a>, and so can take any numerical function
---   polymorphic over the standard numeric types.
---   
---   <pre>
---   &gt;&gt;&gt; gradOp' (op2 (\x y -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
---   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
---   </pre>
-op2 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
-
--- | Automatically create an <a>Op</a> of a numerical function taking three
---   arguments. Uses <a>grad</a>, and so can take any numerical function
---   polymorphic over the standard numeric types.
---   
---   <pre>
---   &gt;&gt;&gt; gradOp' (op3 (\x y z -&gt; (x * sqrt y)**z)) (3 ::&lt; 4 ::&lt; 2 ::&lt; Ø)
---   (36.0, 24.0 ::&lt; 9.0 ::&lt; 64.503 ::&lt; Ø)
---   </pre>
-op3 :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
-
--- | Automatically create an <a>Op</a> of a numerical function taking
---   multiple arguments. Uses <a>grad</a>, and so can take any numerical
---   function polymorphic over the standard numeric types.
---   
---   <pre>
---   &gt;&gt;&gt; gradOp' (opN (\(x :+ y :+ Ø) -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
---   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
---   </pre>
-opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
-
--- | <tt><a>Replicate</a> n a</tt> is a list of <tt>a</tt>s repeated
---   <tt>n</tt> times.
---   
---   <pre>
---   &gt;&gt;&gt; :kind! Replicate N3 Int
---   '[Int, Int, Int]
---   
---   &gt;&gt;&gt; :kind! Replicate N5 Double
---   '[Double, Double, Double, Double, Double]
---   </pre>
-
 -- | Create an <a>Op</a> of a function taking one input, by giving its
 --   explicit derivative. The function should return a tuple containing the
 --   result of the function, and also a function taking the derivative of
@@ -474,7 +423,7 @@ opN :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) 
 --   
 --   For numeric functions, single-input <a>Op</a>s can be generated
 --   automatically using <a>op1</a>.
-op1' :: (a -> (b, b -> a)) -> Op '[a] b
+op1 :: (a -> (b, b -> a)) -> Op '[a] b
 
 -- | Create an <a>Op</a> of a function taking two inputs, by giving its
 --   explicit gradient. The function should return a tuple containing the
@@ -511,11 +460,62 @@ op1' :: (a -> (b, b -> a)) -> Op '[a] b
 --   
 --   For numeric functions, two-input <a>Op</a>s can be generated
 --   automatically using <a>op2</a>.
-op2' :: (a -> b -> (c, c -> (a, b))) -> Op '[a, b] c
+op2 :: (a -> b -> (c, c -> (a, b))) -> Op '[a, b] c
 
 -- | Create an <a>Op</a> of a function taking three inputs, by giving its
 --   explicit gradient. See documentation for <a>op2'</a> for more details.
-op3' :: (a -> b -> c -> (d, d -> (a, b, c))) -> Op '[a, b, c] d
+op3 :: (a -> b -> c -> (d, d -> (a, b, c))) -> Op '[a, b, c] d
+
+-- | Automatically create an <a>Op</a> of a numerical function taking one
+--   argument. Uses <a>diff</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op1 (recip . negate)) (5 ::&lt; Ø)
+--   (-0.2, 0.04 ::&lt; Ø)
+--   </pre>
+op1' :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking two
+--   arguments. Uses <a>grad</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op2 (\x y -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
+--   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
+--   </pre>
+op2' :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking three
+--   arguments. Uses <a>grad</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op3 (\x y z -&gt; (x * sqrt y)**z)) (3 ::&lt; 4 ::&lt; 2 ::&lt; Ø)
+--   (36.0, 24.0 ::&lt; 9.0 ::&lt; 64.503 ::&lt; Ø)
+--   </pre>
+op3' :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking
+--   multiple arguments. Uses <a>grad</a>, and so can take any numerical
+--   function polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (opN (\(x :+ y :+ Ø) -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
+--   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
+--   </pre>
+opN' :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
+
+-- | <tt><a>Replicate</a> n a</tt> is a list of <tt>a</tt>s repeated
+--   <tt>n</tt> times.
+--   
+--   <pre>
+--   &gt;&gt;&gt; :kind! Replicate N3 Int
+--   '[Int, Int, Int]
+--   
+--   &gt;&gt;&gt; :kind! Replicate N5 Double
+--   '[Double, Double, Double, Double, Double]
+--   </pre>
 
 -- | An <a>Op</a> that coerces an item into another item whose type has the
 --   same runtime representation. Requires the input to be an instance of
@@ -547,7 +547,8 @@ opTup :: (Every Num as, Known Length as) => Op as (Tuple as)
 --   have derivative 1, so will break for things like
 --   <a>exponentiating</a>. Basically, don't use this for any "numeric"
 --   isomorphisms.
-opIso :: Num a => Iso' a b -> Op '[a] b
+opIso :: Iso' a b -> Op '[a] b
+opLens :: Num a => Lens' a b -> Op '[a] b
 
 -- | Construct a two element Prod. Since the precedence of (:&gt;) is
 --   higher than (:&lt;), we can conveniently write lists like:
@@ -684,3 +685,266 @@ instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.I
 --   implemented using <a>sum</a> and <a>+</a>), and we also need to able
 --   to generate gradients of '1' and '0'.
 module Numeric.Backprop
+data BVar (s :: Type) (a :: Type)
+data W
+constVar :: a -> BVar s a
+liftOpN :: forall s as b. (Reifies s W, Num b, Every Num as) => Op as b -> Prod (BVar s) as -> BVar s b
+liftOp1 :: forall s a b. (Reifies s W, Num a, Num b) => Op '[a] b -> BVar s a -> BVar s b
+liftOp2 :: forall s a b c. (Reifies s W, Num a, Num b, Num c) => Op '[a, b] c -> BVar s a -> BVar s b -> BVar s c
+liftOp3 :: forall s a b c d. (Reifies s W, Num a, Num b, Num c, Num d) => Op '[a, b, c] d -> BVar s a -> BVar s b -> BVar s c -> BVar s d
+liftOp4 :: forall s a b c d e. (Reifies s W, Num a, Num b, Num c, Num d, Num e) => Op '[a, b, c, d] e -> BVar s a -> BVar s b -> BVar s c -> BVar s d -> BVar s e
+lensVar :: forall a b s. (Reifies s W, Num b, Num a) => Lens' b a -> BVar s b -> BVar s a
+(^^.) :: forall a b s. (Reifies s W, Num b, Num a) => BVar s b -> Lens' b a -> BVar s a
+infixl 8 ^^.
+uncurryVar :: (Num a, Num b, Num (a, b)) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> (forall s. Reifies s W => BVar s (a, b) -> BVar s c)
+backprop :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
+runBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
+gradBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
+
+-- | An <tt><tt>OpM</tt> m as a</tt> represents a <i>differentiable</i>
+--   (monadic) function from <tt>as</tt> to <tt>a</tt>, in the context of a
+--   <a>Monad</a> <tt>m</tt>.
+--   
+--   For example, an
+--   
+--   <pre>
+--   <tt>OpM</tt> IO '[Int, Bool] Double
+--   </pre>
+--   
+--   would be a function that takes an <a>Int</a> and a <a>Bool</a> and
+--   returns a <a>Double</a> (in <a>IO</a>). It can be differentiated to
+--   give a <i>gradient</i> of an <a>Int</a> and a <a>Bool</a> (also in
+--   <a>IO</a>) if given the total derivative for the <tt>Double</tt>.
+--   
+--   Note that an <tt>OpM</tt> is a <i>superclass</i> of <a>Op</a>, so any
+--   function that expects an <tt><tt>OpM</tt> m as a</tt> can also accept
+--   an <tt><a>Op</a> as a</tt>.
+--   
+--   See <tt>runOpM</tt>, <tt>gradOpM</tt>, and <tt>gradOpWithM</tt> for
+--   examples on how to run it.
+newtype Op as a
+
+-- | Construct an <tt>OpM</tt> by giving a (monadic) function creating the
+--   result, and also a continuation on how to create the gradient, given
+--   the total derivative of <tt>a</tt>.
+--   
+--   See the module documentation for <a>Numeric.Backprop.Op</a> for more
+--   details on the function that this constructor and <a>Op</a> expect.
+Op :: (Tuple as -> (a, a -> Tuple as)) -> Op as a
+[runOpWith] :: Op as a -> Tuple as -> (a, a -> Tuple as)
+data Prod k (f :: k -> *) (a :: [k]) :: forall k. () => (k -> *) -> [k] -> *
+[Ø] :: Prod k f [] k
+[:<] :: Prod k f (:) k a1 as
+
+-- | A Prod of simple Haskell types.
+type Tuple = Prod * I
+newtype I a :: * -> *
+I :: a -> I a
+[getI] :: I a -> a
+
+-- | Create an <a>Op</a> that takes no inputs and always returns the given
+--   value.
+--   
+--   There is no gradient, of course (using <a>gradOp</a> will give you an
+--   empty tuple), because there is no input to have a gradient of.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op0 10) Ø
+--   (10, Ø)
+--   </pre>
+--   
+--   For a constant <a>Op</a> that takes input and ignores it, see
+--   <a>opConst</a> and <a>opConst'</a>.
+--   
+--   Note that because this returns an <a>Op</a>, it can be used with any
+--   function that expects an <tt>OpM</tt> or <a>OpB</a>, as well.
+op0 :: a -> Op '[] a
+
+-- | An <a>Op</a> that ignores all of its inputs and returns a given
+--   constant value.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (opConst 10) (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø)
+--   (10, 0 ::&lt; 0 ::&lt; 0 ::&lt; Ø)
+--   </pre>
+opConst :: forall as a. (Every Num as, Known Length as) => a -> Op as a
+
+-- | An <a>Op</a> that just returns whatever it receives. The identity
+--   function.
+--   
+--   <pre>
+--   <a>idOp</a> = <a>opIso</a> <a>id</a>
+--   </pre>
+idOp :: Num a => Op '[a] a
+
+-- | A version of <a>opConst</a> taking explicit <a>Length</a>, indicating
+--   the number of inputs and their types.
+--   
+--   Requiring an explicit <a>Length</a> is mostly useful for rare
+--   "extremely polymorphic" situations, where GHC can't infer the type and
+--   length of the the expected input tuple. If you ever actually
+--   explicitly write down <tt>as</tt> as a list of types, you should be
+--   able to just use <a>opConst</a>.
+opConst' :: forall as a. Every Num as => Length as -> a -> Op as a
+
+-- | Create an <a>Op</a> of a function taking one input, by giving its
+--   explicit derivative. The function should return a tuple containing the
+--   result of the function, and also a function taking the derivative of
+--   the result and return the derivative of the input.
+--   
+--   If we have
+--   
+--   &lt;math&gt;
+--   
+--   Then the derivative &lt;math&gt;, it would be:
+--   
+--   &lt;math&gt;
+--   
+--   If our <a>Op</a> represents &lt;math&gt;, then the second item in the
+--   resulting tuple should be a function that takes &lt;math&gt; and
+--   returns &lt;math&gt;.
+--   
+--   If the input is <a>Nothing</a>, then &lt;math&gt; should be taken to
+--   be &lt;math&gt;.
+--   
+--   As an example, here is an <a>Op</a> that squares its input:
+--   
+--   <pre>
+--   square :: Num a =&gt; <a>Op</a> '[a] a
+--   square = <a>op1'</a> $ \x -&gt; (x*x, \case Nothing -&gt; 2 * x
+--                                     Just d  -&gt; 2 * d * x
+--                         )
+--   </pre>
+--   
+--   Remember that, generally, end users shouldn't directly construct
+--   <a>Op</a>s; they should be provided by libraries or generated
+--   automatically.
+--   
+--   For numeric functions, single-input <a>Op</a>s can be generated
+--   automatically using <a>op1</a>.
+op1 :: (a -> (b, b -> a)) -> Op '[a] b
+
+-- | Create an <a>Op</a> of a function taking two inputs, by giving its
+--   explicit gradient. The function should return a tuple containing the
+--   result of the function, and also a function taking the derivative of
+--   the result and return the derivative of the input.
+--   
+--   If we have
+--   
+--   &lt;math&gt;
+--   
+--   Then the gradient &lt;math&gt; would be:
+--   
+--   &lt;math&gt;
+--   
+--   If our <a>Op</a> represents &lt;math&gt;, then the second item in the
+--   resulting tuple should be a function that takes &lt;math&gt; and
+--   returns &lt;math&gt;.
+--   
+--   If the input is <a>Nothing</a>, then &lt;math&gt; should be taken to
+--   be &lt;math&gt;.
+--   
+--   As an example, here is an <a>Op</a> that multiplies its inputs:
+--   
+--   <pre>
+--   mul :: Num a =&gt; <a>Op</a> '[a, a] a
+--   mul = <a>op2'</a> $ \x y -&gt; (x*y, \case Nothing -&gt; (y  , x  )
+--                                    Just d  -&gt; (d*y, x*d)
+--                        )
+--   </pre>
+--   
+--   Remember that, generally, end users shouldn't directly construct
+--   <a>Op</a>s; they should be provided by libraries or generated
+--   automatically.
+--   
+--   For numeric functions, two-input <a>Op</a>s can be generated
+--   automatically using <a>op2</a>.
+op2 :: (a -> b -> (c, c -> (a, b))) -> Op '[a, b] c
+
+-- | Create an <a>Op</a> of a function taking three inputs, by giving its
+--   explicit gradient. See documentation for <a>op2'</a> for more details.
+op3 :: (a -> b -> c -> (d, d -> (a, b, c))) -> Op '[a, b, c] d
+
+-- | Automatically create an <a>Op</a> of a numerical function taking one
+--   argument. Uses <a>diff</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op1 (recip . negate)) (5 ::&lt; Ø)
+--   (-0.2, 0.04 ::&lt; Ø)
+--   </pre>
+op1' :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking two
+--   arguments. Uses <a>grad</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op2 (\x y -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
+--   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
+--   </pre>
+op2' :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking three
+--   arguments. Uses <a>grad</a>, and so can take any numerical function
+--   polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (op3 (\x y z -&gt; (x * sqrt y)**z)) (3 ::&lt; 4 ::&lt; 2 ::&lt; Ø)
+--   (36.0, 24.0 ::&lt; 9.0 ::&lt; 64.503 ::&lt; Ø)
+--   </pre>
+op3' :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
+
+-- | Automatically create an <a>Op</a> of a numerical function taking
+--   multiple arguments. Uses <a>grad</a>, and so can take any numerical
+--   function polymorphic over the standard numeric types.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (opN (\(x :+ y :+ Ø) -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
+--   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
+--   </pre>
+opN' :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
+
+-- | <tt><a>Replicate</a> n a</tt> is a list of <tt>a</tt>s repeated
+--   <tt>n</tt> times.
+--   
+--   <pre>
+--   &gt;&gt;&gt; :kind! Replicate N3 Int
+--   '[Int, Int, Int]
+--   
+--   &gt;&gt;&gt; :kind! Replicate N5 Double
+--   '[Double, Double, Double, Double, Double]
+--   </pre>
+
+-- | An <a>Op</a> that coerces an item into another item whose type has the
+--   same runtime representation. Requires the input to be an instance of
+--   <a>Num</a>.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' opCoerce (Identity 5) :: (Int, Identity Int)
+--   (5, Identity 1)
+--   </pre>
+--   
+--   <pre>
+--   <a>opCoerce</a> = <a>opIso</a> <a>coerced</a>
+--   </pre>
+opCoerce :: Num a => Coercible a b => Op '[a] b
+
+-- | An <a>Op</a> that takes <tt>as</tt> and returns exactly the input
+--   tuple.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' opTup (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø)
+--   (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø, 1 ::&lt; 1 ::&lt; 1 ::&lt; Ø)
+--   </pre>
+opTup :: (Every Num as, Known Length as) => Op as (Tuple as)
+
+-- | An <a>Op</a> that runs the input value through the isomorphism encoded
+--   in the <a>Iso</a>. Requires the input to be an instance of <a>Num</a>.
+--   
+--   Warning: This is unsafe! It assumes that the isomorphisms themselves
+--   have derivative 1, so will break for things like
+--   <a>exponentiating</a>. Basically, don't use this for any "numeric"
+--   isomorphisms.
+opIso :: Iso' a b -> Op '[a] b
+opLens :: Num a => Lens' a b -> Op '[a] b
