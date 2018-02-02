@@ -329,7 +329,7 @@ gradRunner _ R{..} (n,stns) dx = do
       zipWithPM_ propagate irs gs
     propagate :: forall x. InpRef x -> I x -> m ()
     propagate (IR v ln) (I !d) = case v of
-      BVInp     -> modifyMutVar' (unsafeCoerce dx) (ln %~ (+ d))
+      BVInp     -> modifyMutVar' (unsafeCoerce dx) (ln %~ (+ d))    -- bad for tuples
       BVIx !i   -> flip (MV.modify _rDelta) i $ \case
         SN p !y -> let y' = unsafeCoerce y & ln %~ (+d)
                    in  y' `seq` SN p (unsafeCoerce y')

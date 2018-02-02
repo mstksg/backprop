@@ -7,7 +7,7 @@ reverse-mode automatic differentiation), and you work with your values as if
 you were writing normal functions with them, with the help of [lens][].
 
 [ad]: http://hackage.haskell.org/package/ad
-[ad]: http://hackage.haskell.org/package/lens
+[lens]: http://hackage.haskell.org/package/lens
 
 Repository source is [on github][repo], and docs are [on hackage][hackage].
 
@@ -50,7 +50,6 @@ you can run][lhs] is also available on github!
 > import           Data.Foldable
 > import           Data.IDX
 > import           Data.List.Split
-> import           Data.Maybe
 > import           Data.Time.Clock
 > import           Data.Traversable
 > import           Data.Tuple
@@ -199,9 +198,9 @@ Finally, an operation to sum all of the items in the vector.
 >     -> BVar s Double
 > sumElements' = liftOp1 . op1 $ \x -> (HM.sumElements (extract x), konst)
 
-And why not, here's the [logistic function][], which we'll use as an
-activation function for internal layers.  But, because `BVar`s have a `Num`
-instance, we can just write it using typeclass functions.
+Here's the [logistic function][], which we'll use as an activation function
+for internal layers.  But, because `BVar`s have a `Floating` instance, we can
+just write it using typeclass functions.
 
 [logistic function]: https://en.wikipedia.org/wiki/Logistic_function
 

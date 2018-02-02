@@ -121,11 +121,7 @@ runNetwork n = softMax
              . runLayer (n ^^. nLayer1)
 {-# INLINE runNetwork #-}
 
-crossEntropy
-    :: (KnownNat n, Reifies s W)
-    => R n
-    -> BVar s (R n)
-    -> BVar s Double
+crossEntropy :: (KnownNat n, Reifies s W) => R n -> BVar s (R n) -> BVar s Double
 crossEntropy t r = negate $ log r <.>! constVar t
 {-# INLINE crossEntropy #-}
 
