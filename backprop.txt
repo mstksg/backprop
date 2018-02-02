@@ -698,7 +698,7 @@ lensVar :: forall a b s. (Reifies s W, Num b, Num a) => Lens' b a -> BVar s b ->
 infixl 8 ^^.
 uncurryVar :: (Num a, Num b, Num (a, b)) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> (forall s. Reifies s W => BVar s (a, b) -> BVar s c)
 backprop :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
-runBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
+evalBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
 gradBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
 
 -- | An <tt><tt>OpM</tt> m as a</tt> represents a <i>differentiable</i>
