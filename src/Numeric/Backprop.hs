@@ -58,7 +58,7 @@ module Numeric.Backprop (
   , liftOp1, liftOp2, liftOp3, liftOp4
   , lensVar, (^^.)
   , uncurryVar
-  , backprop, runBP, gradBP
+  , backprop, evalBP, gradBP
   , Op(..)
   , Prod(..), Tuple, I(..)
   -- * Creation
@@ -144,12 +144,12 @@ import           Lens.Micro
 import           Numeric.Backprop.Internal
 import           Numeric.Backprop.Op
 
-runBP
+evalBP
     :: forall a b. (Num a, Num b)
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> b
-runBP f = fst . backprop f
+evalBP f = fst . backprop f
 
 gradBP
     :: forall a b. (Num a, Num b)

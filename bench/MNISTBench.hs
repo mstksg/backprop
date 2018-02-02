@@ -10,28 +10,24 @@
 {-# LANGUAGE ViewPatterns         #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-import           Criterion.Main
-import           Criterion.Types
--- import           Data.Maybe
-import           Data.Time
--- import           Data.Time.LocalTime
--- import           Data.Type.Combinator
--- import           Data.Type.Index
-import           System.Directory
 import           Control.DeepSeq
 import           Control.Exception
 import           Control.Lens hiding                 ((:<), (<.>))
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Maybe
+import           Criterion.Main
+import           Criterion.Types
 import           Data.Bitraversable
 import           Data.IDX
 import           Data.Reflection
+import           Data.Time
 import           Data.Traversable
 import           Data.Tuple
 import           GHC.Generics                        (Generic)
 import           GHC.TypeLits
 import           Numeric.Backprop
 import           Numeric.LinearAlgebra.Static
+import           System.Directory
 import qualified Data.Vector.Generic                 as VG
 import qualified Data.Vector.Unboxed                 as VU
 import qualified Generics.SOP                        as SOP
@@ -257,7 +253,7 @@ main = MWC.withSystemRandom $ \g -> do
       , bgroup "run" [
             let testManual     = runNetManual net0
             in  bench "manual" $ nf testManual (fst test0)
-          , let testBP     x   = runBP (uncurryVar runNetwork) (net0, x)
+          , let testBP     x   = evalBP (uncurryVar runNetwork) (net0, x)
             in  bench "bp"     $ nf testBP (fst test0)
           ]
       ]
