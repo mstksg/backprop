@@ -18,6 +18,7 @@ module Data.Type.Util (
     Replicate
   , unzipP
   , zipP
+  , zipWithPM_
   , tagSum
   , indexP
   , vecToProd
@@ -29,6 +30,7 @@ module Data.Type.Util (
   , finIndex
   , replLen
   , replWit
+  , traverse1_
   , itraverse1_
   , ifor1
   , ifor1_
@@ -147,6 +149,22 @@ ifor1_
     -> h ()
 ifor1_ x f = itraverse1_ f x
 
+zipWithPM_
+    :: forall h f g as. Applicative h
+    => (forall a. f a -> g a -> h ())
+    -> Prod f as
+    -> Prod g as
+    -> h ()
+zipWithPM_ f = go
+  where
+    go :: forall bs. Prod f bs -> Prod g bs -> h ()
+    go = \case
+      Ø -> \case
+        Ø -> pure ()
+      x :< xs -> \case
+        y :< ys -> f x y *> go xs ys
+
+
 zipP
     :: Prod f as
     -> Prod g as
@@ -156,6 +174,7 @@ zipP = \case
       Ø       -> Ø
     x :< xs -> \case
       y :< ys -> x :&: y :< zipP xs ys
+{-# INLINE zipP #-}
 
 unzipP
     :: Prod (f :&: g) as

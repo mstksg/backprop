@@ -52,7 +52,6 @@ import           Data.Kind
 import           Data.Primitive.MutVar
 import           Data.Proxy
 import           Data.Reflection
-import           Data.Type.Conjunction
 import           Data.Type.Index
 import           Data.Type.Product
 import           Data.Type.Util
@@ -66,12 +65,17 @@ import qualified Data.Vector.Mutable           as MV
 
 data BVar (s :: Type) (a :: Type)
         = BVInp
-        | BVIx Int
-        | BVC a
+        | BVIx !Int
+        | BVC !a
 
 isBVC :: BVar s a -> Maybe a
 isBVC (BVC x) = Just x
 isBVC _       = Nothing
+
+forceBVar :: BVar s a -> ()
+forceBVar BVInp     = ()
+forceBVar (BVIx !_) = ()
+forceBVar (BVC  !_) = ()
 
 data InpRef :: Type -> Type where
     IR :: Num a
@@ -80,16 +84,25 @@ data InpRef :: Type -> Type where
           }
        -> InpRef a
 
+forceInpRef :: InpRef a -> ()
+forceInpRef (IR !v !_) = forceBVar v `seq` ()
+
 data TapeNode :: Type -> Type where
     TN :: { _tnInputs :: !(Prod InpRef as)
           , _tnOp     :: !(Op as a)
           }
        -> TapeNode a
 
+forceTapeNode :: TapeNode a -> ()
+forceTapeNode (TN !inps !_) = foldMap1 forceInpRef inps `seq` ()
+
 data SomeTapeNode :: Type where
     STN :: forall a. Num a
         => !(TapeNode a)
         -> SomeTapeNode
+
+forceSomeTapeNode :: SomeTapeNode -> ()
+forceSomeTapeNode (STN !tn) = forceTapeNode tn `seq` ()
 
 newtype W = W { wRef :: IORef (Int, [SomeTapeNode]) }
 
@@ -101,8 +114,10 @@ insertNode
     => TapeNode a
     -> W
     -> IO (BVar s a)
-insertNode tn w = fmap BVIx . atomicModifyIORef (wRef w) $ \(n,t) ->
-    ((n+1,STN tn:t), n)
+insertNode tn w = fmap BVIx . atomicModifyIORef' (wRef w) $ \(n,t) ->
+    let n' = n + 1
+        t' = STN tn:t
+    in  n' `seq` t' `seq` ((n', t'), n)
 
 constVar :: a -> BVar s a
 constVar = BVC
@@ -120,7 +135,7 @@ liftOpN_ o !vs = case traverse1 (fmap I . isBVC) vs of
             , _tnOp     = o
             }
     go :: forall a. Index as a -> BVar s a -> InpRef a
-    go i !v = IR v id \\ every @_ @Num i
+    go i !v = forceBVar v `seq` (IR v id \\ every @_ @Num i)
 
 liftOpN
     :: forall s as b. (Reifies s W, Num b, Every Num as)
@@ -135,7 +150,7 @@ liftOp1_
     -> BVar s a
     -> IO (BVar s b)
 liftOp1_ o (BVC x) = return . BVC . evalOp o $ (x ::< Ø)
-liftOp1_ o !v = insertNode tn (reflect (Proxy @s))
+liftOp1_ o !v = forceBVar v `seq` insertNode tn (reflect (Proxy @s))
   where
     tn = TN { _tnInputs = IR v id :< Ø
             , _tnOp     = o
@@ -155,7 +170,9 @@ liftOp2_
     -> BVar s b
     -> IO (BVar s c)
 liftOp2_ o (BVC x) (BVC y) = return . BVC . evalOp o $ x ::< y ::< Ø
-liftOp2_ o !v !u = insertNode tn (reflect (Proxy @s))
+liftOp2_ o !v !u = forceBVar v
+             `seq` forceBVar u
+             `seq` insertNode tn (reflect (Proxy @s))
   where
     tn = TN { _tnInputs = IR v id :< IR u id :< Ø
             , _tnOp     = o
@@ -178,7 +195,10 @@ liftOp3_
     -> IO (BVar s d)
 liftOp3_ o (BVC x) (BVC y) (BVC z) = return . BVC . evalOp o
                                    $ x ::< y ::< z ::< Ø
-liftOp3_ o !v !u !w = insertNode tn (reflect (Proxy @s))
+liftOp3_ o !v !u !w = forceBVar v
+                `seq` forceBVar u
+                `seq` forceBVar w
+                `seq` insertNode tn (reflect (Proxy @s))
   where
     tn = TN { _tnInputs = IR v id :< IR u id :< IR w id :< Ø
             , _tnOp     = o
@@ -203,7 +223,11 @@ liftOp4_
     -> IO (BVar s e)
 liftOp4_ o (BVC x) (BVC y) (BVC z) (BVC w) = return . BVC . evalOp o
                                            $ x ::< y ::< z ::< w ::< Ø
-liftOp4_ o !v !u !w !x = insertNode tn (reflect (Proxy @s))
+liftOp4_ o !v !u !w !x = forceBVar v
+                   `seq` forceBVar u
+                   `seq` forceBVar w
+                   `seq` forceBVar x
+                   `seq` insertNode tn (reflect (Proxy @s))
   where
     tn = TN { _tnInputs = IR v id :< IR u id :< IR w id :< IR x id :< Ø
             , _tnOp     = o
@@ -224,7 +248,7 @@ lensVar_
     => Lens' b a
     -> BVar s b
     -> IO (BVar s a)
-lensVar_ l !v = insertNode tn (reflect (Proxy @s))
+lensVar_ l !v = forceBVar v `seq` insertNode tn (reflect (Proxy @s))
   where
     tn = TN { _tnInputs = IR v l :< Ø
             , _tnOp     = idOp
@@ -302,14 +326,13 @@ gradRunner _ R{..} (n,stns) dx = do
       SN _ delt  <- MV.read _rDelta i
       G  irs _ f <- MV.read _rGrads i
       let gs = f (unsafeCoerce delt)
-      void . traverse1 (fmap (const Proxy) . propagate) $ zipP irs gs
-      return undefined
-    propagate :: forall x. (InpRef :&: I) x -> m ()
-    propagate (IR v ln :&: I d) = case v of
-      BVInp     -> modifyMutVar (unsafeCoerce dx) (ln %~ (+ d))
-      BVIx i    -> flip (MV.modify _rDelta) i $ \case
-        SN p y -> SN p $ unsafeCoerce y & ln %~ (+ d)
-                                        & unsafeCoerce
+      zipWithPM_ propagate irs gs
+    propagate :: forall x. InpRef x -> I x -> m ()
+    propagate (IR v ln) (I !d) = case v of
+      BVInp     -> modifyMutVar' (unsafeCoerce dx) (ln %~ (+ d))
+      BVIx !i   -> flip (MV.modify _rDelta) i $ \case
+        SN p !y -> let y' = unsafeCoerce y & ln %~ (+d)
+                   in  y' `seq` SN p (unsafeCoerce y')
       BVC _ -> return ()
 
 registerOut
@@ -329,7 +352,9 @@ backprop f = \x -> runST (go x)
       w <- initWengert
       reify w $ \(Proxy :: Proxy s) ->
         registerOut =<< evaluate (f (BVInp @s))
-      readIORef (wRef w)
+      t <- readIORef (wRef w)
+      traverse_ (evaluate . forceSomeTapeNode) (snd t)
+      return t
     go :: a -> ST s (b, a)
     go x = do
       r <- initRunner (fst tp)

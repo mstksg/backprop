@@ -478,7 +478,7 @@ Result
 I haven't put much into optimizing the library yet, but the network (with
 hidden layer sizes 300 and 100) seems to take 25s on my computer to finish
 a batch of 5000 training points.  It's slow (five minutes per 60000 point
-epooch), but it's a first unoptimized run and a proof of concept!  It's my
+epoch), but it's a first unoptimized run and a proof of concept!  It's my
 goal to get this down to a point where the result has the same performance
 characteristics as the actual backend (*hmatrix*), and so overhead is 0.
 
