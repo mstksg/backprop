@@ -105,7 +105,9 @@ runLayer l x = (l ^^. lWeights) #>! x + (l ^^. lBiases)
 {-# INLINE runLayer #-}
 
 softMax :: (KnownNat n, Reifies s W) => BVar s (R n) -> BVar s (R n)
-softMax x = konst' (1 / sumElements' x) * exp x
+softMax x = konst' (1 / sumElements' expx) * expx
+  where
+    expx = exp x
 {-# INLINE softMax #-}
 
 runNetwork
@@ -154,7 +156,9 @@ runLayerManual l x = (l ^. lWeights) #> x + (l ^. lBiases)
 {-# INLINE runLayerManual #-}
 
 softMaxManual :: KnownNat n => R n -> R n
-softMaxManual x = konst (1 / sumElements x) * exp x
+softMaxManual x = konst (1 / sumElements expx) * expx
+  where
+    expx = exp x
 {-# INLINE softMaxManual #-}
 
 runNetManual
@@ -209,6 +213,27 @@ gradNetManual x t (Net (Layer w1 b1) (Layer w2 b2) (Layer w3 b3)) =
         dEdW1 = dEdY1 `outer` x
     in  Net (Layer dEdW1 dEdB1) (Layer dEdW2 dEdB2) (Layer dEdW3 dEdB3)
 {-# INLINE gradNetManual #-}
+
+netErrManual
+    :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
+    => R i
+    -> R o
+    -> Network i h1 h2 o
+    -> Double
+netErrManual x t (Net (Layer w1 b1) (Layer w2 b2) (Layer w3 b3)) =
+    let y1 = w1 #> x
+        z1 = y1 + b1
+        x2 = logistic z1
+        y2 = w2 #> x2
+        z2 = y2 + b2
+        x3 = logistic z2
+        y3 = w3 #> x3
+        z3 = y3 + b3
+        o0 = exp z3
+        o1 = HM.sumElements (extract o0)
+        o2 = o0 / konst o1
+    in  - (log o2 <.> t)
+{-# INLINE netErrManual #-}
 
 trainStepManual
     :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)

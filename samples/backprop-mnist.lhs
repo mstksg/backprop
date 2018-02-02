@@ -253,13 +253,17 @@ Before writing our final network runner, we need a function to compute the
 "softmax" of our output vector.  Writing it normally would look like:
 
 > softMaxNormal :: KnownNat n => R n -> R n
-> softMaxNormal x = konst (1 / HM.sumElements (extract x)) * exp x
+> softMaxNormal x = konst (1 / HM.sumElements (extract expx)) * expx
+>   where
+>     expx = exp x
 > {-# INLINE softMaxNormal #-}
 
 But we can make the mechanical shift to the backpropagatable version:
 
 > softMax :: (KnownNat n, Reifies s W) => BVar s (R n) -> BVar s (R n)
-> softMax x = konst' (1 / sumElements' x) * exp x
+> softMax x = konst' (1 / sumElements' expx) * expx
+>   where
+>     expx = exp x
 > {-# INLINE softMax #-}
 
 With that in hand, let's compare how we would normally write a function to run
