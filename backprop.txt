@@ -685,7 +685,7 @@ instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.I
 --   implemented using <a>sum</a> and <a>+</a>), and we also need to able
 --   to generate gradients of '1' and '0'.
 module Numeric.Backprop
-data BVar (s :: Type) (a :: Type)
+data BVar s a
 data W
 constVar :: a -> BVar s a
 liftOpN :: forall s as b. (Reifies s W, Num b, Every Num as) => Op as b -> Prod (BVar s) as -> BVar s b
@@ -693,9 +693,13 @@ liftOp1 :: forall s a b. (Reifies s W, Num a, Num b) => Op '[a] b -> BVar s a ->
 liftOp2 :: forall s a b c. (Reifies s W, Num a, Num b, Num c) => Op '[a, b] c -> BVar s a -> BVar s b -> BVar s c
 liftOp3 :: forall s a b c d. (Reifies s W, Num a, Num b, Num c, Num d) => Op '[a, b, c] d -> BVar s a -> BVar s b -> BVar s c -> BVar s d
 liftOp4 :: forall s a b c d e. (Reifies s W, Num a, Num b, Num c, Num d, Num e) => Op '[a, b, c, d] e -> BVar s a -> BVar s b -> BVar s c -> BVar s d -> BVar s e
-lensVar :: forall a b s. (Reifies s W, Num b, Num a) => Lens' b a -> BVar s b -> BVar s a
+lensVar :: forall a b s. (Reifies s W, Num a) => Lens' b a -> BVar s b -> BVar s a
 (^^.) :: forall a b s. (Reifies s W, Num b, Num a) => BVar s b -> Lens' b a -> BVar s a
 infixl 8 ^^.
+traversalVar :: forall a b f s. (Reifies s W, Num a, Traversable f) => Traversal' b a -> ([a] -> f a) -> BVar s b -> f (BVar s a)
+(^^?) :: forall a b s. (Reifies s W, Num a) => BVar s b -> Traversal' b a -> Maybe (BVar s a)
+(^^..) :: forall a b s. (Reifies s W, Num a) => BVar s b -> Traversal' b a -> [BVar s a]
+sequenceVar :: forall a f i s. (Reifies s W, TraversableWithIndex i f, Ixed (f a), Index (f a) ~ i, IxValue (f a) ~ a, Num a) => BVar s (f a) -> f (BVar s a)
 uncurryVar :: (Num a, Num b, Num (a, b)) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> (forall s. Reifies s W => BVar s (a, b) -> BVar s c)
 backprop :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
 evalBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
