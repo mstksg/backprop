@@ -7,6 +7,8 @@
 {-# LANGUAGE PatternSynonyms      #-}
 {-# LANGUAGE PolyKinds            #-}
 {-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE Strict               #-}
+{-# LANGUAGE StrictData           #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -42,8 +44,6 @@ module Numeric.Backprop.Op (
   -- * Running
   -- ** Pure
   , runOp, evalOp, gradOp, gradOpWith
-  -- ** Monadic
-  -- , runOpM, gradOpM, gradOpM', gradOpWithM, gradOpWithM', runOpM'
   -- * Manipulation
   , composeOp, composeOp1, (~.)
   , composeOp', composeOp1'
@@ -356,6 +356,7 @@ infixr 9 ~.
     -> Op as b
     -> Op as c
 (~.) = flip composeOp1
+{-# INLINE (~.) #-}
 
 
 -- | Run the function that an 'Op' encodes, to get the result.
@@ -364,6 +365,7 @@ infixr 9 ~.
 -- 15
 evalOp :: Op as a -> Tuple as -> a
 evalOp o = fst . runOpWith o
+{-# INLINE evalOp #-}
 
 -- | Run the function that an 'Op' encodes, to get the resulting output and
 -- also its gradient with respect to the inputs.
@@ -372,6 +374,7 @@ evalOp o = fst . runOpWith o
 -- (15, 5 ::< 3 ::< Ø)
 runOp :: Num a => Op as a -> Tuple as -> (a, Tuple as)
 runOp o = second ($ 1) . runOpWith o
+{-# INLINE runOp #-}
 
 ---- | The monadic version of 'runOp', for 'OpM's.
 ----
@@ -404,6 +407,7 @@ gradOpWith
                     --     the final result.
     -> Tuple as     -- ^ The gradient
 gradOpWith o = snd . runOpWith o
+{-# INLINE gradOpWith #-}
 
 -- -- | The monadic version of 'gradOpWith'', for 'OpM's.
 -- gradOpWithM'
@@ -448,6 +452,7 @@ gradOpWith o = snd . runOpWith o
 -- -- the gradient of x*y is (y, x)
 gradOp :: Num a => Op as a -> Tuple as -> Tuple as
 gradOp o i = gradOpWith o i 1
+{-# INLINE gradOp #-}
 
 -- -- | The monadic version of 'gradOp', for 'OpM's.
 -- gradOpM :: Monad m => OpM m as a -> Tuple as -> m (Tuple as)
@@ -466,6 +471,7 @@ gradOp o i = gradOpWith o i 1
 -- @
 opCoerce :: Num a => Coercible a b => Op '[a] b
 opCoerce = opIso coerced
+{-# INLINE opCoerce #-}
 
 -- | An 'Op' that just returns whatever it receives.  The identity
 -- function.
@@ -475,6 +481,7 @@ opCoerce = opIso coerced
 -- @
 idOp :: Num a => Op '[a] a
 idOp = op1 $ \x -> (x, id)
+{-# INLINE idOp #-}
 
 ---- | A version of 'opTup' taking explicit 'Length', indicating the
 ---- number of inputs expected and their types.
@@ -498,6 +505,7 @@ opTup
     :: (Every Num as, Known Length as)
     => Op as (Tuple as)
 opTup = Op $ \xs -> (xs, id)
+{-# INLINE opTup #-}
 
 -- | An 'Op' that runs the input value through the isomorphism encoded in
 -- the 'Iso'.  Requires the input to be an instance of 'Num'.
@@ -508,9 +516,11 @@ opTup = Op $ \xs -> (xs, id)
 -- "numeric" isomorphisms.
 opIso :: Iso' a b -> Op '[ a ] b
 opIso i = op1 $ \x -> (view i x, review i)
+{-# INLINE opIso #-}
 
 opLens :: Num a => Lens' a b -> Op '[ a ] b
 opLens l = op1 $ \x -> (view l x, \d -> set l d 0)
+{-# INLINE opLens #-}
 
 -- | A version of 'opConst' taking explicit 'Length', indicating the
 -- number of inputs and their types.
@@ -523,6 +533,7 @@ opLens l = op1 $ \x -> (view l x, \d -> set l d 0)
 opConst' :: forall as a. Every Num as => Length as -> a -> Op as a
 opConst' l x = Op $ const
     (x , const $ map1 ((0 \\) . every @_ @Num) (indices' l))
+{-# INLINE opConst' #-}
 
 -- | An 'Op' that ignores all of its inputs and returns a given constant
 -- value.
@@ -531,6 +542,7 @@ opConst' l x = Op $ const
 -- (10, 0 ::< 0 ::< 0 ::< Ø)
 opConst :: forall as a. (Every Num as, Known Length as) => a -> Op as a
 opConst = opConst' known
+{-# INLINE opConst #-}
 
 -- | Create an 'Op' that takes no inputs and always returns the given
 -- value.
@@ -678,6 +690,7 @@ op1' :: Num a
 op1' f = op1 $ \x ->
     let (z, dx) = diff' f x
     in  (z, (* dx))
+{-# INLINE op1' #-}
 
 -- | Automatically create an 'Op' of a numerical function taking two
 -- arguments.  Uses 'Numeric.AD.grad', and so can take any numerical function
@@ -689,6 +702,7 @@ op2' :: Num a
     => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a)
     -> Op '[a,a] a
 op2' f = opN' $ \case I x :* I y :* ØV -> f x y
+{-# INLINE op2' #-}
 
 -- | Automatically create an 'Op' of a numerical function taking three
 -- arguments.  Uses 'Numeric.AD.grad', and so can take any numerical function
@@ -700,6 +714,7 @@ op3' :: Num a
     => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a)
     -> Op '[a,a,a] a
 op3' f = opN' $ \case I x :* I y :* I z :* ØV -> f x y z
+{-# INLINE op3' #-}
 
 -- | Automatically create an 'Op' of a numerical function taking multiple
 -- arguments.  Uses 'Numeric.AD.grad', and so can take any numerical
@@ -713,6 +728,7 @@ opN' :: (Num a, Known Nat n)
 opN' f = Op $ \xs ->
     let (y, dxs) = grad' f (prodToVec' known xs)
     in  (y, vecToProd . \q -> (q *) <$> dxs)
+{-# INLINE opN' #-}
 
 instance (Known Length as, Every Num as, Num a) => Num (Op as a) where
     o1 + o2       = composeOp (o1 :< o2 :< Ø) (+.)

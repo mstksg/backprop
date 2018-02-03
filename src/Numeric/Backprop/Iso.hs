@@ -32,8 +32,7 @@ module Numeric.Backprop.Iso (
   -- * Useful Isos
   , coerced
   , tup1, tup2, tup3
-  , gTuple, gSOP
-  , sum1, resum1
+  , gTuple
   -- * Utility types
   -- | See "Numeric.Backprop#prod" for a mini-tutorial on 'Prod' and
   -- 'Tuple', and "Numeric.Backprop#sum" for a mini-tutorial on 'Sum'.
@@ -159,13 +158,6 @@ sum1 :: Iso' (Sum f '[a]) (f a)
 sum1 = iso (\case InL x -> x
                   InR _ -> error "inaccessible?"
            ) InL
-
--- | An iso between a single type and a single-type 'Sum'.
-resum1 :: Iso' (f a) (Sum f '[a])
-resum1 = iso InL
-             (\case InL x -> x
-                    InR _ -> error "inaccessible?"
-             )
 
 -- | Reverse an 'Iso''.  The forward function becomes the backwards
 -- function, and the backwards function becomes the forward function.

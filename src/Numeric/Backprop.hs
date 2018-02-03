@@ -108,29 +108,6 @@ module Numeric.Backprop (
   -- , sinhOp, coshOp, tanhOp, asinhOp, acoshOp, atanhOp
   ) where
 
--- import           Control.Monad.Base
--- import           Control.Monad.Reader
--- import           Control.Monad.ST
--- import           Control.Monad.State
--- import           Data.Kind
--- import           Data.Kind
--- import           Data.Maybe
--- import           Data.Monoid            ((<>))
--- import           Data.STRef
--- import           Data.Type.Combinator
--- import           Data.Type.Conjunction
--- import           Data.Type.Index
--- import           Data.Type.Length
--- import           Data.Type.Product
--- import           Data.Type.Sum hiding   (index)
--- import           Data.Type.Util
--- import           Lens.Micro.Mtl hiding  (view)
--- import           Numeric.Backprop.Iso
--- import           Type.Class.Higher
--- import           Type.Class.Known
--- import           Type.Class.Witness
--- import           Type.Reflection
--- import qualified Generics.SOP           as SOP
 import           Data.Reflection
 import           Lens.Micro
 import           Numeric.Backprop.Internal
@@ -142,6 +119,7 @@ evalBP
     -> a
     -> b
 evalBP f = fst . backprop f
+{-# INLINE evalBP #-}
 
 gradBP
     :: forall a b. (Num a, Num b)
@@ -149,6 +127,7 @@ gradBP
     -> a
     -> a
 gradBP f = snd . backprop f
+{-# INLINE gradBP #-}
 
 infixl 8 ^^.
 (^^.)
@@ -157,12 +136,14 @@ infixl 8 ^^.
     -> Lens' b a
     -> BVar s a
 x ^^. l = lensVar l x
+{-# INLINE (^^.) #-}
 
 uncurryVar
     :: (Num a, Num b, Num (a,b))
     => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
     -> (forall s. Reifies s W => BVar s (a, b) -> BVar s c)
 uncurryVar f xy = f (xy ^^. _1) (xy ^^. _2)
+{-# INLINE uncurryVar #-}
 
 
 ---- $prod
