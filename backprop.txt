@@ -652,40 +652,6 @@ instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.I
 instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.Index.Every * GHC.Real.Fractional as, Data.Type.Index.Every * GHC.Num.Num as, GHC.Real.Fractional a) => GHC.Real.Fractional (Numeric.Backprop.Op.Op as a)
 instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.Index.Every * GHC.Float.Floating as, Data.Type.Index.Every * GHC.Real.Fractional as, Data.Type.Index.Every * GHC.Num.Num as, GHC.Float.Floating a) => GHC.Float.Floating (Numeric.Backprop.Op.Op as a)
 
-module Numeric.Backprop.Tuple
-data T2 a b
-T2 :: !a -> !b -> T2 a b
-data T3 a b c
-T3 :: !a -> !b -> !c -> T3 a b c
-data T4 a b c d
-T4 :: !a -> !b -> !c -> !d -> T4 a b c d
-instance (GHC.Classes.Ord d, GHC.Classes.Ord c, GHC.Classes.Ord b, GHC.Classes.Ord a) => GHC.Classes.Ord (Numeric.Backprop.Tuple.T4 a b c d)
-instance (GHC.Classes.Eq d, GHC.Classes.Eq c, GHC.Classes.Eq b, GHC.Classes.Eq a) => GHC.Classes.Eq (Numeric.Backprop.Tuple.T4 a b c d)
-instance (GHC.Read.Read d, GHC.Read.Read c, GHC.Read.Read b, GHC.Read.Read a) => GHC.Read.Read (Numeric.Backprop.Tuple.T4 a b c d)
-instance (GHC.Show.Show d, GHC.Show.Show c, GHC.Show.Show b, GHC.Show.Show a) => GHC.Show.Show (Numeric.Backprop.Tuple.T4 a b c d)
-instance GHC.Generics.Generic (Numeric.Backprop.Tuple.T4 a b c d)
-instance (GHC.Classes.Ord c, GHC.Classes.Ord b, GHC.Classes.Ord a) => GHC.Classes.Ord (Numeric.Backprop.Tuple.T3 a b c)
-instance (GHC.Classes.Eq c, GHC.Classes.Eq b, GHC.Classes.Eq a) => GHC.Classes.Eq (Numeric.Backprop.Tuple.T3 a b c)
-instance (GHC.Read.Read c, GHC.Read.Read b, GHC.Read.Read a) => GHC.Read.Read (Numeric.Backprop.Tuple.T3 a b c)
-instance (GHC.Show.Show c, GHC.Show.Show b, GHC.Show.Show a) => GHC.Show.Show (Numeric.Backprop.Tuple.T3 a b c)
-instance GHC.Generics.Generic (Numeric.Backprop.Tuple.T3 a b c)
-instance (GHC.Classes.Ord b, GHC.Classes.Ord a) => GHC.Classes.Ord (Numeric.Backprop.Tuple.T2 a b)
-instance (GHC.Classes.Eq b, GHC.Classes.Eq a) => GHC.Classes.Eq (Numeric.Backprop.Tuple.T2 a b)
-instance (GHC.Read.Read b, GHC.Read.Read a) => GHC.Read.Read (Numeric.Backprop.Tuple.T2 a b)
-instance (GHC.Show.Show b, GHC.Show.Show a) => GHC.Show.Show (Numeric.Backprop.Tuple.T2 a b)
-instance GHC.Generics.Generic (Numeric.Backprop.Tuple.T2 a b)
-instance (Control.DeepSeq.NFData a, Control.DeepSeq.NFData b, Control.DeepSeq.NFData c, Control.DeepSeq.NFData d) => Control.DeepSeq.NFData (Numeric.Backprop.Tuple.T4 a b c d)
-instance (GHC.Num.Num a, GHC.Num.Num b, GHC.Num.Num c, GHC.Num.Num d) => GHC.Num.Num (Numeric.Backprop.Tuple.T4 a b c d)
-instance (Control.DeepSeq.NFData a, Control.DeepSeq.NFData b, Control.DeepSeq.NFData c) => Control.DeepSeq.NFData (Numeric.Backprop.Tuple.T3 a b c)
-instance (GHC.Num.Num a, GHC.Num.Num b, GHC.Num.Num c) => GHC.Num.Num (Numeric.Backprop.Tuple.T3 a b c)
-instance Lens.Micro.Internal.Field1 (Numeric.Backprop.Tuple.T3 a b c) (Numeric.Backprop.Tuple.T3 a' b c) a a'
-instance Lens.Micro.Internal.Field2 (Numeric.Backprop.Tuple.T3 a b c) (Numeric.Backprop.Tuple.T3 a b' c) b b'
-instance Lens.Micro.Internal.Field3 (Numeric.Backprop.Tuple.T3 a b c) (Numeric.Backprop.Tuple.T3 a b c') c c'
-instance (Control.DeepSeq.NFData a, Control.DeepSeq.NFData b) => Control.DeepSeq.NFData (Numeric.Backprop.Tuple.T2 a b)
-instance (GHC.Num.Num a, GHC.Num.Num b) => GHC.Num.Num (Numeric.Backprop.Tuple.T2 a b)
-instance Lens.Micro.Internal.Field1 (Numeric.Backprop.Tuple.T2 a b) (Numeric.Backprop.Tuple.T2 a' b) a a'
-instance Lens.Micro.Internal.Field2 (Numeric.Backprop.Tuple.T2 a b) (Numeric.Backprop.Tuple.T2 a b') b b'
-
 
 -- | Provides the <tt>BP</tt> monad and the <a>BVar</a> type; after
 --   manipulating <a>BVar</a>s (inputs to your function) to produce a
@@ -730,7 +696,7 @@ liftOp4 :: forall s a b c d e. (Reifies s W, Num a, Num b, Num c, Num d, Num e) 
 lensVar :: forall a b s. (Reifies s W, Num b, Num a) => Lens' b a -> BVar s b -> BVar s a
 (^^.) :: forall a b s. (Reifies s W, Num b, Num a) => BVar s b -> Lens' b a -> BVar s a
 infixl 8 ^^.
-uncurryVar :: (Num a, Num b, Num (a, b)) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> (forall s. Reifies s W => BVar s (T2 a b) -> BVar s c)
+uncurryVar :: (Num a, Num b, Num (a, b)) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> (forall s. Reifies s W => BVar s (a, b) -> BVar s c)
 backprop :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
 evalBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
 gradBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
