@@ -150,37 +150,6 @@ tup3 :: forall a b c. Iso' (a, b, c) (Tuple '[a, b, c])
 --   A 15 False
 --   </pre>
 gTuple :: (Generic a, Code a ~ '[as]) => Iso' a (Tuple as)
-
--- | An <a>Iso</a> between a sum type whose constructors are products, and
---   a sum (<a>Sum</a>) of products (<a>Tuple</a>). Uses
---   <a>Generics.SOP</a> and the <a>Generic</a> typeclass.
---   
---   <pre>
---   &gt;&gt;&gt; import qualified Generics.SOP as SOP
---   
---   &gt;&gt;&gt; data Bar = A Int Bool | B String Double
---   
---   &gt;&gt;&gt; instance SOP.Generic Bar
---   
---   &gt;&gt;&gt; 'view' 'gSOP' (A 10 True)
---   'InL' (10 ::&lt; True ::&lt; Ø)
---   
---   &gt;&gt;&gt; 'view' 'gSOP' (B "hello" 3.4)
---   'InR' ('InL' ("hello" ::&lt; 3.4 ::&lt; Ø))
---   
---   &gt;&gt;&gt; 'review' 'gTuple' ('InL' (15 ::&lt; False ::&lt; Ø))
---   A 15 False
---   
---   &gt;&gt;&gt; 'review' 'gTuple' ('InR' ('InL' ("bye" ::&lt; 9.8 ::&lt; Ø)))
---   B "bye" 9.8
---   </pre>
-gSOP :: Generic a => Iso' a (Sum Tuple (Code a))
-
--- | An iso between a single-type <a>Sum</a> and the single type.
-sum1 :: Iso' (Sum f '[a]) (f a)
-
--- | An iso between a single type and a single-type <a>Sum</a>.
-resum1 :: Iso' (f a) (Sum f '[a])
 data Prod k (f :: k -> *) (a :: [k]) :: forall k. () => (k -> *) -> [k] -> *
 [Ø] :: Prod k f [] k
 [:<] :: Prod k f (:) k a1 as
