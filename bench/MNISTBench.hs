@@ -113,7 +113,7 @@ softMax x = konst' (1 / sumElements' expx) * expx
 runNetwork
     :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o, Reifies s W)
     => BVar s (Network i h1 h2 o)
-    -> BVar s (R i)
+    -> R i
     -> BVar s (R o)
 runNetwork n = softMax
              . runLayer (n ^^. nLayer3)
@@ -121,6 +121,7 @@ runNetwork n = softMax
              . runLayer (n ^^. nLayer2)
              . logistic
              . runLayer (n ^^. nLayer1)
+             . constVar
 {-# INLINE runNetwork #-}
 
 crossEntropy :: (KnownNat n, Reifies s W) => R n -> BVar s (R n) -> BVar s Double
@@ -129,11 +130,11 @@ crossEntropy t r = negate $ log r <.>! constVar t
 
 netErr
     :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o, Reifies s W)
-    => R o
+    => R i
+    -> R o
     -> BVar s (Network i h1 h2 o)
-    -> BVar s (R i)
     -> BVar s Double
-netErr t n = crossEntropy t . runNetwork n
+netErr x t n = crossEntropy t (runNetwork n x)
 {-# INLINE netErr #-}
 
 trainStep
@@ -143,8 +144,7 @@ trainStep
     -> R o
     -> Network i h1 h2 o
     -> Network i h1 h2 o
-trainStep r !x !t !n = case gradBP (uncurryVar (netErr t)) (n, x) of
-    (gN, _) -> n - (realToFrac r * gN)
+trainStep r !x !t !n = n - realToFrac r * gradBP (netErr x t) n
 {-# INLINE trainStep #-}
 
 runLayerManual
@@ -241,7 +241,7 @@ main = MWC.withSystemRandom $ \g -> do
         bgroup "gradient" [
             let testManual x y = gradNetManual x y net0
             in  bench "manual" $ nf (uncurry testManual) test0
-          , let testBP     x y = fst . gradBP (uncurryVar (netErr y)) $ (net0, x)
+          , let testBP     x y = gradBP (netErr x y) net0
             in  bench "bp"     $ nf (uncurry testBP) test0
           ]
       , bgroup "descent" [
@@ -253,7 +253,7 @@ main = MWC.withSystemRandom $ \g -> do
       , bgroup "run" [
             let testManual     = runNetManual net0
             in  bench "manual" $ nf testManual (fst test0)
-          , let testBP     x   = evalBP (uncurryVar runNetwork) (net0, x)
+          , let testBP     x   = evalBP (`runNetwork` x) net0
             in  bench "bp"     $ nf testBP (fst test0)
           ]
       ]

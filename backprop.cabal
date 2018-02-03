@@ -33,16 +33,14 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Numeric.Backprop
-                       -- Numeric.Backprop.Implicit
                        Numeric.Backprop.Iso
-                       -- Numeric.Backprop.Mono
-                       -- Numeric.Backprop.Mono.Implicit
+                       Numeric.Backprop.Tuple
                        Numeric.Backprop.Op
-                       -- Numeric.Backprop.Op.Mono
   other-modules:       Numeric.Backprop.Internal
                        Data.Type.Util
   build-depends:       base >= 4.7 && < 5
                      , ad
+                     , deepseq
                      , generics-sop
                      , lens
                      , microlens
