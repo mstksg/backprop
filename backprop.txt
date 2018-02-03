@@ -14,156 +14,6 @@
 @version 0.0.3.0
 
 
--- | A poor substitute for the <a>Control.Lens.Iso</a> module in
---   <i>lens</i>, providing the <a>Iso</a> type synonym and some sample
---   useful <a>Iso</a>s for usage with <i>backprop</i>, without incuring a
---   lens dependency.
---   
---   If you also import lens, you should only use this module for the
---   <a>Iso</a>s it exports, and not import the redefined <a>Iso</a> type
---   synonym or <a>from</a> / <a>iso</a> / <a>review</a>.
-module Numeric.Backprop.Iso
-
--- | A family of isomorphisms. See <a>Iso'</a>.
-type Iso s t a b = forall p f. (Profunctor p, Functor f) => p a (f b) -> p s (f t)
-
--- | An <tt><a>Iso'</a> s a</tt> encodes an isomorphism between an
---   <tt>s</tt> and an <tt>a</tt>. It basically lets you go from <tt>s
---   -&gt; a</tt> and back (from <tt>a -&gt; s</tt>) while preserving
---   structure. You can basically imagine an <tt><a>Iso'</a> s a</tt> to be
---   an <tt>(s -&gt; a, a -&gt; s)</tt> tuple.
---   
---   You can get the "forward" direction of an <a>Iso'</a> with
---   <a>view</a>:
---   
---   <pre>
---   <a>view</a> :: Iso'' s a -&gt; (s -&gt; a)
---   </pre>
---   
---   And the "backwards" direction with <a>review</a>:
---   
---   <pre>
---   <a>review</a> :: Iso'' s a -&gt; (a -&gt; s)
---   </pre>
---   
---   You can construct an <a>Iso'</a> using <a>iso</a>, giving the forward
---   and backwards functions:
---   
---   <pre>
---   &gt;&gt;&gt; myIso :: Iso' (Identity a) a
---       myIso = iso runIdentity Identity
---   
---   &gt;&gt;&gt; view myIso (Identity "hello")
---   "hello"
---   
---   &gt;&gt;&gt; review myIso "hello"
---   Identity "hello"
---   </pre>
---   
---   One powerful thing about <a>Iso'</a>s is that they're
---   <i>composable</i> using <a>.</a>:
---   
---   <pre>
---   (<a>.</a>) :: <a>Iso'</a> c b -&gt; <a>Iso'</a> b a -&gt; <a>Iso'</a> c a
---   </pre>
---   
---   This is basically provided here so that this package doesn't incurr a
---   <i>lens</i> dependecy, but if you already depend on <i>lens</i>, you
---   should use the version from <a>Control.Lens.Iso</a> instead.
-type Iso' s a = Iso s s a a
-
--- | Construct an <a>Iso</a> by giving the "forward" and "backward"
---   direction functions:
---   
---   <pre>
---   &gt;&gt;&gt; myIso :: Iso' (Identity a) a
---       myIso = iso runIdentity Identity
---   
---   &gt;&gt;&gt; view myIso (Identity "hello")
---   "hello"
---   
---   &gt;&gt;&gt; review myIso "hello"
---   Identity "hello"
---   </pre>
---   
---   This is basically provided here so that this package doesn't incurr a
---   <i>lens</i> dependecy, but if you already depend on <i>lens</i>, you
---   should use the version from <a>Control.Lens.Iso</a> instead.
-iso :: (s -> a) -> (b -> t) -> Iso s t a b
-
--- | Reverse an <a>Iso'</a>. The forward function becomes the backwards
---   function, and the backwards function becomes the forward function.
---   
---   This is basically provided here so that this package doesn't incurr a
---   <i>lens</i> dependecy, but if you already depend on <i>lens</i>, you
---   should use the version from <a>Control.Lens.Review</a> instead.
-from :: Iso' s a -> Iso' a s
-
--- | Get the "reverse" direction function from an <a>Iso</a>.
---   
---   This is basically provided here so that this package doesn't incurr a
---   <i>lens</i> dependecy, but if you already depend on <i>lens</i>, you
---   should use the version from <a>Control.Lens.Review</a> instead.
-review :: Iso s t a b -> b -> t
-
--- | <a>view</a> is a synonym for (<a>^.</a>):
---   
---   <pre>
---   &gt;&gt;&gt; view _1 (1, 2)
---   1
---   </pre>
---   
---   The reason it's not in <a>Lens.Micro</a> is that <tt>view</tt> in lens
---   has a more general signature:
---   
---   <pre>
---   view :: MonadReader s m =&gt; Getting a s a -&gt; m a
---   </pre>
---   
---   So, you would be able to use this <a>view</a> with functions, but not
---   in various reader monads. For most people this shouldn't be an issue;
---   if it is for you, use <tt>view</tt> from <a>microlens-mtl</a>.
-view :: () => Getting a s a -> s -> a
-
--- | A useful <a>Iso</a> between two types with the same runtime
---   representation.
-coerced :: Coercible s a => Iso' s a
-tup1 :: forall a. Iso' a (Tuple '[a])
-tup2 :: forall a b. Iso' (a, b) (Tuple '[a, b])
-tup3 :: forall a b c. Iso' (a, b, c) (Tuple '[a, b, c])
-
--- | An <a>Iso</a> between a type that is a product type, and a tuple that
---   contains all of its components. Uses <a>Generics.SOP</a> and the
---   <a>Generic</a> typeclass.
---   
---   <pre>
---   &gt;&gt;&gt; import qualified Generics.SOP as SOP
---   
---   &gt;&gt;&gt; data Foo = A Int Bool      deriving Generic
---   
---   &gt;&gt;&gt; instance SOP.Generic Foo
---   
---   &gt;&gt;&gt; view gTuple (A 10 True)
---   10 ::&lt; True ::&lt; Ø
---   
---   &gt;&gt;&gt; review gTuple (15 ::&lt; False ::&lt; Ø)
---   A 15 False
---   </pre>
-gTuple :: (Generic a, Code a ~ '[as]) => Iso' a (Tuple as)
-data Prod k (f :: k -> *) (a :: [k]) :: forall k. () => (k -> *) -> [k] -> *
-[Ø] :: Prod k f [] k
-[:<] :: Prod k f (:) k a1 as
-
--- | A Prod of simple Haskell types.
-type Tuple = Prod * I
-data Sum k (f :: k -> *) (a :: [k]) :: forall k. () => (k -> *) -> [k] -> *
-[InL] :: Sum k f (:) k a1 as
-[InR] :: Sum k f (:) k a1 as
-newtype I a :: * -> *
-I :: a -> I a
-[getI] :: I a -> a
-
-
 -- | Provides the <a>Op</a> (and <tt>OpM</tt>) type and combinators, which
 --   represent differentiable functions/operations on values, and are used
 --   by the library to perform back-propagation.
@@ -345,7 +195,7 @@ opConst :: forall as a. (Every Num as, Known Length as) => a -> Op as a
 --   <pre>
 --   <a>idOp</a> = <a>opIso</a> <a>id</a>
 --   </pre>
-idOp :: Num a => Op '[a] a
+idOp :: Op '[a] a
 
 -- | A version of <a>opConst</a> taking explicit <a>Length</a>, indicating
 --   the number of inputs and their types.
@@ -487,8 +337,7 @@ opN' :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a)
 --   </pre>
 
 -- | An <a>Op</a> that coerces an item into another item whose type has the
---   same runtime representation. Requires the input to be an instance of
---   <a>Num</a>.
+--   same runtime representation.
 --   
 --   <pre>
 --   &gt;&gt;&gt; gradOp' opCoerce (Identity 5) :: (Int, Identity Int)
@@ -496,9 +345,9 @@ opN' :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a)
 --   </pre>
 --   
 --   <pre>
---   <a>opCoerce</a> = <a>opIso</a> <a>coerced</a>
+--   <a>opCoerce</a> = <a>opIso</a> <tt>coerced</tt>
 --   </pre>
-opCoerce :: Num a => Coercible a b => Op '[a] b
+opCoerce :: Coercible a b => Op '[a] b
 
 -- | An <a>Op</a> that takes <tt>as</tt> and returns exactly the input
 --   tuple.
@@ -507,16 +356,15 @@ opCoerce :: Num a => Coercible a b => Op '[a] b
 --   &gt;&gt;&gt; gradOp' opTup (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø)
 --   (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø, 1 ::&lt; 1 ::&lt; 1 ::&lt; Ø)
 --   </pre>
-opTup :: (Every Num as, Known Length as) => Op as (Tuple as)
+opTup :: Op as (Tuple as)
 
--- | An <a>Op</a> that runs the input value through the isomorphism encoded
---   in the <a>Iso</a>. Requires the input to be an instance of <a>Num</a>.
+-- | An <a>Op</a> that runs the input value through an isomorphism.
 --   
 --   Warning: This is unsafe! It assumes that the isomorphisms themselves
 --   have derivative 1, so will break for things like
 --   <a>exponentiating</a>. Basically, don't use this for any "numeric"
 --   isomorphisms.
-opIso :: Iso' a b -> Op '[a] b
+opIso :: (a -> b) -> (b -> a) -> Op '[a] b
 opLens :: Num a => Lens' a b -> Op '[a] b
 
 -- | Construct a two element Prod. Since the precedence of (:&gt;) is
@@ -662,10 +510,10 @@ liftOp1 :: forall s a b. (Reifies s W, Num a, Num b) => Op '[a] b -> BVar s a ->
 liftOp2 :: forall s a b c. (Reifies s W, Num a, Num b, Num c) => Op '[a, b] c -> BVar s a -> BVar s b -> BVar s c
 liftOp3 :: forall s a b c d. (Reifies s W, Num a, Num b, Num c, Num d) => Op '[a, b, c] d -> BVar s a -> BVar s b -> BVar s c -> BVar s d
 liftOp4 :: forall s a b c d e. (Reifies s W, Num a, Num b, Num c, Num d, Num e) => Op '[a, b, c, d] e -> BVar s a -> BVar s b -> BVar s c -> BVar s d -> BVar s e
-lensVar :: forall a b s. (Reifies s W, Num b, Num a) => Lens' b a -> BVar s b -> BVar s a
-(^^.) :: forall a b s. (Reifies s W, Num b, Num a) => BVar s b -> Lens' b a -> BVar s a
+lensVar :: forall a b s. (Reifies s W, Num a) => Lens' b a -> BVar s b -> BVar s a
+(^^.) :: forall a b s. (Reifies s W, Num a) => BVar s b -> Lens' b a -> BVar s a
 infixl 8 ^^.
-uncurryVar :: (Num a, Num b, Num (a, b)) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> (forall s. Reifies s W => BVar s (a, b) -> BVar s c)
+uncurryVar :: (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> (forall s. Reifies s W => BVar s (a, b) -> BVar s c)
 backprop :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
 evalBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
 gradBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
@@ -744,7 +592,7 @@ opConst :: forall as a. (Every Num as, Known Length as) => a -> Op as a
 --   <pre>
 --   <a>idOp</a> = <a>opIso</a> <a>id</a>
 --   </pre>
-idOp :: Num a => Op '[a] a
+idOp :: Op '[a] a
 
 -- | A version of <a>opConst</a> taking explicit <a>Length</a>, indicating
 --   the number of inputs and their types.
@@ -886,8 +734,7 @@ opN' :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a)
 --   </pre>
 
 -- | An <a>Op</a> that coerces an item into another item whose type has the
---   same runtime representation. Requires the input to be an instance of
---   <a>Num</a>.
+--   same runtime representation.
 --   
 --   <pre>
 --   &gt;&gt;&gt; gradOp' opCoerce (Identity 5) :: (Int, Identity Int)
@@ -895,9 +742,9 @@ opN' :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a)
 --   </pre>
 --   
 --   <pre>
---   <a>opCoerce</a> = <a>opIso</a> <a>coerced</a>
+--   <a>opCoerce</a> = <a>opIso</a> <tt>coerced</tt>
 --   </pre>
-opCoerce :: Num a => Coercible a b => Op '[a] b
+opCoerce :: Coercible a b => Op '[a] b
 
 -- | An <a>Op</a> that takes <tt>as</tt> and returns exactly the input
 --   tuple.
@@ -906,14 +753,13 @@ opCoerce :: Num a => Coercible a b => Op '[a] b
 --   &gt;&gt;&gt; gradOp' opTup (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø)
 --   (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø, 1 ::&lt; 1 ::&lt; 1 ::&lt; Ø)
 --   </pre>
-opTup :: (Every Num as, Known Length as) => Op as (Tuple as)
+opTup :: Op as (Tuple as)
 
--- | An <a>Op</a> that runs the input value through the isomorphism encoded
---   in the <a>Iso</a>. Requires the input to be an instance of <a>Num</a>.
+-- | An <a>Op</a> that runs the input value through an isomorphism.
 --   
 --   Warning: This is unsafe! It assumes that the isomorphisms themselves
 --   have derivative 1, so will break for things like
 --   <a>exponentiating</a>. Basically, don't use this for any "numeric"
 --   isomorphisms.
-opIso :: Iso' a b -> Op '[a] b
+opIso :: (a -> b) -> (b -> a) -> Op '[a] b
 opLens :: Num a => Lens' a b -> Op '[a] b
