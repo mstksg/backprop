@@ -214,27 +214,6 @@ gradNetManual x t (Net (Layer w1 b1) (Layer w2 b2) (Layer w3 b3)) =
     in  Net (Layer dEdW1 dEdB1) (Layer dEdW2 dEdB2) (Layer dEdW3 dEdB3)
 {-# INLINE gradNetManual #-}
 
-netErrManual
-    :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
-    => R i
-    -> R o
-    -> Network i h1 h2 o
-    -> Double
-netErrManual x t (Net (Layer w1 b1) (Layer w2 b2) (Layer w3 b3)) =
-    let y1 = w1 #> x
-        z1 = y1 + b1
-        x2 = logistic z1
-        y2 = w2 #> x2
-        z2 = y2 + b2
-        x3 = logistic z2
-        y3 = w3 #> x3
-        z3 = y3 + b3
-        o0 = exp z3
-        o1 = HM.sumElements (extract o0)
-        o2 = o0 / konst o1
-    in  - (log o2 <.> t)
-{-# INLINE netErrManual #-}
-
 trainStepManual
     :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
     => Double

@@ -44,6 +44,7 @@ library
   build-depends:       base >= 4.7 && < 5
                      , ad
                      , generics-sop
+                     , lens
                      , microlens
                      , microlens-mtl
                      , microlens-th
