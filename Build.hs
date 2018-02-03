@@ -56,7 +56,7 @@ main = getDirectoryFilesIO "samples" ["/*.lhs", "/*.hs"] >>= \allSamps ->
       cmd "pandoc" "-V geometry:margin=1in"
                    "-V fontfamily:palatino,cmtt"
                    "-V links-as-notes"
-                   "-sS"
+                   "-s"
                    "--highlight-style tango"
                    "--reference-links"
                    "--reference-location block"

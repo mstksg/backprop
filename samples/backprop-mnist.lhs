@@ -290,7 +290,7 @@ Writing it in a way that backprop can use is also very similar:
 > runNetwork
 >     :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o, Reifies s W)
 >     => BVar s (Network i h1 h2 o)
->     -> BVar s (R i)
+>     -> R i
 >     -> BVar s (R o)
 > runNetwork n = softMax
 >              . runLayer (n ^^. nLayer3)
@@ -298,7 +298,11 @@ Writing it in a way that backprop can use is also very similar:
 >              . runLayer (n ^^. nLayer2)
 >              . logistic
 >              . runLayer (n ^^. nLayer1)
+>              . constVar
 > {-# INLINE runNetwork #-}
+
+We use `constVar` on the input vector, because we don't care about its
+gradient and so treat it as a constant.
 
 And now here again we use `^^.` (instead of `^.`) to extract a value from our
 `BVar` of a `Network`, using a lens.
@@ -339,11 +343,11 @@ Our final "error function", then, is:
 
 > netErr
 >     :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o, Reifies s W)
->     => R o
+>     => R i
+>     -> R o
 >     -> BVar s (Network i h1 h2 o)
->     -> BVar s (R i)
 >     -> BVar s Double
-> netErr targ n = crossEntropy targ . runNetwork n
+> netErr x targ n = crossEntropy targ (runNetwork n x)
 > {-# INLINE netErr #-}
 
 The Magic
@@ -365,20 +369,13 @@ So, if we have a network `net0`, an input vector `x`, and a target vector `t`,
 we could compute its error using:
 
 ```haskell
-evalBP (uncurryVar netErr) (net0, x) :: Double
-```
-
-We use the `uncurryVar` helper function to translate our curried function into
-a function taking one tuple argumnet:
-
-```haskell
-uncurryVar :: (BVar s a -> BVar s b -> BVar s c) -> (BVar s (a, b) -> BVar s c)
+evalBP (netErr x targ) net0 :: Double
 ```
 
 And we can calculate its *gradient* using:
 
 ```haskell
-gradBP (uncurryVar netErr) (net0, x) :: (Network i h1 h2 o, R i)
+gradBP (netErr x targ) net0 :: (Network i h1 h2 o, R i)
 ```
 
 Pulling it all together
@@ -394,9 +391,7 @@ the gradient to train our model:
 >     -> R o                -- ^ target
 >     -> Network i h1 h2 o  -- ^ initial network
 >     -> Network i h1 h2 o
-> trainStep r !x !t !n =
->   case gradBP (uncurryVar (netErr t)) (n, x) of
->     (gN, _) -> n - (realToFrac r * gN)
+> trainStep r !x !targ !n = n - realToFrac r * gradBP (netErr x targ) n
 > {-# INLINE trainStep #-}
 
 Here's a convenient wrapper for training over all of the observations in a
@@ -427,7 +422,7 @@ of correct guesses: (mostly using *hmatrix* stuff, so don't mind too much)
 >         | otherwise                                = 0
 >       where
 >         r :: R o
->         r = evalBP (uncurryVar runNetwork) (n , x)
+>         r = evalBP (`runNetwork` x) n
 
 And now, a main loop!
 
@@ -554,14 +549,4 @@ vectors/matrices/layers/networks, used for the initialization step.
 > instance (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o) => MWC.Variate (Network i h1 h2 o) where
 >     uniform g = Net <$> MWC.uniform g <*> MWC.uniform g <*> MWC.uniform g
 >     uniformR (l, h) g = (\x -> x * (h - l) + l) <$> MWC.uniform g
-
-Also for now we do need an orphan `Num` instance on tuples:
-
-> instance (Num a, Num b) => Num (a, b) where
->     (x1,y1) + (x2,y2) = (x1 + x2, y1 + y2)
->     (x1,y1) * (x2,y2) = (x1 * x2, y1 * y2)
->     (x1,y1) - (x2,y2) = (x1 - x2, y1 - y2)
->     abs (x, y)        = (abs x, abs y)
->     signum (x, y)     = (signum x, signum y)
->     fromInteger x     = (fromInteger x, fromInteger x)
 

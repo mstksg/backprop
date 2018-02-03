@@ -1,25 +1,23 @@
 ---
 author:
 - Justin Le
-fontfamily: 'palatino,cmtt'
-geometry: margin=1in
-links-as-notes: true
 title: Learning MNIST with Neural Networks with backprop library
 ---
 
 The *backprop* library performs back-propagation over a *hetereogeneous*
-system of relationships. It offers both an implicit (*[ad]*-like) and
-explicit graph building usage style. Let’s use it to build neural
-networks and learn mnist!
+system of relationships. back-propagation is done automatically (as
+reverse-mode automatic differentiation), and you work with your values
+as if you were writing normal functions with them, with the help of
+[lens].
 
-  [ad]: http://hackage.haskell.org/package/ad
+  [lens]: http://hackage.haskell.org/package/lens
 
 Repository source is [on github], and docs are [on hackage].
 
   [on github]: https://github.com/mstksg/backprop
   [on hackage]: http://hackage.haskell.org/package/backprop
 
-If you’re reading this as a literate haskell file, you should know that
+If you're reading this as a literate haskell file, you should know that
 a [rendered pdf version is available on github.]. If you are reading
 this as a pdf file, you should know that a [literate haskell version
 that you can run] is also available on github!
@@ -31,27 +29,30 @@ that you can run] is also available on github!
 {-# LANGUAGE BangPatterns                     #-}
 {-# LANGUAGE DataKinds                        #-}
 {-# LANGUAGE DeriveGeneric                    #-}
+{-# LANGUAGE FlexibleContexts                 #-}
 {-# LANGUAGE GADTs                            #-}
 {-# LANGUAGE LambdaCase                       #-}
 {-# LANGUAGE ScopedTypeVariables              #-}
+{-# LANGUAGE TemplateHaskell                  #-}
 {-# LANGUAGE TupleSections                    #-}
 {-# LANGUAGE TypeApplications                 #-}
 {-# LANGUAGE ViewPatterns                     #-}
-{-# OPTIONS_GHC -fno-warn-orphans             #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
+{-# OPTIONS_GHC -fno-warn-orphans             #-}
 {-# OPTIONS_GHC -fno-warn-unused-top-binds    #-}
 
 import           Control.DeepSeq
 import           Control.Exception
+import           Control.Lens hiding ((<.>))
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Maybe
 import           Control.Monad.Trans.State
+import           Data.Reflection
 import           Data.Bitraversable
 import           Data.Foldable
 import           Data.IDX
 import           Data.List.Split
-import           Data.Maybe
 import           Data.Time.Clock
 import           Data.Traversable
 import           Data.Tuple
@@ -63,7 +64,6 @@ import           Text.Printf
 import qualified Data.Vector                         as V
 import qualified Data.Vector.Generic                 as VG
 import qualified Data.Vector.Unboxed                 as VU
-import qualified Generics.SOP                        as SOP
 import qualified Numeric.LinearAlgebra               as HM
 import qualified System.Random.MWC                   as MWC
 import qualified System.Random.MWC.Distributions     as MWC
@@ -72,13 +72,13 @@ import qualified System.Random.MWC.Distributions     as MWC
 Types
 =====
 
-For the most part, we’re going to be using the great *[hmatrix]* library
+For the most part, we're going to be using the great *[hmatrix]* library
 and its vector and matrix types. It offers a type `L m n` for
 $m \times n$ matrices, and a type `R n` for an $n$ vector.
 
   [hmatrix]: http://hackage.haskell.org/package/hmatrix
 
-First things first: let’s define our neural networks as simple
+First things first: let's define our neural networks as simple
 containers of parameters (weight matrices and bias vectors).
 
 First, a type for layers:
@@ -90,8 +90,8 @@ data Layer i o =
           }
   deriving (Show, Generic)
 
-instance SOP.Generic (Layer i o)
 instance NFData (Layer i o)
+makeLenses ''Layer
 ```
 
 And a type for a simple feed-forward network with two hidden layers:
@@ -104,26 +104,20 @@ data Network i h1 h2 o =
         }
   deriving (Show, Generic)
 
-instance SOP.Generic (Network i h1 h2 o)
 instance NFData (Network i h1 h2 o)
+makeLenses ''Network
 ```
 
-These are pretty straightforward container types…pretty much exactly the
-type you’d make to represent these networks! Note that, following true
-Haskell form, we separate out logic from data. This should be all we
-need.
-
-We derive an instance of `SOP.Generic` from the *[generics-sop]*
-package, which *backprop* uses to propagate derivatives on values inside
-product types.
-
-  [generics-sop]: http://hackage.haskell.org/package/generics-sop
+These are pretty straightforward container types...pretty much exactly
+the type you'd make to represent these networks! Note that, following
+true Haskell form, we separate out logic from data. This should be all
+we need.
 
 Instances
 ---------
 
 Things are much simplier if we had `Num` and `Fractional` instances for
-everything, so let’s just go ahead and define that now, as well. Just a
+everything, so let's just go ahead and define that now, as well. Just a
 little bit of boilerplate.
 
 ``` {.sourceCode .literate .haskell}
@@ -156,7 +150,7 @@ instance (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o) => Fractional (Netwo
     fromRational x        = Net (fromRational x) (fromRational x) (fromRational x)
 ```
 
-`KnownNat` comes from *base*; it’s a typeclass that *hmatrix* uses to
+`KnownNat` comes from *base*; it's a typeclass that *hmatrix* uses to
 refer to the numbers in its type and use it to go about its normal
 hmatrixy business.
 
@@ -164,13 +158,13 @@ Ops
 ===
 
 Now, *backprop* does require *primitive* differentiable operations on
-our relevant types to be defined. *backprop* uses these primitive `Op`s
-to tie everything together. Ideally we’d import these from a library
-that implements these for you, and the end-user never has to make `Op`
-primitives.
+our relevant types to be defined. *backprop* uses these primitive
+operations to tie everything together. Ideally we'd import these from a
+library that implements these for you, and the end-user never has to
+make these primitives.
 
-But in this case, I’m going to put the definitions here to show that
-there isn’t any magic going on. If you’re curious, refer to
+But in this case, I'm going to put the definitions here to show that
+there isn't any magic going on. If you're curious, refer to
 [documentation for `Op`] for more details on how `Op` is implemented and
 how this works.
 
@@ -180,225 +174,287 @@ First, matrix-vector multiplication primitive, giving an explicit
 gradient function.
 
 ``` {.sourceCode .literate .haskell}
-matVec
-    :: (KnownNat m, KnownNat n)
-    => Op '[ L m n, R n ] (R m)
-matVec = op2' $ \m v ->
-  ( m #> v, \(fromMaybe 1 -> g) ->
-              (g `outer` v, tr m #> g)
-  )
+infixr 8 #>!
+(#>!)
+    :: (KnownNat m, KnownNat n, Reifies s W)
+    => BVar s (L m n)
+    -> BVar s (R n)
+    -> BVar s (R m)
+(#>!) = liftOp2 . op2 $ \m v ->
+  ( m #> v, \g -> (g `outer` v, tr m #> g) )
 ```
 
 Dot products would be nice too.
 
 ``` {.sourceCode .literate .haskell}
-dot :: KnownNat n
-    => Op '[ R n, R n ] Double
-dot = op2' $ \x y ->
-  ( x <.> y, \case Nothing -> (y, x)
-                   Just g  -> (konst g * y, x * konst g)
+infixr 8 <.>!
+(<.>!)
+    :: (KnownNat n, Reifies s W)
+    => BVar s (R n)
+    -> BVar s (R n)
+    -> BVar s Double
+(<.>!) = liftOp2 . op2 $ \x y ->
+  ( x <.> y, \g -> (konst g * y, x * konst g)
   )
 ```
 
-Also a “scaling” function, scales a vector by a given factor.
+Also a function to fill a vector with the same element:
 
 ``` {.sourceCode .literate .haskell}
-scale
-    :: KnownNat n
-    => Op '[ Double, R n ] (R n)
-scale = op2' $ \a x ->
-  ( konst a * x
-  , \case Nothing -> (HM.sumElements (extract x      ), konst a    )
-          Just g  -> (HM.sumElements (extract (x * g)), konst a * g)
-  )
+konst'
+    :: (KnownNat n, Reifies s W)
+    => BVar s Double
+    -> BVar s (R n)
+konst' = liftOp1 . op1 $ \c -> (konst c, HM.sumElements . extract)
 ```
 
 Finally, an operation to sum all of the items in the vector.
 
 ``` {.sourceCode .literate .haskell}
-vsum
-    :: KnownNat n
-    => Op '[ R n ] Double
-vsum = op1' $ \x -> (HM.sumElements (extract x), maybe 1 konst)
+sumElements'
+    :: (KnownNat n, Reifies s W)
+    => BVar s (R n)
+    -> BVar s Double
+sumElements' = liftOp1 . op1 $ \x -> (HM.sumElements (extract x), konst)
 ```
 
-And why not, here’s the [logistic function], which we’ll use as an
-activation function for internal layers. We don’t need to define this as
-an `Op` up-front right now, because the library can automatically
-promote any numeric polymorphic function (an `a -> a` or `a -> a -> a`,
-etc.) to an `Op` anyways.
+Here's the [logistic function], which we'll use as an activation
+function for internal layers. But, because `BVar`s have a `Floating`
+instance, we can just write it using typeclass functions.
 
   [logistic function]: https://en.wikipedia.org/wiki/Logistic_function
 
 ``` {.sourceCode .literate .haskell}
 logistic :: Floating a => a -> a
 logistic x = 1 / (1 + exp (-x))
+{-# INLINE logistic #-}
 ```
 
 Running our Network
 ===================
 
-Now that we have our primitives in place, let’s actually write a
-function to run our network!
+Now that we have our primitives in place, let's actually write a
+function to run our network! And, once we do this, we automatically also
+have functions to back-propagate our network!
+
+Normally, to write this function, we'd write:
+
+``` {.sourceCode .literate .haskell}
+runLayerNormal
+    :: (KnownNat i, KnownNat o)
+    => Layer i o
+    -> R i
+    -> R o
+runLayerNormal l x = (l ^. lWeights) #> x + (l ^. lBiases)
+{-# INLINE runLayerNormal #-}
+```
+
+Using the `lWeights` and `lBiases` lenses to access the weights and
+biases of our layer. However, we can translate this to *backprop* by
+operating on `BVar`s instead of the type directly, and using our
+backprop-aware `#>!`:
 
 ``` {.sourceCode .literate .haskell}
 runLayer
-    :: (KnownNat i, KnownNat o)
-    => BPOp s '[ R i, Layer i o ] (R o)
-runLayer = withInps $ \(x :< l :< Ø) -> do
-    w :< b :< Ø <- gTuple #<~ l
-    y <- matVec ~$ (w :< x :< Ø)
-    return $ y + b
+    :: (KnownNat i, KnownNat o, Reifies s W)
+    => BVar s (Layer i o)
+    -> BVar s (R i)
+    -> BVar s (R o)
+runLayer l x = (l ^^. lWeights) #>! x + (l ^^. lBiases)
+{-# INLINE runLayer #-}
 ```
 
-A `BPOp s '[ R i, Layer i o ] (R o)` is a backpropagatable function that
-produces an `R o` (a vector with `o` elements, from the *[hmatrix]*
-library) given an input environment of an `R i` (the “input” of the
-layer) and a layer.
+`^.` lets to access data within a value using a lens, and `^^.` lets you
+access data within a `BVar` using a lens:
 
-  [hmatrix]: http://hackage.haskell.org/package/hmatrix
+``` {.haskell}
+(^.)  ::        a -> Lens a b ->        b
+(^^.) :: BVar s a -> Lens a b -> BVar s b
+```
 
-We use `withInps` to bring the environment into scope as a bunch of
-`BVar`s. `x` is a `BVar` containing the input vector, and `l` is a
-`BVar` containing the layer.
+Now `runLayer` is a function on two inputs that can be backpropagated,
+automatically! We can find its gradient given any input, and also run it
+to get our expected output as well.
 
-The first thing we do is split out the parts of the layer so we can work
-with the internal matrices. We can use `#<~` to “split out” the
-components of a `BVar`, splitting on `gTuple` (which uses `GHC.Generics`
-to automatically figure out how to split up a product type).
+Before writing our final network runner, we need a function to compute
+the "softmax" of our output vector. Writing it normally would look like:
 
-Then we apply `matVec` (our primitive `Op` that does matrix-vector
-multiplication) to `w` and `x`, and then the result is that added to the
-bias vector `b`.
+``` {.sourceCode .literate .haskell}
+softMaxNormal :: KnownNat n => R n -> R n
+softMaxNormal x = konst (1 / HM.sumElements (extract expx)) * expx
+  where
+    expx = exp x
+{-# INLINE softMaxNormal #-}
+```
 
-We can write the `runNetwork` function pretty much the same way.
+But we can make the mechanical shift to the backpropagatable version:
+
+``` {.sourceCode .literate .haskell}
+softMax :: (KnownNat n, Reifies s W) => BVar s (R n) -> BVar s (R n)
+softMax x = konst' (1 / sumElements' expx) * expx
+  where
+    expx = exp x
+{-# INLINE softMax #-}
+```
+
+With that in hand, let's compare how we would normally write a function
+to run our network:
+
+``` {.sourceCode .literate .haskell}
+runNetNormal
+    :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
+    => Network i h1 h2 o
+    -> R i
+    -> R o
+runNetNormal n = softMaxNormal
+               . runLayerNormal (n ^. nLayer3)
+               . logistic
+               . runLayerNormal (n ^. nLayer2)
+               . logistic
+               . runLayerNormal (n ^. nLayer1)
+{-# INLINE runNetNormal #-}
+```
+
+Basic function composition, neat. We use our lenses `nLayer1`,
+`nLayer2`, and `nLayer3` to extract the first, second, and third layers
+from our network.
+
+Writing it in a way that backprop can use is also very similar:
 
 ``` {.sourceCode .literate .haskell}
 runNetwork
-    :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
-    => BPOp s '[ R i, Network i h1 h2 o ] (R o)
-runNetwork = withInps $ \(x :< n :< Ø) -> do
-    l1 :< l2 :< l3 :< Ø <- gTuple #<~ n
-    y <- runLayer -$ (x          :< l1 :< Ø)
-    z <- runLayer -$ (logistic y :< l2 :< Ø)
-    r <- runLayer -$ (logistic z :< l3 :< Ø)
-    softmax       -$ (r          :< Ø)
-  where
-    softmax :: KnownNat n => BPOp s '[ R n ] (R n)
-    softmax = withInps $ \(x :< Ø) -> do
-        expX <- bindVar (exp x)
-        totX <- vsum ~$ (expX   :< Ø)
-        scale        ~$ (1/totX :< expX :< Ø)
-```
-
-After splitting out the layers in the input `Network`, we run each layer
-successively using our previously defined `runLayer`, giving inputs
-using `-$`. We can directly apply `logistic` to `BVar`s. At the end, we
-run a [softmax function] because MNIST is a classification challenge.
-The softmax is done by applying $e^x$ for every item in the input
-vector, and dividing each element by the total.
-
-  [softmax function]: https://en.wikipedia.org/wiki/Softmax_function
-
-The Magic
----------
-
-What did we just define? Well, with a `BPOp s rs a`, we can *run* it and
-get the output:
-
-``` {.sourceCode .literate .haskell}
-runNetOnInp
-    :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
-    => Network i h1 h2 o
+    :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o, Reifies s W)
+    => BVar s (Network i h1 h2 o)
     -> R i
-    -> R o
-runNetOnInp n x = evalBPOp runNetwork (x ::< n ::< Ø)
+    -> BVar s (R o)
+runNetwork n = softMax
+             . runLayer (n ^^. nLayer3)
+             . logistic
+             . runLayer (n ^^. nLayer2)
+             . logistic
+             . runLayer (n ^^. nLayer1)
+             . constVar
+{-# INLINE runNetwork #-}
 ```
 
-But, the magic part is that we can also get the gradient!
+We use `constVar` on the input vector, because we don't care about its
+gradient and so treat it as a constant.
 
-``` {.sourceCode .literate .haskell}
-gradNet
-    :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
-    => Network i h1 h2 o
-    -> R i
-    -> Network i h1 h2 o
-gradNet n x = case gradBPOp runNetwork (x ::< n ::< Ø) of
-    _gradX ::< gradN ::< Ø -> gradN
-```
+And now here again we use `^^.` (instead of `^.`) to extract a value
+from our `BVar` of a `Network`, using a lens.
 
-This gives the gradient of all of the parameters in the matrices and
-vectors inside the `Network`, which we can use to “train”!
+Computing Errors
+----------------
 
-Training
-========
+Now, training a neural network is about calculating its gradient with
+respect to some error function. The library calculatues the gradient for
+us -- we just need to tell it how to compute the error function.
 
-Now for the real work. To train a network, we can do gradient descent
-based on the gradient of some type of *error function* with respect to
-the network parameters. Let’s use the [cross entropy], which is popular
-for classification problems.
+For classification problems, we usually use a [cross entropy] error.
+Given a target vector, how does our neural network's output differ from
+what is expected? Lower numbers are better!
 
   [cross entropy]: https://en.wikipedia.org/wiki/Cross_entropy
 
+Again, let's look at a "normal" implementation, regular variables and no
+backprop:
+
+``` {.sourceCode .literate .haskell}
+crossEntropyNormal :: KnownNat n => R n -> R n -> Double
+crossEntropyNormal targ res = negate $ log res <.> targ
+{-# INLINE crossEntropyNormal #-}
+```
+
+And we can see that the backpropable version is pretty similar. We see
+`constVar t`, to introduce a `BVar` that is a constant value (that we
+don't care about the gradient of).
+
 ``` {.sourceCode .literate .haskell}
 crossEntropy
-    :: KnownNat n
+    :: (KnownNat n, Reifies s W)
     => R n
-    -> BPOpI s '[ R n ] Double
-crossEntropy targ (r :< Ø) = negate (dot .$ (log r :< t :< Ø))
-  where
-    t = constVar targ
+    -> BVar s (R n)
+    -> BVar s Double
+crossEntropy targ res = negate $ log res <.>! constVar targ
+{-# INLINE crossEntropy #-}
 ```
 
-Given a target vector and a `BVar` referring to the result of the
-network, we can directly apply:
-
-$$
-H(\mathbf{r}, \mathbf{t}) = - (log(\mathbf{r}) \cdot \mathbf{t})
-$$
-
-Just for fun, I implemented `crossEntropy` in “implicit-graph” mode, so
-you don’t see any binds or returns.
-
-Now, a function to make one gradient descent step based on an input
-vector and a target, using `gradBPOp`:
+Our final "error function", then, is:
 
 ``` {.sourceCode .literate .haskell}
-trainStep
-    :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
-    => Double
-    -> R i
+netErr
+    :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o, Reifies s W)
+    => R i
     -> R o
-    -> Network i h1 h2 o
-    -> Network i h1 h2 o
-trainStep r !x !t !n = case gradBPOp o (x ::< n ::< Ø) of
-    _ ::< gN ::< Ø ->
-        n - (realToFrac r * gN)
-  where
-    o :: BPOp s '[ R i, Network i h1 h2 o ] Double
-    o = do
-      y <- runNetwork
-      implicitly (crossEntropy t) -$ (y :< Ø)
+    -> BVar s (Network i h1 h2 o)
+    -> BVar s Double
+netErr x targ n = crossEntropy targ (runNetwork n x)
+{-# INLINE netErr #-}
 ```
 
-A convenient wrapper for training over all of the observations in a
-list:
+The Magic
+=========
 
-``` {.sourceCode .literate .haskell}
-trainList
-    :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
-    => Double
-    -> [(R i, R o)]
-    -> Network i h1 h2 o
-    -> Network i h1 h2 o
-trainList r = flip $ foldl' (\n (x,y) -> trainStep r x y n)
+The actual "magic" of the library happens with the functions to "run"
+the functions we defined earlier:
+
+``` {.haskell}
+evalBP   :: (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
+gradBP   :: (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
+backprop :: (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
+```
+
+`evalBP` "runs" the function like normal, `gradBP` computes the gradient
+of the function, and `backprop` computes both the result and the
+gradient.
+
+So, if we have a network `net0`, an input vector `x`, and a target
+vector `t`, we could compute its error using:
+
+``` {.haskell}
+evalBP (netErr x targ) net0 :: Double
+```
+
+And we can calculate its *gradient* using:
+
+``` {.haskell}
+gradBP (netErr x targ) net0 :: (Network i h1 h2 o, R i)
 ```
 
 Pulling it all together
 =======================
 
+Let's write a simple function to step our network in the direction
+opposite of the gradient to train our model:
+
+``` {.sourceCode .literate .haskell}
+trainStep
+    :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
+    => Double             -- ^ learning rate
+    -> R i                -- ^ input
+    -> R o                -- ^ target
+    -> Network i h1 h2 o  -- ^ initial network
+    -> Network i h1 h2 o
+trainStep r !x !targ !n = n - realToFrac r * gradBP (netErr x targ) n
+{-# INLINE trainStep #-}
+```
+
+Here's a convenient wrapper for training over all of the observations in
+a list:
+
+``` {.sourceCode .literate .haskell}
+trainList
+    :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
+    => Double             -- ^ learning rate
+    -> [(R i, R o)]       -- ^ input and target pairs
+    -> Network i h1 h2 o  -- ^ initial network
+    -> Network i h1 h2 o
+trainList r = flip $ foldl' (\n (x,y) -> trainStep r x y n)
+```
+
 `testNet` will be a quick way to test our net by computing the
-percentage of correct guesses: (mostly using *hmatrix* stuff)
+percentage of correct guesses: (mostly using *hmatrix* stuff, so don't
+mind too much)
 
 ``` {.sourceCode .literate .haskell}
 testNet
@@ -408,13 +464,13 @@ testNet
     -> Double
 testNet xs n = sum (map (uncurry test) xs) / fromIntegral (length xs)
   where
-    test :: R i -> R o -> Double
+    test :: R i -> R o -> Double          -- test if the max index is correct
     test x (extract->t)
         | HM.maxIndex t == HM.maxIndex (extract r) = 1
         | otherwise                                = 0
       where
         r :: R o
-        r = evalBPOp runNetwork (x ::< n ::< Ø)
+        r = evalBP (`runNetwork` x) n
 ```
 
 And now, a main loop!
@@ -464,16 +520,16 @@ Each iteration of the loop:
     the test set
 5.  Prints out the results
 
-And, that’s really it!
+And, that's really it!
 
 Result
 ------
 
-I haven’t put much into optimizing the library yet, but the network
+I haven't put much into optimizing the library yet, but the network
 (with hidden layer sizes 300 and 100) seems to take 25s on my computer
-to finish a batch of 5000 training points. It’s slow (five minutes per
-60000 point epooch), but it’s a first unoptimized run and a proof of
-concept! It’s my goal to get this down to a point where the result has
+to finish a batch of 5000 training points. It's slow (five minutes per
+60000 point epoch), but it's a first unoptimized run and a proof of
+concept! It's my goal to get this down to a point where the result has
 the same performance characteristics as the actual backend (*hmatrix*),
 and so overhead is 0.
 
@@ -485,7 +541,7 @@ library itself. We just created simple types to wrap up our bare
 matrices.
 
 Basically, all that *backprop* did was give you an API to define *how to
-run* a neural net — how to *run* a net based on a `Network` and `R i`
+run* a neural net --- how to *run* a net based on a `Network` and `R i`
 input you were given. The goal of the library is to let you write down
 how to run things in as natural way as possible.
 
@@ -494,14 +550,14 @@ from there!
 
 Because the heavy lifting is done by the data types themselves, we can
 presumably plug in *any* type and any tensor/numerical backend, and reap
-the benefits of those libraries’ optimizations and parallelizations.
+the benefits of those libraries' optimizations and parallelizations.
 *Any* type can be backpropagated! :D
 
 What now?
 ---------
 
 Check out the docs for the [Numeric.Backprop] module for a more detailed
-picture of what’s going on, or find more examples at the [github repo]!
+picture of what's going on, or find more examples at the [github repo]!
 
   [Numeric.Backprop]: http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop.html
   [github repo]: https://github.com/mstksg/backprop
