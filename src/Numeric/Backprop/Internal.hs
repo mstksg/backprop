@@ -281,7 +281,7 @@ liftOp4 o !v !u !w !x = unsafePerformIO $ liftOp4_ o v u w x
 {-# INLINE liftOp4 #-}
 
 lensVar_
-    :: forall a b s. (Reifies s W, Num b, Num a)
+    :: forall a b s. (Reifies s W, Num a)
     => Lens' b a
     -> BVar s b
     -> IO (BVar s a)
@@ -294,7 +294,7 @@ lensVar_ l !v = forceBVar v `seq` insertNode tn y (reflect (Proxy @s))
 {-# INLINE lensVar_ #-}
 
 lensVar
-    :: forall a b s. (Reifies s W, Num b, Num a)
+    :: forall a b s. (Reifies s W, Num a)
     => Lens' b a
     -> BVar s b
     -> BVar s a

@@ -33,7 +33,6 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Numeric.Backprop
-                       Numeric.Backprop.Iso
                        Numeric.Backprop.Op
   other-modules:       Numeric.Backprop.Internal
                        Data.Type.Util
@@ -55,7 +54,7 @@ library
                      , type-combinators
                      , vector
   default-language:    Haskell2010
-  ghc-options:         -Wall -fprint-explicit-kinds
+  ghc-options:         -Wall -fprint-explicit-kinds -fwarn-redundant-constraints
 
 benchmark backprop-mnist-bench
   type:                exitcode-stdio-1.0

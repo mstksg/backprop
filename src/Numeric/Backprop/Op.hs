@@ -85,7 +85,6 @@ import           Lens.Micro.Extras
 import           Numeric.AD
 import           Numeric.AD.Internal.Reverse    (Reverse, Tape)
 import           Numeric.AD.Mode.Forward hiding (grad')
-import           Numeric.Backprop.Iso
 import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness
@@ -461,7 +460,7 @@ gradOp o i = gradOpWith o i 1
 --     gF Nothing
 
 -- | An 'Op' that coerces an item into another item whose type has the same
--- runtime representation.  Requires the input to be an instance of 'Num'.
+-- runtime representation.
 --
 -- >>> gradOp' opCoerce (Identity 5) :: (Int, Identity Int)
 -- (5, Identity 1)
@@ -469,8 +468,8 @@ gradOp o i = gradOpWith o i 1
 -- @
 -- 'opCoerce' = 'opIso' 'coerced'
 -- @
-opCoerce :: Num a => Coercible a b => Op '[a] b
-opCoerce = opIso coerced
+opCoerce :: Coercible a b => Op '[a] b
+opCoerce = opIso coerce coerce
 {-# INLINE opCoerce #-}
 
 -- | An 'Op' that just returns whatever it receives.  The identity
@@ -479,43 +478,26 @@ opCoerce = opIso coerced
 -- @
 -- 'idOp' = 'opIso' 'id'
 -- @
-idOp :: Num a => Op '[a] a
+idOp :: Op '[a] a
 idOp = op1 $ \x -> (x, id)
 {-# INLINE idOp #-}
-
----- | A version of 'opTup' taking explicit 'Length', indicating the
----- number of inputs expected and their types.
-----
----- Requiring an explicit 'Length' is mostly useful for rare "extremely
----- polymorphic" situations, where GHC can't infer the type and length of
----- the the expected input tuple.  If you ever actually explicitly write
----- down @as@ as a list of types, you should be able to just use
----- 'opTup'.
---opTup'
---    :: Every Num as
---    => Length as
---    -> Op as (Tuple as)
---opTup' l = Op $ \xs -> (xs, id)
 
 -- | An 'Op' that takes @as@ and returns exactly the input tuple.
 --
 -- >>> gradOp' opTup (1 ::< 2 ::< 3 ::< Ø)
 -- (1 ::< 2 ::< 3 ::< Ø, 1 ::< 1 ::< 1 ::< Ø)
-opTup
-    :: (Every Num as, Known Length as)
-    => Op as (Tuple as)
+opTup :: Op as (Tuple as)
 opTup = Op $ \xs -> (xs, id)
 {-# INLINE opTup #-}
 
--- | An 'Op' that runs the input value through the isomorphism encoded in
--- the 'Iso'.  Requires the input to be an instance of 'Num'.
+-- | An 'Op' that runs the input value through an isomorphism.
 --
 -- Warning: This is unsafe!  It assumes that the isomorphisms themselves
 -- have derivative 1, so will break for things like
 -- 'Numeric.Lens.exponentiating'.  Basically, don't use this for any
 -- "numeric" isomorphisms.
-opIso :: Iso' a b -> Op '[ a ] b
-opIso i = op1 $ \x -> (view i x, review i)
+opIso :: (a -> b) -> (b -> a) -> Op '[ a ] b
+opIso to' from' = op1 $ \x -> (to' x, from')
 {-# INLINE opIso #-}
 
 opLens :: Num a => Lens' a b -> Op '[ a ] b
