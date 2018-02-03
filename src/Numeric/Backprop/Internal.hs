@@ -67,24 +67,28 @@ import           Type.Class.Witness
 import           Unsafe.Coerce
 import qualified Data.Vector.Mutable              as MV
 
-data BVar (s :: Type) (a :: Type)
-        = BVInp !a
-        | BVIx !Int !a
-        | BVC !a
+data BVar s a = BV { _bvRef :: !(BRef s)
+                   , _bvVal :: !a
+                   }
 
-bVarVal :: BVar s a -> a
-bVarVal (BVInp x)  = x
-bVarVal (BVIx _ x) = x
-bVarVal (BVC x)    = x
+data BRef (s :: Type) = BRInp
+                      | BRIx !Int
+                      | BRC
 
-isBVC :: BVar s a -> Maybe a
-isBVC (BVC x) = Just x
-isBVC _       = Nothing
+bvConst :: BVar s a -> Maybe a
+bvConst (BV BRC x) = Just x
+bvConst _          = Nothing
+{-# INLINE bvConst #-}
+
+forceBRef :: BRef s -> ()
+forceBRef BRInp     = ()
+forceBRef (BRIx !_) = ()
+forceBRef BRC       = ()
+{-# INLINE forceBRef #-}
 
 forceBVar :: BVar s a -> ()
-forceBVar (BVInp !_)    = ()
-forceBVar (BVIx !_ !_) = ()
-forceBVar (BVC  !_) = ()
+forceBVar (BV !r !_) = forceBRef r `seq` ()
+{-# INLINE forceBVar #-}
 
 data InpRef :: Type -> Type where
     IR :: Num a
@@ -95,6 +99,7 @@ data InpRef :: Type -> Type where
 
 forceInpRef :: InpRef a -> ()
 forceInpRef (IR !v !_) = forceBVar v `seq` ()
+{-# INLINE forceInpRef #-}
 
 data TapeNode :: Type -> Type where
     TN :: { _tnInputs :: !(Prod InpRef as)
@@ -104,6 +109,7 @@ data TapeNode :: Type -> Type where
 
 forceTapeNode :: TapeNode a -> ()
 forceTapeNode (TN !inps !_) = foldMap1 forceInpRef inps `seq` ()
+{-# INLINE forceTapeNode #-}
 
 data SomeTapeNode :: Type where
     STN :: forall a. Num a
@@ -112,11 +118,13 @@ data SomeTapeNode :: Type where
 
 forceSomeTapeNode :: SomeTapeNode -> ()
 forceSomeTapeNode (STN !tn) = forceTapeNode tn `seq` ()
+{-# INLINE forceSomeTapeNode #-}
 
 newtype W = W { wRef :: IORef (Int, [SomeTapeNode]) }
 
 initWengert :: IO W
 initWengert = W <$> newIORef (0,[])
+{-# INLINE initWengert #-}
 
 insertNode
     :: Num a
@@ -125,24 +133,26 @@ insertNode
     -> W
     -> IO (BVar s a)
 -- insertNode tn w = fmap BVIx . atomicModifyIORef' (wRef w) $ \(n,t) ->
-insertNode !tn !x !w = fmap (`BVIx` x) . atomicModifyIORef' (wRef w) $ \(!(!n,!t)) ->
+insertNode !tn !x !w = fmap ((`BV` x) . BRIx) . atomicModifyIORef' (wRef w) $ \(!(!n,!t)) ->
     let n' = n + 1
         t' = STN tn:t
     in  n' `seq` t' `seq` ((n', t'), n)
+{-# INLINE insertNode #-}
 
 constVar :: a -> BVar s a
-constVar = BVC
+constVar = BV BRC
+{-# INLINE constVar #-}
 
 liftOpN_
     :: forall s as b. (Reifies s W, Num b, Every Num as)
     => Op as b
     -> Prod (BVar s) as
     -> IO (BVar s b)
-liftOpN_ o !vs = case traverse1 (fmap I . isBVC) vs of
-                   Just xs -> return $ BVC (evalOp o xs)
+liftOpN_ o !vs = case traverse1 (fmap I . bvConst) vs of
+                   Just xs -> return $ constVar (evalOp o xs)
                    Nothing -> insertNode tn y (reflect (Proxy @s))
   where
-    (y,g) = runOpWith o (map1 (I . bVarVal) vs)
+    (y,g) = runOpWith o (map1 (I . _bvVal) vs)
     tn = TN { _tnInputs = imap1 go vs
             , _tnGrad   = g
             }
@@ -155,6 +165,7 @@ liftOpN
     -> Prod (BVar s) as
     -> BVar s b
 liftOpN o !vs = unsafePerformIO $ liftOpN_ o vs
+{-# INLINE liftOpN #-}
 
 liftOp1_
     :: forall s a b. (Reifies s W, Num a, Num b)
@@ -162,10 +173,10 @@ liftOp1_
     -> BVar s a
     -> IO (BVar s b)
 -- liftOp1_ o = liftOpN_ o . (:< Ø)
-liftOp1_ o (BVC x) = return . BVC . evalOp o $ (x ::< Ø)
+liftOp1_ o (bvConst->Just x) = return . constVar . evalOp o $ (x ::< Ø)
 liftOp1_ o !v = forceBVar v `seq` insertNode tn y (reflect (Proxy @s))
   where
-    (y,g) = runOpWith o (bVarVal v ::< Ø)
+    (y,g) = runOpWith o (_bvVal v ::< Ø)
     tn = TN { _tnInputs = IR v id :< Ø
             , _tnGrad   = g
             }
@@ -176,6 +187,7 @@ liftOp1
     -> BVar s a
     -> BVar s b
 liftOp1 o !v = unsafePerformIO $ liftOp1_ o v
+{-# INLINE liftOp1 #-}
 
 liftOp2_
     :: forall s a b c. (Reifies s W, Num a, Num b, Num c)
@@ -184,12 +196,12 @@ liftOp2_
     -> BVar s b
     -> IO (BVar s c)
 -- liftOp2_ o v u = liftOpN_ o (v :< u :< Ø)
-liftOp2_ o (BVC x) (BVC y) = return . BVC . evalOp o $ x ::< y ::< Ø
+liftOp2_ o (bvConst->Just x) (bvConst->Just y) = return . constVar . evalOp o $ x ::< y ::< Ø
 liftOp2_ o !v !u = forceBVar v
              `seq` forceBVar u
              `seq` insertNode tn y (reflect (Proxy @s))
   where
-    (y,g) = runOpWith o (bVarVal v ::< bVarVal u ::< Ø)
+    (y,g) = runOpWith o (_bvVal v ::< _bvVal u ::< Ø)
     tn = TN { _tnInputs = IR v id :< IR u id :< Ø
             , _tnGrad   = g
             }
@@ -201,6 +213,7 @@ liftOp2
     -> BVar s b
     -> BVar s c
 liftOp2 o !v !u = unsafePerformIO $ liftOp2_ o v u
+{-# INLINE liftOp2 #-}
 
 liftOp3_
     :: forall s a b c d. (Reifies s W, Num a, Num b, Num c, Num d)
@@ -210,14 +223,14 @@ liftOp3_
     -> BVar s c
     -> IO (BVar s d)
 -- liftOp3_ o v u w = liftOpN_ o (v :< u :< w :< Ø)
-liftOp3_ o (BVC x) (BVC y) (BVC z) = return . BVC . evalOp o
-                                   $ x ::< y ::< z ::< Ø
+liftOp3_ o (bvConst->Just x) (bvConst->Just y) (bvConst->Just z)
+    = return . constVar . evalOp o $ x ::< y ::< z ::< Ø
 liftOp3_ o !v !u !w = forceBVar v
                 `seq` forceBVar u
                 `seq` forceBVar w
                 `seq` insertNode tn y (reflect (Proxy @s))
   where
-    (y, g) = runOpWith o (bVarVal v ::< bVarVal u ::< bVarVal w ::< Ø)
+    (y, g) = runOpWith o (_bvVal v ::< _bvVal u ::< _bvVal w ::< Ø)
     tn = TN { _tnInputs = IR v id :< IR u id :< IR w id :< Ø
             , _tnGrad   = g
             }
@@ -230,6 +243,7 @@ liftOp3
     -> BVar s c
     -> BVar s d
 liftOp3 o !v !u !w = unsafePerformIO $ liftOp3_ o v u w
+{-# INLINE liftOp3 #-}
 
 liftOp4_
     :: forall s a b c d e. (Reifies s W, Num a, Num b, Num c, Num d, Num e)
@@ -240,15 +254,15 @@ liftOp4_
     -> BVar s d
     -> IO (BVar s e)
 -- liftOp4_ o v u w x = liftOpN_ o (v :< u :< w :< x :< Ø)
-liftOp4_ o (BVC x) (BVC y) (BVC z) (BVC w) = return . BVC . evalOp o
-                                           $ x ::< y ::< z ::< w ::< Ø
+liftOp4_ o (bvConst->Just x) (bvConst->Just y) (bvConst->Just z) (bvConst->Just w)
+    = return . constVar . evalOp o $ x ::< y ::< z ::< w ::< Ø
 liftOp4_ o !v !u !w !x = forceBVar v
                    `seq` forceBVar u
                    `seq` forceBVar w
                    `seq` forceBVar x
                    `seq` insertNode tn y (reflect (Proxy @s))
   where
-    (y, g) = runOpWith o (bVarVal v ::< bVarVal u ::< bVarVal w ::< bVarVal x ::< Ø)
+    (y, g) = runOpWith o (_bvVal v ::< _bvVal u ::< _bvVal w ::< _bvVal x ::< Ø)
     tn = TN { _tnInputs = IR v id :< IR u id :< IR w id :< IR x id :< Ø
             , _tnGrad   = g
             }
@@ -262,6 +276,7 @@ liftOp4
     -> BVar s d
     -> BVar s e
 liftOp4 o !v !u !w !x = unsafePerformIO $ liftOp4_ o v u w x
+{-# INLINE liftOp4 #-}
 
 lensVar_
     :: forall a b s. (Reifies s W, Num b, Num a)
@@ -270,10 +285,9 @@ lensVar_
     -> IO (BVar s a)
 lensVar_ l !v = forceBVar v `seq` insertNode tn y (reflect (Proxy @s))
   where
-    y = bVarVal v ^. l
+    y = _bvVal v ^. l
     tn = TN { _tnInputs = IR v l :< Ø
             , _tnGrad   = only_
-            -- , _tnOp     = idOp
             }
 
 lensVar
@@ -282,6 +296,7 @@ lensVar
     -> BVar s b
     -> BVar s a
 lensVar l !v = unsafePerformIO $ lensVar_ l v
+{-# INLINE lensVar #-}
 
 -- -- prismVar_
 -- --     :: forall a b s. (Reifies s W)
@@ -290,12 +305,6 @@ lensVar l !v = unsafePerformIO $ lensVar_ l v
 -- --     -> IO (Maybe (BVar s a))
 -- -- prismVar_ l !v = forceBVar v `seq` insertNode tn (preflect (Proxy @s))
 -- --   where
-
--- data Grad :: Type where
---     G :: Prod InpRef as
---       -> Proxy a
---       -> (a -> Tuple as)
---       -> Grad
 
 data SomeNum :: Type where
     SN  :: Num a
@@ -316,32 +325,6 @@ initRunner (n, stns) = R <$> do
       MV.write r i $ SN (Proxy @c) 0
     return r
 
--- evalRunner
---     :: forall m a b s. (PrimMonad m, PrimState m ~ s)
---     => Runner s
---     -> (Int, [SomeTapeNode])
---     -> a
---     -> m b
--- evalRunner R{..} (n, stns) x = do
---     forwards . for_ (zip [n-1,n-2..] stns) $ \(i, STN (TN{..} :: TapeNode c)) -> Backwards $ do
---       inps <- traverse1 (fmap I . findInps) _tnInputs
---       let (res, gr) = runOpWith _tnOp inps
---       MV.write _rRes   i $ SN (Proxy @c) res
---       MV.write _rDelta i $ SN (Proxy @c) 0
---       MV.write _rGrads i $ G _tnInputs (Proxy @c) gr
---     SN _ y <- MV.read _rRes (MV.length _rRes - 1)
---     return $ unsafeCoerce y
---   where
---     findInps :: forall x. InpRef x -> m x
---     findInps (IR v ln) = do
---       targ <- case v of
---         BVInp  -> return $ unsafeCoerce x
---         BVIx i -> do
---           SN _ y <- MV.read _rRes i
---           return $ unsafeCoerce y
---         BVC y -> return y
---       return $ targ ^. ln
-
 gradRunner
     :: forall m a b s p. (PrimMonad m, PrimState m ~ s, Num b)
     => p b
@@ -356,22 +339,22 @@ gradRunner _ R{..} (n,stns) dx = do
     go :: Int -> SomeTapeNode -> m ()
     go i (STN TN{..}) = do
       SN _ delt  <- MV.read _rDelta i
-      -- G  irs _ f <- MV.read _rGrads i
       let gs = _tnGrad (unsafeCoerce delt)
       zipWithPM_ propagate _tnInputs gs
     propagate :: forall x. InpRef x -> I x -> m ()
-    propagate (IR v ln) (I !d) = case v of
-      BVInp _   -> modifyMutVar' (unsafeCoerce dx) (ln %~ (+ d))    -- bad for tuples
-      BVIx !i _ -> flip (MV.modify _rDelta) i $ \case
+    propagate (IR v ln) (I !d) = case _bvRef v of
+      BRInp   -> modifyMutVar' (unsafeCoerce dx) (ln %~ (+ d))    -- bad for tuples
+      BRIx !i -> flip (MV.modify _rDelta) i $ \case
         SN p !y -> let y' = unsafeCoerce y & ln %~ (+d)
                    in  y' `seq` SN p (unsafeCoerce y')
-      BVC _ -> return ()
+      BRC     -> return ()
 
 registerOut
     :: (Reifies s W, Num a)
     => BVar s a
     -> IO a
-registerOut !v = bVarVal v <$ liftOp1_ idOp v
+registerOut !v = _bvVal v <$ liftOp1_ idOp v
+{-# INLINE registerOut #-}
 
 backprop
     :: forall a b. (Num a, Num b)
@@ -383,7 +366,7 @@ backprop f x = (y, g)
     !(!tp@(!_,!_),!y) = unsafePerformIO $ do
       w <- initWengert
       o <- reify w $ \(Proxy :: Proxy s) ->
-        registerOut =<< evaluate (f (BVInp @s x))
+        registerOut =<< evaluate (f (BV (BRInp @s) x))
       t <- readIORef (wRef w)
       traverse_ (evaluate . forceSomeTapeNode) (snd t)
       return (t, o)
@@ -407,7 +390,7 @@ instance (Num a, Reifies s W) => Num (BVar s a) where
     {-# INLINE signum #-}
     abs         = liftOp1 absOp
     {-# INLINE abs #-}
-    fromInteger = BVC . fromInteger
+    fromInteger = constVar . fromInteger
     {-# INLINE fromInteger #-}
 
 instance (Fractional a, Reifies s W) => Fractional (BVar s a) where
@@ -415,11 +398,11 @@ instance (Fractional a, Reifies s W) => Fractional (BVar s a) where
     {-# INLINE (/) #-}
     recip        = liftOp1 recipOp
     {-# INLINE recip #-}
-    fromRational = BVC . fromRational
+    fromRational = constVar . fromRational
     {-# INLINE fromRational #-}
 
 instance (Floating a, Reifies s W) => Floating (BVar s a) where
-    pi      = BVC pi
+    pi      = constVar pi
     {-# INLINE pi #-}
     exp     = liftOp1 expOp
     {-# INLINE exp #-}
