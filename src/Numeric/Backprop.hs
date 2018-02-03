@@ -1,13 +1,5 @@
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE LambdaCase          #-}
-{-# LANGUAGE PatternSynonyms     #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeInType          #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RankNTypes       #-}
 
 -- |
 -- Module      : Numeric.Backprop
@@ -61,7 +53,6 @@ module Numeric.Backprop (
   , backprop, evalBP, gradBP
   , Op(..)
   , Prod(..), Tuple, I(..)
-  , module Numeric.Backprop.Tuple
   -- * Creation
   , op0, opConst, idOp
   , opConst'
@@ -144,7 +135,6 @@ import           Data.Reflection
 import           Lens.Micro
 import           Numeric.Backprop.Internal
 import           Numeric.Backprop.Op
-import           Numeric.Backprop.Tuple
 
 evalBP
     :: forall a b. (Num a, Num b)
@@ -171,7 +161,7 @@ x ^^. l = lensVar l x
 uncurryVar
     :: (Num a, Num b, Num (a,b))
     => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
-    -> (forall s. Reifies s W => BVar s (T2 a b) -> BVar s c)
+    -> (forall s. Reifies s W => BVar s (a, b) -> BVar s c)
 uncurryVar f xy = f (xy ^^. _1) (xy ^^. _2)
 
 

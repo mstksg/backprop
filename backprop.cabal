@@ -34,7 +34,6 @@ library
   hs-source-dirs:      src
   exposed-modules:     Numeric.Backprop
                        Numeric.Backprop.Iso
-                       Numeric.Backprop.Tuple
                        Numeric.Backprop.Op
   other-modules:       Numeric.Backprop.Internal
                        Data.Type.Util
