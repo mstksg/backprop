@@ -22,13 +22,20 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- Provides the 'Op' (and 'OpM') type and combinators, which represent
--- differentiable functions/operations on values, and are used by the
--- library to perform back-propagation.
+-- Provides the 'Op' type and combinators, which represent differentiable
+-- functions/operations on values, and are used internally by the library
+-- to perform back-propagation.
 --
--- Note that 'Op' is a /subset/ or /subtype/ of 'OpM', and so, any function
--- that expects an @'OpM' m as a@ (or an @'Numeric.Backprop.OpB' s as a@)
--- can be given an @'Op' as a@ and it'll work just fine.
+-- Users of the library can ignore this module for the most part. Library
+-- authors defining backpropagatable primitives for their functions are
+-- recommend to simply use 'op0', 'op1', 'op2', 'op3', which are
+-- re-exported in "Numeric.Backprop".  However, authors who want more
+-- options in defining their primtive functions might find some of these
+-- functions useful.
+--
+-- Note that if your entire function is a single non-branching composition
+-- of functions, 'Op' and its utility functions alone are sufficient to
+-- differentiate/backprop.  However, this happens rarely in practice.
 --
 
 module Numeric.Backprop.Op (
@@ -89,9 +96,6 @@ import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness
 
--- instead of Tuple as, Prod Diff as, where Diff can be a value, or zero,
--- or one?
-
 -- $opdoc
 -- 'Op's contain information on a function as well as its gradient, but
 -- provides that information in a way that allows them to be "chained".
@@ -130,19 +134,13 @@ import           Type.Class.Witness
 -- }
 -- \]
 --
--- So, to create an @'Op' as a@ with the 'Op' constructor (or an 'OpM' with the
--- 'OpM' constructor), you give a function that returns a tuple,
--- containing:
+-- So, to create an @'Op' as a@ with the 'Op' constructor, you give
+-- a function that returns a tuple, containing:
 --
 --     1. An @a@: The result of the function
---     2. An @Maybe a -> Tuple as@:  A function that, when given
---     \(\frac{dz}{dy}\) (in a 'Just'), returns the total gradient
---     \(\nabla_z \mathbf{x}\).  If the function is given is given
---     'Nothing', then \(\frac{dz}{dy}\) should be taken to be 1.  In other
---     words, you would simply need to return \(\nabla_y \mathbf{x}\),
---     unchanged.  That is, an input of 'Nothing' indicates that the "final
---     result" is just simply \(f(\mathbf{x})\), and not some
---     \(g(f(\mathbf{x}))\).
+--     2. An @a -> Tuple as@:  A function that, when given
+--     \(\frac{dz}{dy}\), returns the total gradient
+--     \(\nabla_z \mathbf{x}\).
 --
 -- This is done so that 'Op's can easily be "chained" together, one after
 -- the other.  If you have an 'Op' for \(f\) and an 'Op' for \(g\), you can
@@ -150,41 +148,12 @@ import           Type.Class.Witness
 -- \(g \circ f\).
 --
 -- Note that end users should probably never be required to construct an
--- 'Op' or 'OpM' explicitly this way.  Instead, libraries should provide
+-- 'Op' explicitly this way.  Instead, libraries should provide
 -- carefuly pre-constructed ones, or provide ways to generate them
 -- automatically (like 'op1', 'op2', and 'op3' here).
 --
 -- For examples of 'Op's implemented from scratch, see the implementations
 -- of '+.', '-.', 'recipOp', 'sinOp', etc.
-
--- | An @'OpM' m as a@ represents a /differentiable/ (monadic) function
--- from @as@ to @a@, in the context of a 'Monad' @m@.
---
--- For example, an
---
--- @
--- 'OpM' IO '[Int, Bool] Double
--- @
---
--- would be a function that takes an 'Int' and a 'Bool' and returns
--- a 'Double' (in 'IO').  It can be differentiated to give a /gradient/ of
--- an 'Int' and a 'Bool' (also in 'IO') if given the total derivative for
--- the @Double@.
---
--- Note that an 'OpM' is a /superclass/ of 'Op', so any function that
--- expects an @'OpM' m as a@ can also accept an @'Op' as a@.
---
--- See 'runOpM', 'gradOpM', and 'gradOpWithM' for examples on how to run
--- it.
-newtype Op as a =
-    -- | Construct an 'OpM' by giving a (monadic) function creating the
-    -- result, and also a continuation on how to create the gradient, given
-    -- the total derivative of @a@.
-    --
-    -- See the module documentation for "Numeric.Backprop.Op" for more
-    -- details on the function that this constructor and 'Op' expect.
-    Op { runOpWith :: Tuple as -> (a, a -> Tuple as)
-       }
 
 -- | An @'Op' as a@ describes a differentiable function from @as@ to @a@.
 --
@@ -206,65 +175,27 @@ newtype Op as a =
 -- See 'runOp', 'gradOp', and 'gradOpWith' for examples on how to run it,
 -- and 'Op' for instructions on creating it.
 --
--- This type is abstracted over using the pattern synonym with constructor
--- 'Op', so you can create one from scratch with it.  However, it's
--- simplest to create it using 'op2'', 'op1'', 'op2'', and 'op3'' helper
--- smart constructors  And, if your function is a numeric function, they
--- can even be created automatically using 'op1', 'op2', 'op3', and 'opN'
--- with a little help from "Numeric.AD" from the /ad/ library.
---
--- Note that this type is a /subset/ or /subtype/ of 'OpM' (and also of
--- 'Numeric.Backprop.OpB').  So, if a function ever expects an @'OpM' m as
--- a@ (or a 'Numeric.Backprop.OpB'), you can always provide an @'Op' as a@
--- instead.
---
--- Many functions in this library will expect an @'OpM' m as a@ (or
--- an @'Numeric.Backprop.OpB' s as a@), and in all of these cases, you can
--- provide an @'Op' as a@.
--- type Op as a = forall m. Monad m => OpM m as a
+-- It is simpler to not use this type constructor directly, and instead use
+-- the 'op2', 'op1', 'op2', and 'op3' helper smart constructors  And,
+-- if your function is a numeric function, they can even be created
+-- automatically using 'op1'', 'op2'', 'op3'', and 'opN' with a little help
+-- from "Numeric.AD" from the /ad/ library.
+newtype Op as a =
+    -- | Construct an 'Op' by giving a function creating the
+    -- result, and also a continuation on how to create the gradient, given
+    -- the total derivative of @a@.
+    --
+    -- See the module documentation for "Numeric.Backprop.Op" for more
+    -- details on the function that this constructor and 'Op' expect.
+    Op { -- | Run the function that the 'Op' encodes, returning
+         -- a continuation to compute the gradient, given the total
+         -- derivative of @a@.  See documentation for "Numeric.Backprop.Op"
+         -- for more information.
+         runOpWith :: Tuple as -> (a, a -> Tuple as)
+       }
 
 -- | Helper wrapper used for the implementation of 'composeOp'.
 newtype OpCont as a = OC { runOpCont :: a -> Tuple as }
-
----- | Construct an 'Op' by giving a function creating the result, and also
----- a continuation on how to create the gradient, given the total derivative
----- of @a@.
-----
----- See the module documentation for "Numeric.Backprop.Op" for more details
----- on the function that this constructor and 'OpM' expect.
---pattern Op :: (Tuple as -> (a, Maybe a -> Tuple as)) -> Op as a
---pattern Op runOp' <- OpM (\f -> (second . fmap) getI . getI . f -> runOp')
---  where
---    Op f = OpM (pure . (second . fmap) pure . f)
-
----- | A combination of 'runOpM' and 'gradOpWithM''.  Given an 'OpM' and
----- inputs, returns the result of the 'OpM' and a continuation that gives
----- its gradient.
-----
----- The continuation takes the total derivative of the result as input.  See
----- documenation for 'gradOpWithM'' and module documentation for
----- "Numeric.Backprop.Op" for more information.
---runOpM'
---    :: OpM m as a                       -- ^ 'OpM' to run
---    -> Tuple as                         -- ^ Inputs
---    -> m (a, Maybe a -> m (Tuple as))   -- ^ Result, and continuation to
---                                        --     get the gradient
---runOpM' (OpM f) = f
-
--- | A combination of 'runOp' and 'gradOpWith''.  Given an 'Op' and inputs,
--- returns the result of the 'Op' and a continuation that gives its
--- gradient.
---
--- The continuation takes the total derivative of the result as input.  See
--- documenation for 'gradOpWith'' and module documentation for
--- "Numeric.Backprop.Op" for more information.
--- runOp'
---     :: Op as a                  -- ^ 'Op' to run
---     -> Tuple as                 -- ^ Inputs
---     -> (a, a -> Tuple as) -- ^ Result, and continuation to get
---                                 --     the gradient
--- -- runOp' o = (second . fmap) getI . getI . runOp' o
--- runOp' (Op f) = f
 
 -- | A version of 'composeOp' taking explicit 'Length', indicating the
 -- number of inputs expected and their types.
@@ -277,11 +208,11 @@ newtype OpCont as a = OC { runOpCont :: a -> Tuple as }
 composeOp'
     :: forall as bs c. Every Num as
     => Length as
-    -> Prod (Op as) bs   -- ^ 'Prod' of 'OpM's taking @as@ and returning
-                            --     different @b@ in @bs@
+    -> Prod (Op as) bs   -- ^ 'Prod' of 'Op's taking @as@ and returning
+                         --     different @b@ in @bs@
     -> Op bs c           -- ^ 'OpM' taking eac of the @bs@ from the
-                            --     input 'Prod'.
-    -> Op as c           -- ^ Composed 'OpM'
+                         --     input 'Prod'.
+    -> Op as c           -- ^ Composed 'Op'
 composeOp' l os o = Op $ \xs ->
     let (ys, conts) = unzipP
                     . map1 ((\(x, c) -> I x :&: OC c) . flip runOpWith xs)
@@ -297,20 +228,18 @@ composeOp' l os o = Op $ \xs ->
                  $ g2s
     in (z, gFunc)
 
--- | Compose 'OpM's together, similar to '.'.  But, because all 'OpM's are
--- \(\mathbb{R}^N \rightarrow \mathbb{R}\), this is more like 'sequence'
--- for functions, or @liftAN@.
+-- | Compose 'Op's together, like 'sequence' for functions, or @liftAN@.
 --
--- That is, given an @'OpM' m as b1@, an @'OpM' m as b2@, and an @'OpM'
--- m as b3@, it can compose them with an @'OpM' m '[b1,b2,b3] c@ to create
--- an @'OpM' m as c@.
+-- That is, given an @'Op' as b1@, an @'Op' as b2@, and an @'Op' as b3@, it
+-- can compose them with an @'Op' '[b1,b2,b3] c@ to create an @'Op' as
+-- c@.
 composeOp
     :: (Every Num as, Known Length as)
-    => Prod (Op as) bs   -- ^ 'Prod' of 'OpM's taking @as@ and returning
-                            --     different @b@ in @bs@
-    -> Op bs c           -- ^ 'OpM' taking eac of the @bs@ from the
-                            --     input 'Prod'.
-    -> Op as c           -- ^ Composed 'OpM'
+    => Prod (Op as) bs   -- ^ 'Prod' of 'Op's taking @as@ and returning
+                         --     different @b@ in @bs@
+    -> Op bs c           -- ^ 'Op' taking eac of the @bs@ from the
+                         --     input 'Prod'.
+    -> Op as c           -- ^ Composed 'Op'
 composeOp = composeOp' known
 
 -- | A version of 'composeOp1' taking explicit 'Length', indicating the
@@ -330,7 +259,7 @@ composeOp1'
 composeOp1' l = composeOp' l . only
 
 -- | Convenient wrapper over 'composeOp' for the case where the second
--- function only takes one input, so the two 'OpM's can be directly piped
+-- function only takes one input, so the two 'Op's can be directly piped
 -- together, like for '.'.
 composeOp1
     :: (Every Num as, Known Length as)
@@ -375,73 +304,18 @@ runOp :: Num a => Op as a -> Tuple as -> (a, Tuple as)
 runOp o = second ($ 1) . runOpWith o
 {-# INLINE runOp #-}
 
----- | The monadic version of 'runOp', for 'OpM's.
-----
----- >>> runOpM (op2 (*)) (3 ::< 5 ::< Ø) :: IO Int
----- 15
---runOpM :: Functor m => OpM m as a -> Tuple as -> m a
---runOpM o = fmap fst . runOpM' o
-
--- -- | The monadic version of 'gradOp'', for 'OpM's.
--- gradOpM' :: Monad m => OpM m as a -> Tuple as -> m (a, Tuple as)
--- gradOpM' o x = do
---     (y, gF) <- runOpM' o x
---     g <- gF Nothing
---     return (y, g)
-
--- | A combination of 'gradOp' and 'gradOpWith'.  The third argument is
--- (optionally) the total derivative the result.  Give 'Nothing' and it is
--- assumed that the result is the final result (and the total derivative is
--- 1), and this behaves the same as 'gradOp'.  Give @'Just' d@ and it uses
--- the @d@ as the total derivative of the result, and this behaves like
--- 'gradOpWith'.
+-- | Get the gradient function that an 'Op' encodes, with a third argument
+-- expecting the total derivative of the result.
 --
--- See 'gradOp' and the module documentaiton for "Numeric.Backprop.Op" for
--- more information.
+-- See the module documentaiton for "Numeric.Backprop.Op" for more
+-- information.
 gradOpWith
     :: Op as a      -- ^ 'Op' to run
     -> Tuple as     -- ^ Inputs to run it with
-    -> a      -- ^ If 'Just', taken as the total derivative of the
-                    --     result.  If 'Nothing', assumes that the result is
-                    --     the final result.
+    -> a            -- ^ The total derivative of the result.
     -> Tuple as     -- ^ The gradient
 gradOpWith o = snd . runOpWith o
 {-# INLINE gradOpWith #-}
-
--- -- | The monadic version of 'gradOpWith'', for 'OpM's.
--- gradOpWithM'
---     :: Monad m
---     => OpM m as a       -- ^ 'OpM' to run
---     -> Tuple as         -- ^ Inputs to run it with
---     -> Maybe a          -- ^ If 'Just', taken as the total derivative of the
---                         --     result.  If 'Nothing', assumes that the result is
---                         --     the final result.
---     -> m (Tuple as)     -- ^ The gradient
--- gradOpWithM' o xs g = do
---     (_, f) <- runOpM' o xs
---     f g
-
----- | Run the function that an 'Op' encodes, and get the gradient of
----- a "final result" with respect to the inputs, given the total derivative
----- of the output with the final result.
-----
----- See 'gradOp' and the module documentaiton for "Numeric.Backprop.Op" for
----- more information.
---gradOpWith
---    :: Op as a      -- ^ 'Op' to run
---    -> Tuple as     -- ^ Inputs to run it with
---    -> a            -- ^ The total derivative of the result
---    -> Tuple as     -- ^ The gradient
---gradOpWith = gradOpWith'
-
--- -- | The monadic version of 'gradOpWith', for 'OpM's.
--- gradOpWithM
---     :: Monad m
---     => OpM m as a       -- ^ 'OpM' to run
---     -> Tuple as         -- ^ Inputs to run it with
---     -> a                -- ^ The total derivative of the result
---     -> m (Tuple as)     -- ^ the gradient
--- gradOpWithM o i = gradOpWithM' o i . Just
 
 -- | Run the function that an 'Op' encodes, and get the gradient of the
 -- output with respect to the inputs.
@@ -449,15 +323,14 @@ gradOpWith o = snd . runOpWith o
 -- >>> gradOp (op2 (*)) (3 ::< 5 ::< Ø)
 -- 5 ::< 3 ::< Ø
 -- -- the gradient of x*y is (y, x)
+
+-- @
+-- 'gradOp' o xs = 'gradOpWith' o xs 1
+-- @
+--
 gradOp :: Num a => Op as a -> Tuple as -> Tuple as
 gradOp o i = gradOpWith o i 1
 {-# INLINE gradOp #-}
-
--- -- | The monadic version of 'gradOp', for 'OpM's.
--- gradOpM :: Monad m => OpM m as a -> Tuple as -> m (Tuple as)
--- gradOpM o i = do
---     (_, gF) <- runOpM' o i
---     gF Nothing
 
 -- | An 'Op' that coerces an item into another item whose type has the same
 -- runtime representation.
@@ -466,7 +339,7 @@ gradOp o i = gradOpWith o i 1
 -- (5, Identity 1)
 --
 -- @
--- 'opCoerce' = 'opIso' 'coerced'
+-- 'opCoerce' = 'opIso' 'coerced' 'coerce'
 -- @
 opCoerce :: Coercible a b => Op '[a] b
 opCoerce = opIso coerce coerce
@@ -476,7 +349,7 @@ opCoerce = opIso coerce coerce
 -- function.
 --
 -- @
--- 'idOp' = 'opIso' 'id'
+-- 'idOp' = 'opIso' 'id' 'id'
 -- @
 idOp :: Op '[a] a
 idOp = op1 $ \x -> (x, id)
@@ -532,14 +405,11 @@ opConst = opConst' known
 -- There is no gradient, of course (using 'gradOp' will give you an empty
 -- tuple), because there is no input to have a gradient of.
 --
--- >>> gradOp' (op0 10) Ø
+-- >>> runOp (op0 10) Ø
 -- (10, Ø)
 --
 -- For a constant 'Op' that takes input and ignores it, see 'opConst' and
 -- 'opConst''.
---
--- Note that because this returns an 'Op', it can be used with any function
--- that expects an 'OpM' or 'Numeric.Backprop.OpB', as well.
 op0 :: a -> Op '[] a
 op0 x = Op $ \case
     Ø -> (x, const Ø)
@@ -570,15 +440,11 @@ op0 x = Op $ \case
 -- tuple should be a function that takes \(\frac{dz}{dy}\) and returns
 -- \(\frac{dz}{dx}\).
 --
--- If the input is 'Nothing', then \(\frac{dz}{dy}\) should be taken to be
--- \(1\).
---
 -- As an example, here is an 'Op' that squares its input:
 --
 -- @
 -- square :: Num a => 'Op' '[a] a
--- square = 'op1'' $ \\x -> (x*x, \\case Nothing -> 2 * x
---                                   Just d  -> 2 * d * x
+-- square = 'op1'' $ \\x -> (x*x, \\d -> 2 * d * x
 --                       )
 -- @
 --
@@ -586,7 +452,7 @@ op0 x = Op $ \case
 -- they should be provided by libraries or generated automatically.
 --
 -- For numeric functions, single-input 'Op's can be generated automatically
--- using 'op1'.
+-- using 'op1''.
 op1
     :: (a -> (b, b -> a))
     -> Op '[a] b
@@ -623,15 +489,11 @@ op1 f = Op $ \case
 -- tuple should be a function that takes \(\frac{dk}{dz}\) and returns
 -- \( \left< \frac{\partial k}{dx}, \frac{\partial k}{dx} \right> \).
 --
--- If the input is 'Nothing', then \(\frac{dk}{dz}\) should be taken to be
--- \(1\).
---
 -- As an example, here is an 'Op' that multiplies its inputs:
 --
 -- @
 -- mul :: Num a => 'Op' '[a, a] a
--- mul = 'op2'' $ \\x y -> (x*y, \\case Nothing -> (y  , x  )
---                                  Just d  -> (d*y, x*d)
+-- mul = 'op2'' $ \\x y -> (x*y, \\d -> (d*y, x*d)
 --                      )
 -- @
 --
@@ -639,7 +501,7 @@ op1 f = Op $ \case
 -- they should be provided by libraries or generated automatically.
 --
 -- For numeric functions, two-input 'Op's can be generated automatically
--- using 'op2'.
+-- using 'op2''.
 op2
     :: (a -> b -> (c, c -> (a, b)))
     -> Op '[a,b] c
@@ -650,7 +512,7 @@ op2 f = Op $ \case
 {-# INLINE op2 #-}
 
 -- | Create an 'Op' of a function taking three inputs, by giving its explicit
--- gradient.  See documentation for 'op2'' for more details.
+-- gradient.  See documentation for 'op2' for more details.
 op3
     :: (a -> b -> c -> (d, d -> (a, b, c)))
     -> Op '[a,b,c] d
@@ -664,7 +526,7 @@ op3 f = Op $ \case
 -- argument.  Uses 'Numeric.AD.diff', and so can take any numerical
 -- function polymorphic over the standard numeric types.
 --
--- >>> gradOp' (op1 (recip . negate)) (5 ::< Ø)
+-- >>> gradOp' (op1' (recip . negate)) (5 ::< Ø)
 -- (-0.2, 0.04 ::< Ø)
 op1' :: Num a
     => (forall s. AD s (Forward a) -> AD s (Forward a))
@@ -678,7 +540,7 @@ op1' f = op1 $ \x ->
 -- arguments.  Uses 'Numeric.AD.grad', and so can take any numerical function
 -- polymorphic over the standard numeric types.
 --
--- >>> gradOp' (op2 (\x y -> x * sqrt y)) (3 ::< 4 ::< Ø)
+-- >>> gradOp' (op2' (\x y -> x * sqrt y)) (3 ::< 4 ::< Ø)
 -- (6.0, 2.0 ::< 0.75 ::< Ø)
 op2' :: Num a
     => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a)
@@ -690,7 +552,7 @@ op2' f = opN' $ \case I x :* I y :* ØV -> f x y
 -- arguments.  Uses 'Numeric.AD.grad', and so can take any numerical function
 -- polymorphic over the standard numeric types.
 --
--- >>> gradOp' (op3 (\x y z -> (x * sqrt y)**z)) (3 ::< 4 ::< 2 ::< Ø)
+-- >>> gradOp' (op3' (\x y z -> (x * sqrt y)**z)) (3 ::< 4 ::< 2 ::< Ø)
 -- (36.0, 24.0 ::< 9.0 ::< 64.503 ::< Ø)
 op3' :: Num a
     => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a)
@@ -702,7 +564,7 @@ op3' f = opN' $ \case I x :* I y :* I z :* ØV -> f x y z
 -- arguments.  Uses 'Numeric.AD.grad', and so can take any numerical
 -- function polymorphic over the standard numeric types.
 --
--- >>> gradOp' (opN (\(x :+ y :+ Ø) -> x * sqrt y)) (3 ::< 4 ::< Ø)
+-- >>> gradOp' (opN' (\(x :+ y :+ Ø) -> x * sqrt y)) (3 ::< 4 ::< Ø)
 -- (6.0, 2.0 ::< 0.75 ::< Ø)
 opN' :: (Num a, Known Nat n)
     => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a)
