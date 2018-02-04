@@ -148,7 +148,7 @@ infixr 9 ~.
 --   length of the the expected input tuple. If you ever actually
 --   explicitly write down <tt>as</tt> as a list of types, you should be
 --   able to just use <a>composeOp</a>.
-composeOp' :: forall as bs c. Every Num as => Length as -> Prod (Op as) bs -> Op bs c -> Op as c
+composeOp' :: Every Num as => Length as -> Prod (Op as) bs -> Op bs c -> Op as c
 
 -- | A version of <a>composeOp1</a> taking explicit <a>Length</a>,
 --   indicating the number of inputs expected and their types.
@@ -182,7 +182,7 @@ op0 :: a -> Op '[] a
 --   &gt;&gt;&gt; gradOp' (opConst 10) (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø)
 --   (10, 0 ::&lt; 0 ::&lt; 0 ::&lt; Ø)
 --   </pre>
-opConst :: forall as a. (Every Num as, Known Length as) => a -> Op as a
+opConst :: (Every Num as, Known Length as) => a -> Op as a
 
 -- | An <a>Op</a> that just returns whatever it receives. The identity
 --   function.
@@ -200,7 +200,7 @@ idOp :: Op '[a] a
 --   length of the the expected input tuple. If you ever actually
 --   explicitly write down <tt>as</tt> as a list of types, you should be
 --   able to just use <a>opConst</a>.
-opConst' :: forall as a. Every Num as => Length as -> a -> Op as a
+opConst' :: Every Num as => Length as -> a -> Op as a
 
 -- | Create an <a>Op</a> of a function taking one input, by giving its
 --   explicit derivative. The function should return a tuple containing the
@@ -378,132 +378,171 @@ infixr 5 ::<
 -- | Singleton Tuple.
 only_ :: () => a -> Tuple (:) * a [] *
 
--- | Optimized version of <tt><a>op1</a> (<a>+</a>)</tt>.
+-- | Optimized version of <tt><a>op1'</a> (<a>+</a>)</tt>.
 (+.) :: Num a => Op '[a, a] a
 
--- | Optimized version of <tt><a>op1</a> (<a>-</a>)</tt>.
+-- | Optimized version of <tt><a>op1'</a> (<a>-</a>)</tt>.
 (-.) :: Num a => Op '[a, a] a
 
--- | Optimized version of <tt><a>op1</a> (<a>*</a>)</tt>.
+-- | Optimized version of <tt><a>op1'</a> (<a>*</a>)</tt>.
 (*.) :: Num a => Op '[a, a] a
 
--- | Optimized version of <tt><a>op1</a> <a>negate</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>negate</a></tt>.
 negateOp :: Num a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> <a>abs</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>abs</a></tt>.
 absOp :: Num a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> <a>signum</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>signum</a></tt>.
 signumOp :: Num a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> (<a>/</a>)</tt>.
+-- | Optimized version of <tt><a>op1'</a> (<a>/</a>)</tt>.
 (/.) :: Fractional a => Op '[a, a] a
 
--- | Optimized version of <tt><a>op1</a> <a>recip</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>recip</a></tt>.
 recipOp :: Fractional a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> <a>exp</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>exp</a></tt>.
 expOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> <a>log</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>log</a></tt>.
 logOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> <a>sqrt</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>sqrt</a></tt>.
 sqrtOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> (<a>**</a>)</tt>.
+-- | Optimized version of <tt><a>op1'</a> (<a>**</a>)</tt>.
 (**.) :: Floating a => Op '[a, a] a
 
--- | Optimized version of <tt><a>op2</a> <a>logBase</a></tt>.
+-- | Optimized version of <tt><a>op2'</a> <a>logBase</a></tt>.
 logBaseOp :: Floating a => Op '[a, a] a
 
--- | Optimized version of <tt><a>op1</a> <a>sin</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>sin</a></tt>.
 sinOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> <a>cos</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>cos</a></tt>.
 cosOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> <a>tan</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>tan</a></tt>.
 tanOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> <a>asin</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>asin</a></tt>.
 asinOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> <a>acos</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>acos</a></tt>.
 acosOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> <a>atan</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>atan</a></tt>.
 atanOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> <a>sinh</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>sinh</a></tt>.
 sinhOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> <a>cosh</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>cosh</a></tt>.
 coshOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> <a>tanh</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>tanh</a></tt>.
 tanhOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> <a>asinh</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>asinh</a></tt>.
 asinhOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> <a>acosh</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>acosh</a></tt>.
 acoshOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1</a> <a>atanh</a></tt>.
+-- | Optimized version of <tt><a>op1'</a> <a>atanh</a></tt>.
 atanhOp :: Floating a => Op '[a] a
 instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.Index.Every * GHC.Num.Num as, GHC.Num.Num a) => GHC.Num.Num (Numeric.Backprop.Op.Op as a)
 instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.Index.Every * GHC.Real.Fractional as, Data.Type.Index.Every * GHC.Num.Num as, GHC.Real.Fractional a) => GHC.Real.Fractional (Numeric.Backprop.Op.Op as a)
 instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.Index.Every * GHC.Float.Floating as, Data.Type.Index.Every * GHC.Real.Fractional as, Data.Type.Index.Every * GHC.Num.Num as, GHC.Float.Floating a) => GHC.Float.Floating (Numeric.Backprop.Op.Op as a)
 
 
--- | Provides the <tt>BP</tt> monad and the <a>BVar</a> type; after
---   manipulating <a>BVar</a>s (inputs to your function) to produce a
---   result, the library tracks internal data dependencies, which are used
---   to perform back-propagation (reverse-mode automatic differentiation)
---   to calculate the gradient of the output with respect to the inputs.
---   
---   Similar to automatic differentiation from the <i>ad</i> library and
---   <a>Numeric.AD.Mode.Reverse</a>, except for a few key differences:
---   
---   <ol>
---   <li>Most importantly, this library implements <i>heterogeneous</i>
---   back-propagation, so you can manipulate values of different types
---   (like different matrix and vector types, and product and sum types).
---   This is essential for things like back-propagation for neural
---   networks.</li>
---   <li>This module allows you to <i>explicitly</i> build your data
---   dependency graph if you wish, which allows the library to perform
---   optimizations and reduce extra allocation, which may or may not
---   provide advantages over <a>Numeric.AD.Mode.Reverse</a>'s
---   <a>unsafePerformIO</a>-based implicit graph building.</li>
---   </ol>
---   
---   See the <a>README</a> for more information and links to demonstrations
---   and tutorials. If you want to plunge right in, you can also look
---   directly at the main types, <tt>BP</tt>, <tt>BPOp</tt>, <a>BVar</a>,
---   <a>Op</a>, and the main functions, <a>backprop</a> and <tt>opVar</tt>.
+-- | See the <a>README</a> for more information and links to demonstrations
+--   and tutorials.
 --   
 --   Note that every type involved has to be an instance of <a>Num</a>.
 --   This is because gradients all need to be "summable" (which is
 --   implemented using <a>sum</a> and <a>+</a>), and we also need to able
---   to generate gradients of '1' and '0'.
+--   to generate gradients of '1' and '0'. Really, only <a>+</a> and
+--   <a>fromInteger</a> methods are used from the <a>Num</a> typeclass.
 module Numeric.Backprop
+
+-- | A <tt><a>BVar</a> s a</tt> is a value of type <tt>a</tt> that can be
+--   "backpropagated".
+--   
+--   Functions referring to <a>BVar</a>s are tracked by the library and can
+--   be automatically differentiated to get their gradients and results.
+--   
+--   For simple numeric values, you can use its <a>Num</a>,
+--   <a>Fractional</a>, and <a>Floating</a> instances to manipulate them as
+--   if they were the numbers they represent.
+--   
+--   If <tt>a</tt> contains items, the items can be accessed and extracted
+--   using lenses. A <tt><a>Lens'</a> b a</tt> can be used to access an
+--   <tt>a</tt> inside a <tt>b</tt>:
+--   
+--   <pre>
+--   (<a>^.</a>)  ::        a -&gt; <a>Lens'</a> a b -&gt;        b
+--   (<tt>^^.</tt>) :: <a>BVar</a> s a -&gt; <a>Lens'</a> a b -&gt; <a>BVar</a> s b
+--   </pre>
+--   
+--   For more complex operations, libraries can provide functions on
+--   <a>BVar</a>s using <a>liftOp</a> and related functions. This is how
+--   you can create primitive functions that users can use to manipulate
+--   your library's values.
+--   
+--   For example, the <i>hmatrix</i> library has a matrix-vector
+--   multiplication function, <tt>#&gt; :: L m n -&gt; R n -&gt; L m</tt>.
+--   
+--   A library could instead provide a function <tt>#&gt; :: <a>BVar</a> (L
+--   m n) -&gt; BVar (R n) -&gt; BVar (R m)</tt>, which the user can then
+--   use to manipulate their <a>BVar</a>s of <tt>L m n</tt>s and <tt>R
+--   n</tt>s, etc.
+--   
+--   See documentation for <a>liftOp</a> for more information.
 data BVar s a
 data W
-constVar :: a -> BVar s a
-liftOpN :: forall s as b. (Reifies s W, Num b, Every Num as) => Op as b -> Prod (BVar s) as -> BVar s b
-liftOp1 :: forall s a b. (Reifies s W, Num a, Num b) => Op '[a] b -> BVar s a -> BVar s b
-liftOp2 :: forall s a b c. (Reifies s W, Num a, Num b, Num c) => Op '[a, b] c -> BVar s a -> BVar s b -> BVar s c
-liftOp3 :: forall s a b c d. (Reifies s W, Num a, Num b, Num c, Num d) => Op '[a, b, c] d -> BVar s a -> BVar s b -> BVar s c -> BVar s d
-liftOp4 :: forall s a b c d e. (Reifies s W, Num a, Num b, Num c, Num d, Num e) => Op '[a, b, c, d] e -> BVar s a -> BVar s b -> BVar s c -> BVar s d -> BVar s e
-lensVar :: forall a b s. (Reifies s W, Num a) => Lens' b a -> BVar s b -> BVar s a
-(^^.) :: forall a b s. (Reifies s W, Num a) => BVar s b -> Lens' b a -> BVar s a
-infixl 8 ^^.
-uncurryVar :: (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> (forall s. Reifies s W => BVar s (a, b) -> BVar s c)
+
+-- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
+--   the function <tt>a -&gt; b</tt> that it represents, also computing its
+--   gradient <tt>a</tt> as well.
 backprop :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
 evalBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
 gradBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
+
+-- | Lift a value into a <a>BVar</a> representing a constant value.
+--   
+--   This value will not be considered an input, and its gradients will not
+--   be backpropagated.
+constVar :: a -> BVar s a
+
+-- | Using a <a>Lens'</a>, extract a value <i>inside</i> a <a>BVar</a>.
+viewVar :: forall a b s. (Reifies s W, Num a) => Lens' b a -> BVar s b -> BVar s a
+(^^.) :: forall a b s. (Reifies s W, Num a) => BVar s b -> Lens' b a -> BVar s a
+infixl 8 ^^.
+(.~~) :: forall a b s. (Reifies s W, Num a, Num b) => Lens' b a -> BVar s a -> BVar s b -> BVar s b
+infixl 8 .~~
+uncurryVar :: (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> (forall s. Reifies s W => BVar s (a, b) -> BVar s c)
+
+-- | Lift an <a>Op</a> with an arbitrary number of inputs to a function on
+--   the appropriate number of <a>BVar</a>s.
+liftOp :: forall s as b. (Reifies s W, Num b, Every Num as) => Op as b -> Prod (BVar s) as -> BVar s b
+
+-- | Lift an <a>Op</a> with a single input to be a function on a single
+--   <a>BVar</a>.
+liftOp1 :: forall s a b. (Reifies s W, Num a, Num b) => Op '[a] b -> BVar s a -> BVar s b
+
+-- | Lift an <a>Op</a> with two inputs to be a function on a two
+--   <a>BVar</a>s.
+liftOp2 :: forall s a b c. (Reifies s W, Num a, Num b, Num c) => Op '[a, b] c -> BVar s a -> BVar s b -> BVar s c
+
+-- | Lift an <a>Op</a> with three inputs to be a function on a three
+--   <a>BVar</a>s.
+liftOp3 :: forall s a b c d. (Reifies s W, Num a, Num b, Num c, Num d) => Op '[a, b, c] d -> BVar s a -> BVar s b -> BVar s c -> BVar s d
+
+-- | Lift an <a>Op</a> with four inputs to be a function on a four
+--   <a>BVar</a>s.
+liftOp4 :: forall s a b c d e. (Reifies s W, Num a, Num b, Num c, Num d, Num e) => Op '[a, b, c, d] e -> BVar s a -> BVar s b -> BVar s c -> BVar s d -> BVar s e
 
 -- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
 --   <tt>as</tt> to <tt>a</tt>.
@@ -577,7 +616,7 @@ op0 :: a -> Op '[] a
 --   &gt;&gt;&gt; gradOp' (opConst 10) (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø)
 --   (10, 0 ::&lt; 0 ::&lt; 0 ::&lt; Ø)
 --   </pre>
-opConst :: forall as a. (Every Num as, Known Length as) => a -> Op as a
+opConst :: (Every Num as, Known Length as) => a -> Op as a
 
 -- | An <a>Op</a> that just returns whatever it receives. The identity
 --   function.
@@ -595,7 +634,7 @@ idOp :: Op '[a] a
 --   length of the the expected input tuple. If you ever actually
 --   explicitly write down <tt>as</tt> as a list of types, you should be
 --   able to just use <a>opConst</a>.
-opConst' :: forall as a. Every Num as => Length as -> a -> Op as a
+opConst' :: Every Num as => Length as -> a -> Op as a
 
 -- | Create an <a>Op</a> of a function taking one input, by giving its
 --   explicit derivative. The function should return a tuple containing the
