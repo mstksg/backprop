@@ -596,12 +596,12 @@ constVar :: a -> BVar s a
 
 -- | Using a <a>Lens'</a>, extract a value <i>inside</i> a <a>BVar</a>.
 --   
---   See documentation for '(^^.)' for more information.
+--   See documentation for <tt>^^.</tt> for more information.
 viewVar :: forall a b s. (Reifies s W, Num a) => Lens' b a -> BVar s b -> BVar s a
 
 -- | Using a <a>Lens'</a>, set a value <i>inside</i> a <a>BVar</a>.
 --   
---   See documentation for '(.~~)' for more information.
+--   See documentation for <tt>.~~</tt> for more information.
 setVar :: forall a b s. (Reifies s W, Num a, Num b) => Lens' b a -> BVar s a -> BVar s b -> BVar s b
 
 -- | An infix version of <a>viewVar</a>, meant to evoke parallels to
