@@ -5,13 +5,8 @@
 -- | Heterogeneous, type-safe automatic backpropagation in Haskell
 --   
 --   See <a>README.md</a>
---   
---   At the moment, this project is in pre-alpha, and is published and put
---   up on Hackage with 100% documentation coverage as a call for comments
---   and thoughts. See <a>TODO</a> section in the README for more
---   information on what's missing and potential avenues for contribution.
 @package backprop
-@version 0.0.3.0
+@version 0.1.0.0
 
 
 -- | Provides the <a>Op</a> type and combinators, which represent
@@ -57,6 +52,9 @@ module Numeric.Backprop.Op
 --   can even be created automatically using <a>op1'</a>, <a>op2'</a>,
 --   <a>op3'</a>, and <tt>opN</tt> with a little help from
 --   <a>Numeric.AD</a> from the <i>ad</i> library.
+--   
+--   See <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on using
+--   <a>Prod</a> and <a>Tuple</a>.
 newtype Op as a
 
 -- | Construct an <a>Op</a> by giving a function creating the result, and
@@ -105,6 +103,10 @@ evalOp :: Op as a -> Tuple as -> a
 --   &gt;&gt;&gt; gradOp (op2 (*)) (3 ::&lt; 5 ::&lt; Ø)
 --   5 ::&lt; 3 ::&lt; Ø
 --   -- the gradient of x*y is (y, x)
+--   </pre>
+--   
+--   <pre>
+--   <a>gradOp</a> o xs = <a>gradOpWith</a> o xs 1
 --   </pre>
 gradOp :: Num a => Op as a -> Tuple as -> Tuple as
 
@@ -352,6 +354,13 @@ opTup :: Op as (Tuple as)
 --   <a>exponentiating</a>. Basically, don't use this for any "numeric"
 --   isomorphisms.
 opIso :: (a -> b) -> (b -> a) -> Op '[a] b
+
+-- | An <a>Op</a> that extracts a value from an input value using a
+--   <a>Lens'</a>.
+--   
+--   Warning: This is unsafe! It assumes that it extracts a specific value
+--   unchanged, with derivative 1, so will break for things that
+--   numerically manipulate things before returning them.
 opLens :: Num a => Lens' a b -> Op '[a] b
 
 -- | Construct a two element Prod. Since the precedence of (:&gt;) is
@@ -457,14 +466,38 @@ instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.I
 instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.Index.Every * GHC.Float.Floating as, Data.Type.Index.Every * GHC.Real.Fractional as, Data.Type.Index.Every * GHC.Num.Num as, GHC.Float.Floating a) => GHC.Float.Floating (Numeric.Backprop.Op.Op as a)
 
 
--- | See the <a>README</a> for more information and links to demonstrations
---   and tutorials.
+-- | Automatic differentation and backpropagation.
 --   
---   Note that every type involved has to be an instance of <a>Num</a>.
---   This is because gradients all need to be "summable" (which is
---   implemented using <a>sum</a> and <a>+</a>), and we also need to able
---   to generate gradients of '1' and '0'. Really, only <a>+</a> and
---   <a>fromInteger</a> methods are used from the <a>Num</a> typeclass.
+--   Main idea: Write a function computing what you want, and the library
+--   automatically provies the gradient of that function as well, for usage
+--   with gradient descent and other training methods.
+--   
+--   In more detail: instead of working directly with values to produce
+--   your result, you work with <a>BVar</a>s containing those values.
+--   Working with these <a>BVar</a>s is made smooth with the usage of
+--   lenses and other combinators, and libraries can offer operatons on
+--   <a>BVar</a>s instead of those on normal types directly.
+--   
+--   Then, you can use:
+--   
+--   <pre>
+--   <a>evalBP</a> :: (<a>BVar</a> s a -&gt; BVar s b) -&gt; (a -&gt; b)
+--   </pre>
+--   
+--   to turn a <a>BVar</a> function into the function on actual values
+--   <tt>a -&gt; b</tt>. This has virtually zero overhead over writing the
+--   actual function directly.
+--   
+--   Then, there's:
+--   
+--   <pre>
+--   <a>gradBP</a> :: (<a>BVar</a> s a -&gt; BVar s b) -&gt; (a -&gt; a)
+--   </pre>
+--   
+--   To automatically get the <i>gradient</i>, as well, for a given input.
+--   
+--   See the <a>README</a> for more information and links to demonstrations
+--   and tutorials.
 module Numeric.Backprop
 
 -- | A <tt><a>BVar</a> s a</tt> is a value of type <tt>a</tt> that can be
@@ -499,15 +532,60 @@ module Numeric.Backprop
 --   use to manipulate their <a>BVar</a>s of <tt>L m n</tt>s and <tt>R
 --   n</tt>s, etc.
 --   
---   See documentation for <a>liftOp</a> for more information.
+--   See <a>Numeric.Backprop#liftops</a> and documentation for
+--   <a>liftOp</a> for more information.
 data BVar s a
+
+-- | An ephemeral Wengert Tape in the environment. Used internally to track
+--   of the computational graph of variables.
+--   
+--   For the end user, one can just imagine <tt><a>Reifies</a> s
+--   <a>W</a></tt> as a required constraint on <tt>s</tt> that allows
+--   backpropagation to work.
 data W
 
 -- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
 --   the function <tt>a -&gt; b</tt> that it represents, also computing its
 --   gradient <tt>a</tt> as well.
+--   
+--   Note that every type involved has to be an instance of <a>Num</a>.
+--   This is because gradients all need to be "summable" (which is
+--   implemented using <a>sum</a> and <a>+</a>), and we also need to able
+--   to generate gradients of '1' and '0'. Really, only <a>+</a> and
+--   <a>fromInteger</a> methods are used from the <a>Num</a> typeclass.
 backprop :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
+
+-- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
+--   the function <tt>a -&gt; b</tt> that it represents.
+--   
+--   Benchmarks show that this should have virtually no overhead over
+--   directly writing a <tt>a -&gt; b</tt>. <a>BVar</a> is, in this
+--   situation, a zero-cost abstraction, performance-wise.
+--   
+--   Note that every type involved has to be an instance of <a>Num</a>.
+--   This is because gradients all need to be "summable" (which is
+--   implemented using <a>sum</a> and <a>+</a>), and we also need to able
+--   to generate gradients of '1' and '0'. Really, only <a>+</a> and
+--   <a>fromInteger</a> methods are used from the <a>Num</a> typeclass.
 evalBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
+
+-- | Take a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt>,
+--   interpreted as a function <tt>a -&gt; b</tt>, and compute its gradient
+--   with respect to its input.
+--   
+--   The resulting <tt>a -&gt; a</tt> tells how the input (and its
+--   components) affects the output. Positive numbers indicate that the
+--   result will vary in the same direction as any adjustment in the input.
+--   Negative numbers indicate that the result will vary in the opposite
+--   direction as any adjustment in the input. Larger numbers indicate a
+--   greater sensitivity of change, and small numbers indicate lower
+--   sensitivity.
+--   
+--   Note that every type involved has to be an instance of <a>Num</a>.
+--   This is because gradients all need to be "summable" (which is
+--   implemented using <a>sum</a> and <a>+</a>), and we also need to able
+--   to generate gradients of '1' and '0'. Really, only <a>+</a> and
+--   <a>fromInteger</a> methods are used from the <a>Num</a> typeclass.
 gradBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
 
 -- | Lift a value into a <a>BVar</a> representing a constant value.
@@ -517,31 +595,122 @@ gradBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BV
 constVar :: a -> BVar s a
 
 -- | Using a <a>Lens'</a>, extract a value <i>inside</i> a <a>BVar</a>.
+--   
+--   See documentation for <tt>^^.</tt> for more information.
 viewVar :: forall a b s. (Reifies s W, Num a) => Lens' b a -> BVar s b -> BVar s a
+
+-- | An infix version of <a>viewVar</a>, meant to evoke parallels to
+--   <a>^.</a> from lens.
+--   
+--   With normal values, you can extract something from that value with a
+--   lens:
+--   
+--   <pre>
+--   x <a>^.</a> myLens
+--   </pre>
+--   
+--   Would extract a piece of <tt>x :: b</tt>, specified by <tt>myLens ::
+--   <a>Lens'</a> b a</tt>. The result has type <tt>a</tt>.
+--   
+--   <pre>
+--   xVar <a>^^.</a> myLens
+--   </pre>
+--   
+--   Would extract a piece out of <tt>xVar :: <a>BVar</a> s b</tt> (a
+--   <a>BVar</a> holding a <tt>b</tt>), specified by <tt>myLens :: Lens' b
+--   a</tt>. The result has type <tt><a>BVar</a> s a</tt> (a <a>BVar</a>
+--   holding a <tt>a</tt>)
+--   
+--   This is the main way to pull out values from <a>BVar</a> of container
+--   types.
 (^^.) :: forall a b s. (Reifies s W, Num a) => BVar s b -> Lens' b a -> BVar s a
 infixl 8 ^^.
+
+-- | An infix version of <a>setVar</a>, meant to evoke parallels to
+--   <a>.~</a> from lens.
+--   
+--   With normal values, you can set something in a value with a lens: a
+--   lens:
+--   
+--   <pre>
+--   x <a>&amp;</a> myLens <a>.~</a> <tt>y</tt>
+--   </pre>
+--   
+--   Would "set" a part of <tt>x :: b</tt>, specified by <tt>myLens ::
+--   <a>Lens'</a> a b</tt>, to a new value <tt>y :: a</tt>.
+--   
+--   <pre>
+--   xVar <a>&amp;</a> myLens <a>.~~</a> yVar
+--   </pre>
+--   
+--   Would "set" a part of <tt>xVar :: <a>BVar</a> s b</tt> (a <a>BVar</a>
+--   holding a <tt>b</tt>), specified by <tt>myLens :: <a>Lens'</a> a
+--   b</tt>, to a new value given by <tt>yVar :: <a>BVar</a> s a</tt>. The
+--   result is a new (updated) value of type <tt><a>BVar</a> s b</tt>.
+--   
+--   This is the main way to set values inside <a>BVar</a>s of container
+--   types.
 (.~~) :: forall a b s. (Reifies s W, Num a, Num b) => Lens' b a -> BVar s a -> BVar s b -> BVar s b
 infixl 8 .~~
+
+-- | Convenient function to uncurry a <a>BVar</a> function, so it can be
+--   used with <a>backprop</a>, <a>evalBP</a>, and <a>gradBP</a>.
 uncurryVar :: (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> (forall s. Reifies s W => BVar s (a, b) -> BVar s c)
+
+-- | Convenient function to uncurry a <a>BVar</a> function, so it can be
+--   used with <a>backprop</a>, <a>evalBP</a>, and <a>gradBP</a>.
+uncurryVar3 :: (Num a, Num b, Num c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c -> BVar s d) -> (forall s. Reifies s W => BVar s (a, b, c) -> BVar s d)
 
 -- | Lift an <a>Op</a> with an arbitrary number of inputs to a function on
 --   the appropriate number of <a>BVar</a>s.
+--   
+--   Should preferably be used only by libraries to provide primitive
+--   <a>BVar</a> functions for their types for users.
+--   
+--   See <a>Numeric.Backprop#liftops</a> and documentation for
+--   <a>liftOp</a> for more information, and
+--   <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on using
+--   <a>Prod</a> and <a>Tuple</a>.
 liftOp :: forall s as b. (Reifies s W, Num b, Every Num as) => Op as b -> Prod (BVar s) as -> BVar s b
 
 -- | Lift an <a>Op</a> with a single input to be a function on a single
 --   <a>BVar</a>.
+--   
+--   Should preferably be used only by libraries to provide primitive
+--   <a>BVar</a> functions for their types for users.
+--   
+--   See <a>Numeric.Backprop#liftops</a> and documentation for
+--   <a>liftOp</a> for more information.
 liftOp1 :: forall s a b. (Reifies s W, Num a, Num b) => Op '[a] b -> BVar s a -> BVar s b
 
 -- | Lift an <a>Op</a> with two inputs to be a function on a two
 --   <a>BVar</a>s.
+--   
+--   Should preferably be used only by libraries to provide primitive
+--   <a>BVar</a> functions for their types for users.
+--   
+--   See <a>Numeric.Backprop#liftops</a> and documentation for
+--   <a>liftOp</a> for more information.
 liftOp2 :: forall s a b c. (Reifies s W, Num a, Num b, Num c) => Op '[a, b] c -> BVar s a -> BVar s b -> BVar s c
 
 -- | Lift an <a>Op</a> with three inputs to be a function on a three
 --   <a>BVar</a>s.
+--   
+--   Should preferably be used only by libraries to provide primitive
+--   <a>BVar</a> functions for their types for users.
+--   
+--   See <a>Numeric.Backprop#liftops</a> and documentation for
+--   <a>liftOp</a> for more information.
 liftOp3 :: forall s a b c d. (Reifies s W, Num a, Num b, Num c, Num d) => Op '[a, b, c] d -> BVar s a -> BVar s b -> BVar s c -> BVar s d
 
 -- | Lift an <a>Op</a> with four inputs to be a function on a four
 --   <a>BVar</a>s.
+--   
+--   Should preferably be used only by libraries to provide primitive
+--   <a>BVar</a> functions for their types for users.
+--   
+--   See <a>Numeric.Backprop#liftops</a> and documentation for
+--   <a>liftOp</a> for more information.
 liftOp4 :: forall s a b c d e. (Reifies s W, Num a, Num b, Num c, Num d, Num e) => Op '[a, b, c, d] e -> BVar s a -> BVar s b -> BVar s c -> BVar s d -> BVar s e
 
 -- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
@@ -570,6 +739,9 @@ liftOp4 :: forall s a b c d e. (Reifies s W, Num a, Num b, Num c, Num d, Num e) 
 --   can even be created automatically using <a>op1'</a>, <a>op2'</a>,
 --   <a>op3'</a>, and <tt>opN</tt> with a little help from
 --   <a>Numeric.AD</a> from the <i>ad</i> library.
+--   
+--   See <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on using
+--   <a>Prod</a> and <a>Tuple</a>.
 newtype Op as a
 
 -- | Construct an <a>Op</a> by giving a function creating the result, and
@@ -584,15 +756,6 @@ Op :: (Tuple as -> (a, a -> Tuple as)) -> Op as a
 --   to compute the gradient, given the total derivative of <tt>a</tt>. See
 --   documentation for <a>Numeric.Backprop.Op</a> for more information.
 [runOpWith] :: Op as a -> Tuple as -> (a, a -> Tuple as)
-data Prod k (f :: k -> *) (a :: [k]) :: forall k. () => (k -> *) -> [k] -> *
-[Ø] :: Prod k f [] k
-[:<] :: Prod k f (:) k a1 as
-
--- | A Prod of simple Haskell types.
-type Tuple = Prod * I
-newtype I a :: * -> *
-I :: a -> I a
-[getI] :: I a -> a
 
 -- | Create an <a>Op</a> that takes no inputs and always returns the given
 --   value.
@@ -786,4 +949,11 @@ opTup :: Op as (Tuple as)
 --   <a>exponentiating</a>. Basically, don't use this for any "numeric"
 --   isomorphisms.
 opIso :: (a -> b) -> (b -> a) -> Op '[a] b
+
+-- | An <a>Op</a> that extracts a value from an input value using a
+--   <a>Lens'</a>.
+--   
+--   Warning: This is unsafe! It assumes that it extracts a specific value
+--   unchanged, with derivative 1, so will break for things that
+--   numerically manipulate things before returning them.
 opLens :: Num a => Lens' a b -> Op '[a] b
