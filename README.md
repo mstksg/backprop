@@ -7,13 +7,14 @@ backprop
 [**Literate Haskell Tutorial/Demo on MNIST data set**][mnist-lhs] (and [PDF
 rendering][mnist-pdf])
 
-Automatic *heterogeneous* back-propagation that can be used either *implicitly*
-(in the style of the [ad][] library) or using *explicit* graphs built in
-monadic style.  Implements reverse-mode automatic differentiation.  Differs
-from [ad][] by offering full heterogeneity -- each intermediate step and the
-resulting value can have different types.  Mostly intended for usage with
-tensor manipulation libraries to implement automatic back-propagation for
-gradient descent and other optimization techniques.
+Automatic *heterogeneous* back-propagation.
+
+Write your functions to compute your result, and the library will automatically
+generate functions to compute your gradient.
+
+Differs from [ad][] by offering full heterogeneity -- each intermediate step
+and the resulting value can have different types.  Mostly intended for usage
+with gradient descent and other numeric optimization techniques.
 
 [ad]: http://hackage.haskell.org/package/ad
 
@@ -22,15 +23,6 @@ up-to-date documentation is currently rendered [on github pages][docs]!
 
 [hackage]: http://hackage.haskell.org/package/backprop
 [docs]: https://mstksg.github.io/backprop
-
-At the moment this project is in **pre-alpha** (*v0.0.1.0*), and is
-published/put up on Hackage as a call for comments and thoughts.  It has 100%
-documentation coverage at the moment.  Performance was not yet a priority
-before this, but will be from now on.  (Previously, highest priority was
-API/usability). See [the todos section][todos] for more information on what's
-missing, and how one would be able to contribute!
-
-[todos]: https://github.com/mstksg/backprop#todo
 
 MNIST Digit Classifier Example
 ------------------------------
@@ -50,9 +42,9 @@ installed), using
 
 [stack]: http://haskellstack.org/
 
-~~~bash
+```bash
 $ ./Build.hs exe
-~~~
+```
 
 Brief example
 -------------
@@ -62,78 +54,109 @@ hidden layer to calculate its squared error with respect to target `targ`,
 which is parameterized by two weight matrices and two bias vectors.
 Vector/matrix types are from the *hmatrix* package.
 
-~~~haskell
+Let's make a data type to store our parameters, with convenient accessors using
+*[lens][]*:
+
+[lens]: http://hackage.haskell.org/package/lens
+
+```haskell
+data Network i h o = Net { _weight1 :: L h i
+                         , _bias1   :: R h
+                         , _weight2 :: L o h
+                         , _bias2   :: R o
+                         }
+
+makeLenses ''Network
+```
+
+Normally, we might write code to "run" a neural network on an input like this:
+
+```haskell
+neuralNet
+    :: R i
+    -> Network i h o
+    -> R h
+neuralNet x n = z
+  where
+    y = logistic $ (n ^. weight1) #> x + (n ^. bias1)
+    z = logistic $ (n ^. weight2) #> y + (n ^. bias2)
+
 logistic :: Floating a => a -> a
 logistic x = 1 / (1 + exp (-x))
+```
 
-matVec
-    :: (KnownNat m, KnownNat n)
-    => Op '[ L m n, R n ] (R m)
+(`R i` is an i-length vector, `L h i` is an h-by-i matrix, etc., `#>` is
+matrix-vector multiplication, and `^.` is access to a field via lens.)
 
-neuralNetImplicit
-      :: (KnownNat m, KnownNat n, KnownNat o)
-      => R m
-      -> BPOpI s '[ L n m, R n, L o n, R o ] (R o)
-neuralNetImplicit inp = \(w1 :< b1 :< w2 :< b2 :< Ø) ->
-    let z = logistic (liftB2 matVec w1 x + b1)
-    in  logistic (liftB2 matVec w2 z + b2)
+When given an input vector and the network, we compute the result of the neural
+network ran on the input vector.
+
+We can write it, instead, using *backprop*:
+
+```haskell
+neuralNet
+    :: Reifies s W
+    => BVar s (R i)
+    -> BVar s (Network i h o)
+    -> BVar s (R o)
+neuralNet x n = z
   where
-    x = constRef inp
+    y = logistic $ (n ^^. weight1) #>! x + (n ^^. bias1)
+    z = logistic $ (n ^^. weight2) #>! y + (n ^^. bias2)
 
-neuralNetExplicit
-      :: (KnownNat m, KnownNat n, KnownNat o)
-      => R m
-      -> BPOp s '[ L n m, R n, L o n, R o ] (R o)
-neuralNetExplicit inp = withInps $ \(w1 :< b1 :< w2 :< b2 :< Ø) -> do
-    y1  <- matVec ~$ (w1 :< x1 :< Ø)
-    let x2 = logistic (y1 + b1)
-    y2  <- matVec ~$ (w2 :< x2 :< Ø)
-    return $ logistic (y2 + b2)
+logistic :: Floating a => a -> a
+logistic x = 1 / (1 + exp (-x))
+```
+
+(`#>!` is a backprop-aware version of `#>`, and `^^.` is access to a field via
+lens in a `BVar`)
+
+And that's it!  `neuralNet` is now backpropagatable!
+
+We can "run" it using `evalBP`:
+
+```haskell
+evalBP (neuralNet (constVar x)) :: Network i h o -> R o
+```
+
+And we can find the gradient using `gradBP`:
+
+```haskell
+gradBP (neuralNet (constVar x)) :: Network i h o -> Network i h o
+```
+
+If we write a function to compute errors:
+
+```haskell
+netError
+    :: Reifies s W
+    => BVar s (R i)
+    -> BVar s (R o)
+    -> BVar s (Network i h o)
+    -> BVar s Double
+netError x targ n = sum' (err <.>! err)
   where
-    x1 = constVar inp
-~~~
+    err = neuralNet x - t
+```
 
-Now `neuralNetExplicit` and `neuralNetImplicit` can be "run" with the input
-vectors and parameters (a `L n m`, `R n`, `L o n`, and `R o`) and calculate the
-output of the neural net.
+(`sum'` is a backprop-aware vector sum, and `<.>!` is a backprop-aware dot
+product)
 
-~~~haskell
-runNet
-    :: (KnownNat m, KnownNat n, KnownNat o)
-    => R m
-    -> Tuple '[ L n m, R n, L o n, R o ]
+Now, we can perform gradient descent!
+
+```haskell
+gradDescent
+    :: R i
     -> R o
-runNet inp = evalBPOp (neuralNetExplicit inp)
-~~~
-
-But, in defining `neuralNet`, we also generated a graph that *backprop* can
-use to do back-propagation, too!
-
-~~~haskell
-dot :: KnownNat n
-    => Op '[ R n  , R n ] Double
-
-netGrad
-    :: forall m n o. (KnownNat m, KnownNat n, KnownNat o)
-    => R m
-    -> R o
-    -> Tuple '[ L n m, R n, L o n, R o ]
-    -> Tuple '[ L n m, R n, L o n, R o ]
-netGrad inp targ params = gradBPOp opError params
+    -> Network i h o
+    -> Network i h o
+gradDescent x targ n0 = n0 - 0.1 * gradient
   where
-    -- calculate squared error, in *explicit* style
-    opError :: BPOp s '[ L n m, R n, L o n, R o ] Double
-    opError = do
-        res <- neuralNetExplicit inp
-        err <- bindRef (res - t)
-        dot ~$ (err :< err :< Ø)
-      where
-        t = constRef targ
-~~~
+    gradient = gradBP (netError (constVar x) (constVar targ)) n0
+```
 
-The result is the gradient of the input tuple's components, with respect
-to the `Double` result of `opError` (the squared error).  We can then use
-this gradient to do gradient descent.
+Ta dah!  We were able to compute the gradient of our error function, just by
+only saying how to compute *the error itself*.
 
 For a more fleshed out example, see the [MNIST tutorial][mnist-lhs] (also
 [rendered as a pdf][mnist-pdf])
@@ -141,84 +164,54 @@ For a more fleshed out example, see the [MNIST tutorial][mnist-lhs] (also
 Benchmarks
 ----------
 
-The current version isn't optimized, but here are some basic benchmarks
-comparing the library's automatic differentiation process to "manual"
-differentiation by hand.  When using the [MNIST tutorial][bench] as an
-example:
+Here are some basic benchmarks comparing the library's automatic
+differentiation process to "manual" differentiation by hand.  When using the
+[MNIST tutorial][bench] as an example:
 
 [bench]: https://github.com/mstksg/backprop/blob/master/bench/MNISTBench.hs
 
-![benchmarks](http://i.imgur.com/xIZbhHa.png)
+![benchmarks](https://i.imgur.com/9DXUaOI.png)
 
-Calculating the gradient using *backprop* and calculating it by hand (by manual
-symbolic differentiation) are within an order of magnitude of each-other,
-time-wise.  Using the *backprop* library takes about *6.5x* as long
-in this case.
+*   For computing the gradient, there is about a 2.5ms overhead (or about 3.5x)
+    compared to computing the gradients by hand.  Some more profiling and
+    investigation can be done, since there are two main sources of potential
+    slow-downs:
 
-However, a full *update* step (calculate the gradient and update the neural
-net) adds a lot of constant costs, so for a full training step, the *backprop*
-library takes only *2.7x* as long as manual symbolic differentation.
+    1.  "Inefficient" gradient computations, because of automated
+        differentiation not being as efficient as what you might get from doing
+        things by hand and simplifying.  This sort of cost is probably not
+        avoidable.
+    2.  Overhead incurred by the book-keeping and actual automatic
+        differentiating system, which involves keeping track of a dependency
+        graph and propagating gradients backwards in memory.  This sort of
+        overhead is what we would be aiming to reduce.
 
-This means using this library only slows down your program by a factor of
-about 2.5x, compared to using only *hmatrix*.
+    It is unclear which one dominates the current slowdown.
 
-It's still definitely not ideal that more than half of the computation time is
-overhead from the library, but this is just where we stand at the moment.
-Optimization is just now starting!
+*   However, it may be worth noting that this isn't necessarily a significant
+    bottleneck.  *Updating* the networks using *hmatrix* actually dominates the
+    runtime of the training.  Manual gradient descent takes 3.2ms, so the extra
+    overhead is about 60%-70%.
 
-Note that at the moment, simply running the network is only slightly slower
-when using *backprop*.
+*   Running the network (and the backprop-aware functions) incurs virtually
+    zero overhead (about 4%), meaning that library authors could actually
+    export backprop-aware functions by default and not lose any performance.
 
 Todo
 ----
 
-1.  Profiling, to gauge where the overhead comes from (compared to "manual"
-    back-propagation) and how to bring it down.
-
-2.  Some simple performance and API tweaks that are probably possible now and
-    would clearly benefit: (if you want to contribute)
-
-    a.  ~~Providing optimized `Num`/`Fractional`/`Floating` instances for `BVal`
-        by supplying known gradients directly instead of relying on *ad*.~~
-        (Now finished, since [b3898ae][optnum])
-
-[optnum]: https://github.com/mstksg/backprop/commit/b3898ae676b8048e03709fb5d3d38a6fedb48e1e
-
-    b.  Switch from `ST s` to `IO`, and use `unsafePerformIO` to automatically
-        bind `BVal`s (like *ad* does) when using `liftB`.  This might remove
-        some overhead during graph building, and, from an API standpoint,
-        remove the need for explicit binding.
-
-    c.  Switch from `STRef`s/`IORef`s to `Array`.  (This one I'm unclear if it
-        would help any)
-
-3.  Benchmark against competing back-propagation libraries like *ad*, and
+1.  Benchmark against competing back-propagation libraries like *ad*, and
     auto-differentiating tensor libraries like *[grenade][]*
 
-[grenade]: https://github.com/HuwCampbell/grenade
+    [grenade]: https://github.com/HuwCampbell/grenade
 
-4.  Explore opportunities for parallelization.  There are some naive ways of
+2.  Write tests!
+
+3.  Explore opportunities for parallelization.  There are some naive ways of
     directly parallelizing right now, but potential overhead should be
     investigated.
 
-5.  Some open questions:
+4.  Some open questions:
 
-    a. Is it possible to offer pattern matching on sum types/with different
-       constructors for implicit-graph backprop?  It's possible for
-       explicit-graph versions already, with `choicesVar`, but not yet with
-       the implicit-graph interface.  Could be similar to an "Applicative vs.
-       Monad" issue where you can only have pre-determined fixed computation
-       paths when using `Applicative`, but I'm not sure.  Still, it would be
-       nice, because if this was possible, we could possibly do away with
-       explicit-graph mode completely.
-
-    b. Though we already have safe sum type support with explicit-graph mode,
-       we can't support GADTs yet safely.  It'd be nice to see if this is
-       possible, because a lot of dependently typed neural network stuff is
-       made much simpler with GADTs.
-
-       As of v0.0.3.0, we have a way of dealing with GADTs in explicit-graph
-       mode (using `withGADT`) that is *unsafe*, and requires some ugly manual
-       plumbing by the user that could potentially be confusing.  But it would
-       still be nice to have a way that is safe and doesn't require the manual
-       plumbing and isn't as easy to mess up.
+    a. Is it meaningful to support sum types?
+    b. Is it possible to support constructors with existential types?

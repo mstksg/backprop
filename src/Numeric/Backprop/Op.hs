@@ -1,21 +1,16 @@
 {-# LANGUAGE BangPatterns         #-}
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
 {-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE PatternSynonyms      #-}
-{-# LANGUAGE PolyKinds            #-}
 {-# LANGUAGE RankNTypes           #-}
-{-# LANGUAGE Strict               #-}
-{-# LANGUAGE StrictData           #-}
 {-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 -- |
 -- Module      : Numeric.Backprop.Op
--- Copyright   : (c) Justin Le 2017
+-- Copyright   : (c) Justin Le 2018
 -- License     : BSD3
 --
 -- Maintainer  : justin@jle.im
@@ -44,9 +39,8 @@ module Numeric.Backprop.Op (
   -- * Types
   -- ** Op and Synonyms
     Op(..)
-  -- ** Tuple Types
-  -- | See "Numeric.Backprop#prod" for a mini-tutorial on 'Prod' and
-  -- 'Tuple'
+  -- ** Tuple Types#prod#
+  -- $prod
   , Prod(..), Tuple, I(..)
   -- * Running
   -- ** Pure
@@ -154,6 +148,9 @@ import           Type.Class.Witness
 --
 -- For examples of 'Op's implemented from scratch, see the implementations
 -- of '+.', '-.', 'recipOp', 'sinOp', etc.
+--
+-- See "Numeric.Backprop.Op#prod" for a mini-tutorial on using 'Prod' and
+-- 'Tuple'.
 
 -- | An @'Op' as a@ describes a differentiable function from @as@ to @a@.
 --
@@ -180,6 +177,9 @@ import           Type.Class.Witness
 -- if your function is a numeric function, they can even be created
 -- automatically using 'op1'', 'op2'', 'op3'', and 'opN' with a little help
 -- from "Numeric.AD" from the /ad/ library.
+--
+-- See "Numeric.Backprop.Op#prod" for a mini-tutorial on using 'Prod' and
+-- 'Tuple'.
 newtype Op as a =
     -- | Construct an 'Op' by giving a function creating the
     -- result, and also a continuation on how to create the gradient, given
@@ -206,7 +206,7 @@ newtype OpCont as a = OC { runOpCont :: a -> Tuple as }
 -- down @as@ as a list of types, you should be able to just use
 -- 'composeOp'.
 composeOp'
-    :: forall as bs c. Every Num as
+    :: Every Num as
     => Length as
     -> Prod (Op as) bs   -- ^ 'Prod' of 'Op's taking @as@ and returning
                          --     different @b@ in @bs@
@@ -323,7 +323,7 @@ gradOpWith o = snd . runOpWith o
 -- >>> gradOp (op2 (*)) (3 ::< 5 ::< Ø)
 -- 5 ::< 3 ::< Ø
 -- -- the gradient of x*y is (y, x)
-
+--
 -- @
 -- 'gradOp' o xs = 'gradOpWith' o xs 1
 -- @
@@ -373,6 +373,11 @@ opIso :: (a -> b) -> (b -> a) -> Op '[ a ] b
 opIso to' from' = op1 $ \x -> (to' x, from')
 {-# INLINE opIso #-}
 
+-- | An 'Op' that extracts a value from an input value using a 'Lens''.
+--
+-- Warning: This is unsafe!  It assumes that it extracts a specific value
+-- unchanged, with derivative 1, so will break for things that numerically
+-- manipulate things before returning them.
 opLens :: Num a => Lens' a b -> Op '[ a ] b
 opLens l = op1 $ \x -> (view l x, \d -> set l d 0)
 {-# INLINE opLens #-}
@@ -385,7 +390,7 @@ opLens l = op1 $ \x -> (view l x, \d -> set l d 0)
 -- the the expected input tuple.  If you ever actually explicitly write
 -- down @as@ as a list of types, you should be able to just use
 -- 'opConst'.
-opConst' :: forall as a. Every Num as => Length as -> a -> Op as a
+opConst' :: Every Num as => Length as -> a -> Op as a
 opConst' l x = Op $ const
     (x , const $ map1 ((0 \\) . every @_ @Num) (indices' l))
 {-# INLINE opConst' #-}
@@ -395,7 +400,7 @@ opConst' l x = Op $ const
 --
 -- >>> gradOp' (opConst 10) (1 ::< 2 ::< 3 ::< Ø)
 -- (10, 0 ::< 0 ::< 0 ::< Ø)
-opConst :: forall as a. (Every Num as, Known Length as) => a -> Op as a
+opConst :: (Every Num as, Known Length as) => a -> Op as a
 opConst = opConst' known
 {-# INLINE opConst #-}
 
@@ -638,13 +643,13 @@ instance (Known Length as, Every Floating as, Every Fractional as, Every Num as,
 -- $numops
 --
 -- Built-in ops for common numeric operations, implemented directly so
--- that they are more efficient than using 'op1' \/ 'op2' etc.
+-- that they are more efficient than using 'op1'' \/ 'op2'' etc.
 --
 -- The naming scheme is:
 --
 -- @
--- ('+.') = 'op2' ('+')
--- 'negateOp' = 'op1' 'negate
+-- ('+.') = 'op2'' ('+')
+-- 'negateOp' = 'op1'' 'negate
 -- @
 --
 -- Note that the operators (like '+.') are meant to be used in prefix
@@ -654,27 +659,27 @@ instance (Known Length as, Every Floating as, Every Fractional as, Every Num as,
 -- 'Numeric.Backprop.liftB2' ('.+') v1 v2
 -- @
 
--- | Optimized version of @'op1' ('+')@.
+-- | Optimized version of @'op1'' ('+')@.
 (+.) :: Num a => Op '[a, a] a
 (+.) = op2 $ \x y -> (x + y, \g -> (g, g))
 {-# INLINE (+.) #-}
 
--- | Optimized version of @'op1' ('-')@.
+-- | Optimized version of @'op1'' ('-')@.
 (-.) :: Num a => Op '[a, a] a
 (-.) = op2 $ \x y -> (x - y, \g -> (g, -g))
 {-# INLINE (-.) #-}
 
--- | Optimized version of @'op1' ('*')@.
+-- | Optimized version of @'op1'' ('*')@.
 (*.) :: Num a => Op '[a, a] a
 (*.) = op2 $ \x y -> (x * y, \g -> (y*g, x*g))
 {-# INLINE (*.) #-}
 
--- | Optimized version of @'op1' ('/')@.
+-- | Optimized version of @'op1'' ('/')@.
 (/.) :: Fractional a => Op '[a, a] a
 (/.) = op2 $ \x y -> (x / y, \g -> (g/y, -g*x/(y*y)))
 {-# INLINE (/.) #-}
 
--- | Optimized version of @'op1' ('**')@.
+-- | Optimized version of @'op1'' ('**')@.
 (**.) :: Floating a => Op '[a, a] a
 (**.) = op2 $ \x y -> ( x ** y
                       , let dx = y*x**(y-1)
@@ -683,42 +688,42 @@ instance (Known Length as, Every Floating as, Every Fractional as, Every Num as,
                       )
 {-# INLINE (**.) #-}
 
--- | Optimized version of @'op1' 'negate'@.
+-- | Optimized version of @'op1'' 'negate'@.
 negateOp :: Num a => Op '[a] a
 negateOp = op1 $ \x -> (negate x, negate)
 {-# INLINE negateOp  #-}
 
--- | Optimized version of @'op1' 'signum'@.
+-- | Optimized version of @'op1'' 'signum'@.
 signumOp :: Num a => Op '[a] a
 signumOp = op1 $ \x -> (signum x, const 0)
 {-# INLINE signumOp  #-}
 
--- | Optimized version of @'op1' 'abs'@.
+-- | Optimized version of @'op1'' 'abs'@.
 absOp :: Num a => Op '[a] a
 absOp = op1 $ \x -> (abs x, (* signum x))
 {-# INLINE absOp #-}
 
--- | Optimized version of @'op1' 'recip'@.
+-- | Optimized version of @'op1'' 'recip'@.
 recipOp :: Fractional a => Op '[a] a
 recipOp = op1 $ \x -> (recip x, (/(x*x)) . negate)
 {-# INLINE recipOp #-}
 
--- | Optimized version of @'op1' 'exp'@.
+-- | Optimized version of @'op1'' 'exp'@.
 expOp :: Floating a => Op '[a] a
 expOp = op1 $ \x -> (exp x, (exp x *))
 {-# INLINE expOp #-}
 
--- | Optimized version of @'op1' 'log'@.
+-- | Optimized version of @'op1'' 'log'@.
 logOp :: Floating a => Op '[a] a
 logOp = op1 $ \x -> (log x, (/x))
 {-# INLINE logOp #-}
 
--- | Optimized version of @'op1' 'sqrt'@.
+-- | Optimized version of @'op1'' 'sqrt'@.
 sqrtOp :: Floating a => Op '[a] a
 sqrtOp = op1 $ \x -> (sqrt x, (/ (2 * sqrt x)))
 {-# INLINE sqrtOp #-}
 
--- | Optimized version of @'op2' 'logBase'@.
+-- | Optimized version of @'op2'' 'logBase'@.
 logBaseOp :: Floating a => Op '[a, a] a
 logBaseOp = op2 $ \x y -> ( logBase x y
                           , let dx = - logBase x y / (log x * x)
@@ -726,63 +731,112 @@ logBaseOp = op2 $ \x y -> ( logBase x y
                           )
 {-# INLINE logBaseOp #-}
 
--- | Optimized version of @'op1' 'sin'@.
+-- | Optimized version of @'op1'' 'sin'@.
 sinOp :: Floating a => Op '[a] a
 sinOp = op1 $ \x -> (sin x, (* cos x))
 {-# INLINE sinOp #-}
 
--- | Optimized version of @'op1' 'cos'@.
+-- | Optimized version of @'op1'' 'cos'@.
 cosOp :: Floating a => Op '[a] a
 cosOp = op1 $ \x -> (cos x, (* (-sin x)))
 {-# INLINE cosOp #-}
 
--- | Optimized version of @'op1' 'tan'@.
+-- | Optimized version of @'op1'' 'tan'@.
 tanOp :: Floating a => Op '[a] a
 tanOp = op1 $ \x -> (tan x, (/ cos x^(2::Int)))
 {-# INLINE tanOp #-}
 
--- | Optimized version of @'op1' 'asin'@.
+-- | Optimized version of @'op1'' 'asin'@.
 asinOp :: Floating a => Op '[a] a
 asinOp = op1 $ \x -> (asin x, (/ sqrt(1 - x*x)))
 {-# INLINE asinOp #-}
 
--- | Optimized version of @'op1' 'acos'@.
+-- | Optimized version of @'op1'' 'acos'@.
 acosOp :: Floating a => Op '[a] a
 acosOp = op1 $ \x -> (acos x, (/ sqrt (1 - x*x)) . negate)
 {-# INLINE acosOp #-}
 
--- | Optimized version of @'op1' 'atan'@.
+-- | Optimized version of @'op1'' 'atan'@.
 atanOp :: Floating a => Op '[a] a
 atanOp = op1 $ \x -> (atan x, (/ (x*x + 1)))
 {-# INLINE atanOp #-}
 
--- | Optimized version of @'op1' 'sinh'@.
+-- | Optimized version of @'op1'' 'sinh'@.
 sinhOp :: Floating a => Op '[a] a
 sinhOp = op1 $ \x -> (sinh x, (* cosh x))
 {-# INLINE sinhOp #-}
 
--- | Optimized version of @'op1' 'cosh'@.
+-- | Optimized version of @'op1'' 'cosh'@.
 coshOp :: Floating a => Op '[a] a
 coshOp = op1 $ \x -> (cosh x, (* sinh x))
 {-# INLINE coshOp #-}
 
--- | Optimized version of @'op1' 'tanh'@.
+-- | Optimized version of @'op1'' 'tanh'@.
 tanhOp :: Floating a => Op '[a] a
 tanhOp = op1 $ \x -> (tanh x, (/ cosh x^(2::Int)))
 {-# INLINE tanhOp #-}
 
--- | Optimized version of @'op1' 'asinh'@.
+-- | Optimized version of @'op1'' 'asinh'@.
 asinhOp :: Floating a => Op '[a] a
 asinhOp = op1 $ \x -> (asinh x, (/ sqrt (x*x + 1)))
 {-# INLINE asinhOp #-}
 
--- | Optimized version of @'op1' 'acosh'@.
+-- | Optimized version of @'op1'' 'acosh'@.
 acoshOp :: Floating a => Op '[a] a
 acoshOp = op1 $ \x -> (acosh x, (/ sqrt (x*x - 1)))
 {-# INLINE acoshOp #-}
 
--- | Optimized version of @'op1' 'atanh'@.
+-- | Optimized version of @'op1'' 'atanh'@.
 atanhOp :: Floating a => Op '[a] a
 atanhOp = op1 $ \x -> (atanh x, (/ (1 - x*x)))
 {-# INLINE atanhOp #-}
+
+-- $prod
+--
+-- 'Prod', from the <http://hackage.haskell.org/package/type-combinators
+-- type-combinators> library (in "Data.Type.Product") is a heterogeneous
+-- list/tuple type, which allows you to tuple together multiple values of
+-- different types and operate on them generically.
+--
+-- A @'Prod' f '[a, b, c]@ contains an @f a@, an @f b@, and an @f c@, and
+-- is constructed by consing them together with ':<' (using 'Ø' as nil):
+--
+-- @
+-- 'I' "hello" ':<' I True :< I 7.8 :< Ø    :: 'Prod' 'I' '[String, Bool, Double]
+-- 'C' "hello" :< C "world" :< C "ok" :< Ø  :: 'Prod' ('C' String) '[a, b, c]
+-- 'Proxy' :< Proxy :< Proxy :< Ø           :: 'Prod' 'Proxy' '[a, b, c]
+-- @
+--
+-- ('I' is the identity functor, and 'C' is the constant functor)
+--
+-- So, in general:
+--
+-- @
+-- x :: f a
+-- y :: f b
+-- z :: f c
+-- x :< y :< z :< Ø :: Prod f '[a, b, c]
+-- @
+--
+-- If you're having problems typing 'Ø', you can use 'only':
+--
+-- @
+-- only z           :: Prod f '[c]
+-- x :< y :< only z :: Prod f '[a, b, c]
+-- @
+--
+-- 'Tuple' is provided as a convenient type synonym for 'Prod' 'I', and has
+-- a convenient pattern synonym '::<' (and 'only_'), which can also be used
+-- for pattern matching:
+--
+-- @
+-- x :: a
+-- y :: b
+-- z :: c
+--
+-- 'only_' z             :: 'Tuple' '[c]
+-- x '::<' y ::< z ::< Ø :: 'Tuple' '[a, b, c]
+-- x ::< y ::< only_ z :: 'Tuple' '[a, b, c]
+-- @
+
 

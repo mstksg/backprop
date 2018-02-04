@@ -22,6 +22,17 @@ you can run][lhs] is also available on github!
 [rendered]: https://github.com/mstksg/backprop/blob/master/renders/backprop-mnist.pdf
 [lhs]: https://github.com/mstksg/backprop/blob/master/samples/backprop-mnist.lhs
 
+The packages involved are:
+
+*   deepseq
+*   hmatrix
+*   lens
+*   mnist-idx
+*   mwc-random
+*   one-liner-instances
+*   reflection
+*   split
+*   vector
 
 > {-# LANGUAGE BangPatterns                     #-}
 > {-# LANGUAGE DataKinds                        #-}
@@ -45,11 +56,11 @@ you can run][lhs] is also available on github!
 > import           Control.Monad.IO.Class
 > import           Control.Monad.Trans.Maybe
 > import           Control.Monad.Trans.State
-> import           Data.Reflection
 > import           Data.Bitraversable
 > import           Data.Foldable
 > import           Data.IDX
 > import           Data.List.Split
+> import           Data.Reflection
 > import           Data.Time.Clock
 > import           Data.Traversable
 > import           Data.Tuple
@@ -57,6 +68,7 @@ you can run][lhs] is also available on github!
 > import           GHC.TypeLits
 > import           Numeric.Backprop
 > import           Numeric.LinearAlgebra.Static hiding (dot)
+> import           Numeric.OneLiner
 > import           Text.Printf
 > import qualified Data.Vector                         as V
 > import qualified Data.Vector.Generic                 as VG
@@ -64,6 +76,36 @@ you can run][lhs] is also available on github!
 > import qualified Numeric.LinearAlgebra               as HM
 > import qualified System.Random.MWC                   as MWC
 > import qualified System.Random.MWC.Distributions     as MWC
+
+Introduction
+============
+
+In this walkthrough, we'll be building a classifier for the *[MNIST][]* data
+set.  This is meant to mirror the [Tensorflow Tutorial][tf-intro] for
+beginners.
+
+[tf-intro]: https://www.tensorflow.org/versions/r1.2/get_started/mnist/beginners
+
+Essentially, we use a two-layer artificial neural network -- or a series of
+matrix multiplications, differentiable function applications, and vector
+additions.  We feed our input image to the ANN and then try to get a label
+from it.  Training an ANN is a matter of finding the right matrices to
+multiply by, and the right vectors to add.
+
+To do that, we train our network by treating our network's accuracy as a
+function `Network -> Error`.  If we can find the gradient of the input network
+with respect to the error, we can perform [gradient descent][], and slowly
+make our network better and better.
+
+[gradient descent]: https://en.wikipedia.org/wiki/Gradient_descent
+
+Finding the gradient is usually complicated, but *backprop* makes it simpler:
+
+1.  Write a function to compute the error from the network
+2.  That's it!
+
+Hooray!  Once you do that, the library finds the gradient function
+*automatically*, without any further intervention!
 
 Types
 =====
@@ -109,35 +151,46 @@ Instances
 
 Things are much simplier if we had `Num` and `Fractional` instances for
 everything, so let's just go ahead and define that now, as well.  Just a
-little bit of boilerplate.
+little bit of boilerplate, made easier using *[one-liner-instances][]* to
+auto-derive instances using Generics.
+
+[one-liner-instances]: http://hackage.haskell.org/package/one-liner-instances
 
 > instance (KnownNat i, KnownNat o) => Num (Layer i o) where
->     Layer w1 b1 + Layer w2 b2 = Layer (w1 + w2) (b1 + b2)
->     Layer w1 b1 - Layer w2 b2 = Layer (w1 - w2) (b1 - b2)
->     Layer w1 b1 * Layer w2 b2 = Layer (w1 * w2) (b1 * b2)
->     abs    (Layer w b)        = Layer (abs    w) (abs    b)
->     signum (Layer w b)        = Layer (signum w) (signum b)
->     negate (Layer w b)        = Layer (negate w) (negate b)
->     fromInteger x             = Layer (fromInteger x) (fromInteger x)
+>     (+)         = gPlus
+>     (-)         = gMinus
+>     (*)         = gTimes
+>     negate      = gNegate
+>     abs         = gAbs
+>     signum      = gSignum
+>     fromInteger = gFromInteger
 >
-> instance (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o) => Num (Network i h1 h2 o) where
->     Net a b c + Net d e f = Net (a + d) (b + e) (c + f)
->     Net a b c - Net d e f = Net (a - d) (b - e) (c - f)
->     Net a b c * Net d e f = Net (a * d) (b * e) (c * f)
->     abs    (Net a b c)    = Net (abs    a) (abs    b) (abs    c)
->     signum (Net a b c)    = Net (signum a) (signum b) (signum c)
->     negate (Net a b c)    = Net (negate a) (negate b) (negate c)
->     fromInteger x         = Net (fromInteger x) (fromInteger x) (fromInteger x)
+> instance ( KnownNat i
+>          , KnownNat h1
+>          , KnownNat h2
+>          , KnownNat o
+>          ) => Num (Network i h1 h2 o) where
+>     (+)         = gPlus
+>     (-)         = gMinus
+>     (*)         = gTimes
+>     negate      = gNegate
+>     abs         = gAbs
+>     signum      = gSignum
+>     fromInteger = gFromInteger
 >
 > instance (KnownNat i, KnownNat o) => Fractional (Layer i o) where
->     Layer w1 b1 / Layer w2 b2 = Layer (w1 / w2) (b1 / b2)
->     recip (Layer w b)         = Layer (recip w) (recip b)
->     fromRational x            = Layer (fromRational x) (fromRational x)
+>     (/)          = gDivide
+>     recip        = gRecip
+>     fromRational = gFromRational
 >
-> instance (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o) => Fractional (Network i h1 h2 o) where
->     Net a b c / Net d e f = Net (a / d) (b / e) (c / f)
->     recip (Net a b c)     = Net (recip a) (recip b) (recip c)
->     fromRational x        = Net (fromRational x) (fromRational x) (fromRational x)
+> instance ( KnownNat i
+>          , KnownNat h1
+>          , KnownNat h2
+>          , KnownNat o
+>          ) => Fractional (Network i h1 h2 o) where
+>     (/)          = gDivide
+>     recip        = gRecip
+>     fromRational = gFromRational
 
 `KnownNat` comes from *base*; it's a typeclass that *hmatrix* uses to refer
 to the numbers in its type and use it to go about its normal hmatrixy
@@ -153,8 +206,7 @@ implements these for you, and the end-user never has to make these primitives.
 
 But in this case, I'm going to put the definitions here to show that there
 isn't any magic going on.  If you're curious, refer to [documentation for
-`Op`][opdoc] for more details on how `Op` is implemented and how this
-works.
+`Op`][opdoc] for more details on how `Op` is implemented and how this works.
 
 [opdoc]: http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Op.html
 
@@ -198,15 +250,9 @@ Finally, an operation to sum all of the items in the vector.
 >     -> BVar s Double
 > sumElements' = liftOp1 . op1 $ \x -> (HM.sumElements (extract x), konst)
 
-Here's the [logistic function][], which we'll use as an activation function
-for internal layers.  But, because `BVar`s have a `Floating` instance, we can
-just write it using typeclass functions.
-
-[logistic function]: https://en.wikipedia.org/wiki/Logistic_function
-
-> logistic :: Floating a => a -> a
-> logistic x = 1 / (1 + exp (-x))
-> {-# INLINE logistic #-}
+Again, these are not intended to be used by end-users of *backprop*, but
+rather are meant to be provided by libraries as primitive operations for users
+of the library to use.
 
 Running our Network
 ===================
@@ -266,7 +312,17 @@ But we can make the mechanical shift to the backpropagatable version:
 >     expx = exp x
 > {-# INLINE softMax #-}
 
-With that in hand, let's compare how we would normally write a function to run
+We also need the [logistic function][], which is our activation function
+between layer outputs. Because `BVar`s have a `Floating` instance, we can just
+write it using typeclass functions.
+
+[logistic function]: https://en.wikipedia.org/wiki/Logistic_function
+
+> logistic :: Floating a => a -> a
+> logistic x = 1 / (1 + exp (-x))
+> {-# INLINE logistic #-}
+
+With those in hand, let's compare how we would normally write a function to run
 our network:
 
 > runNetNormal
@@ -324,7 +380,7 @@ Again, let's look at a "normal" implementation, regular variables and no
 backprop:
 
 > crossEntropyNormal :: KnownNat n => R n -> R n -> Double
-> crossEntropyNormal targ res = negate $ log res <.> targ
+> crossEntropyNormal targ res = -(log res <.> targ)
 > {-# INLINE crossEntropyNormal #-}
 
 And we can see that the backpropable version is pretty similar.  We see
@@ -336,7 +392,7 @@ care about the gradient of).
 >     => R n
 >     -> BVar s (R n)
 >     -> BVar s Double
-> crossEntropy targ res = negate $ log res <.>! constVar targ
+> crossEntropy targ res = -(log res <.>! constVar targ)
 > {-# INLINE crossEntropy #-}
 
 Our final "error function", then, is:
@@ -426,10 +482,10 @@ of correct guesses: (mostly using *hmatrix* stuff, so don't mind too much)
 
 And now, a main loop!
 
-If you are following along at home, download the [mnist data set files][mnist]
+If you are following along at home, download the [mnist data set files][MNIST]
 and uncompress them into the folder `data`, and everything should work fine.
 
-[mnist]: http://yann.lecun.com/exdb/mnist/
+[MNIST]: http://yann.lecun.com/exdb/mnist/
 
 > main :: IO ()
 > main = MWC.withSystemRandom $ \g -> do
@@ -470,8 +526,16 @@ Each iteration of the loop:
 
 And, that's really it!
 
-Result
-------
+Performance
+-----------
+
+Currently, benchmarks show that *running* the network has virtually zero
+overhead (~ 4%) over writing the running function directly.  The actual
+gradient descent process (compute gradient, then descend) carries about 60%
+overhead over writing the gradients manually, but it is unclear how much of
+this is because of the library, and how much of it is just because of
+automatic differentation giving slightly less efficient matrix/vector
+multiplication operations.
 
 I haven't put much into optimizing the library yet, but the network (with
 hidden layer sizes 300 and 100) seems to take 25s on my computer to finish

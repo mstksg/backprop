@@ -1,21 +1,14 @@
 name:                backprop
-version:             0.0.3.0
+version:             0.1.0.0
 synopsis:            Heterogeneous, type-safe automatic backpropagation in Haskell
 description:         See <https://github.com/mstksg/backprop#readme README.md>
-                     .
-                     At the moment, this project is in pre-alpha, and is
-                     published and put up on Hackage with 100% documentation
-                     coverage as a call for comments and thoughts.  See
-                     <https://github.com/mstksg/backprop#todo TODO> section in
-                     the README for more information on what's missing and
-                     potential avenues for contribution.
 homepage:            https://github.com/mstksg/backprop
 bug-reports:         https://github.com/mstksg/backprop/issues
 license:             BSD3
 license-file:        LICENSE
 author:              Justin Le
 maintainer:          justin@jle.im
-copyright:           (c) Justin Le 2017
+copyright:           (c) Justin Le 2018
 category:            Web
 build-type:          Simple
 extra-source-files:  README.md
@@ -23,11 +16,7 @@ extra-source-files:  README.md
                      Build.hs
                      renders/backprop-mnist.md
                      renders/backprop-mnist.pdf
-                     renders/backprop-neural-test.md
-                     renders/backprop-neural-test.pdf
                      samples/backprop-mnist.lhs
-                     samples/backprop-monotest.hs
-                     samples/backprop-neural-test.lhs
 cabal-version:       >=1.10
 
 library
@@ -40,7 +29,6 @@ library
                      , ad
                      , deepseq
                      , generics-sop
-                     , lens
                      , microlens
                      , microlens-mtl
                      , microlens-th

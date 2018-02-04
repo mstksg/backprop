@@ -1,29 +1,18 @@
-{-# LANGUAGE BangPatterns               #-}
-{-# LANGUAGE DeriveFunctor              #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE GADTs                      #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE PolyKinds                  #-}
-{-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE Strict                     #-}
-{-# LANGUAGE StrictData                 #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE TupleSections              #-}
-{-# LANGUAGE TypeApplications           #-}
-{-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE TypeInType                 #-}
-{-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE UndecidableInstances       #-}
-{-# LANGUAGE ViewPatterns               #-}
+{-# LANGUAGE BangPatterns        #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections       #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeInType          #-}
+{-# LANGUAGE ViewPatterns        #-}
 
 -- |
 -- Module      : Numeric.Backprop.Internal
--- Copyright   : (c) Justin Le 2017
+-- Copyright   : (c) Justin Le 2018
 -- License     : BSD3
 --
 -- Maintainer  : justin@jle.im
@@ -37,14 +26,13 @@ module Numeric.Backprop.Internal (
     BVar
   , W
   , constVar
-  , liftOpN
+  , liftOp
   , liftOp1, liftOp2, liftOp3, liftOp4
-  , lensVar
+  , viewVar, setVar
   , backprop
   ) where
 
 import           Control.Exception
-import           Control.Lens  hiding             (Index, ix, traverse1, (:<))
 import           Control.Monad.Primitive
 import           Control.Monad.Reader
 import           Control.Monad.ST
@@ -57,13 +45,46 @@ import           Data.Reflection
 import           Data.Type.Index
 import           Data.Type.Product
 import           Data.Type.Util
+import           Lens.Micro
 import           Numeric.Backprop.Op
 import           System.IO.Unsafe
 import           Type.Class.Higher
 import           Type.Class.Witness
 import           Unsafe.Coerce
-import qualified Data.Vector.Mutable              as MV
+import qualified Data.Vector.Mutable     as MV
 
+-- | A @'BVar' s a@ is a value of type @a@ that can be "backpropagated".
+--
+-- Functions referring to 'BVar's are tracked by the library and can be
+-- automatically differentiated to get their gradients and results.
+--
+-- For simple numeric values, you can use its 'Num', 'Fractional', and
+-- 'Floating' instances to manipulate them as if they were the numbers they
+-- represent.
+--
+-- If @a@ contains items, the items can be accessed and extracted using
+-- lenses. A @'Lens'' b a@ can be used to access an @a@ inside a @b@:
+--
+-- @
+-- ('^.')  ::        a -> 'Lens'' a b ->        b
+-- ('^^.') :: 'BVar' s a -> 'Lens'' a b -> 'BVar' s b
+-- @
+--
+-- For more complex operations, libraries can provide functions on 'BVar's
+-- using 'liftOp' and related functions.  This is how you can create
+-- primitive functions that users can use to manipulate your library's
+-- values.
+--
+-- For example, the /hmatrix/ library has a matrix-vector multiplication
+-- function, @#> :: L m n -> R n -> L m@.
+--
+-- A library could instead provide a function @#> :: 'BVar' (L m n) -> BVar
+-- (R n) -> BVar (R m)@, which the user can then use to manipulate their
+-- 'BVar's of @L m n@s and @R n@s, etc.
+--
+-- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
+-- information.
+--
 data BVar s a = BV { _bvRef :: !(BRef s)
                    , _bvVal :: !a
                    }
@@ -72,6 +93,7 @@ data BRef (s :: Type) = BRInp
                       | BRIx !Int
                       | BRC
 
+-- | Project out a constant value if the 'BVar' refers to one.
 bvConst :: BVar s a -> Maybe a
 bvConst (BV BRC !x) = Just x
 bvConst _           = Nothing
@@ -117,6 +139,11 @@ forceSomeTapeNode :: SomeTapeNode -> ()
 forceSomeTapeNode (STN !tn) = forceTapeNode tn `seq` ()
 {-# INLINE forceSomeTapeNode #-}
 
+-- | An ephemeral Wengert Tape in the environment.  Used internally to
+-- track of the computational graph of variables.
+--
+-- For the end user, one can just imagine @'Reifies' s 'W'@ as a required
+-- constraint on @s@ that allows backpropagation to work.
 newtype W = W { wRef :: IORef (Int, [SomeTapeNode]) }
 
 initWengert :: IO W
@@ -129,23 +156,26 @@ insertNode
     -> a
     -> W
     -> IO (BVar s a)
--- insertNode tn w = fmap BVIx . atomicModifyIORef' (wRef w) $ \(n,t) ->
 insertNode !tn !x !w = fmap ((`BV` x) . BRIx) . atomicModifyIORef' (wRef w) $ \(!(!n,!t)) ->
     let n' = n + 1
         t' = STN tn:t
     in  forceTapeNode tn `seq` n' `seq` t' `seq` ((n', t'), n)
 {-# INLINE insertNode #-}
 
+-- | Lift a value into a 'BVar' representing a constant value.
+--
+-- This value will not be considered an input, and its gradients will not
+-- be backpropagated.
 constVar :: a -> BVar s a
 constVar = BV BRC
 {-# INLINE constVar #-}
 
-liftOpN_
+liftOp_
     :: forall s as b. (Reifies s W, Num b, Every Num as)
     => Op as b
     -> Prod (BVar s) as
     -> IO (BVar s b)
-liftOpN_ o !vs = case traverse1 (fmap I . bvConst) vs of
+liftOp_ o !vs = case traverse1 (fmap I . bvConst) vs of
                    Just xs -> return $ constVar (evalOp o xs)
                    Nothing -> insertNode tn y (reflect (Proxy @s))
   where
@@ -155,22 +185,30 @@ liftOpN_ o !vs = case traverse1 (fmap I . bvConst) vs of
             }
     go :: forall a. Index as a -> BVar s a -> InpRef a
     go i !v = forceBVar v `seq` (IR v id \\ every @_ @Num i)
-{-# INLINE liftOpN_ #-}
+{-# INLINE liftOp_ #-}
 
-liftOpN
+-- | Lift an 'Op' with an arbitrary number of inputs to a function on the
+-- appropriate number of 'BVar's.
+--
+-- Should preferably be used only by libraries to provide primitive 'BVar'
+-- functions for their types for users.
+--
+-- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
+-- information, and "Numeric.Backprop.Op#prod" for a mini-tutorial on using
+-- 'Prod' and 'Tuple'.
+liftOp
     :: forall s as b. (Reifies s W, Num b, Every Num as)
     => Op as b
     -> Prod (BVar s) as
     -> BVar s b
-liftOpN o !vs = unsafePerformIO $ liftOpN_ o vs
-{-# INLINE liftOpN #-}
+liftOp o !vs = unsafePerformIO $ liftOp_ o vs
+{-# INLINE liftOp #-}
 
 liftOp1_
     :: forall s a b. (Reifies s W, Num a, Num b)
     => Op '[a] b
     -> BVar s a
     -> IO (BVar s b)
--- liftOp1_ o = liftOpN_ o . (:< Ø)
 liftOp1_ o (bvConst->Just x) = return . constVar . evalOp o $ (x ::< Ø)
 liftOp1_ o !v = forceBVar v `seq` insertNode tn y (reflect (Proxy @s))
   where
@@ -180,6 +218,13 @@ liftOp1_ o !v = forceBVar v `seq` insertNode tn y (reflect (Proxy @s))
             }
 {-# INLINE liftOp1_ #-}
 
+-- | Lift an 'Op' with a single input to be a function on a single 'BVar'.
+--
+-- Should preferably be used only by libraries to provide primitive 'BVar'
+-- functions for their types for users.
+--
+-- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
+-- information.
 liftOp1
     :: forall s a b. (Reifies s W, Num a, Num b)
     => Op '[a] b
@@ -194,7 +239,6 @@ liftOp2_
     -> BVar s a
     -> BVar s b
     -> IO (BVar s c)
--- liftOp2_ o v u = liftOpN_ o (v :< u :< Ø)
 liftOp2_ o (bvConst->Just x) (bvConst->Just y) = return . constVar . evalOp o $ x ::< y ::< Ø
 liftOp2_ o !v !u = forceBVar v
              `seq` forceBVar u
@@ -206,6 +250,13 @@ liftOp2_ o !v !u = forceBVar v
             }
 {-# INLINE liftOp2_ #-}
 
+-- | Lift an 'Op' with two inputs to be a function on a two 'BVar's.
+--
+-- Should preferably be used only by libraries to provide primitive 'BVar'
+-- functions for their types for users.
+--
+-- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
+-- information.
 liftOp2
     :: forall s a b c. (Reifies s W, Num a, Num b, Num c)
     => Op '[a,b] c
@@ -222,7 +273,6 @@ liftOp3_
     -> BVar s b
     -> BVar s c
     -> IO (BVar s d)
--- liftOp3_ o v u w = liftOpN_ o (v :< u :< w :< Ø)
 liftOp3_ o (bvConst->Just x) (bvConst->Just y) (bvConst->Just z)
     = return . constVar . evalOp o $ x ::< y ::< z ::< Ø
 liftOp3_ o !v !u !w = forceBVar v
@@ -236,6 +286,13 @@ liftOp3_ o !v !u !w = forceBVar v
             }
 {-# INLINE liftOp3_ #-}
 
+-- | Lift an 'Op' with three inputs to be a function on a three 'BVar's.
+--
+-- Should preferably be used only by libraries to provide primitive 'BVar'
+-- functions for their types for users.
+--
+-- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
+-- information.
 liftOp3
     :: forall s a b c d. (Reifies s W, Num a, Num b, Num c, Num d)
     => Op '[a,b,c] d
@@ -254,7 +311,6 @@ liftOp4_
     -> BVar s c
     -> BVar s d
     -> IO (BVar s e)
--- liftOp4_ o v u w x = liftOpN_ o (v :< u :< w :< x :< Ø)
 liftOp4_ o (bvConst->Just x) (bvConst->Just y) (bvConst->Just z) (bvConst->Just w)
     = return . constVar . evalOp o $ x ::< y ::< z ::< w ::< Ø
 liftOp4_ o !v !u !w !x = forceBVar v
@@ -269,6 +325,13 @@ liftOp4_ o !v !u !w !x = forceBVar v
             }
 {-# INLINE liftOp4_ #-}
 
+-- | Lift an 'Op' with four inputs to be a function on a four 'BVar's.
+--
+-- Should preferably be used only by libraries to provide primitive 'BVar'
+-- functions for their types for users.
+--
+-- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
+-- information.
 liftOp4
     :: forall s a b c d e. (Reifies s W, Num a, Num b, Num c, Num d, Num e)
     => Op '[a,b,c,d] e
@@ -280,26 +343,59 @@ liftOp4
 liftOp4 o !v !u !w !x = unsafePerformIO $ liftOp4_ o v u w x
 {-# INLINE liftOp4 #-}
 
-lensVar_
+viewVar_
     :: forall a b s. (Reifies s W, Num a)
     => Lens' b a
     -> BVar s b
     -> IO (BVar s a)
-lensVar_ l !v = forceBVar v `seq` insertNode tn y (reflect (Proxy @s))
+viewVar_ l !v = forceBVar v `seq` insertNode tn y (reflect (Proxy @s))
   where
     y = _bvVal v ^. l
     tn = TN { _tnInputs = IR v l :< Ø
             , _tnGrad   = only_
             }
-{-# INLINE lensVar_ #-}
+{-# INLINE viewVar_ #-}
 
-lensVar
+-- | Using a 'Lens'', extract a value /inside/ a 'BVar'.
+--
+-- See documentation for '^^.' for more information.
+viewVar
     :: forall a b s. (Reifies s W, Num a)
     => Lens' b a
     -> BVar s b
     -> BVar s a
-lensVar l !v = unsafePerformIO $ lensVar_ l v
-{-# INLINE lensVar #-}
+viewVar l !v = unsafePerformIO $ viewVar_ l v
+{-# INLINE viewVar #-}
+
+setVar_
+    :: forall a b s. (Reifies s W, Num a, Num b)
+    => Lens' b a
+    -> BVar s a
+    -> BVar s b
+    -> IO (BVar s b)
+setVar_ l !w !v = forceBVar v
+            `seq` forceBVar w
+            `seq` insertNode tn y (reflect (Proxy @s))
+  where
+    y = _bvVal v & l .~ _bvVal w
+    tn = TN { _tnInputs = IR w id :< IR v id :< Ø
+            , _tnGrad   = \d -> let (dw,dv) = l (,0) d
+                                in  dw ::< dv ::< Ø
+            }
+{-# INLINE setVar_ #-}
+
+-- | Using a 'Lens'', set a value /inside/ a 'BVar'.
+--
+-- See documentation for '.~~' for more information.
+setVar
+    :: forall a b s. (Reifies s W, Num a, Num b)
+    => Lens' b a
+    -> BVar s a
+    -> BVar s b
+    -> BVar s b
+setVar l !w !v = unsafePerformIO $ setVar_ l w v
+{-# INLINE setVar #-}
+
 
 data SomeNum :: Type where
     SN  :: Num a
@@ -353,6 +449,14 @@ registerOut
 registerOut !v = _bvVal v <$ liftOp1_ idOp v
 {-# INLINE registerOut #-}
 
+-- | Turn a function @'BVar' s a -> 'BVar' s b@ into the function @a -> b@
+-- that it represents, also computing its gradient @a@ as well.
+--
+-- Note that every type involved has to be an instance of 'Num'.  This is
+-- because gradients all need to be "summable" (which is implemented using
+-- 'sum' and '+'), and we also need to able to generate gradients of '1'
+-- and '0'.  Really, only '+' and 'fromInteger' methods are used from the
+-- 'Num' typeclass.
 backprop
     :: forall a b. (Num a, Num b)
     => (forall s. Reifies s W => BVar s a -> BVar s b)

@@ -8,7 +8,7 @@ import           System.Directory
 opts = shakeOptions { shakeFiles     = ".shake"
                     , shakeVersion   = "1.0"
                     , shakeVerbosity = Normal
-                    , shakeThreads   = 0
+                    , shakeThreads   = 1
                     }
 
 data Doc = Lab
@@ -21,7 +21,7 @@ main = getDirectoryFilesIO "samples" ["/*.lhs", "/*.hs"] >>= \allSamps ->
     want ["all"]
 
     "all" ~>
-      need ["pdf", "md", "haddocks", "gentags", "install", "exe"]
+      need ["pdf", "md", "gentags", "install", "exe"]
 
     "pdf" ~>
       need [ "renders" </> takeFileName f -<.> ".pdf"
@@ -70,16 +70,20 @@ main = getDirectoryFilesIO "samples" ["/*.lhs", "/*.hs"] >>= \allSamps ->
         createDirectoryIfMissing True "samples-exe"
         createDirectoryIfMissing True ".build"
       removeFilesAfter "samples" ["/*.o"]
-      cmd "stack ghc --" ("samples" </> src)
-                         "-o" f
-                         "-hidir" ".build"
-                         "-threaded"
-                         "-rtsopts"
-                         "-with-rtsopts=-N"
-                         "-Wall"
-                         "-O2"
-                         "-package backprop"
-                         "-package hmatrix"
+      cmd "stack" "ghc"
+                  "--resolver lts-10"
+                  "--package backprop"
+                  "--package hmatrix"
+                  "--package lens"
+                  "--package mnist-idx"
+                  "--package one-liner-instances"
+                  "--package split"
+                  "--"
+                  ("samples" </> src)
+                  "-o" f
+                  "-hidir" ".build"
+                  "-Wall"
+                  "-O2"
 
     ["tags","TAGS"] &%> \_ -> do
       need (("src" </>) <$> allSrc)
