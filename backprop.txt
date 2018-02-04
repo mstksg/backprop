@@ -599,6 +599,11 @@ constVar :: a -> BVar s a
 --   See documentation for <tt>^^.</tt> for more information.
 viewVar :: forall a b s. (Reifies s W, Num a) => Lens' b a -> BVar s b -> BVar s a
 
+-- | Using a <a>Lens'</a>, set a value <i>inside</i> a <a>BVar</a>.
+--   
+--   See documentation for <tt>.~~</tt> for more information.
+setVar :: forall a b s. (Reifies s W, Num a, Num b) => Lens' b a -> BVar s a -> BVar s b -> BVar s b
+
 -- | An infix version of <a>viewVar</a>, meant to evoke parallels to
 --   <a>^.</a> from lens.
 --   
@@ -652,6 +657,14 @@ infixl 8 ^^.
 --   types.
 (.~~) :: forall a b s. (Reifies s W, Num a, Num b) => Lens' b a -> BVar s a -> BVar s b -> BVar s b
 infixl 8 .~~
+
+-- | Extract all of the <a>BVar</a>s out of a <a>Traversable</a> container
+--   of <a>BVar</a>s.
+sequenceVar :: forall t a s. (Reifies s W, Traversable t, Num a) => BVar s (t a) -> t (BVar s a)
+
+-- | Collect all of the <a>BVar</a>s in a container into a <a>BVar</a> of
+--   that container's contents.
+collectVar :: forall a t s. (Reifies s W, Foldable t, Functor t, Num (t a), Num a) => t (BVar s a) -> BVar s (t a)
 
 -- | Convenient function to uncurry a <a>BVar</a> function, so it can be
 --   used with <a>backprop</a>, <a>evalBP</a>, and <a>gradBP</a>.
