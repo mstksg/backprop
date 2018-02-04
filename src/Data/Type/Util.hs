@@ -12,8 +12,10 @@ module Data.Type.Util (
   , zipP
   , zipWithPM_
   , vecToProd
+  , vecLen
   , prodToVec'
   , lengthProd
+  , listToVec
   ) where
 
 import           Data.Bifunctor
@@ -40,6 +42,13 @@ vecToProd
 vecToProd = \case
     ØV      -> Ø
     x :* xs -> x :< vecToProd xs
+
+vecLen
+    :: VecT n f a
+    -> Nat n
+vecLen = \case
+    ØV      -> Z_
+    _ :* xs -> S_ (vecLen xs)
 
 prodToVec'
     :: Nat n
@@ -92,3 +101,13 @@ lengthProd
 lengthProd x = \case
     LZ   -> Ø
     LS l -> x :< lengthProd x l
+
+listToVec
+    :: Nat n
+    -> [f a]
+    -> Maybe (VecT n f a)
+listToVec = \case
+    Z_ -> \_ -> Just ØV
+    S_ n -> \case
+      []   -> Nothing
+      x:xs -> (x :*) <$> listToVec n xs

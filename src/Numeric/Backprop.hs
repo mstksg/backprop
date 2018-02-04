@@ -52,7 +52,7 @@ module Numeric.Backprop (
     -- * Manipulating 'BVar'
   , constVar
   , viewVar, setVar, (^^.), (.~~)
-  , sequenceVar
+  , sequenceVar, collectVar
   , uncurryVar, uncurryVar3
     -- ** With 'Op's#liftops#
     -- $liftops

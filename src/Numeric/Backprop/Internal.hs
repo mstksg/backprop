@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns        #-}
+{-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE LambdaCase          #-}
@@ -28,10 +29,11 @@ module Numeric.Backprop.Internal (
   , constVar
   , liftOp
   , liftOp1, liftOp2, liftOp3, liftOp4
-  , viewVar, setVar, sequenceVar
+  , viewVar, setVar, sequenceVar, collectVar
   , backprop
   ) where
 
+import           Control.DeepSeq
 import           Control.Exception
 import           Control.Monad.Primitive
 import           Control.Monad.Reader
@@ -46,6 +48,8 @@ import           Data.Reflection
 import           Data.Type.Index
 import           Data.Type.Product hiding  (toList)
 import           Data.Type.Util
+import           Data.Type.Vector hiding   (itraverse)
+import           GHC.Generics
 import           Lens.Micro
 import           Numeric.Backprop.Op
 import           System.IO.Unsafe
@@ -93,6 +97,12 @@ data BVar s a = BV { _bvRef :: !(BRef s)
 data BRef (s :: Type) = BRInp
                       | BRIx !Int
                       | BRC
+  deriving Generic
+
+instance NFData (BRef s)
+
+instance NFData a => NFData (BVar s a) where
+    rnf (BV r v) = force r `seq` force v `seq` ()
 
 -- | Project out a constant value if the 'BVar' refers to one.
 bvConst :: BVar s a -> Maybe a
@@ -100,14 +110,8 @@ bvConst (BV BRC !x) = Just x
 bvConst _           = Nothing
 {-# INLINE bvConst #-}
 
-forceBRef :: BRef s -> ()
-forceBRef BRInp     = ()
-forceBRef (BRIx !_) = ()
-forceBRef BRC       = ()
-{-# INLINE forceBRef #-}
-
 forceBVar :: BVar s a -> ()
-forceBVar (BV !r !_) = forceBRef r `seq` ()
+forceBVar (BV !r !_) = force r `seq` ()
 {-# INLINE forceBVar #-}
 
 data InpRef :: Type -> Type where
@@ -409,6 +413,7 @@ sequenceVar_ !v = forceBVar v `seq` itraverse go (_bvVal v)
         tn = TN { _tnInputs = IR v (ixt i) :< Ø
                 , _tnGrad   = only_
                 }
+{-# INLINE sequenceVar_ #-}
 
 -- | Extract all of the 'BVar's out of a 'Traversable' container of
 -- 'BVar's.
@@ -418,6 +423,30 @@ sequenceVar
     -> t (BVar s a)
 sequenceVar !v = unsafePerformIO $ sequenceVar_ v
 {-# INLINE sequenceVar #-}
+
+collectVar_
+    :: forall a t s. (Reifies s W, Foldable t, Functor t, Num (t a), Num a)
+    => t (BVar s a)
+    -> IO (BVar s (t a))
+collectVar_ !vs = withV (toList vs) $ \(vVec :: Vec n (BVar s a)) -> do
+    let tn :: TapeNode (t a)
+        tn = TN { _tnInputs = vecToProd (vmap ((`IR` id) . getI) vVec)
+                , _tnGrad   = maybe (error "distributeVar") vecToProd
+                            . listToVec (vecLen vVec)
+                            . map I . toList
+                }
+    traverse_ (evaluate . forceBVar) vs
+    insertNode tn (_bvVal <$> vs) (reflect (Proxy @s))
+{-# INLINE collectVar_ #-}
+
+-- | Collect all of the 'BVar's in a container into a 'BVar' of that
+-- container's contents.
+collectVar
+    :: forall a t s. (Reifies s W, Foldable t, Functor t, Num (t a), Num a)
+    => t (BVar s a)
+    -> BVar s (t a)
+collectVar !vs = unsafePerformIO $ collectVar_ vs
+{-# INLINE collectVar #-}
 
 data SomeNum :: Type where
     SN  :: Num a
@@ -571,6 +600,7 @@ itraverse f xs = evalStateT (traverse (StateT . go) xs) 0
   where
     go :: a -> Int -> f (b, Int)
     go x i = (,i+1) <$> f i x
+{-# INLINE itraverse #-}
 
 ixt :: forall t a. Traversable t => Int -> Lens' (t a) a
 ixt i f xs = stuff <$> ixi i f contents
@@ -581,9 +611,11 @@ ixt i f xs = stuff <$> ixi i f contents
         go :: [a] -> (a,  [a])
         go []     = error "asList"
         go (y:ys) = (y, ys)
+{-# INLINE ixt #-}
 
 ixi :: Int -> Lens' [a] a
 ixi _ _ []     = error "ixi"
 ixi 0 f (x:xs) = (:xs) <$> f x
 ixi n f (x:xs) = (x:)  <$> ixi (n - 1) f xs
+{-# INLINE ixi #-}
 
