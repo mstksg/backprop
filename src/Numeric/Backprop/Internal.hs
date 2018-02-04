@@ -28,7 +28,7 @@ module Numeric.Backprop.Internal (
   , constVar
   , liftOp
   , liftOp1, liftOp2, liftOp3, liftOp4
-  , viewVar, setVar
+  , viewVar, setVar, sequenceVar
   , backprop
   ) where
 
@@ -36,6 +36,7 @@ import           Control.Exception
 import           Control.Monad.Primitive
 import           Control.Monad.Reader
 import           Control.Monad.ST
+import           Control.Monad.Trans.State
 import           Data.Foldable
 import           Data.IORef
 import           Data.Kind
@@ -43,7 +44,7 @@ import           Data.Primitive.MutVar
 import           Data.Proxy
 import           Data.Reflection
 import           Data.Type.Index
-import           Data.Type.Product
+import           Data.Type.Product hiding  (toList)
 import           Data.Type.Util
 import           Lens.Micro
 import           Numeric.Backprop.Op
@@ -51,7 +52,7 @@ import           System.IO.Unsafe
 import           Type.Class.Higher
 import           Type.Class.Witness
 import           Unsafe.Coerce
-import qualified Data.Vector.Mutable     as MV
+import qualified Data.Vector.Mutable       as MV
 
 -- | A @'BVar' s a@ is a value of type @a@ that can be "backpropagated".
 --
@@ -396,6 +397,27 @@ setVar
 setVar l !w !v = unsafePerformIO $ setVar_ l w v
 {-# INLINE setVar #-}
 
+sequenceVar_
+    :: forall t a s. (Reifies s W, Traversable t, Num a)
+    => BVar s (t a)
+    -> IO (t (BVar s a))
+sequenceVar_ !v = forceBVar v `seq` itraverse go (_bvVal v)
+  where
+    go :: Int -> a -> IO (BVar s a)
+    go i y = insertNode tn y (reflect (Proxy @s))
+      where
+        tn = TN { _tnInputs = IR v (ixt i) :< Ø
+                , _tnGrad   = only_
+                }
+
+-- | Extract all of the 'BVar's out of a 'Traversable' container of
+-- 'BVar's.
+sequenceVar
+    :: forall t a s. (Reifies s W, Traversable t, Num a)
+    => BVar s (t a)
+    -> t (BVar s a)
+sequenceVar !v = unsafePerformIO $ sequenceVar_ v
+{-# INLINE sequenceVar #-}
 
 data SomeNum :: Type where
     SN  :: Num a
@@ -541,182 +563,27 @@ instance (Floating a, Reifies s W) => Floating (BVar s a) where
     atanh   = liftOp1 atanhOp
     {-# INLINE atanh #-}
 
----- | A subclass of 'OpM' (and superclass of 'Op'), representing 'Op's that
----- the /backprop/ library uses to perform backpropation.
-----
----- An
-----
----- @
----- 'OpB' s rs a
----- @
-----
----- represents a differentiable function that takes a tuple of @rs@ and
----- produces an a @a@, which can be run on @'BVar' s@s and also inside @'BP'
----- s@s.  For example, an @'OpB' s '[ Int, Double ] Bool@ takes an 'Int' and
----- a 'Double' and produces a 'Bool', and does it in a differentiable way.
-----
----- 'OpB' is a /superset/ of 'Op', so, if you see any function
----- that expects an 'OpB' (like 'Numeric.Backprop.opVar'' and
----- 'Numeric.Backprop.~$', for example), you can give them an 'Op', as well.
-----
----- You can think of 'OpB' as a superclass/parent class of 'Op' in this
----- sense, and of 'Op' as a subclass of 'OpB'.
---type OpB s as a = OpM (ST s) as a
+-- Some utility functions to get around a lens dependency
+itraverse
+    :: forall t a b f. (Traversable t, Monad f)
+    => (Int -> a -> f b) -> t a -> f (t b)
+itraverse f xs = evalStateT (traverse (StateT . go) xs) 0
+  where
+    go :: a -> Int -> f (b, Int)
+    go x i = (,i+1) <$> f i x
 
----- | Convenience wrapper over a @forall s. 'OpB' s as a@, to work around
----- lack of impredicative types in GHC
---newtype OpBS as a = OpBS { runOpBS :: forall s. OpB s as a }
+ixt :: forall t a. Traversable t => Int -> Lens' (t a) a
+ixt i f xs = stuff <$> ixi i f contents
+  where
+    contents = toList xs
+    stuff    = evalState (traverse (state . const go) xs)
+      where
+        go :: [a] -> (a,  [a])
+        go []     = error "asList"
+        go (y:ys) = (y, ys)
 
----- | A version of 'runOp' for 'OpB': runs the function that an 'OpB'
----- encodes, returning the result.
-----
----- >>> runOpB (op2 (*)) (3 ::< 5 ::< Ø)
----- 15
---runOpB :: (forall s. OpB s as a) -> Tuple as -> a
---runOpB o xs = runST $ runOpM o xs
-
----- | A version of 'gradOp' for 'OpB': runs the function that an 'OpB'
----- encodes, getting the gradient of the output with respect to the inputs.
-----
----- >>> gradOpB (op2 (*)) (3 ::< 5 ::< Ø)
----- 5 ::< 3 ::< Ø
----- -- the gradient of x*y is (y, x)
---gradOpB :: (forall s. OpB s as a) -> Tuple as -> Tuple as
---gradOpB o xs = runST $ gradOpM o xs
-
----- | A version of 'gradOp'' for 'OpB': runs the function that an 'OpB'
----- encodes, getting the result along with the gradient of the output with
----- respect to the inputs.
-----
----- >>> gradOpB' (op2 (*)) (3 ::< 5 ::< Ø)
----- (15, 5 ::< 3 ::< Ø)
---gradOpB' :: (forall s. OpB s as a) -> Tuple as -> (a, Tuple as)
---gradOpB' o xs = runST $ gradOpM' o xs
-
----- | Reference to /usage sites/ for a given entity, used to get partial or
----- total derivatives.
---data ForwardRefs s rs a
---    -- | A list of 'BPInpRef's pointing to places that use the entity, to
---    -- provide partial derivatives.
---    = FRInternal ![BPInpRef s rs a]
---    -- | The entity is the terminal result of a BP, so its total derivative
---    -- is fixed.
---    | FRTerminal !(Maybe a)
-
----- | Combines two 'FRInternal' lists.  If either input is an 'FRTerminal',
----- then throws away the other result and keeps the new terminal forced
----- total derivative.  (Biases to the left)
---instance Monoid (ForwardRefs s rs a) where
---    mempty  = FRInternal []
---    mappend = \case
---        FRInternal rs -> \case
---          FRInternal rs'   -> FRInternal (rs ++ rs')
---          t@(FRTerminal _) -> t
---        FRTerminal _  -> id
-
----- | The "state" of a 'BP' action, which keeps track of what nodes, if any,
----- refer to any of the inputs.
---data BPState :: Type -> [Type] -> Type where
---    BPS :: { _bpsSources :: !(Prod (ForwardRefs s rs) rs)
---           }
---        -> BPState s rs
-
----- | A Monad allowing you to explicitly build hetereogeneous data
----- dependency graphs and that the library can perform back-propagation on.
-----
----- A @'BP' s rs a@ is a 'BP' action that uses an environment of @rs@
----- returning a @a@.  When "run", it will compute a gradient that is a tuple
----- of @rs@.  (The phantom parameter @s@ is used to ensure that any 'BVar's
----- aren't leaked out of the monad)
-----
----- Note that you can only "run" a @'BP' s rs@ that produces a 'BVar' --
----- that is, things of the form
-----
----- @
----- 'BP' s rs ('BVar' s rs a)
----- @
-----
----- The above is a 'BP' action that returns a 'BVar' containing an @a@.
----- When this is run, it'll produce a result of type @a@ and a gradient of
----- that is a tuple of @rs@.  (This form has a type synonym,
----- 'Numeric.Backprop.BPOp', for convenience)
-----
----- For example, a @'BP' s '[ Int, Double, Double ]@ is a monad that
----- represents a computation with an 'Int', 'Double', and 'Double' as
----- inputs.   And, if you ran a
-----
----- @
----- 'BP' s '[ Int, Double, Double ] ('BVar' s '[ Int, Double, Double ] Double)
----- @
-----
----- Or, using the 'BPOp' type synonym:
-----
----- @
----- 'Numeric.Backprop.BPOp' s '[ Int, Double, Double ] Double
----- @
-----
----- with 'Numeric.Backprop.backprop' or 'Numeric.Backprop.gradBPOp', it'll
----- return a gradient on the inputs ('Int', 'Double', and 'Double') and
----- produce a value of type 'Double'.
-----
----- Now, one powerful thing about this type is that a 'BP' is itself an
----- 'Op' (or more precisely, an 'Numeric.Backprop.OpB', which is a subtype of
----- 'OpM').  So, once you create your fancy 'BP' computation, you can
----- transform it into an 'OpM' using 'Numeric.Backprop.bpOp'.
---newtype BP s rs a
---    = BP { bpST :: ReaderT (Tuple rs) (StateT (BPState s rs) (ST s)) a }
---    deriving (Functor, Applicative, Monad)
-
----- | The basic unit of manipulation inside 'BP' (or inside an
----- implicit-graph backprop function).  Instead of directly working with
----- values, you work with 'BVar's contating those values.  When you work
----- with a 'BVar', the /backprop/ library can keep track of what values
----- refer to which other values, and so can perform back-propagation to
----- compute gradients.
-----
----- A @'BVar' s rs a@ refers to a value of type @a@, with an environment
----- of values of the types @rs@.  The phantom parameter @s@ is used to
----- ensure that stray 'BVar's don't leak outside of the backprop process.
-----
----- (That is, if you're using implicit backprop, it ensures that you interact
----- with 'BVar's in a polymorphic way.  And, if you're using explicit
----- backprop, it ensures that a @'BVar' s rs a@ never leaves the @'BP' s rs@
----- that it was created in.)
-----
----- 'BVar's have 'Num', 'Fractional', 'Floating', etc. instances, so they
----- can be manipulated using polymorphic functions and numeric functions in
----- Haskell.  You can add them, subtract them, etc., in "implicit" backprop
----- style.
-----
----- (However, note that if you directly manipulate 'BVar's using those
----- instances or using 'Numeric.Backprop.liftB', it delays evaluation, so every usage site
----- has to re-compute the result/create a new node.  If you want to re-use
----- a 'BVar' you created using '+' or '-' or 'Numeric.Backprop.liftB', use
----- 'Numeric.Backprop.bindVar' to force it first.  See documentation for
----- 'Numeric.Backprop.bindVar' for more details.)
---data BVar :: Type -> [Type] -> Type -> Type where
---    -- | A BVar referring to a 'BPNode'
---    BVNode  :: !(Index bs a)
---            -> !(STRef s (BPNode s rs as bs))
---            -> BVar s rs a
---    -- | A BVar referring to an environment input variable
---    BVInp   :: !(Index rs a)
---            -> BVar s rs a
---    -- | A constant BVar that refers to a specific Haskell value
---    BVC :: !a
---            -> BVar s rs a
---    -- | A BVar that combines several other BVars using a function (an
---    -- 'Op').  Essentially a branch of a tree.
---    BVOp    :: !(Prod (BVar s rs) as)
---            -> !(OpB s as a)
---            -> BVar s rs a
-
----- | Traversal (fake prism) to refer to the list of internal refs if the
----- 'ForwardRef' isn't associated with a terminal entity.
---_FRInternal
---    :: Traversal (ForwardRefs s as a) (ForwardRefs t bs a)
---                 [BPInpRef s as a]    [BPInpRef t bs a]
---_FRInternal f = \case
---    FRInternal xs -> FRInternal <$> f xs
---    FRTerminal g  -> pure (FRTerminal g)
+ixi :: Int -> Lens' [a] a
+ixi _ _ []     = error "ixi"
+ixi 0 f (x:xs) = (:xs) <$> f x
+ixi n f (x:xs) = (x:)  <$> ixi (n - 1) f xs
 

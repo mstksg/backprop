@@ -51,7 +51,8 @@ module Numeric.Backprop (
   , backprop, evalBP, gradBP
     -- * Manipulating 'BVar'
   , constVar
-  , viewVar, (^^.), (.~~)
+  , viewVar, setVar, (^^.), (.~~)
+  , sequenceVar
   , uncurryVar, uncurryVar3
     -- ** With 'Op's#liftops#
     -- $liftops
