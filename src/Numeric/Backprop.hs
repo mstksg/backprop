@@ -39,7 +39,7 @@
 -- 'gradBP' :: (forall s. 'Reifies' s 'W'. 'BVar' s a -> BVar s b) -> (a -> a)
 -- @
 --
--- To automatically get the /gradient/, as well, for a given input.
+-- to automatically get the /gradient/, as well, for a given input.
 --
 -- See the <https://github.com/mstksg/backprop README> for more information
 -- and links to demonstrations and tutorials, or dive striaght in by
@@ -134,6 +134,20 @@ import           Numeric.Backprop.Op
 -- in "Control.Monad.ST"), and also as a reference to an ephemeral Wengert
 -- tape used to track the graph of references.
 --
+-- __What can be backpropagated__
+--
+-- Of course, not every type can be meaningfully backpropagated.  There are
+-- two main restrictions:
+--
+--     (1) Every type involved has to have an instance of 'Num'.  This is
+--     only because gradients all need to be "summable", and we also need
+--     to generate gradients of 0 and 1.  Really, we don't need the entire
+--     power of 'Num' -- we only need '+', @'fromInteger' 0@, and
+--     @'fromInteger' 1@ -- but 'Num' is required just to more conveniently
+--     fit in with the rest of the Haskell ecosystem.
+--     (2) We can "split apart" 
+--
+--
 -- Note that every type involved has to be an instance of 'Num'.  This is
 -- because gradients all need to be "summable" (which is implemented using
 -- 'sum' and '+'), and we also need to able to generate gradients of 1
@@ -193,7 +207,7 @@ gradBPN
     -> Tuple as
     -> Tuple as
 gradBPN f = snd . backpropN f
-{-# INELINE gradBPN #-}
+{-# INLINE gradBPN #-}
 
 -- | 'backprop' for a two-argument function.
 --
@@ -219,7 +233,7 @@ evalBP2
     -> b
     -> c
 evalBP2 f x y = evalBPN (\(x' :< y' :< Ø) -> f x' y') (x ::< y ::< Ø)
-{-# INELINE evalBP2 #-}
+{-# INLINE evalBP2 #-}
 
 -- | 'gradBP' for a two-argument function.  See 'backprop2' for notes.
 gradBP2
@@ -229,7 +243,7 @@ gradBP2
     -> b
     -> (a, b)
 gradBP2 f x = snd . backprop2 f x
-{-# INELINE gradBP2 #-}
+{-# INLINE gradBP2 #-}
 
 -- | An infix version of 'viewVar', meant to evoke parallels to '^.' from
 -- lens.

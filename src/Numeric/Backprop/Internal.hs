@@ -31,6 +31,9 @@ module Numeric.Backprop.Internal (
   , liftOp1, liftOp2, liftOp3
   , viewVar, setVar, sequenceVar, collectVar
   , backpropN, evalBPN
+  -- * Debug
+  , debugSTN
+  , debugIR
   ) where
 
 import           Control.DeepSeq
@@ -100,7 +103,7 @@ data BVar s a = BV { _bvRef :: !(BRef s)
 data BRef (s :: Type) = BRInp !Int
                       | BRIx !Int
                       | BRC
-  deriving Generic
+  deriving (Generic, Show)
 
 instance NFData (BRef s)
 
@@ -129,6 +132,9 @@ forceInpRef :: InpRef a -> ()
 forceInpRef (IR !v !_) = forceBVar v `seq` ()
 {-# INLINE forceInpRef #-}
 
+debugIR :: InpRef a -> String
+debugIR IR{..} = show (_bvRef _irIx)
+
 data TapeNode :: Type -> Type where
     TN :: { _tnInputs :: !(Prod InpRef as)
           , _tnGrad   :: !(a -> Tuple as)
@@ -147,6 +153,9 @@ data SomeTapeNode :: Type where
 forceSomeTapeNode :: SomeTapeNode -> ()
 forceSomeTapeNode (STN !tn) = forceTapeNode tn `seq` ()
 {-# INLINE forceSomeTapeNode #-}
+
+debugSTN :: SomeTapeNode -> String
+debugSTN (STN TN{..}) = show . foldMap1 ((:[]) . debugIR) $ _tnInputs
 
 -- | An ephemeral Wengert Tape in the environment.  Used internally to
 -- track of the computational graph of variables.
@@ -446,7 +455,8 @@ gradRunner
     -> (Int, [SomeTapeNode])
     -> m ()
 gradRunner _ R{..} (n,stns) = do
-    MV.write _rDelta (n - 1) (SN (Proxy @b) 1)
+    when (n > 0) $
+      MV.write _rDelta (n - 1) (SN (Proxy @b) 1)
     zipWithM_ go [n-1,n-2..] stns
   where
     go :: Int -> SomeTapeNode -> m ()
