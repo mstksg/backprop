@@ -1118,8 +1118,32 @@ data Prod k (f :: k -> *) (a :: [k]) :: forall k. () => (k -> *) -> [k] -> *
 [Ø] :: Prod k f [] k
 [:<] :: Prod k f (:) k a1 as
 
+-- | Construct a two element Prod. Since the precedence of (:&gt;) is
+--   higher than (:&lt;), we can conveniently write lists like:
+--   
+--   <pre>
+--   &gt;&gt;&gt; a :&lt; b :&gt; c
+--   </pre>
+--   
+--   Which is identical to:
+--   
+--   <pre>
+--   &gt;&gt;&gt; a :&lt; b :&lt; c :&lt; Ø
+--   </pre>
+infix 6 :>
+
+-- | Build a singleton Prod.
+only :: () => f a -> Prod k f (:) k a [] k
+head' :: () => Prod k f (:<) k a as -> f a
+
 -- | A Prod of simple Haskell types.
 type Tuple = Prod * I
+
+-- | Cons onto a Tuple.
+infixr 5 ::<
+
+-- | Singleton Tuple.
+only_ :: () => a -> Tuple (:) * a [] *
 newtype I a :: * -> *
 I :: a -> I a
 [getI] :: I a -> a
