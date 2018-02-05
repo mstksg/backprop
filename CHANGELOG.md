@@ -19,6 +19,8 @@ Version 0.1.0.0
     *   *Implicit* modules are removed, since they are the default
     *   *Iso* module is removed, since `Iso`s no longer play major role in the
         implementation of the library.
+*   Removed dependency on *ad* and *ad*-based ops, which had been pulling in
+    the vast majority of dependencies.
 *   Moved from *.cabal* file to *hpack* system.
 
 Version 0.0.3.0
