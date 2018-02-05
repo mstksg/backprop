@@ -630,11 +630,7 @@ evalBPN :: forall as b. () => (forall s. Reifies s W => Prod (BVar s) as -> BVar
 -- | <a>gradBP</a> generalized to multiple inputs of different types. See
 --   documentation for <a>backpropN</a> for more details.
 gradBPN :: forall as b. (Every Num as, Num b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> Tuple as
-class EveryC k c as => Every k (c :: k -> Constraint) (as :: [k]) where {
-    type family EveryC k (c :: k
-                               -> Constraint) (as :: [k]) :: Constraint;
-}
-every :: Every k c as => Index k as a -> Wit c a
+class EveryC k c as => Every k (c :: k -> Constraint) (as :: [k])
 
 -- | Lift a value into a <a>BVar</a> representing a constant value.
 --   
