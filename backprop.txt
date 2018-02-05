@@ -522,10 +522,10 @@ module Numeric.Backprop
 --   
 --   There is also <tt>^^?</tt> (<a>previewVar</a>), to use a
 --   <tt>Prism'</tt> or <a>Traversal'</a> to extract a target that may or
---   may not be present, <tt>^^..</tt> (<a>toListOfVar</a>) to use a
---   <a>Traversal'</a> to extract <i>all</i> targets inside a <a>BVar</a>,
---   and <tt>.~~</tt> (<a>setVar</a>) to set and update values inside a
---   <a>BVar</a>.
+--   may not be present (which can implement pattern matching),
+--   <tt>^^..</tt> (<a>toListOfVar</a>) to use a <a>Traversal'</a> to
+--   extract <i>all</i> targets inside a <a>BVar</a>, and <tt>.~~</tt>
+--   (<a>setVar</a>) to set and update values inside a <a>BVar</a>.
 --   
 --   For more complex operations, libraries can provide functions on
 --   <a>BVar</a>s using <a>liftOp</a> and related functions. This is how
@@ -567,6 +567,18 @@ data W
 --   implemented using <a>sum</a> and <a>+</a>), and we also need to able
 --   to generate gradients of 1 and 0. Really, only <a>+</a> and
 --   <a>fromInteger</a> methods are used from the <a>Num</a> typeclass.
+--   
+--   This might change in the future, to allow easier integration with
+--   tuples (which typically do not have a <a>Num</a> instance), and
+--   potentially make types easier to use (by only requiring <a>+</a>, 0,
+--   and 1, and not the rest of the <a>Num</a> class).
+--   
+--   See the <a>README</a> for a more detailed discussion on this issue.
+--   
+--   If you need a <a>Num</a> instance for tuples, consider the
+--   <a>NumInstances</a> package (in particular,
+--   <a>Data.NumInstances.Tuple</a>), or else using a named product type
+--   instead.
 backprop :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
 
 -- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
@@ -600,8 +612,10 @@ gradBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BV
 -- | <a>backprop</a> for a two-argument function.
 --   
 --   Not strictly necessary, because you can always uncurry a function by
---   putting the arguments inside a data type. However, this can be
---   convenient if you don't want to make a custom tuple type.
+--   putting the arguments inside a data type, or using a tuple with
+--   <a>NumInstances</a>. However, this can be convenient if you don't want
+--   to make a custom tuple type or pull in orphan instances. This could
+--   potentially also be more performant.
 --   
 --   For 3 and more arguments, consider using <a>backpropN</a>.
 backprop2 :: forall a b c. (Num a, Num b, Num c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c, (a, b))
@@ -618,10 +632,12 @@ gradBP2 :: (Num a, Num b, Num c) => (forall s. Reifies s W => BVar s a -> BVar s
 --   See the <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on
 --   heterogeneous lists.
 --   
---   This is not strictly necessary, because you can always uncurry a
---   single-argument function by passing in all of the inputs in a data
---   type containing all of the arguments. However, this can be convenient
---   if you don't want to create a custom data type.
+--   Not strictly necessary, because you can always uncurry a function by
+--   passing in all of the inputs in a data type containing all of the
+--   arguments. You could also pass in a giant tuple with
+--   <a>NumInstances</a>. However, this can be convenient if you don't want
+--   to make a custom tuple type or pull in orphan instances. This could
+--   potentially also be more performant.
 --   
 --   A <tt><a>Prod</a> (<a>BVar</a> s) '[Double, Float, Double]</tt>, for
 --   instance, is a tuple of <tt><a>BVar</a> s <a>Double</a></tt>,
@@ -667,14 +683,14 @@ constVar :: a -> BVar s a
 --   x <a>^.</a> myLens
 --   </pre>
 --   
---   Would extract a piece of <tt>x :: b</tt>, specified by <tt>myLens ::
+--   would extract a piece of <tt>x :: b</tt>, specified by <tt>myLens ::
 --   <a>Lens'</a> b a</tt>. The result has type <tt>a</tt>.
 --   
 --   <pre>
 --   xVar <a>^^.</a> myLens
 --   </pre>
 --   
---   Would extract a piece out of <tt>xVar :: <a>BVar</a> s b</tt> (a
+--   would extract a piece out of <tt>xVar :: <a>BVar</a> s b</tt> (a
 --   <a>BVar</a> holding a <tt>b</tt>), specified by <tt>myLens :: Lens' b
 --   a</tt>. The result has type <tt><a>BVar</a> s a</tt> (a <a>BVar</a>
 --   holding a <tt>a</tt>)
@@ -694,14 +710,14 @@ infixl 8 ^^.
 --   x <a>&amp;</a> myLens <a>.~</a> <tt>y</tt>
 --   </pre>
 --   
---   Would "set" a part of <tt>x :: b</tt>, specified by <tt>myLens ::
+--   would "set" a part of <tt>x :: b</tt>, specified by <tt>myLens ::
 --   <a>Lens'</a> a b</tt>, to a new value <tt>y :: a</tt>.
 --   
 --   <pre>
 --   xVar <a>&amp;</a> myLens <a>.~~</a> yVar
 --   </pre>
 --   
---   Would "set" a part of <tt>xVar :: <a>BVar</a> s b</tt> (a <a>BVar</a>
+--   would "set" a part of <tt>xVar :: <a>BVar</a> s b</tt> (a <a>BVar</a>
 --   holding a <tt>b</tt>), specified by <tt>myLens :: <a>Lens'</a> a
 --   b</tt>, to a new value given by <tt>yVar :: <a>BVar</a> s a</tt>. The
 --   result is a new (updated) value of type <tt><a>BVar</a> s b</tt>.
@@ -714,21 +730,64 @@ infixl 8 .~~
 -- | An infix version of <a>previewVar</a>, meant to evoke parallels to
 --   <a>^?</a> from lens.
 --   
---   Using a <a>Traversal'</a>, extract a single value <i>inside</i> a
---   <a>BVar</a>, if it exists. If more than one traversal target exists,
---   returns te first. Really only intended to be used wth
---   <tt>Prism'</tt>s, or up-to-one target traversals.
+--   With normal values, you can (potentially) extract something from that
+--   value with a lens:
 --   
---   See documentation for <a>^^.</a> for more details.
+--   <pre>
+--   x <a>^?</a> myPrism
+--   </pre>
+--   
+--   would (potentially) extract a piece of <tt>x :: b</tt>, specified by
+--   <tt>myPrism :: <a>Traversal'</a> b a</tt>. The result has type
+--   <tt><a>Maybe</a> a</tt>.
+--   
+--   <pre>
+--   xVar <a>^^?</a> myPrism
+--   </pre>
+--   
+--   would (potentially) extract a piece out of <tt>xVar :: <a>BVar</a> s
+--   b</tt> (a <a>BVar</a> holding a <tt>b</tt>), specified by <tt>myPrism
+--   :: Prism' b a</tt>. The result has type <tt><a>Maybe</a> (<a>BVar</a>
+--   s a)</tt> (<a>Maybe</a> a <a>BVar</a> holding a <tt>a</tt>).
+--   
+--   This is intended to be used with <tt>Prism'</tt>s (which hits at most
+--   one target), but will actually work with <i>any</i> <a>Traversal'</a>.
+--   If the traversal hits more than one target, the first one found will
+--   be extracted.
+--   
+--   This can be used to "pattern match" on <a>BVar</a>s, by using prisms
+--   on constructors.
+--   
+--   Note that many automatically-generated prisms by the <i>lens</i>
+--   package use tuples, which cannot normally be backpropagated (because
+--   they do not have a <a>Num</a> instance). However, you can pull in
+--   orphan instances from <a>NumInstances</a>, or also chain those prisms
+--   with functions to convert tuples to your own custom product types (or
+--   tuple types with <a>Num</a> instances).
 (^^?) :: forall b a s. (Num a, Reifies s W) => BVar s b -> Traversal' b a -> Maybe (BVar s a)
 
 -- | An infix version of <a>toListOfVar</a>, meant to evoke parallels to
 --   <a>^..</a> from lens.
 --   
---   Using a <a>Traversal'</a>, extract all targeted values <i>inside</i> a
---   <a>BVar</a>.
+--   With normal values, you can extract all targets of a <a>Traversal</a>
+--   from that value with a:
 --   
---   See documentation for <a>^^.</a> for more details.
+--   <pre>
+--   x <a>^..</a> myTraversal
+--   </pre>
+--   
+--   would extract all targets inside of <tt>x :: b</tt>, specified by
+--   <tt>myTraversal :: <a>Traversal'</a> b a</tt>. The result has type
+--   <tt>[a]</tt>.
+--   
+--   <pre>
+--   xVar <a>^^..</a> myTraversal
+--   </pre>
+--   
+--   would extract all targets inside of <tt>xVar :: <a>BVar</a> s b</tt>
+--   (a <a>BVar</a> holding a <tt>b</tt>), specified by <tt>myTraversal ::
+--   Traversal' b a</tt>. The result has type <tt>[<a>BVar</a> s a]</tt> (A
+--   list of <a>BVar</a>s holding <tt>a</tt>s).
 (^^..) :: forall b a s. (Num a, Reifies s W) => BVar s b -> Traversal' b a -> [BVar s a]
 
 -- | Using a <a>Lens'</a>, extract a value <i>inside</i> a <a>BVar</a>.
