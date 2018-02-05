@@ -12,27 +12,25 @@
 
 import           Control.DeepSeq
 import           Control.Exception
-import           Control.Lens hiding                 ((:<), (<.>))
+import           Control.Lens hiding          ((:<), (<.>))
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Maybe
 import           Criterion.Main
 import           Criterion.Types
 import           Data.Bitraversable
 import           Data.IDX
-import           Data.Reflection
 import           Data.Time
 import           Data.Traversable
 import           Data.Tuple
-import           GHC.Generics                        (Generic)
+import           GHC.Generics                 (Generic)
 import           GHC.TypeLits
 import           Numeric.Backprop
 import           Numeric.LinearAlgebra.Static
 import           System.Directory
-import qualified Data.Vector.Generic                 as VG
-import qualified Data.Vector.Unboxed                 as VU
-import qualified Generics.SOP                        as SOP
-import qualified Numeric.LinearAlgebra               as HM
-import qualified System.Random.MWC                   as MWC
+import qualified Data.Vector.Generic          as VG
+import qualified Data.Vector.Unboxed          as VU
+import qualified Numeric.LinearAlgebra        as HM
+import qualified System.Random.MWC            as MWC
 
 data Layer i o =
     Layer { _lWeights :: !(L o i)
@@ -40,7 +38,6 @@ data Layer i o =
           }
   deriving (Show, Generic)
 
-instance SOP.Generic (Layer i o)
 instance NFData (Layer i o)
 
 makeLenses ''Layer
@@ -52,7 +49,6 @@ data Network i h1 h2 o =
         }
   deriving (Show, Generic)
 
-instance SOP.Generic (Network i h1 h2 o)
 instance NFData (Network i h1 h2 o)
 
 makeLenses ''Network

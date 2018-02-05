@@ -316,9 +316,14 @@ runLayer l x = (l ^^. lWeights) #>! x + (l ^^. lBiases)
 access data within a `BVar` using a lens:
 
 ``` {.haskell}
-(^.)  ::        a -> Lens a b ->        b
-(^^.) :: BVar s a -> Lens a b -> BVar s b
+(^.)  ::        a -> Lens' a b ->        b
+(^^.) :: BVar s a -> Lens' a b -> BVar s b
 ```
+
+(There is also `^^?`, which can use a `Prism` or `Traversal` to extract
+a target that might not exist, `^^..`, which uses a `Traversal` to
+extract all targets, and `.~~`, which uses a `Lens` to update a value
+inside `BVar`)
 
 Now `runLayer` is a function on two inputs that can be backpropagated,
 automatically! We can find its gradient given any input, and also run it
@@ -630,6 +635,15 @@ picture of what's going on, or find more examples at the [github repo]!
 
   [Numeric.Backprop]: http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop.html
   [github repo]: https://github.com/mstksg/backprop
+
+Also, check out follow-up writeup to this tutorial, expanding on using
+the library with more advanced extensible neural network types, like the
+ones described in [this blog post]. Check out the [literate haskell
+here], and the [rendered PDF here].
+
+  [this blog post]: https://blog.jle.im/entries/series/+practical-dependent-types-in-haskell.html
+  [literate haskell here]: https://github.com/mstksg/backprop/blob/master/samples/extensible-neural.lhs
+  [rendered PDF here]: https://github.com/mstksg/backprop/blob/master/renders/extensible-neural.pdf
 
 Boring stuff
 ============

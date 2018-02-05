@@ -80,6 +80,38 @@ import qualified System.Random.MWC.Distributions as MWC
 Introduction
 ============
 
+The *[backprop]* library lets us manipulate our values in a natural way.
+We write the function to compute our result, and the library then
+automatically finds the *gradient* of that function, which we can use
+for gradient descent.
+
+  [backprop]: http://hackage.haskell.org/package/backprop
+
+In the last post, we looked at using a fixed-structure neural network.
+However, in [this blog series], I discuss a system of extensible neural
+networks that can be chained and composed.
+
+  [this blog series]: https://blog.jle.im/entries/series/+practical-dependent-types-in-haskell.html
+
+One issue, however, in naively translating the implementations, is that
+we normally run the network by pattern matching on each layer. However,
+we cannot directly pattern match on `BVar`s.
+
+We *could* get around it by being smart with prisms and `^^?`, to
+extract a "Maybe BVar". However, we can do better! This is because the
+*shape* of a `Net i hs o` is known already at compile-time, so there is
+no need for runtime checks like prisms and `^^?`.
+
+Instead, we can just directly use lenses, since we know *exactly* what
+constructor will be present! We can use singletons to determine which
+constructor is present, and so always just directly use lenses without
+any runtime nondeterminism.
+
+Types
+=====
+
+First, our types:
+
 ``` {.sourceCode .literate .haskell}
 data Layer i o =
     Layer { _lWeights :: !(L o i)
@@ -93,7 +125,14 @@ makeLenses ''Layer
 data Net :: Nat -> [Nat] -> Nat -> Type where
     NO   :: !(Layer i o) -> Net i '[] o
     (:~) :: !(Layer i h) -> !(Net h hs o) -> Net i (h ': hs) o
+```
 
+Unfortunately, we can't automatically generate lenses for GADTs, so we
+have to make them by hand.\[\^poly\]
+
+with type safety via paraemtric polymorphism.
+
+``` {.sourceCode .literate .haskell}
 _NO :: Lens (Net i '[] o) (Net i' '[] o')
             (Layer i o  ) (Layer i' o'  )
 _NO f (NO l) = NO <$> f l
@@ -105,7 +144,35 @@ _NIL f (l :~ n) = (:~ n) <$> f l
 _NIN :: Lens (Net i (h ': hs) o) (Net i (h ': hs') o')
              (Net h hs        o) (Net h hs'        o')
 _NIN f (l :~ n) = (l :~) <$> f n
+```
 
+You can read `_NO` as:
+
+``` {.haskell}
+_NO :: Lens' (Net i '[] o) (Layer i o)
+```
+
+A lens into a single-layer network, and
+
+``` {.haskell}
+_NIL :: Lens' (Net i (h ': hs) o) (Layer i h )
+_NIN :: Lens' (Net i (h ': hs) o) (Net h hs o)
+```
+
+Lenses into a multiple-layer network, getting the first layer and the
+tail of the network.
+
+If we pattern match on `Sing hs`, we can always determine exactly which
+lenses we can use, and so never fumble around with prisms or
+nondeterminism.
+
+Running the network
+===================
+
+Here's the meat of process, then: specifying how to run the network. We
+re-use our `BVar`-based combinators defined in the last write-up:
+
+``` {.sourceCode .literate .haskell}
 runLayer
     :: (KnownNat i, KnownNat o, Reifies s W)
     => BVar s (Layer i o)
@@ -113,7 +180,12 @@ runLayer
     -> BVar s (R o)
 runLayer l x = (l ^^. lWeights) #>! x + (l ^^. lBiases)
 {-# INLINE runLayer #-}
+```
 
+For `runNetwork`, we pattern match on `hs` using singletons, so we
+always know exactly what type of network we have:
+
+``` {.sourceCode .literate .haskell}
 runNetwork
     :: (KnownNat i, KnownNat o, Reifies s W)
     => BVar s (Net i hs o)
@@ -126,7 +198,11 @@ runNetwork n = \case
                    . logistic
                    . runLayer (n ^^. _NIL)
 {-# INLINE runNetwork #-}
+```
 
+The rest of it is the same as before.
+
+``` {.sourceCode .literate .haskell}
 netErr
     :: (KnownNat i, KnownNat o, SingI hs, Reifies s W)
     => R i
@@ -155,7 +231,6 @@ trainList
 trainList r = flip $ foldl' (\n (x,y) -> trainStep r x y n)
 {-# INLINE trainList #-}
 
-
 testNet
     :: forall i hs o. (KnownNat i, KnownNat o, SingI hs)
     => [(R i, R o)]
@@ -170,7 +245,18 @@ testNet xs n = sum (map (uncurry test) xs) / fromIntegral (length xs)
       where
         r :: R o
         r = evalBP (\n' -> runNetwork n' sing (constVar x)) n
+```
 
+And that's it!
+
+Running
+=======
+
+Everything here is the same as before, except now we can dynamically
+pick the network size. Here we pick `'[300,100]` for the hidden layer
+sizes.
+
+``` {.sourceCode .literate .haskell}
 main :: IO ()
 main = MWC.withSystemRandom $ \g -> do
     Just train <- loadMNIST "data/train-images-idx3-ubyte" "data/train-labels-idx1-ubyte"
@@ -198,7 +284,72 @@ main = MWC.withSystemRandom $ \g -> do
   where
     rate  = 0.02
     batch = 5000
+```
 
+Looking Forward
+===============
+
+One common thing people might do is want to be able to mix different
+types of layers. This could also be easily encoded as different
+constructors in `Layer`, and so `runLayer` will now be different
+depending on what constructor is present.
+
+In this case, we can either:
+
+1.  Have a different indexed type for layers, so that we can always know
+    exactly what layer is involved, so we don't have to runtime pattern
+    match:
+
+    ``` {.haskell}
+    data LayerType = FullyConnected | Convolutional
+
+    data Layer :: LayerType -> Nat -> Nat -> Type where
+        LayerFC :: .... -> Layer 'FullyConnected i o
+        LayerC  :: .... -> Layer 'Convolutional  i o
+    ```
+
+    We would then have `runLayer` take `Sing (t :: LayerType)`, so we
+    can again use `^^.` and directly pattern match.
+
+2.  Use a typeclass-based approach, so users can add their own layer
+    types. In this situation, layer types would all be different types,
+    and running them would be a typeclass method that would give our
+    `BVar s (Layer i o) -> BVar s (R i) -> BVar s (R o)` operation as a
+    typeclass method.
+
+    ``` {.haskell}
+    class Layer (l :: Nat -> Nat -> Type) where
+        runLayer
+            :: forall s. Reifies s W
+            => BVar s (l i o)
+            -> BVar s (R i)
+            -> BVar s (R o)
+    ```
+
+In all cases, it shouldn't be much more cognitive overhead to use
+*backprop* to build your neural network framework!
+
+And, remember that `evalBP` (directly running the function) introduces
+virtually zero overhead, so if you only provided `BVar` functions, you
+could easily get the original non-`BVar` functions with `evalBP` without
+any loss.
+
+What now?
+---------
+
+Ready to start? Check out the docs for the [Numeric.Backprop] module for
+the full technical specs, and find more examples and updates at the
+[github repo]!
+
+  [Numeric.Backprop]: http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop.html
+  [github repo]: https://github.com/mstksg/backprop
+
+Internals
+=========
+
+That's it for the post! Now for the internal plumbing :)
+
+``` {.sourceCode .literate .haskell}
 loadMNIST
     :: FilePath
     -> FilePath
@@ -214,9 +365,12 @@ loadMNIST fpI fpL = runMaybeT $ do
     mkImage = create . VG.convert . VG.map (\i -> fromIntegral i / 255)
     mkLabel :: Int -> Maybe (R 10)
     mkLabel n = create $ HM.build 10 (\i -> if round i == n then 1 else 0)
+```
 
--- Internal
+HMatrix Operations
+------------------
 
+``` {.sourceCode .literate .haskell}
 infixr 8 #>!
 (#>!)
     :: (KnownNat m, KnownNat n, Reifies s W)
@@ -265,7 +419,12 @@ crossEntropy targ res = -(log res <.>! constVar targ)
 logistic :: Floating a => a -> a
 logistic x = 1 / (1 + exp (-x))
 {-# INLINE logistic #-}
+```
 
+Instances
+---------
+
+``` {.sourceCode .literate .haskell}
 instance (KnownNat i, KnownNat o) => Num (Layer i o) where
     (+)         = gPlus
     (-)         = gMinus

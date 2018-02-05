@@ -14,9 +14,12 @@ build-type:          Simple
 extra-source-files:  README.md
                      CHANGELOG.md
                      Build.hs
+                     samples/backprop-mnist.lhs
+                     samples/extensible-neural.lhs
                      renders/backprop-mnist.md
                      renders/backprop-mnist.pdf
-                     samples/backprop-mnist.lhs
+                     renders/extensible-neural.md
+                     renders/extensible-neural.pdf
 cabal-version:       >=1.10
 
 library
@@ -28,17 +31,10 @@ library
   build-depends:       base >= 4.7 && < 5
                      , ad
                      , deepseq
-                     , generics-sop
                      , microlens
-                     , microlens-mtl
-                     , microlens-th
-                     , mtl
                      , primitive
-                     , profunctors
                      , reflection
-                     , tagged
                      , transformers
-                     , transformers-base
                      , type-combinators
                      , vector
   default-language:    Haskell2010
@@ -51,19 +47,15 @@ benchmark backprop-mnist-bench
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -O2
   build-depends:       base
                      , backprop
-                     , bifunctors
                      , criterion
                      , deepseq
                      , directory
-                     , generics-sop
                      , hmatrix    >= 0.18
                      , lens
                      , mnist-idx
                      , mwc-random
-                     , reflection
                      , time
                      , transformers
-                     , type-combinators
                      , vector
   default-language:    Haskell2010
 

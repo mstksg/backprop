@@ -56,7 +56,8 @@ module Numeric.Backprop (
   , backpropN, evalBPN, gradBPN, Every
     -- * Manipulating 'BVar'
   , constVar
-  , viewVar, setVar, (^^.), (.~~), (^^?), (^^..)
+  , (^^.), (.~~), (^^?), (^^..)
+  , viewVar, setVar
   , sequenceVar, collectVar
   , previewVar, toListOfVar
     -- ** With 'Op's#liftops#
@@ -75,6 +76,9 @@ module Numeric.Backprop (
   , Replicate
     -- *** From Isomorphisms
   , opCoerce, opTup, opIso, opLens
+    -- * Utility
+  , Prod(..), Tuple, I(..)
+  , Reifies
   ) where
 
 import           Data.Type.Index
@@ -141,6 +145,19 @@ import           Numeric.Backprop.Op
 -- 'sum' and '+'), and we also need to able to generate gradients of 1
 -- and 0.  Really, only '+' and 'fromInteger' methods are used from the
 -- 'Num' typeclass.
+--
+-- This might change in the future, to allow easier integration with tuples
+-- (which typically do not have a 'Num' instance), and potentially make
+-- types easier to use (by only requiring '+', 0, and 1, and not the rest
+-- of the 'Num' class).
+--
+-- See the <https://github.com/mstksg/backprop README> for a more detailed
+-- discussion on this issue.
+--
+-- If you need a 'Num' instance for tuples, consider the
+-- <https://hackage.haskell.org/package/NumInstances NumInstances> package
+-- (in particular, "Data.NumInstances.Tuple"), or else using a named
+-- product type instead.
 backprop
     :: forall a b. (Num a, Num b)
     => (forall s. Reifies s W => BVar s a -> BVar s b)
@@ -200,8 +217,11 @@ gradBPN f = snd . backpropN f
 -- | 'backprop' for a two-argument function.
 --
 -- Not strictly necessary, because you can always uncurry a function by
--- putting the arguments inside a data type.  However, this can be
--- convenient if you don't want to make a custom tuple type.
+-- putting the arguments inside a data type, or using a tuple with
+-- <https://hackage.haskell.org/package/NumInstances NumInstances>.
+-- However, this can be convenient if you don't want to make a custom tuple
+-- type or pull in orphan instances.  This could potentially also be more
+-- performant.
 --
 -- For 3 and more arguments, consider using 'backpropN'.
 backprop2
@@ -243,14 +263,14 @@ gradBP2 f x = snd . backprop2 f x
 -- x '^.' myLens
 -- @
 --
--- Would extract a piece of @x :: b@, specified by @myLens :: 'Lens'' b a@.
+-- would extract a piece of @x :: b@, specified by @myLens :: 'Lens'' b a@.
 -- The result has type @a@.
 --
 -- @
 -- xVar '^^.' myLens
 -- @
 --
--- Would extract a piece out of @xVar :: 'BVar' s b@ (a 'BVar' holding a
+-- would extract a piece out of @xVar :: 'BVar' s b@ (a 'BVar' holding a
 -- @b@), specified by @myLens :: Lens' b a@.   The result has type @'BVar'
 -- s a@ (a 'BVar' holding a @a@)
 --
@@ -275,14 +295,14 @@ infixl 8 ^^.
 -- x '&' myLens '.~' 'y'
 -- @
 --
--- Would "set" a part of @x :: b@, specified by @myLens :: 'Lens'' a b@, to
+-- would "set" a part of @x :: b@, specified by @myLens :: 'Lens'' a b@, to
 -- a new value @y :: a@.
 --
 -- @
 -- xVar '&' myLens '.~~' yVar
 -- @
 --
--- Would "set" a part of @xVar :: 'BVar' s b@ (a 'BVar' holding a @b@),
+-- would "set" a part of @xVar :: 'BVar' s b@ (a 'BVar' holding a @b@),
 -- specified by @myLens :: 'Lens'' a b@, to a new value given by @yVar ::
 -- 'BVar' s a@.  The result is a new (updated) value of type @'BVar' s b@.
 --
@@ -301,12 +321,39 @@ infixl 8 .~~
 -- | An infix version of 'previewVar', meant to evoke parallels to '^?'
 -- from lens.
 --
--- Using a 'Traversal'', extract a single value /inside/ a 'BVar', if it
--- exists.  If more than one traversal target exists, returns te first.
--- Really only intended to be used wth 'Prism''s, or up-to-one target
--- traversals.
+-- With normal values, you can (potentially) extract something from that
+-- value with a lens:
 --
--- See documentation for '^^.' for more details.
+-- @
+-- x '^?' myPrism
+-- @
+--
+-- would (potentially) extract a piece of @x :: b@, specified by
+-- @myPrism :: 'Traversal'' b a@. The result has type @'Maybe' a@.
+--
+-- @
+-- xVar '^^?' myPrism
+-- @
+--
+-- would (potentially) extract a piece out of @xVar :: 'BVar' s b@ (a
+-- 'BVar' holding a @b@), specified by @myPrism :: Prism' b a@.
+-- The result has type @'Maybe' ('BVar' s a)@ ('Maybe' a 'BVar' holding
+-- a @a@).
+--
+-- This is intended to be used with 'Prism''s (which hits at most one
+-- target), but will actually work with /any/ 'Traversal''.  If the
+-- traversal hits more than one target, the first one found will be
+-- extracted.
+--
+-- This can be used to "pattern match" on 'BVar's, by using prisms on
+-- constructors.
+--
+-- Note that many automatically-generated prisms by the /lens/ package use
+-- tuples, which cannot normally be backpropagated (because they do not
+-- have a 'Num' instance).  However, you can pull in orphan instances from
+-- <https://hackage.haskell.org/package/NumInstances NumInstances>, or also
+-- chain those prisms with functions to convert tuples to your own custom
+-- product types (or tuple types with 'Num' instances).
 (^^?)
     :: forall b a s. (Num a, Reifies s W)
     => BVar s b
@@ -318,9 +365,24 @@ v ^^? t = previewVar t v
 -- | An infix version of 'toListOfVar', meant to evoke parallels to '^..'
 -- from lens.
 --
--- Using a 'Traversal'', extract all targeted values /inside/ a 'BVar'.
+-- With normal values, you can extract all targets of a 'Traversal' from
+-- that value with a:
 --
--- See documentation for '^^.' for more details.
+-- @
+-- x '^..' myTraversal
+-- @
+--
+-- would extract all targets inside of @x :: b@, specified by @myTraversal
+-- :: 'Traversal'' b a@. The result has type @[a]@.
+--
+-- @
+-- xVar '^^..' myTraversal
+-- @
+--
+-- would extract all targets inside of @xVar :: 'BVar' s b@ (a 'BVar'
+-- holding a @b@), specified by @myTraversal :: Traversal' b a@.   The result
+-- has type @['BVar' s a]@ (A list of 'BVar's holding @a@s).
+--
 (^^..)
     :: forall b a s. (Num a, Reifies s W)
     => BVar s b

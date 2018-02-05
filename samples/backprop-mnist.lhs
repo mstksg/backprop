@@ -30,7 +30,6 @@ The packages involved are:
 *   mnist-idx
 *   mwc-random
 *   one-liner-instances
-*   reflection
 *   split
 *   vector
 
@@ -60,7 +59,6 @@ The packages involved are:
 > import           Data.Foldable
 > import           Data.IDX
 > import           Data.List.Split
-> import           Data.Reflection
 > import           Data.Time.Clock
 > import           Data.Traversable
 > import           Data.Tuple
@@ -287,9 +285,13 @@ our layer.  However, we can translate this to *backprop* by operating on
 access data within a `BVar` using a lens:
 
 ```haskell
-(^.)  ::        a -> Lens a b ->        b
-(^^.) :: BVar s a -> Lens a b -> BVar s b
+(^.)  ::        a -> Lens' a b ->        b
+(^^.) :: BVar s a -> Lens' a b -> BVar s b
 ```
+
+(There is also `^^?`, which can use a `Prism` or `Traversal` to extract a
+target that might not exist, `^^..`, which uses a `Traversal` to extract all
+targets, and `.~~`, which uses a `Lens` to update a value inside `BVar`)
 
 Now `runLayer` is a function on two inputs that can be backpropagated,
 automatically!  We can find its gradient given any input, and also run it to
@@ -571,6 +573,16 @@ Check out the docs for the [Numeric.Backprop][] module for a more detailed
 picture of what's going on, or find more examples at the [github repo][repo]!
 
 [Numeric.Backprop]: http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop.html
+
+Also, check out follow-up writeup to this tutorial, expanding on using the
+library with more advanced extensible neural network types, like the ones
+described in [this blog post][blog].  Check out the [literate haskell
+here][neural-lhs], and the [rendered PDF here][neural-pdf].
+
+[blog]: https://blog.jle.im/entries/series/+practical-dependent-types-in-haskell.html
+
+[neural-lhs]: https://github.com/mstksg/backprop/blob/master/samples/extensible-neural.lhs
+[neural-pdf]: https://github.com/mstksg/backprop/blob/master/renders/extensible-neural.pdf
 
 Boring stuff
 ============

@@ -46,6 +46,15 @@ installed), using
 $ ./Build.hs exe
 ```
 
+After the MNIST tutorial, there is a follow-up tutorial on using the library
+with more advanced types, with extensible neural networks a la [this blog
+post][blog], [available as literate haskell][neural-lhs] and also [rendered as
+a PDF][neural-pdf].
+
+[blog]: https://blog.jle.im/entries/series/+practical-dependent-types-in-haskell.html
+[neural-lhs]: https://github.com/mstksg/backprop/blob/master/samples/extensible-neural.lhs
+[neural-pdf]: https://github.com/mstksg/backprop/blob/master/renders/extensible-neural.pdf
+
 Brief example
 -------------
 
@@ -161,6 +170,41 @@ only saying how to compute *the error itself*.
 For a more fleshed out example, see the [MNIST tutorial][mnist-lhs] (also
 [rendered as a pdf][mnist-pdf])
 
+Lens Access
+-----------
+
+A lot of the friction of dealing with `BVar s a`s instead of `a`s directly is
+alleviated with the lens interface.
+
+With a lens, you can "view" and "set" items inside a `BVar`, as if they were
+the actual values:
+
+```haskell
+(^.)  ::        a -> Lens' a b ->        b
+(^^.) :: BVar s a -> Lens' a b -> BVar s b
+
+(.~)  :: Lens' a b ->        b ->        a ->        a
+(.~~) :: Lens' a b -> BVar s b -> BVar s a -> BVar s a
+```
+
+And you can also extract multiple potential targets, as well, using
+`Traversal`s and `Prism`s:
+
+```haskell
+-- | Actually takes a Traversal, to be more general.
+-- Can be used to implement "pattern matching" on BVars
+(^?)  ::        a -> Prism' a b -> Maybe (       b)
+(^^?) :: BVar s a -> Prism' a b -> Maybe (BVar s b)
+
+(^..)  ::        a -> Traversal' a b -> [       b]
+(^^..) :: BVar s a -> Traversal' a b -> [BVar s b]
+```
+
+Note that the library itself has no *lens* dependency, using *[microlens][]*
+instead.
+
+[microlens]: http://hackage.haskell.org/package/microlens
+
 Benchmarks
 ----------
 
@@ -206,6 +250,46 @@ Todo
     [grenade]: https://github.com/HuwCampbell/grenade
 
 2.  Write tests!
+
+3.  Explore potentially ditching `Num` for another typeclass that only has `+`,
+    `0`, and `1`.  Currently, `Num` is required for all backpropagated types,
+    but only `+`, `fromInteger 0`, and `fromInteger 1` are ever used.
+
+    The main upside to using `Num` is that it integrates well with the rest of
+    the Haskell ecosystem, and many things already have useful `Num` instances.
+
+    There are two downsides -- one minor and one major.
+
+    *   It requires more work to make a type backpropagatable.  Instead of
+        writing only `+`, `0` and `1`, users must also define `*`, `-` or
+        `negate`, `abs`, `signum`, and all of `fromInteger`.  However, I don't
+        see this being a big issue in practice, since most values that will be
+        used with *backprop* would presumably also benefit from having a full
+        `Num` instance even without the need to backprop.
+
+    *   Automatically generated prisms (used with `^^?`) work with tuples, and
+        so cannot work out-of-the-box without a `Num` instance for tuples.  In
+        addition, it's often useful to have anonymous products and tuples in
+        general.
+
+        However, this can be resolved by using the orphan instances in the
+        *[NumInstances][]* package.  Still, there might be some headache for
+        application developers if different libraries using *backprop*
+        accidentally pull in their orphan instances from different places.
+
+        [NumInstances]: https://hackage.haskell.org/package/NumInstances
+
+    The extra complexity that would come from adding a custom typeclass just
+    for `+` / `0` / `1`, though, I feel, might not be worth the benefit.  The
+    entire numeric Haskell ecosystem, at the time, revolves around `Num`.
+
+    However, it is worth noting that it wouldn't be too hard to add "Additive
+    Typeclass" instances for any custom types -- one would just need to define
+    `(<+>) = (+)`, `zero = fromInteger 1`, and `one = fromInteger 1` (a
+    three-liner), so it might not be too bad.
+
+    But really, a lot of this would all resolve itself if we got `Num`
+    instances for tuples in base :)
 
 3.  Explore opportunities for parallelization.  There are some naive ways of
     directly parallelizing right now, but potential overhead should be

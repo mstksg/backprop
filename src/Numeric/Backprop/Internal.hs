@@ -28,8 +28,7 @@ module Numeric.Backprop.Internal (
   , W
   , backpropN, evalBPN
   , constVar
-  , liftOp
-  , liftOp1, liftOp2, liftOp3
+  , liftOp, liftOp1, liftOp2, liftOp3
   , viewVar, setVar, sequenceVar, collectVar, previewVar, toListOfVar
   -- * Debug
   , debugSTN
@@ -38,8 +37,8 @@ module Numeric.Backprop.Internal (
 
 import           Control.DeepSeq
 import           Control.Exception
+import           Control.Monad
 import           Control.Monad.Primitive
-import           Control.Monad.Reader
 import           Control.Monad.ST
 import           Control.Monad.Trans.State
 import           Data.Bifunctor
@@ -51,9 +50,9 @@ import           Data.Monoid
 import           Data.Proxy
 import           Data.Reflection
 import           Data.Type.Index
-import           Data.Type.Product hiding  (toList)
+import           Data.Type.Product hiding   (toList)
 import           Data.Type.Util
-import           Data.Type.Vector hiding   (itraverse, head')
+import           Data.Type.Vector hiding    (itraverse, head')
 import           GHC.Generics
 import           Lens.Micro
 import           Numeric.Backprop.Op
@@ -61,8 +60,8 @@ import           System.IO.Unsafe
 import           Type.Class.Higher
 import           Type.Class.Witness
 import           Unsafe.Coerce
-import qualified Data.Vector               as V
-import qualified Data.Vector.Mutable       as MV
+import qualified Data.Vector                as V
+import qualified Data.Vector.Mutable        as MV
 
 -- | A @'BVar' s a@ is a value of type @a@ that can be "backpropagated".
 --
@@ -74,12 +73,19 @@ import qualified Data.Vector.Mutable       as MV
 -- represent.
 --
 -- If @a@ contains items, the items can be accessed and extracted using
--- lenses. A @'Lens'' b a@ can be used to access an @a@ inside a @b@:
+-- lenses. A @'Lens'' b a@ can be used to access an @a@ inside a @b@, using
+-- '^^.' ('viewVar'):
 --
 -- @
 -- ('^.')  ::        a -> 'Lens'' a b ->        b
 -- ('^^.') :: 'BVar' s a -> 'Lens'' a b -> 'BVar' s b
 -- @
+--
+-- There is also '^^?' ('previewVar'), to use a 'Prism'' or 'Traversal'' to
+-- extract a target that may or may not be present (which can implement
+-- pattern matching), '^^..' ('toListOfVar') to use a 'Traversal'' to
+-- extract /all/ targets inside a 'BVar', and '.~~' ('setVar') to set and
+-- update values inside a 'BVar'.
 --
 -- For more complex operations, libraries can provide functions on 'BVar's
 -- using 'liftOp' and related functions.  This is how you can create
@@ -507,10 +513,13 @@ gradRunner _ R{..} (n,stns) = do
 -- | 'backprop' generalized to multiple inputs of different types.  See the
 -- "Numeric.Backprop.Op#prod" for a mini-tutorial on heterogeneous lists.
 --
--- This is not strictly necessary, because you can always uncurry
--- a single-argument function by passing in all of the inputs in a data
--- type containing all of the arguments.  However, this can be convenient
--- if you don't want to create a custom data type.
+-- Not strictly necessary, because you can always uncurry a function by
+-- passing in all of the inputs in a data type containing all of the
+-- arguments.   You could also pass in a giant tuple with
+-- <https://hackage.haskell.org/package/NumInstances NumInstances>.
+-- However, this can be convenient if you don't want to make a custom tuple
+-- type or pull in orphan instances.  This could potentially also be more
+-- performant.
 --
 -- A @'Prod' ('BVar' s) '[Double, Float, Double]@, for instance, is a tuple
 -- of @'BVar' s 'Double'@, @'BVar' s 'Float'@, and @'BVar' s 'Double'@, and
