@@ -50,9 +50,6 @@ module Numeric.Backprop.Op (
   , opConst'
   -- ** Giving gradients directly
   , op1, op2, op3
-  -- ** Automatic creation using the /ad/ library
-  , op1', op2', op3', opN'
-  , Replicate
   -- ** From Isomorphisms
   , opCoerce, opTup, opIso, opLens
   -- * Manipulation
@@ -72,20 +69,14 @@ module Numeric.Backprop.Op (
 
 import           Data.Bifunctor
 import           Data.Coerce
-import           Data.Reflection                (Reifies)
 import           Data.Type.Combinator
 import           Data.Type.Conjunction
 import           Data.Type.Index
 import           Data.Type.Length
-import           Data.Type.Nat
 import           Data.Type.Product
 import           Data.Type.Util
-import           Data.Type.Vector hiding        (head')
 import           Lens.Micro
 import           Lens.Micro.Extras
-import           Numeric.AD
-import           Numeric.AD.Internal.Reverse    (Reverse, Tape)
-import           Numeric.AD.Mode.Forward hiding (grad')
 import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness
@@ -173,10 +164,7 @@ import           Type.Class.Witness
 -- and 'Op' for instructions on creating it.
 --
 -- It is simpler to not use this type constructor directly, and instead use
--- the 'op2', 'op1', 'op2', and 'op3' helper smart constructors  And,
--- if your function is a numeric function, they can even be created
--- automatically using 'op1'', 'op2'', 'op3'', and 'opN' with a little help
--- from "Numeric.AD" from the /ad/ library.
+-- the 'op2', 'op1', 'op2', and 'op3' helper smart constructors.
 --
 -- See "Numeric.Backprop.Op#prod" for a mini-tutorial on using 'Prod' and
 -- 'Tuple'.
@@ -272,10 +260,10 @@ composeOp1 = composeOp1' known
 -- just like '.':
 --
 -- @
--- 'op1' negate            :: 'Op' '[a]   a
--- 'op2' (+)               :: Op '[a,a] a
+-- f :: 'Op' '[b]   c
+-- g :: 'Op' '[a,a] b
 --
--- op1 negate '~.' op2 (+) :: Op '[a, a] a
+-- f '~.' g :: Op '[a, a] c
 -- @
 infixr 9 ~.
 (~.)
@@ -449,15 +437,12 @@ op0 x = Op $ \case
 --
 -- @
 -- square :: Num a => 'Op' '[a] a
--- square = 'op1'' $ \\x -> (x*x, \\d -> 2 * d * x
---                       )
+-- square = 'op1' $ \\x -> (x*x, \\d -> 2 * d * x
+--                      )
 -- @
 --
 -- Remember that, generally, end users shouldn't directly construct 'Op's;
 -- they should be provided by libraries or generated automatically.
---
--- For numeric functions, single-input 'Op's can be generated automatically
--- using 'op1''.
 op1
     :: (a -> (b, b -> a))
     -> Op '[a] b
@@ -504,9 +489,6 @@ op1 f = Op $ \case
 --
 -- Remember that, generally, end users shouldn't directly construct 'Op's;
 -- they should be provided by libraries or generated automatically.
---
--- For numeric functions, two-input 'Op's can be generated automatically
--- using 'op2''.
 op2
     :: (a -> b -> (c, c -> (a, b)))
     -> Op '[a,b] c
@@ -526,58 +508,6 @@ op3 f = Op $ \case
       let (q, dxdydz) = f x y z
       in  (q, (\(!dx, !dy, !dz) -> dx ::< dy ::< dz ::< Ø) . dxdydz)
 {-# INLINE op3 #-}
-
--- | Automatically create an 'Op' of a numerical function taking one
--- argument.  Uses 'Numeric.AD.diff', and so can take any numerical
--- function polymorphic over the standard numeric types.
---
--- >>> gradOp' (op1' (recip . negate)) (5 ::< Ø)
--- (-0.2, 0.04 ::< Ø)
-op1' :: Num a
-    => (forall s. AD s (Forward a) -> AD s (Forward a))
-    -> Op '[a] a
-op1' f = op1 $ \x ->
-    let (z, dx) = diff' f x
-    in  (z, (* dx))
-{-# INLINE op1' #-}
-
--- | Automatically create an 'Op' of a numerical function taking two
--- arguments.  Uses 'Numeric.AD.grad', and so can take any numerical function
--- polymorphic over the standard numeric types.
---
--- >>> gradOp' (op2' (\x y -> x * sqrt y)) (3 ::< 4 ::< Ø)
--- (6.0, 2.0 ::< 0.75 ::< Ø)
-op2' :: Num a
-    => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a)
-    -> Op '[a,a] a
-op2' f = opN' $ \case I x :* I y :* ØV -> f x y
-{-# INLINE op2' #-}
-
--- | Automatically create an 'Op' of a numerical function taking three
--- arguments.  Uses 'Numeric.AD.grad', and so can take any numerical function
--- polymorphic over the standard numeric types.
---
--- >>> gradOp' (op3' (\x y z -> (x * sqrt y)**z)) (3 ::< 4 ::< 2 ::< Ø)
--- (36.0, 24.0 ::< 9.0 ::< 64.503 ::< Ø)
-op3' :: Num a
-    => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a)
-    -> Op '[a,a,a] a
-op3' f = opN' $ \case I x :* I y :* I z :* ØV -> f x y z
-{-# INLINE op3' #-}
-
--- | Automatically create an 'Op' of a numerical function taking multiple
--- arguments.  Uses 'Numeric.AD.grad', and so can take any numerical
--- function polymorphic over the standard numeric types.
---
--- >>> gradOp' (opN' (\(x :+ y :+ Ø) -> x * sqrt y)) (3 ::< 4 ::< Ø)
--- (6.0, 2.0 ::< 0.75 ::< Ø)
-opN' :: (Num a, Known Nat n)
-    => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a)
-    -> Op (Replicate n a) a
-opN' f = Op $ \xs ->
-    let (y, dxs) = grad' f (prodToVec' known xs)
-    in  (y, vecToProd . \q -> (q *) <$> dxs)
-{-# INLINE opN' #-}
 
 instance (Known Length as, Every Num as, Num a) => Num (Op as a) where
     o1 + o2       = composeOp (o1 :< o2 :< Ø) (+.)
@@ -642,44 +572,36 @@ instance (Known Length as, Every Floating as, Every Fractional as, Every Num as,
 
 -- $numops
 --
--- Built-in ops for common numeric operations, implemented directly so
--- that they are more efficient than using 'op1'' \/ 'op2'' etc.
---
--- The naming scheme is:
---
--- @
--- ('+.') = 'op2'' ('+')
--- 'negateOp' = 'op1'' 'negate
--- @
+-- Built-in ops for common numeric operations.
 --
 -- Note that the operators (like '+.') are meant to be used in prefix
 -- form, like:
 --
 -- @
--- 'Numeric.Backprop.liftB2' ('.+') v1 v2
+-- 'Numeric.Backprop.liftOp2' ('.+') v1 v2
 -- @
 
--- | Optimized version of @'op1'' ('+')@.
+-- | 'Op' for addition
 (+.) :: Num a => Op '[a, a] a
 (+.) = op2 $ \x y -> (x + y, \g -> (g, g))
 {-# INLINE (+.) #-}
 
--- | Optimized version of @'op1'' ('-')@.
+-- | 'Op' for subtraction
 (-.) :: Num a => Op '[a, a] a
 (-.) = op2 $ \x y -> (x - y, \g -> (g, -g))
 {-# INLINE (-.) #-}
 
--- | Optimized version of @'op1'' ('*')@.
+-- | 'Op' for multiplication
 (*.) :: Num a => Op '[a, a] a
 (*.) = op2 $ \x y -> (x * y, \g -> (y*g, x*g))
 {-# INLINE (*.) #-}
 
--- | Optimized version of @'op1'' ('/')@.
+-- | 'Op' for division
 (/.) :: Fractional a => Op '[a, a] a
 (/.) = op2 $ \x y -> (x / y, \g -> (g/y, -g*x/(y*y)))
 {-# INLINE (/.) #-}
 
--- | Optimized version of @'op1'' ('**')@.
+-- | 'Op' for exponentiation
 (**.) :: Floating a => Op '[a, a] a
 (**.) = op2 $ \x y -> ( x ** y
                       , let dx = y*x**(y-1)
@@ -688,42 +610,42 @@ instance (Known Length as, Every Floating as, Every Fractional as, Every Num as,
                       )
 {-# INLINE (**.) #-}
 
--- | Optimized version of @'op1'' 'negate'@.
+-- | 'Op' for negation
 negateOp :: Num a => Op '[a] a
 negateOp = op1 $ \x -> (negate x, negate)
 {-# INLINE negateOp  #-}
 
--- | Optimized version of @'op1'' 'signum'@.
+-- | 'Op' for 'signum'
 signumOp :: Num a => Op '[a] a
 signumOp = op1 $ \x -> (signum x, const 0)
 {-# INLINE signumOp  #-}
 
--- | Optimized version of @'op1'' 'abs'@.
+-- | 'Op' for absolute value
 absOp :: Num a => Op '[a] a
 absOp = op1 $ \x -> (abs x, (* signum x))
 {-# INLINE absOp #-}
 
--- | Optimized version of @'op1'' 'recip'@.
+-- | 'Op' for multiplicative inverse
 recipOp :: Fractional a => Op '[a] a
 recipOp = op1 $ \x -> (recip x, (/(x*x)) . negate)
 {-# INLINE recipOp #-}
 
--- | Optimized version of @'op1'' 'exp'@.
+-- | 'Op' for 'exp'
 expOp :: Floating a => Op '[a] a
 expOp = op1 $ \x -> (exp x, (exp x *))
 {-# INLINE expOp #-}
 
--- | Optimized version of @'op1'' 'log'@.
+-- | 'Op' for the natural logarithm
 logOp :: Floating a => Op '[a] a
 logOp = op1 $ \x -> (log x, (/x))
 {-# INLINE logOp #-}
 
--- | Optimized version of @'op1'' 'sqrt'@.
+-- | 'Op' for square root
 sqrtOp :: Floating a => Op '[a] a
 sqrtOp = op1 $ \x -> (sqrt x, (/ (2 * sqrt x)))
 {-# INLINE sqrtOp #-}
 
--- | Optimized version of @'op2'' 'logBase'@.
+-- | 'Op' for 'logBase'
 logBaseOp :: Floating a => Op '[a, a] a
 logBaseOp = op2 $ \x y -> ( logBase x y
                           , let dx = - logBase x y / (log x * x)
@@ -731,62 +653,62 @@ logBaseOp = op2 $ \x y -> ( logBase x y
                           )
 {-# INLINE logBaseOp #-}
 
--- | Optimized version of @'op1'' 'sin'@.
+-- | 'Op' for sine
 sinOp :: Floating a => Op '[a] a
 sinOp = op1 $ \x -> (sin x, (* cos x))
 {-# INLINE sinOp #-}
 
--- | Optimized version of @'op1'' 'cos'@.
+-- | 'Op' for cosine
 cosOp :: Floating a => Op '[a] a
 cosOp = op1 $ \x -> (cos x, (* (-sin x)))
 {-# INLINE cosOp #-}
 
--- | Optimized version of @'op1'' 'tan'@.
+-- | 'Op' for tangent
 tanOp :: Floating a => Op '[a] a
 tanOp = op1 $ \x -> (tan x, (/ cos x^(2::Int)))
 {-# INLINE tanOp #-}
 
--- | Optimized version of @'op1'' 'asin'@.
+-- | 'Op' for arcsine
 asinOp :: Floating a => Op '[a] a
 asinOp = op1 $ \x -> (asin x, (/ sqrt(1 - x*x)))
 {-# INLINE asinOp #-}
 
--- | Optimized version of @'op1'' 'acos'@.
+-- | 'Op' for arccosine
 acosOp :: Floating a => Op '[a] a
 acosOp = op1 $ \x -> (acos x, (/ sqrt (1 - x*x)) . negate)
 {-# INLINE acosOp #-}
 
--- | Optimized version of @'op1'' 'atan'@.
+-- | 'Op' for arctangent
 atanOp :: Floating a => Op '[a] a
 atanOp = op1 $ \x -> (atan x, (/ (x*x + 1)))
 {-# INLINE atanOp #-}
 
--- | Optimized version of @'op1'' 'sinh'@.
+-- | 'Op' for hyperbolic sine
 sinhOp :: Floating a => Op '[a] a
 sinhOp = op1 $ \x -> (sinh x, (* cosh x))
 {-# INLINE sinhOp #-}
 
--- | Optimized version of @'op1'' 'cosh'@.
+-- | 'Op' for hyperbolic cosine
 coshOp :: Floating a => Op '[a] a
 coshOp = op1 $ \x -> (cosh x, (* sinh x))
 {-# INLINE coshOp #-}
 
--- | Optimized version of @'op1'' 'tanh'@.
+-- | 'Op' for hyperbolic tangent
 tanhOp :: Floating a => Op '[a] a
 tanhOp = op1 $ \x -> (tanh x, (/ cosh x^(2::Int)))
 {-# INLINE tanhOp #-}
 
--- | Optimized version of @'op1'' 'asinh'@.
+-- | 'Op' for hyperbolic arcsine
 asinhOp :: Floating a => Op '[a] a
 asinhOp = op1 $ \x -> (asinh x, (/ sqrt (x*x + 1)))
 {-# INLINE asinhOp #-}
 
--- | Optimized version of @'op1'' 'acosh'@.
+-- | 'Op' for hyperbolic arccosine
 acoshOp :: Floating a => Op '[a] a
 acoshOp = op1 $ \x -> (acosh x, (/ sqrt (x*x - 1)))
 {-# INLINE acoshOp #-}
 
--- | Optimized version of @'op1'' 'atanh'@.
+-- | 'Op' for hyperbolic arctangent
 atanhOp :: Floating a => Op '[a] a
 atanhOp = op1 $ \x -> (atanh x, (/ (1 - x*x)))
 {-# INLINE atanhOp #-}

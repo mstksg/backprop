@@ -72,9 +72,6 @@ module Numeric.Backprop (
   , opConst'
     -- *** Giving gradients directly
   , op1, op2, op3
-    -- *** Automatic creation using the /ad/ library
-  , op1', op2', op3', opN'
-  , Replicate
     -- *** From Isomorphisms
   , opCoerce, opTup, opIso, opLens
     -- * Utility

@@ -46,7 +46,6 @@ library:
   - Numeric.Backprop.Internal
   - Data.Type.Util
   dependencies:
-  - ad
   - microlens
   - primitive
   - reflection
