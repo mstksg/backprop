@@ -56,8 +56,9 @@ module Numeric.Backprop (
   , backpropN, evalBPN, gradBPN, Every
     -- * Manipulating 'BVar'
   , constVar
-  , viewVar, setVar, (^^.), (.~~)
+  , viewVar, setVar, (^^.), (.~~), (^^?), (^^..)
   , sequenceVar, collectVar
+  , previewVar, toListOfVar
     -- ** With 'Op's#liftops#
     -- $liftops
   , liftOp
@@ -87,7 +88,8 @@ import           Numeric.Backprop.Op
 --
 -- This library provides a few primitive actions for manipulating 'BVar's
 -- and the values inside them, including its 'Num', 'Fractional', and
--- 'Floating' instances, and lens-based operations like '^^.' and '.~~'.
+-- 'Floating' instances, and lens-based operations like '^^.', '.~~' '^^?',
+-- and '^^..'.
 --
 -- However, the power of this library comes from manipulating many
 -- different types from libraries, like matrices and vectors.  Libraries
@@ -133,20 +135,6 @@ import           Numeric.Backprop.Op
 -- that 'BVar's do not leak out of the context (similar to how it is used
 -- in "Control.Monad.ST"), and also as a reference to an ephemeral Wengert
 -- tape used to track the graph of references.
---
--- __What can be backpropagated__
---
--- Of course, not every type can be meaningfully backpropagated.  There are
--- two main restrictions:
---
---     (1) Every type involved has to have an instance of 'Num'.  This is
---     only because gradients all need to be "summable", and we also need
---     to generate gradients of 0 and 1.  Really, we don't need the entire
---     power of 'Num' -- we only need '+', @'fromInteger' 0@, and
---     @'fromInteger' 1@ -- but 'Num' is required just to more conveniently
---     fit in with the rest of the Haskell ecosystem.
---     (2) We can "split apart" 
---
 --
 -- Note that every type involved has to be an instance of 'Num'.  This is
 -- because gradients all need to be "summable" (which is implemented using
@@ -309,3 +297,34 @@ infixl 8 ^^.
 l .~~ x = setVar l x
 infixl 8 .~~
 {-# INLINE (.~~) #-}
+
+-- | An infix version of 'previewVar', meant to evoke parallels to '^?'
+-- from lens.
+--
+-- Using a 'Traversal'', extract a single value /inside/ a 'BVar', if it
+-- exists.  If more than one traversal target exists, returns te first.
+-- Really only intended to be used wth 'Prism''s, or up-to-one target
+-- traversals.
+--
+-- See documentation for '^^.' for more details.
+(^^?)
+    :: forall b a s. (Num a, Reifies s W)
+    => BVar s b
+    -> Traversal' b a
+    -> Maybe (BVar s a)
+v ^^? t = previewVar t v
+{-# INLINE (^^?) #-}
+
+-- | An infix version of 'toListOfVar', meant to evoke parallels to '^..'
+-- from lens.
+--
+-- Using a 'Traversal'', extract all targeted values /inside/ a 'BVar'.
+--
+-- See documentation for '^^.' for more details.
+(^^..)
+    :: forall b a s. (Num a, Reifies s W)
+    => BVar s b
+    -> Traversal' b a
+    -> [BVar s a]
+v ^^.. t = toListOfVar t v
+{-# INLINE (^^..) #-}

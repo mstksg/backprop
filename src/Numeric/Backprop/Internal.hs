@@ -26,11 +26,11 @@
 module Numeric.Backprop.Internal (
     BVar
   , W
+  , backpropN, evalBPN
   , constVar
   , liftOp
   , liftOp1, liftOp2, liftOp3
-  , viewVar, setVar, sequenceVar, collectVar
-  , backpropN, evalBPN
+  , viewVar, setVar, sequenceVar, collectVar, previewVar, toListOfVar
   -- * Debug
   , debugSTN
   , debugIR
@@ -376,27 +376,13 @@ setVar
 setVar l !w !v = unsafePerformIO $ setVar_ l w v
 {-# INLINE setVar #-}
 
-sequenceVar_
-    :: forall t a s. (Reifies s W, Traversable t, Num a)
-    => BVar s (t a)
-    -> IO (t (BVar s a))
-sequenceVar_ !v = forceBVar v `seq` itraverse go (_bvVal v)
-  where
-    go :: Int -> a -> IO (BVar s a)
-    go i y = insertNode tn y (reflect (Proxy @s))
-      where
-        tn = TN { _tnInputs = IR v (ixt i) :< Ø
-                , _tnGrad   = only_
-                }
-{-# INLINE sequenceVar_ #-}
-
 -- | Extract all of the 'BVar's out of a 'Traversable' container of
 -- 'BVar's.
 sequenceVar
     :: forall t a s. (Reifies s W, Traversable t, Num a)
     => BVar s (t a)
     -> t (BVar s a)
-sequenceVar !v = unsafePerformIO $ sequenceVar_ v
+sequenceVar !v = unsafePerformIO $ traverseVar' id traverse v
 {-# INLINE sequenceVar #-}
 
 collectVar_
@@ -422,6 +408,49 @@ collectVar
     -> BVar s (t a)
 collectVar !vs = unsafePerformIO $ collectVar_ vs
 {-# INLINE collectVar #-}
+
+traverseVar'
+    :: forall b a f s. (Num a, Reifies s W, Traversable f)
+    => (b -> f a)
+    -> Traversal' b a
+    -> BVar s b
+    -> IO (f (BVar s a))
+traverseVar' f t !v = forceBVar v
+              `seq` itraverse go (f (_bvVal v))
+  where
+    go :: Int -> a -> IO (BVar s a)
+    go i y = insertNode tn y (reflect (Proxy @s))
+      where
+        tn = TN { _tnInputs = IR v (ixt t i) :< Ø
+                , _tnGrad   = only_
+                }
+{-# INLINE traverseVar' #-}
+
+-- | Using a 'Traversal'', extract a single value /inside/ a 'BVar', if it
+-- exists.  If more than one traversal target exists, returns te first.
+-- Meant to evoke parallels to 'preview' from lens.  Really only intended
+-- to be used wth 'Prism''s, or up-to-one target traversals.
+--
+-- See documentation for '^^?' for more information.
+previewVar
+    :: forall b a s. (Num a, Reifies s W)
+    => Traversal' b a
+    -> BVar s b
+    -> Maybe (BVar s a)
+previewVar t !v = unsafePerformIO $ traverseVar' (listToMaybe . toListOf t) t v
+{-# INLINE previewVar #-}
+
+-- | Using a 'Traversal'', extract all targeted values /inside/ a 'BVar'.
+-- Meant to evoke parallels to 'toListOf' from lens.
+--
+-- See documentation for '^^..' for more information.
+toListOfVar
+    :: forall b a s. (Num a, Reifies s W)
+    => Traversal' b a
+    -> BVar s b
+    -> [BVar s a]
+toListOfVar t !v = unsafePerformIO $ traverseVar' (toListOf t) t v
+{-# INLINE toListOfVar #-}
 
 data SomeNum :: Type where
     SN  :: Num a
@@ -623,20 +652,19 @@ itraverse f xs = evalStateT (traverse (StateT . go) xs) 0
     go x i = (,i+1) <$> f i x
 {-# INLINE itraverse #-}
 
-ixt :: forall t a. Traversable t => Int -> Lens' (t a) a
-ixt i f xs = stuff <$> ixi i f contents
-  where
-    contents = toList xs
-    stuff    = evalState (traverse (state . const go) xs)
-      where
-        go :: [a] -> (a,  [a])
-        go []     = error "asList"
-        go (y:ys) = (y, ys)
-{-# INLINE ixt #-}
-
 ixi :: Int -> Lens' [a] a
 ixi _ _ []     = error "ixi"
 ixi 0 f (x:xs) = (:xs) <$> f x
 ixi n f (x:xs) = (x:)  <$> ixi (n - 1) f xs
 {-# INLINE ixi #-}
 
+ixt :: forall b a. Traversal' b a -> Int -> Lens' b a
+ixt t i f xs = stuff <$> ixi i f contents
+  where
+    contents = xs ^.. t
+    stuff    = evalState (traverseOf t (state . const go) xs)
+      where
+        go :: [a] -> (a,  [a])
+        go []     = error "asList"
+        go (y:ys) = (y, ys)
+{-# INLINE ixt #-}

@@ -71,7 +71,7 @@ import           Data.Tuple
 import           GHC.Generics                        (Generic)
 import           GHC.TypeLits
 import           Numeric.Backprop
-import           Numeric.LinearAlgebra.Static hiding (dot)
+import           Numeric.LinearAlgebra.Static
 import           Numeric.OneLiner
 import           Text.Printf
 import qualified Data.Vector                         as V
@@ -510,6 +510,7 @@ trainList
     -> Network i h1 h2 o  -- ^ initial network
     -> Network i h1 h2 o
 trainList r = flip $ foldl' (\n (x,y) -> trainStep r x y n)
+{-# INLINE trainList #-}
 ```
 
 `testNet` will be a quick way to test our net by computing the
