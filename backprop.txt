@@ -494,7 +494,7 @@ instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.I
 --   <a>gradBP</a> :: (forall s. <a>Reifies</a> s <a>W</a>. <a>BVar</a> s a -&gt; BVar s b) -&gt; (a -&gt; a)
 --   </pre>
 --   
---   To automatically get the <i>gradient</i>, as well, for a given input.
+--   to automatically get the <i>gradient</i>, as well, for a given input.
 --   
 --   See the <a>README</a> for more information and links to demonstrations
 --   and tutorials, or dive striaght in by reading the docs for
@@ -513,12 +513,19 @@ module Numeric.Backprop
 --   
 --   If <tt>a</tt> contains items, the items can be accessed and extracted
 --   using lenses. A <tt><a>Lens'</a> b a</tt> can be used to access an
---   <tt>a</tt> inside a <tt>b</tt>:
+--   <tt>a</tt> inside a <tt>b</tt>, using <tt>^^.</tt> (<a>viewVar</a>):
 --   
 --   <pre>
 --   (<a>^.</a>)  ::        a -&gt; <a>Lens'</a> a b -&gt;        b
 --   (<tt>^^.</tt>) :: <a>BVar</a> s a -&gt; <a>Lens'</a> a b -&gt; <a>BVar</a> s b
 --   </pre>
+--   
+--   There is also <tt>^^?</tt> (<a>previewVar</a>), to use a
+--   <tt>Prism'</tt> or <a>Traversal'</a> to extract a target that may or
+--   may not be present, <tt>^^..</tt> (<a>toListOfVar</a>) to use a
+--   <a>Traversal'</a> to extract <i>all</i> targets inside a <a>BVar</a>,
+--   and <tt>.~~</tt> (<a>setVar</a>) to set and update values inside a
+--   <a>BVar</a>.
 --   
 --   For more complex operations, libraries can provide functions on
 --   <a>BVar</a>s using <a>liftOp</a> and related functions. This is how
@@ -544,6 +551,7 @@ data BVar s a
 --   <a>W</a></tt> as a required constraint on <tt>s</tt> that allows
 --   backpropagation to work.
 data W
+class Reifies k (s :: k) a | s -> a
 
 -- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
 --   the function <tt>a -&gt; b</tt> that it represents, also computing its
@@ -716,6 +724,26 @@ infixl 8 ^^.
 (.~~) :: forall a b s. (Reifies s W, Num a, Num b) => Lens' b a -> BVar s a -> BVar s b -> BVar s b
 infixl 8 .~~
 
+-- | An infix version of <a>previewVar</a>, meant to evoke parallels to
+--   <a>^?</a> from lens.
+--   
+--   Using a <a>Traversal'</a>, extract a single value <i>inside</i> a
+--   <a>BVar</a>, if it exists. If more than one traversal target exists,
+--   returns te first. Really only intended to be used wth
+--   <tt>Prism'</tt>s, or up-to-one target traversals.
+--   
+--   See documentation for <a>^^.</a> for more details.
+(^^?) :: forall b a s. (Num a, Reifies s W) => BVar s b -> Traversal' b a -> Maybe (BVar s a)
+
+-- | An infix version of <a>toListOfVar</a>, meant to evoke parallels to
+--   <a>^..</a> from lens.
+--   
+--   Using a <a>Traversal'</a>, extract all targeted values <i>inside</i> a
+--   <a>BVar</a>.
+--   
+--   See documentation for <a>^^.</a> for more details.
+(^^..) :: forall b a s. (Num a, Reifies s W) => BVar s b -> Traversal' b a -> [BVar s a]
+
 -- | Extract all of the <a>BVar</a>s out of a <a>Traversable</a> container
 --   of <a>BVar</a>s.
 sequenceVar :: forall t a s. (Reifies s W, Traversable t, Num a) => BVar s (t a) -> t (BVar s a)
@@ -723,6 +751,21 @@ sequenceVar :: forall t a s. (Reifies s W, Traversable t, Num a) => BVar s (t a)
 -- | Collect all of the <a>BVar</a>s in a container into a <a>BVar</a> of
 --   that container's contents.
 collectVar :: forall a t s. (Reifies s W, Foldable t, Functor t, Num (t a), Num a) => t (BVar s a) -> BVar s (t a)
+
+-- | Using a <a>Traversal'</a>, extract a single value <i>inside</i> a
+--   <a>BVar</a>, if it exists. If more than one traversal target exists,
+--   returns te first. Meant to evoke parallels to <tt>preview</tt> from
+--   lens. Really only intended to be used wth <tt>Prism'</tt>s, or
+--   up-to-one target traversals.
+--   
+--   See documentation for <tt>^^?</tt> for more information.
+previewVar :: forall b a s. (Num a, Reifies s W) => Traversal' b a -> BVar s b -> Maybe (BVar s a)
+
+-- | Using a <a>Traversal'</a>, extract all targeted values <i>inside</i> a
+--   <a>BVar</a>. Meant to evoke parallels to <a>toListOf</a> from lens.
+--   
+--   See documentation for <tt>^^..</tt> for more information.
+toListOfVar :: forall b a s. (Num a, Reifies s W) => Traversal' b a -> BVar s b -> [BVar s a]
 
 -- | Lift an <a>Op</a> with an arbitrary number of inputs to a function on
 --   the appropriate number of <a>BVar</a>s.
