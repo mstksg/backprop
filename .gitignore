@@ -5,7 +5,12 @@
 /TAGS
 /data
 /samples-exe
+/*.cabal
 
 /bench-results
 /prof-results
+*.prof
+*.prof.folded
+/samples-prof
+/samples
 
