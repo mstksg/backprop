@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs            #-}
 {-# LANGUAGE RankNTypes       #-}
 
 -- |
@@ -50,6 +51,9 @@ module Numeric.Backprop (
     BVar, W
     -- * Running
   , backprop, evalBP, gradBP
+    -- ** Multiple inputs
+  , backprop2, evalBP2, gradBP2
+  , backpropN, evalBPN, gradBPN, Every(..)
     -- * Manipulating 'BVar'
   , constVar
   , viewVar, setVar, (^^.), (.~~)
@@ -73,6 +77,8 @@ module Numeric.Backprop (
   , opCoerce, opTup, opIso, opLens
   ) where
 
+import           Data.Type.Index
+import           Data.Bifunctor
 import           Data.Reflection
 import           Lens.Micro
 import           Numeric.Backprop.Internal
@@ -122,20 +128,42 @@ import           Numeric.Backprop.Op
 -- libraries might even provide 'BVar' versions by default.
 
 -- | Turn a function @'BVar' s a -> 'BVar' s b@ into the function @a -> b@
+-- that it represents, also computing its gradient @a@ as well.
+--
+-- The Rank-N type @forall s. 'Reifies' s 'W' => ...@ is used to ensure
+-- that 'BVar's do not leak out of the context (similar to how it is used
+-- in "Control.Monad.ST"), and also as a reference to an ephemeral Wengert
+-- tape used to track the graph of references.
+--
+-- Note that every type involved has to be an instance of 'Num'.  This is
+-- because gradients all need to be "summable" (which is implemented using
+-- 'sum' and '+'), and we also need to able to generate gradients of 1
+-- and 0.  Really, only '+' and 'fromInteger' methods are used from the
+-- 'Num' typeclass.
+backprop
+    :: forall a b. (Num a, Num b)
+    => (forall s. Reifies s W => BVar s a -> BVar s b)
+    -> a
+    -> (b, a)
+backprop f = second (getI . head')
+           . backpropN (f . head')
+           . only_
+{-# INLINE backprop #-}
+
+-- | Turn a function @'BVar' s a -> 'BVar' s b@ into the function @a -> b@
 -- that it represents.
 --
 -- Benchmarks show that this should have virtually no overhead over
 -- directly writing a @a -> b@. 'BVar' is, in this situation, a zero-cost
 -- abstraction, performance-wise.
 --
+-- Has a nice advantage over using 'backprop' in that it doesn't require
+-- 'Num' constraints on the input and output.
+--
 -- See documentation of 'backprop' for more information.
 --
-evalBP
-    :: forall a b. (Num a, Num b)
-    => (forall s. Reifies s W => BVar s a -> BVar s b)
-    -> a
-    -> b
-evalBP f = fst . backprop f
+evalBP :: (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
+evalBP f = evalBPN (f . head') . only_
 {-# INLINE evalBP #-}
 
 -- | Take a function @'BVar' s a -> 'BVar' s b@, interpreted as a function
@@ -157,6 +185,49 @@ gradBP
     -> a
 gradBP f = snd . backprop f
 {-# INLINE gradBP #-}
+
+-- | 'gradBP' generalized to multiple inputs of different types.  See
+-- documentation for 'backpropN' for more details.
+gradBPN
+    :: forall as b. (Every Num as, Num b)
+    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
+    -> Tuple as
+    -> Tuple as
+gradBPN f = snd . backpropN f
+
+-- | 'backprop' for a two-argument function.
+--
+-- Not strictly necessary, because you can always uncurry a function by
+-- putting the arguments inside a data type.  However, this can be
+-- convenient if you don't want to make a custom tuple type.
+--
+-- For 3 and more arguments, consider using 'backpropN'.
+backprop2
+    :: forall a b c. (Num a, Num b, Num c)
+    => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
+    -> a
+    -> b
+    -> (c, (a, b))
+backprop2 f x y = second (\(dx ::< dy ::< Ø) -> (dx, dy))
+                $ backpropN (\(x' :< y' :< Ø) -> f x' y') (x ::< y ::< Ø)
+{-# INLINE backprop2 #-}
+
+-- | 'evalBP' for a two-argument function.  See 'backprop2' for notes.
+evalBP2
+    :: (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
+    -> a
+    -> b
+    -> c
+evalBP2 f x y = evalBPN (\(x' :< y' :< Ø) -> f x' y') (x ::< y ::< Ø)
+
+-- | 'gradBP' for a two-argument function.  See 'backprop2' for notes.
+gradBP2
+    :: (Num a, Num b, Num c)
+    => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
+    -> a
+    -> b
+    -> (a, b)
+gradBP2 f x = snd . backprop2 f x
 
 -- | An infix version of 'viewVar', meant to evoke parallels to '^.' from
 -- lens.

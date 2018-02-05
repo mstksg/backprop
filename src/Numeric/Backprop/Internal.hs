@@ -30,7 +30,7 @@ module Numeric.Backprop.Internal (
   , liftOp
   , liftOp1, liftOp2, liftOp3, liftOp4
   , viewVar, setVar, sequenceVar, collectVar
-  , backprop
+  , backpropN, evalBPN
   ) where
 
 import           Control.DeepSeq
@@ -39,16 +39,18 @@ import           Control.Monad.Primitive
 import           Control.Monad.Reader
 import           Control.Monad.ST
 import           Control.Monad.Trans.State
+import           Data.Bifunctor
 import           Data.Foldable
 import           Data.IORef
 import           Data.Kind
-import           Data.Primitive.MutVar
+import           Data.Maybe
+import           Data.Monoid
 import           Data.Proxy
 import           Data.Reflection
 import           Data.Type.Index
 import           Data.Type.Product hiding  (toList)
 import           Data.Type.Util
-import           Data.Type.Vector hiding   (itraverse)
+import           Data.Type.Vector hiding   (itraverse, head')
 import           GHC.Generics
 import           Lens.Micro
 import           Numeric.Backprop.Op
@@ -56,6 +58,7 @@ import           System.IO.Unsafe
 import           Type.Class.Higher
 import           Type.Class.Witness
 import           Unsafe.Coerce
+import qualified Data.Vector               as V
 import qualified Data.Vector.Mutable       as MV
 
 -- | A @'BVar' s a@ is a value of type @a@ that can be "backpropagated".
@@ -94,7 +97,7 @@ data BVar s a = BV { _bvRef :: !(BRef s)
                    , _bvVal :: !a
                    }
 
-data BRef (s :: Type) = BRInp
+data BRef (s :: Type) = BRInp !Int
                       | BRIx !Int
                       | BRC
   deriving Generic
@@ -457,28 +460,32 @@ data SomeNum :: Type where
         -> a
         -> SomeNum
 
-data Runner s = R { _rDelta :: MV.MVector s SomeNum
+data Runner s = R { _rDelta  :: MV.MVector s SomeNum
+                  , _rInputs :: MV.MVector s SomeNum
                   }
 
 initRunner
     :: (PrimMonad m, PrimState m ~ s)
     => (Int, [SomeTapeNode])
+    -> (Int, [Some (Wit1 Num)])
     -> m (Runner s)
-initRunner (n, stns) = R <$> do
-    r <- MV.new n
+initRunner (n, stns) (nx,xs) = do
+    delts <- MV.new n
     for_ (zip [n-1,n-2..] stns) $ \(i, STN (TN{..} :: TapeNode c)) -> do
-      MV.write r i $ SN (Proxy @c) 0
-    return r
+      MV.write delts i $ SN (Proxy @c) 0
+    inps <- MV.new nx
+    for_ (zip [0..] xs) $ \(i, Some (Wit1 :: Wit1 Num c)) -> do
+      MV.write inps i $ SN (Proxy @c) 0
+    return $ R delts inps
 {-# INLINE initRunner #-}
 
 gradRunner
-    :: forall m a b s p. (PrimMonad m, PrimState m ~ s, Num b)
+    :: forall m b s p. (PrimMonad m, PrimState m ~ s, Num b)
     => p b
     -> Runner s
     -> (Int, [SomeTapeNode])
-    -> MutVar s a
     -> m ()
-gradRunner _ R{..} (n,stns) dx = do
+gradRunner _ R{..} (n,stns) = do
     MV.write _rDelta (n - 1) (SN (Proxy @b) 1)
     zipWithM_ go [n-1,n-2..] stns
   where
@@ -489,54 +496,78 @@ gradRunner _ R{..} (n,stns) dx = do
       zipWithPM_ propagate _tnInputs gs
     propagate :: forall x. InpRef x -> I x -> m ()
     propagate (IR v ln) (I !d) = case _bvRef v of
-      BRInp   -> modifyMutVar' (unsafeCoerce dx) (ln %~ (+ d))    -- bad for tuples
+      BRInp !i -> flip (MV.modify _rInputs) i $ \case
+        SN p !y -> let y' = unsafeCoerce y & ln %~ (+d)
+                   in  y' `seq` SN p (unsafeCoerce y')
       BRIx !i -> flip (MV.modify _rDelta) i $ \case
         SN p !y -> let y' = unsafeCoerce y & ln %~ (+d)
                    in  y' `seq` SN p (unsafeCoerce y')
       BRC     -> return ()
 {-# INLINE gradRunner #-}
 
-registerOut
-    :: (Reifies s W, Num a)
-    => BVar s a
-    -> IO a
-registerOut !v = _bvVal v <$ liftOp1_ idOp v
-{-# INLINE registerOut #-}
-
--- | Turn a function @'BVar' s a -> 'BVar' s b@ into the function @a -> b@
--- that it represents, also computing its gradient @a@ as well.
+-- | 'backprop' generalized to multiple inputs of different types.  See the
+-- "Numeric.Backprop.Op#prod" for a mini-tutorial on heterogeneous lists.
 --
--- The Rank-N type @forall s. 'Reifies' s 'W' => ...@ is used to ensure
--- that 'BVar's do not leak out of the context (similar to how it is used
--- in "Control.Monad.ST"), and also as a reference to an ephemeral Wengert
--- tape used to track the graph of references.
+-- This is not strictly necessary, because you can always uncurry
+-- a single-argument function by passing in all of the inputs in a data
+-- type containing all of the arguments.  However, this can be convenient
+-- if you don't want to create a custom data type.
 --
--- Note that every type involved has to be an instance of 'Num'.  This is
--- because gradients all need to be "summable" (which is implemented using
--- 'sum' and '+'), and we also need to able to generate gradients of 1
--- and 0.  Really, only '+' and 'fromInteger' methods are used from the
--- 'Num' typeclass.
-backprop
-    :: forall a b. (Num a, Num b)
-    => (forall s. Reifies s W => BVar s a -> BVar s b)
-    -> a
-    -> (b, a)
-backprop f x = (y, g)
+-- A @'Prod' ('BVar' s) '[Double, Float, Double]@, for instance, is a tuple
+-- of @'BVar' s 'Double'@, @'BVar' s 'Float'@, and @'BVar' s 'Double'@, and
+-- can be pattern matched on using ':<' (cons) and 'Ø' (nil).
+backpropN
+    :: forall as b. (Every Num as, Num b)
+    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
+    -> Tuple as
+    -> (b, Tuple as)
+backpropN f xs = (y, g)
   where
-    !(!tp@(!_,!_),!y) = unsafePerformIO $ do
-      w <- initWengert
-      o <- reify w $ \(Proxy :: Proxy s) ->
-        registerOut =<< evaluate (f (BV (BRInp @s) x))
-      t <- readIORef (wRef w)
-      traverse_ (evaluate . forceSomeTapeNode) (snd t)
-      return (t, o)
-    g :: a
+    !(!tp@(!_,!_),!y) = unsafePerformIO $ fillWengert f xs
+    g :: Tuple as
     g = runST $ do
-      r <- initRunner tp
-      o <- newMutVar (0 :: a)
-      gradRunner (Proxy @b) r tp o
-      readMutVar o
-{-# INLINE backprop #-}
+        r <- initRunner tp (getSum `first` ifoldMap1 go xs)
+        gradRunner (Proxy @b) r tp
+        delts <- toList <$> V.freeze (_rInputs r)
+        return . fromMaybe (error "backpropN") $
+          fillProd (\_ (SN _ d) -> I (unsafeCoerce d)) xs delts
+      where
+        go :: forall a. Index as a -> I a -> (Sum Int, [Some (Wit1 Num)])
+        go i (I _) = (1, [Some (Wit1 :: Wit1 Num a)]) \\ every @_ @Num i
+{-# INLINE backpropN #-}
+
+-- | 'evalBP' generalized to multiple inputs of different types.  See
+-- documentation for 'backpropN' for more details.
+evalBPN
+    :: forall as b. ()
+    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
+    -> Tuple as
+    -> b
+evalBPN f = snd . unsafePerformIO . fillWengert f
+{-# INLINE evalBPN #-}
+
+fillWengert
+    :: forall as b. ()
+    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
+    -> Tuple as
+    -> IO ((Int, [SomeTapeNode]), b)
+fillWengert f xs = do
+    w <- initWengert
+    o <- reify w $ \(Proxy :: Proxy s) -> do
+      let oVar = f (inpProd @s)
+      evaluate (forceBVar oVar)
+      return (_bvVal oVar)
+    t <- readIORef (wRef w)
+    traverse_ (evaluate . forceSomeTapeNode) (snd t)
+    return (t, o)
+  where
+    inpProd :: forall s. Prod (BVar s) as
+    inpProd = evalState (traverse1 (state . go . getI) xs) 0
+      where
+        go :: a -> Int -> (BVar s a, Int)
+        go x i = (BV (BRInp i) x, i + 1)
+{-# INLINE fillWengert #-}
+
 
 instance (Num a, Reifies s W) => Num (BVar s a) where
     (+)         = liftOp2 (+.)

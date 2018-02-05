@@ -16,6 +16,7 @@ module Data.Type.Util (
   , prodToVec'
   , lengthProd
   , listToVec
+  , fillProd
   ) where
 
 import           Data.Bifunctor
@@ -111,3 +112,18 @@ listToVec = \case
     S_ n -> \case
       []   -> Nothing
       x:xs -> (x :*) <$> listToVec n xs
+
+fillProd
+    :: forall f g as c. ()
+    => (forall a. f a -> c -> g a)
+    -> Prod f as
+    -> [c]
+    -> Maybe (Prod g as)
+fillProd f = go
+  where
+    go :: Prod f bs -> [c] -> Maybe (Prod g bs)
+    go = \case
+      Ø -> \_ -> Just Ø
+      x :< xs -> \case
+        []   -> Nothing
+        y:ys -> (f x y :<) <$> go xs ys
