@@ -481,7 +481,7 @@ instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.I
 --   Then, you can use:
 --   
 --   <pre>
---   <a>evalBP</a> :: (<a>BVar</a> s a -&gt; BVar s b) -&gt; (a -&gt; b)
+--   <a>evalBP</a> :: (forall s. <a>Reifies</a> s <a>W</a>. <a>BVar</a> s a -&gt; BVar s b) -&gt; (a -&gt; b)
 --   </pre>
 --   
 --   to turn a <a>BVar</a> function into the function on actual values
@@ -491,13 +491,14 @@ instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.I
 --   Then, there's:
 --   
 --   <pre>
---   <a>gradBP</a> :: (<a>BVar</a> s a -&gt; BVar s b) -&gt; (a -&gt; a)
+--   <a>gradBP</a> :: (forall s. <a>Reifies</a> s <a>W</a>. <a>BVar</a> s a -&gt; BVar s b) -&gt; (a -&gt; a)
 --   </pre>
 --   
 --   To automatically get the <i>gradient</i>, as well, for a given input.
 --   
 --   See the <a>README</a> for more information and links to demonstrations
---   and tutorials.
+--   and tutorials, or dive striaght in by reading the docs for
+--   <a>BVar</a>.
 module Numeric.Backprop
 
 -- | A <tt><a>BVar</a> s a</tt> is a value of type <tt>a</tt> that can be
@@ -548,10 +549,16 @@ data W
 --   the function <tt>a -&gt; b</tt> that it represents, also computing its
 --   gradient <tt>a</tt> as well.
 --   
+--   The Rank-N type <tt>forall s. <a>Reifies</a> s <a>W</a> =&gt; ...</tt>
+--   is used to ensure that <a>BVar</a>s do not leak out of the context
+--   (similar to how it is used in <a>Control.Monad.ST</a>), and also as a
+--   reference to an ephemeral Wengert tape used to track the graph of
+--   references.
+--   
 --   Note that every type involved has to be an instance of <a>Num</a>.
 --   This is because gradients all need to be "summable" (which is
 --   implemented using <a>sum</a> and <a>+</a>), and we also need to able
---   to generate gradients of '1' and '0'. Really, only <a>+</a> and
+--   to generate gradients of 1 and 0. Really, only <a>+</a> and
 --   <a>fromInteger</a> methods are used from the <a>Num</a> typeclass.
 backprop :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
 
@@ -562,12 +569,11 @@ backprop :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> 
 --   directly writing a <tt>a -&gt; b</tt>. <a>BVar</a> is, in this
 --   situation, a zero-cost abstraction, performance-wise.
 --   
---   Note that every type involved has to be an instance of <a>Num</a>.
---   This is because gradients all need to be "summable" (which is
---   implemented using <a>sum</a> and <a>+</a>), and we also need to able
---   to generate gradients of '1' and '0'. Really, only <a>+</a> and
---   <a>fromInteger</a> methods are used from the <a>Num</a> typeclass.
-evalBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
+--   Has a nice advantage over using <a>backprop</a> in that it doesn't
+--   require <a>Num</a> constraints on the input and output.
+--   
+--   See documentation of <a>backprop</a> for more information.
+evalBP :: (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
 
 -- | Take a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt>,
 --   interpreted as a function <tt>a -&gt; b</tt>, and compute its gradient
@@ -581,12 +587,54 @@ evalBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BV
 --   greater sensitivity of change, and small numbers indicate lower
 --   sensitivity.
 --   
---   Note that every type involved has to be an instance of <a>Num</a>.
---   This is because gradients all need to be "summable" (which is
---   implemented using <a>sum</a> and <a>+</a>), and we also need to able
---   to generate gradients of '1' and '0'. Really, only <a>+</a> and
---   <a>fromInteger</a> methods are used from the <a>Num</a> typeclass.
+--   See documentation of <a>backprop</a> for more information.
 gradBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
+
+-- | <a>backprop</a> for a two-argument function.
+--   
+--   Not strictly necessary, because you can always uncurry a function by
+--   putting the arguments inside a data type. However, this can be
+--   convenient if you don't want to make a custom tuple type.
+--   
+--   For 3 and more arguments, consider using <a>backpropN</a>.
+backprop2 :: forall a b c. (Num a, Num b, Num c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c, (a, b))
+
+-- | <a>evalBP</a> for a two-argument function. See <a>backprop2</a> for
+--   notes.
+evalBP2 :: (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> c
+
+-- | <a>gradBP</a> for a two-argument function. See <a>backprop2</a> for
+--   notes.
+gradBP2 :: (Num a, Num b, Num c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (a, b)
+
+-- | <tt>backprop</tt> generalized to multiple inputs of different types.
+--   See the <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on
+--   heterogeneous lists.
+--   
+--   This is not strictly necessary, because you can always uncurry a
+--   single-argument function by passing in all of the inputs in a data
+--   type containing all of the arguments. However, this can be convenient
+--   if you don't want to create a custom data type.
+--   
+--   A <tt><a>Prod</a> (<a>BVar</a> s) '[Double, Float, Double]</tt>, for
+--   instance, is a tuple of <tt><a>BVar</a> s <a>Double</a></tt>,
+--   <tt><a>BVar</a> s <a>Float</a></tt>, and <tt><a>BVar</a> s
+--   <a>Double</a></tt>, and can be pattern matched on using <a>:&lt;</a>
+--   (cons) and 'Ø' (nil).
+backpropN :: forall as b. (Every Num as, Num b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b, Tuple as)
+
+-- | <tt>evalBP</tt> generalized to multiple inputs of different types. See
+--   documentation for <a>backpropN</a> for more details.
+evalBPN :: forall as b. () => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> b
+
+-- | <a>gradBP</a> generalized to multiple inputs of different types. See
+--   documentation for <a>backpropN</a> for more details.
+gradBPN :: forall as b. (Every Num as, Num b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> Tuple as
+class EveryC k c as => Every k (c :: k -> Constraint) (as :: [k]) where {
+    type family EveryC k (c :: k
+                               -> Constraint) (as :: [k]) :: Constraint;
+}
+every :: Every k c as => Index k as a -> Wit c a
 
 -- | Lift a value into a <a>BVar</a> representing a constant value.
 --   
@@ -595,11 +643,13 @@ gradBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BV
 constVar :: a -> BVar s a
 
 -- | Using a <a>Lens'</a>, extract a value <i>inside</i> a <a>BVar</a>.
+--   Meant to evoke parallels to <tt>view</tt> from lens.
 --   
 --   See documentation for <tt>^^.</tt> for more information.
 viewVar :: forall a b s. (Reifies s W, Num a) => Lens' b a -> BVar s b -> BVar s a
 
--- | Using a <a>Lens'</a>, set a value <i>inside</i> a <a>BVar</a>.
+-- | Using a <a>Lens'</a>, set a value <i>inside</i> a <a>BVar</a>. Meant
+--   to evoke parallels to "set" from lens.
 --   
 --   See documentation for <tt>.~~</tt> for more information.
 setVar :: forall a b s. (Reifies s W, Num a, Num b) => Lens' b a -> BVar s a -> BVar s b -> BVar s b
