@@ -551,7 +551,6 @@ data BVar s a
 --   <a>W</a></tt> as a required constraint on <tt>s</tt> that allows
 --   backpropagation to work.
 data W
-class Reifies k (s :: k) a | s -> a
 
 -- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
 --   the function <tt>a -&gt; b</tt> that it represents, also computing its
@@ -658,18 +657,6 @@ class EveryC k c as => Every k (c :: k -> Constraint) (as :: [k])
 --   be backpropagated.
 constVar :: a -> BVar s a
 
--- | Using a <a>Lens'</a>, extract a value <i>inside</i> a <a>BVar</a>.
---   Meant to evoke parallels to <tt>view</tt> from lens.
---   
---   See documentation for <tt>^^.</tt> for more information.
-viewVar :: forall a b s. (Reifies s W, Num a) => Lens' b a -> BVar s b -> BVar s a
-
--- | Using a <a>Lens'</a>, set a value <i>inside</i> a <a>BVar</a>. Meant
---   to evoke parallels to "set" from lens.
---   
---   See documentation for <tt>.~~</tt> for more information.
-setVar :: forall a b s. (Reifies s W, Num a, Num b) => Lens' b a -> BVar s a -> BVar s b -> BVar s b
-
 -- | An infix version of <a>viewVar</a>, meant to evoke parallels to
 --   <a>^.</a> from lens.
 --   
@@ -743,6 +730,18 @@ infixl 8 .~~
 --   
 --   See documentation for <a>^^.</a> for more details.
 (^^..) :: forall b a s. (Num a, Reifies s W) => BVar s b -> Traversal' b a -> [BVar s a]
+
+-- | Using a <a>Lens'</a>, extract a value <i>inside</i> a <a>BVar</a>.
+--   Meant to evoke parallels to <tt>view</tt> from lens.
+--   
+--   See documentation for <tt>^^.</tt> for more information.
+viewVar :: forall a b s. (Reifies s W, Num a) => Lens' b a -> BVar s b -> BVar s a
+
+-- | Using a <a>Lens'</a>, set a value <i>inside</i> a <a>BVar</a>. Meant
+--   to evoke parallels to "set" from lens.
+--   
+--   See documentation for <tt>.~~</tt> for more information.
+setVar :: forall a b s. (Reifies s W, Num a, Num b) => Lens' b a -> BVar s a -> BVar s b -> BVar s b
 
 -- | Extract all of the <a>BVar</a>s out of a <a>Traversable</a> container
 --   of <a>BVar</a>s.
@@ -1053,3 +1052,13 @@ opIso :: (a -> b) -> (b -> a) -> Op '[a] b
 --   unchanged, with derivative 1, so will break for things that
 --   numerically manipulate things before returning them.
 opLens :: Num a => Lens' a b -> Op '[a] b
+data Prod k (f :: k -> *) (a :: [k]) :: forall k. () => (k -> *) -> [k] -> *
+[Ø] :: Prod k f [] k
+[:<] :: Prod k f (:) k a1 as
+
+-- | A Prod of simple Haskell types.
+type Tuple = Prod * I
+newtype I a :: * -> *
+I :: a -> I a
+[getI] :: I a -> a
+class Reifies k (s :: k) a | s -> a
