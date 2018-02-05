@@ -2,7 +2,10 @@
 -- See Hoogle, http://www.haskell.org/hoogle/
 
 
--- | Heterogeneous, type-safe automatic backpropagation in Haskell
+-- | Heterogeneous automatic backpropagation in Haskell
+--   
+--   Write your functions to compute your result, and the library will
+--   automatically generate functions to compute your gradient.
 --   
 --   See <a>README.md</a>
 @package backprop
