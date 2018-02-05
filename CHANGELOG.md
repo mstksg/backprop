@@ -1,8 +1,28 @@
 Changelog
 =========
 
+Version 0.1.0.0
+---------------
+
+<https://github.com/mstksg/backprop/releases/tag/v0.1.0.0>
+
+*   First non-alpha release.
+*   More or less complete redesign of library.  The entire API is completely
+    changed, and there is no backwards compatibility!
+    *   Everything is now "implicit" style, and there is no more `BP` monad.
+    *   Accessing items in `BVar`s is now lens-, prism-, and traversal- based,
+        instead of iso- and generics-based.
+    *   `Op` is no longer monadic
+    *   *Mono* modules are removed.
+    *   *Implicit* modules are removed, since they are the default
+    *   *Iso* module is removed, since `Iso`s no longer play major role in the
+        implementation of the library.
+*   Moved from *.cabal* file to *hpack* system.
+
 Version 0.0.3.0
 ---------------
+
+*Alpha*
 
 <https://github.com/mstksg/backprop/releases/tag/v0.0.3.0>
 
@@ -18,6 +38,8 @@ Version 0.0.3.0
 Version 0.0.2.0
 ---------------
 
+*Alpha*
+
 <https://github.com/mstksg/backprop/releases/tag/v0.0.2.0>
 
 *   Added optimized numeric `Op`s, and re-write `Num`/`Fractional`/`Floating`
@@ -32,6 +54,8 @@ Version 0.0.2.0
 
 Version 0.0.1.0
 ---------------
+
+*Alpha*
 
 <https://github.com/mstksg/backprop/releases/tag/v0.0.1.0>
 
