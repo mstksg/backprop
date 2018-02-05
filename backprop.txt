@@ -51,10 +51,7 @@ module Numeric.Backprop.Op
 --   
 --   It is simpler to not use this type constructor directly, and instead
 --   use the <a>op2</a>, <a>op1</a>, <a>op2</a>, and <a>op3</a> helper
---   smart constructors And, if your function is a numeric function, they
---   can even be created automatically using <a>op1'</a>, <a>op2'</a>,
---   <a>op3'</a>, and <tt>opN</tt> with a little help from
---   <a>Numeric.AD</a> from the <i>ad</i> library.
+--   smart constructors.
 --   
 --   See <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on using
 --   <a>Prod</a> and <a>Tuple</a>.
@@ -183,16 +180,13 @@ opConst' :: Every Num as => Length as -> a -> Op as a
 --   
 --   <pre>
 --   square :: Num a =&gt; <a>Op</a> '[a] a
---   square = <a>op1'</a> $ \x -&gt; (x*x, \d -&gt; 2 * d * x
---                         )
+--   square = <a>op1</a> $ \x -&gt; (x*x, \d -&gt; 2 * d * x
+--                        )
 --   </pre>
 --   
 --   Remember that, generally, end users shouldn't directly construct
 --   <a>Op</a>s; they should be provided by libraries or generated
 --   automatically.
---   
---   For numeric functions, single-input <a>Op</a>s can be generated
---   automatically using <a>op1'</a>.
 op1 :: (a -> (b, b -> a)) -> Op '[a] b
 
 -- | Create an <a>Op</a> of a function taking two inputs, by giving its
@@ -216,72 +210,18 @@ op1 :: (a -> (b, b -> a)) -> Op '[a] b
 --   
 --   <pre>
 --   mul :: Num a =&gt; <a>Op</a> '[a, a] a
---   mul = <a>op2'</a> $ \x y -&gt; (x*y, \d -&gt; (d*y, x*d)
+--   mul = <tt>op2'</tt> $ \x y -&gt; (x*y, \d -&gt; (d*y, x*d)
 --                        )
 --   </pre>
 --   
 --   Remember that, generally, end users shouldn't directly construct
 --   <a>Op</a>s; they should be provided by libraries or generated
 --   automatically.
---   
---   For numeric functions, two-input <a>Op</a>s can be generated
---   automatically using <a>op2'</a>.
 op2 :: (a -> b -> (c, c -> (a, b))) -> Op '[a, b] c
 
 -- | Create an <a>Op</a> of a function taking three inputs, by giving its
 --   explicit gradient. See documentation for <a>op2</a> for more details.
 op3 :: (a -> b -> c -> (d, d -> (a, b, c))) -> Op '[a, b, c] d
-
--- | Automatically create an <a>Op</a> of a numerical function taking one
---   argument. Uses <a>diff</a>, and so can take any numerical function
---   polymorphic over the standard numeric types.
---   
---   <pre>
---   &gt;&gt;&gt; gradOp' (op1' (recip . negate)) (5 ::&lt; Ø)
---   (-0.2, 0.04 ::&lt; Ø)
---   </pre>
-op1' :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
-
--- | Automatically create an <a>Op</a> of a numerical function taking two
---   arguments. Uses <a>grad</a>, and so can take any numerical function
---   polymorphic over the standard numeric types.
---   
---   <pre>
---   &gt;&gt;&gt; gradOp' (op2' (\x y -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
---   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
---   </pre>
-op2' :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
-
--- | Automatically create an <a>Op</a> of a numerical function taking three
---   arguments. Uses <a>grad</a>, and so can take any numerical function
---   polymorphic over the standard numeric types.
---   
---   <pre>
---   &gt;&gt;&gt; gradOp' (op3' (\x y z -&gt; (x * sqrt y)**z)) (3 ::&lt; 4 ::&lt; 2 ::&lt; Ø)
---   (36.0, 24.0 ::&lt; 9.0 ::&lt; 64.503 ::&lt; Ø)
---   </pre>
-op3' :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
-
--- | Automatically create an <a>Op</a> of a numerical function taking
---   multiple arguments. Uses <a>grad</a>, and so can take any numerical
---   function polymorphic over the standard numeric types.
---   
---   <pre>
---   &gt;&gt;&gt; gradOp' (opN' (\(x :+ y :+ Ø) -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
---   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
---   </pre>
-opN' :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
-
--- | <tt><a>Replicate</a> n a</tt> is a list of <tt>a</tt>s repeated
---   <tt>n</tt> times.
---   
---   <pre>
---   &gt;&gt;&gt; :kind! Replicate N3 Int
---   '[Int, Int, Int]
---   
---   &gt;&gt;&gt; :kind! Replicate N5 Double
---   '[Double, Double, Double, Double, Double]
---   </pre>
 
 -- | An <a>Op</a> that coerces an item into another item whose type has the
 --   same runtime representation.
@@ -338,10 +278,10 @@ composeOp1 :: (Every Num as, Known Length as) => Op as b -> Op '[b] c -> Op as c
 --   used just like <a>.</a>:
 --   
 --   <pre>
---   <a>op1</a> negate            :: <a>Op</a> '[a]   a
---   <a>op2</a> (+)               :: Op '[a,a] a
+--   f :: <a>Op</a> '[b]   c
+--   g :: <a>Op</a> '[a,a] b
 --   
---   op1 negate <a>~.</a> op2 (+) :: Op '[a, a] a
+--   f <a>~.</a> g :: Op '[a, a] c
 --   </pre>
 (~.) :: (Known Length as, Every Num as) => Op '[b] c -> Op as b -> Op as c
 infixr 9 ~.
@@ -390,79 +330,79 @@ infixr 5 ::<
 -- | Singleton Tuple.
 only_ :: () => a -> Tuple (:) * a [] *
 
--- | Optimized version of <tt><a>op1'</a> (<a>+</a>)</tt>.
+-- | <a>Op</a> for addition
 (+.) :: Num a => Op '[a, a] a
 
--- | Optimized version of <tt><a>op1'</a> (<a>-</a>)</tt>.
+-- | <a>Op</a> for subtraction
 (-.) :: Num a => Op '[a, a] a
 
--- | Optimized version of <tt><a>op1'</a> (<a>*</a>)</tt>.
+-- | <a>Op</a> for multiplication
 (*.) :: Num a => Op '[a, a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>negate</a></tt>.
+-- | <a>Op</a> for negation
 negateOp :: Num a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>abs</a></tt>.
+-- | <a>Op</a> for absolute value
 absOp :: Num a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>signum</a></tt>.
+-- | <a>Op</a> for <a>signum</a>
 signumOp :: Num a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> (<a>/</a>)</tt>.
+-- | <a>Op</a> for division
 (/.) :: Fractional a => Op '[a, a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>recip</a></tt>.
+-- | <a>Op</a> for multiplicative inverse
 recipOp :: Fractional a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>exp</a></tt>.
+-- | <a>Op</a> for <a>exp</a>
 expOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>log</a></tt>.
+-- | <a>Op</a> for the natural logarithm
 logOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>sqrt</a></tt>.
+-- | <a>Op</a> for square root
 sqrtOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> (<a>**</a>)</tt>.
+-- | <a>Op</a> for exponentiation
 (**.) :: Floating a => Op '[a, a] a
 
--- | Optimized version of <tt><a>op2'</a> <a>logBase</a></tt>.
+-- | <a>Op</a> for <a>logBase</a>
 logBaseOp :: Floating a => Op '[a, a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>sin</a></tt>.
+-- | <a>Op</a> for sine
 sinOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>cos</a></tt>.
+-- | <a>Op</a> for cosine
 cosOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>tan</a></tt>.
+-- | <a>Op</a> for tangent
 tanOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>asin</a></tt>.
+-- | <a>Op</a> for arcsine
 asinOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>acos</a></tt>.
+-- | <a>Op</a> for arccosine
 acosOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>atan</a></tt>.
+-- | <a>Op</a> for arctangent
 atanOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>sinh</a></tt>.
+-- | <a>Op</a> for hyperbolic sine
 sinhOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>cosh</a></tt>.
+-- | <a>Op</a> for hyperbolic cosine
 coshOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>tanh</a></tt>.
+-- | <a>Op</a> for hyperbolic tangent
 tanhOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>asinh</a></tt>.
+-- | <a>Op</a> for hyperbolic arcsine
 asinhOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>acosh</a></tt>.
+-- | <a>Op</a> for hyperbolic arccosine
 acoshOp :: Floating a => Op '[a] a
 
--- | Optimized version of <tt><a>op1'</a> <a>atanh</a></tt>.
+-- | <a>Op</a> for hyperbolic arctangent
 atanhOp :: Floating a => Op '[a] a
 instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.Index.Every * GHC.Num.Num as, GHC.Num.Num a) => GHC.Num.Num (Numeric.Backprop.Op.Op as a)
 instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.Index.Every * GHC.Real.Fractional as, Data.Type.Index.Every * GHC.Num.Num as, GHC.Real.Fractional a) => GHC.Real.Fractional (Numeric.Backprop.Op.Op as a)
@@ -892,10 +832,7 @@ liftOp3 :: forall s a b c d. (Reifies s W, Num a, Num b, Num c, Num d) => Op '[a
 --   
 --   It is simpler to not use this type constructor directly, and instead
 --   use the <a>op2</a>, <a>op1</a>, <a>op2</a>, and <a>op3</a> helper
---   smart constructors And, if your function is a numeric function, they
---   can even be created automatically using <a>op1'</a>, <a>op2'</a>,
---   <a>op3'</a>, and <tt>opN</tt> with a little help from
---   <a>Numeric.AD</a> from the <i>ad</i> library.
+--   smart constructors.
 --   
 --   See <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on using
 --   <a>Prod</a> and <a>Tuple</a>.
@@ -977,16 +914,13 @@ opConst' :: Every Num as => Length as -> a -> Op as a
 --   
 --   <pre>
 --   square :: Num a =&gt; <a>Op</a> '[a] a
---   square = <a>op1'</a> $ \x -&gt; (x*x, \d -&gt; 2 * d * x
---                         )
+--   square = <a>op1</a> $ \x -&gt; (x*x, \d -&gt; 2 * d * x
+--                        )
 --   </pre>
 --   
 --   Remember that, generally, end users shouldn't directly construct
 --   <a>Op</a>s; they should be provided by libraries or generated
 --   automatically.
---   
---   For numeric functions, single-input <a>Op</a>s can be generated
---   automatically using <a>op1'</a>.
 op1 :: (a -> (b, b -> a)) -> Op '[a] b
 
 -- | Create an <a>Op</a> of a function taking two inputs, by giving its
@@ -1010,72 +944,18 @@ op1 :: (a -> (b, b -> a)) -> Op '[a] b
 --   
 --   <pre>
 --   mul :: Num a =&gt; <a>Op</a> '[a, a] a
---   mul = <a>op2'</a> $ \x y -&gt; (x*y, \d -&gt; (d*y, x*d)
+--   mul = <tt>op2'</tt> $ \x y -&gt; (x*y, \d -&gt; (d*y, x*d)
 --                        )
 --   </pre>
 --   
 --   Remember that, generally, end users shouldn't directly construct
 --   <a>Op</a>s; they should be provided by libraries or generated
 --   automatically.
---   
---   For numeric functions, two-input <a>Op</a>s can be generated
---   automatically using <a>op2'</a>.
 op2 :: (a -> b -> (c, c -> (a, b))) -> Op '[a, b] c
 
 -- | Create an <a>Op</a> of a function taking three inputs, by giving its
 --   explicit gradient. See documentation for <a>op2</a> for more details.
 op3 :: (a -> b -> c -> (d, d -> (a, b, c))) -> Op '[a, b, c] d
-
--- | Automatically create an <a>Op</a> of a numerical function taking one
---   argument. Uses <a>diff</a>, and so can take any numerical function
---   polymorphic over the standard numeric types.
---   
---   <pre>
---   &gt;&gt;&gt; gradOp' (op1' (recip . negate)) (5 ::&lt; Ø)
---   (-0.2, 0.04 ::&lt; Ø)
---   </pre>
-op1' :: Num a => (forall s. AD s (Forward a) -> AD s (Forward a)) -> Op '[a] a
-
--- | Automatically create an <a>Op</a> of a numerical function taking two
---   arguments. Uses <a>grad</a>, and so can take any numerical function
---   polymorphic over the standard numeric types.
---   
---   <pre>
---   &gt;&gt;&gt; gradOp' (op2' (\x y -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
---   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
---   </pre>
-op2' :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a] a
-
--- | Automatically create an <a>Op</a> of a numerical function taking three
---   arguments. Uses <a>grad</a>, and so can take any numerical function
---   polymorphic over the standard numeric types.
---   
---   <pre>
---   &gt;&gt;&gt; gradOp' (op3' (\x y z -&gt; (x * sqrt y)**z)) (3 ::&lt; 4 ::&lt; 2 ::&lt; Ø)
---   (36.0, 24.0 ::&lt; 9.0 ::&lt; 64.503 ::&lt; Ø)
---   </pre>
-op3' :: Num a => (forall s. Reifies s Tape => Reverse s a -> Reverse s a -> Reverse s a -> Reverse s a) -> Op '[a, a, a] a
-
--- | Automatically create an <a>Op</a> of a numerical function taking
---   multiple arguments. Uses <a>grad</a>, and so can take any numerical
---   function polymorphic over the standard numeric types.
---   
---   <pre>
---   &gt;&gt;&gt; gradOp' (opN' (\(x :+ y :+ Ø) -&gt; x * sqrt y)) (3 ::&lt; 4 ::&lt; Ø)
---   (6.0, 2.0 ::&lt; 0.75 ::&lt; Ø)
---   </pre>
-opN' :: (Num a, Known Nat n) => (forall s. Reifies s Tape => Vec n (Reverse s a) -> Reverse s a) -> Op (Replicate n a) a
-
--- | <tt><a>Replicate</a> n a</tt> is a list of <tt>a</tt>s repeated
---   <tt>n</tt> times.
---   
---   <pre>
---   &gt;&gt;&gt; :kind! Replicate N3 Int
---   '[Int, Int, Int]
---   
---   &gt;&gt;&gt; :kind! Replicate N5 Double
---   '[Double, Double, Double, Double, Double]
---   </pre>
 
 -- | An <a>Op</a> that coerces an item into another item whose type has the
 --   same runtime representation.
