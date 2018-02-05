@@ -297,5 +297,4 @@ Todo
 
 4.  Some open questions:
 
-    a. Is it meaningful to support sum types?
-    b. Is it possible to support constructors with existential types?
+    a. Is it possible to support constructors with existential types?

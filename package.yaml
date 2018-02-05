@@ -1,0 +1,72 @@
+name:                backprop
+version:             0.1.0.0
+github:              mstksg/backprop
+license:             BSD3
+author:              Justin Le
+maintainer:          justin@jle.im
+copyright:           (c) Justin Le 2018
+
+extra-source-files:
+- README.md
+- CHANGELOG.md
+- Build.hs
+- samples/*.lhs
+- renders/*.pdf
+- renders/*.md
+
+# Metadata used when publishing your package
+synopsis:            Heterogeneous automatic backpropagation in Haskell
+category:            Math
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description: |
+    Write your functions to compute your result, and the library will
+    automatically generate functions to compute your gradient.
+
+    See <https://github.com/mstksg/backprop#readme README.md>
+
+ghc-options:
+- -Wall
+- -fprint-explicit-kinds
+- -fwarn-redundant-constraints
+dependencies:
+- base >=4.7 && <5
+- deepseq
+- transformers
+- vector
+
+library:
+  source-dirs: src
+  exposed-modules:
+  - Numeric.Backprop
+  - Numeric.Backprop.Op
+  other-modules:
+  - Numeric.Backprop.Internal
+  - Data.Type.Util
+  dependencies:
+  - ad
+  - microlens
+  - primitive
+  - reflection
+  - type-combinators
+
+benchmarks:
+  backprop-mnist-bench:
+    main: MNISTBench.hs
+    source-dirs: bench
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -O2
+    dependencies:
+    - backprop
+    - criterion
+    - directory
+    - hmatrix >=0.18
+    - lens
+    - mnist-idx
+    - mwc-random
+    - time

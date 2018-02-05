@@ -138,6 +138,7 @@ forceInpRef :: InpRef a -> ()
 forceInpRef (IR !v !_) = forceBVar v `seq` ()
 {-# INLINE forceInpRef #-}
 
+-- | Debugging string for an 'InpRef'.
 debugIR :: InpRef a -> String
 debugIR IR{..} = show (_bvRef _irIx)
 
@@ -160,6 +161,7 @@ forceSomeTapeNode :: SomeTapeNode -> ()
 forceSomeTapeNode (STN !tn) = forceTapeNode tn `seq` ()
 {-# INLINE forceSomeTapeNode #-}
 
+-- | Debugging string for a 'SomeTapeMode'.
 debugSTN :: SomeTapeNode -> String
 debugSTN (STN TN{..}) = show . foldMap1 ((:[]) . debugIR) $ _tnInputs
 

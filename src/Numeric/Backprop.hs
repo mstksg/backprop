@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs            #-}
+{-# LANGUAGE PatternSynonyms  #-}
 {-# LANGUAGE RankNTypes       #-}
 
 -- |
@@ -77,13 +78,17 @@ module Numeric.Backprop (
     -- *** From Isomorphisms
   , opCoerce, opTup, opIso, opLens
     -- * Utility
-  , Prod(..), Tuple, I(..)
+    -- ** Inductive tuples/heterogeneous lists
+  , Prod(..), pattern (:>), only, head'
+  , Tuple, pattern (::<), only_
+  , I(..)
+    -- ** Misc
   , Reifies
   ) where
 
-import           Data.Type.Index
 import           Data.Bifunctor
 import           Data.Reflection
+import           Data.Type.Index
 import           Lens.Micro
 import           Numeric.Backprop.Internal
 import           Numeric.Backprop.Op

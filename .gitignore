@@ -5,6 +5,7 @@
 /TAGS
 /data
 /samples-exe
+/*.cabal
 
 /bench-results
 /prof-results
