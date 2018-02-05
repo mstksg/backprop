@@ -117,51 +117,6 @@ gradOp :: Num a => Op as a -> Tuple as -> Tuple as
 --   information.
 gradOpWith :: Op as a -> Tuple as -> a -> Tuple as
 
--- | Compose <a>Op</a>s together, like <a>sequence</a> for functions, or
---   <tt>liftAN</tt>.
---   
---   That is, given an <tt><a>Op</a> as b1</tt>, an <tt><a>Op</a> as
---   b2</tt>, and an <tt><a>Op</a> as b3</tt>, it can compose them with an
---   <tt><a>Op</a> '[b1,b2,b3] c</tt> to create an <tt><a>Op</a> as c</tt>.
-composeOp :: (Every Num as, Known Length as) => Prod (Op as) bs -> Op bs c -> Op as c
-
--- | Convenient wrapper over <a>composeOp</a> for the case where the second
---   function only takes one input, so the two <a>Op</a>s can be directly
---   piped together, like for <a>.</a>.
-composeOp1 :: (Every Num as, Known Length as) => Op as b -> Op '[b] c -> Op as c
-
--- | Convenient infix synonym for (flipped) <a>composeOp1</a>. Meant to be
---   used just like <a>.</a>:
---   
---   <pre>
---   <a>op1</a> negate            :: <a>Op</a> '[a]   a
---   <a>op2</a> (+)               :: Op '[a,a] a
---   
---   op1 negate <a>~.</a> op2 (+) :: Op '[a, a] a
---   </pre>
-(~.) :: (Known Length as, Every Num as) => Op '[b] c -> Op as b -> Op as c
-infixr 9 ~.
-
--- | A version of <a>composeOp</a> taking explicit <a>Length</a>,
---   indicating the number of inputs expected and their types.
---   
---   Requiring an explicit <a>Length</a> is mostly useful for rare
---   "extremely polymorphic" situations, where GHC can't infer the type and
---   length of the the expected input tuple. If you ever actually
---   explicitly write down <tt>as</tt> as a list of types, you should be
---   able to just use <a>composeOp</a>.
-composeOp' :: Every Num as => Length as -> Prod (Op as) bs -> Op bs c -> Op as c
-
--- | A version of <a>composeOp1</a> taking explicit <a>Length</a>,
---   indicating the number of inputs expected and their types.
---   
---   Requiring an explicit <a>Length</a> is mostly useful for rare
---   "extremely polymorphic" situations, where GHC can't infer the type and
---   length of the the expected input tuple. If you ever actually
---   explicitly write down <tt>as</tt> as a list of types, you should be
---   able to just use <a>composeOp1</a>.
-composeOp1' :: Every Num as => Length as -> Op as b -> Op '[b] c -> Op as c
-
 -- | Create an <a>Op</a> that takes no inputs and always returns the given
 --   value.
 --   
@@ -362,6 +317,51 @@ opIso :: (a -> b) -> (b -> a) -> Op '[a] b
 --   unchanged, with derivative 1, so will break for things that
 --   numerically manipulate things before returning them.
 opLens :: Num a => Lens' a b -> Op '[a] b
+
+-- | Compose <a>Op</a>s together, like <a>sequence</a> for functions, or
+--   <tt>liftAN</tt>.
+--   
+--   That is, given an <tt><a>Op</a> as b1</tt>, an <tt><a>Op</a> as
+--   b2</tt>, and an <tt><a>Op</a> as b3</tt>, it can compose them with an
+--   <tt><a>Op</a> '[b1,b2,b3] c</tt> to create an <tt><a>Op</a> as c</tt>.
+composeOp :: (Every Num as, Known Length as) => Prod (Op as) bs -> Op bs c -> Op as c
+
+-- | Convenient wrapper over <a>composeOp</a> for the case where the second
+--   function only takes one input, so the two <a>Op</a>s can be directly
+--   piped together, like for <a>.</a>.
+composeOp1 :: (Every Num as, Known Length as) => Op as b -> Op '[b] c -> Op as c
+
+-- | Convenient infix synonym for (flipped) <a>composeOp1</a>. Meant to be
+--   used just like <a>.</a>:
+--   
+--   <pre>
+--   <a>op1</a> negate            :: <a>Op</a> '[a]   a
+--   <a>op2</a> (+)               :: Op '[a,a] a
+--   
+--   op1 negate <a>~.</a> op2 (+) :: Op '[a, a] a
+--   </pre>
+(~.) :: (Known Length as, Every Num as) => Op '[b] c -> Op as b -> Op as c
+infixr 9 ~.
+
+-- | A version of <a>composeOp</a> taking explicit <a>Length</a>,
+--   indicating the number of inputs expected and their types.
+--   
+--   Requiring an explicit <a>Length</a> is mostly useful for rare
+--   "extremely polymorphic" situations, where GHC can't infer the type and
+--   length of the the expected input tuple. If you ever actually
+--   explicitly write down <tt>as</tt> as a list of types, you should be
+--   able to just use <a>composeOp</a>.
+composeOp' :: Every Num as => Length as -> Prod (Op as) bs -> Op bs c -> Op as c
+
+-- | A version of <a>composeOp1</a> taking explicit <a>Length</a>,
+--   indicating the number of inputs expected and their types.
+--   
+--   Requiring an explicit <a>Length</a> is mostly useful for rare
+--   "extremely polymorphic" situations, where GHC can't infer the type and
+--   length of the the expected input tuple. If you ever actually
+--   explicitly write down <tt>as</tt> as a list of types, you should be
+--   able to just use <a>composeOp1</a>.
+composeOp1' :: Every Num as => Length as -> Op as b -> Op '[b] c -> Op as c
 
 -- | Construct a two element Prod. Since the precedence of (:&gt;) is
 --   higher than (:&lt;), we can conveniently write lists like:
@@ -761,16 +761,6 @@ liftOp2 :: forall s a b c. (Reifies s W, Num a, Num b, Num c) => Op '[a, b] c ->
 --   See <a>Numeric.Backprop#liftops</a> and documentation for
 --   <a>liftOp</a> for more information.
 liftOp3 :: forall s a b c d. (Reifies s W, Num a, Num b, Num c, Num d) => Op '[a, b, c] d -> BVar s a -> BVar s b -> BVar s c -> BVar s d
-
--- | Lift an <a>Op</a> with four inputs to be a function on a four
---   <a>BVar</a>s.
---   
---   Should preferably be used only by libraries to provide primitive
---   <a>BVar</a> functions for their types for users.
---   
---   See <a>Numeric.Backprop#liftops</a> and documentation for
---   <a>liftOp</a> for more information.
-liftOp4 :: forall s a b c d e. (Reifies s W, Num a, Num b, Num c, Num d, Num e) => Op '[a, b, c, d] e -> BVar s a -> BVar s b -> BVar s c -> BVar s d -> BVar s e
 
 -- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
 --   <tt>as</tt> to <tt>a</tt>.
