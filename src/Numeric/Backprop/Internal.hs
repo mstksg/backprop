@@ -101,6 +101,7 @@ data BRef (s :: Type) = BRInp
 
 instance NFData (BRef s)
 
+-- | This will force the value inside, as well.
 instance NFData a => NFData (BVar s a) where
     rnf (BV r v) = force r `seq` force v `seq` ()
 
@@ -361,7 +362,8 @@ viewVar_ l !v = forceBVar v `seq` insertNode tn y (reflect (Proxy @s))
             }
 {-# INLINE viewVar_ #-}
 
--- | Using a 'Lens'', extract a value /inside/ a 'BVar'.
+-- | Using a 'Lens'', extract a value /inside/ a 'BVar'.  Meant to evoke
+-- parallels to 'view' from lens.
 --
 -- See documentation for '^^.' for more information.
 viewVar
@@ -389,7 +391,8 @@ setVar_ l !w !v = forceBVar v
             }
 {-# INLINE setVar_ #-}
 
--- | Using a 'Lens'', set a value /inside/ a 'BVar'.
+-- | Using a 'Lens'', set a value /inside/ a 'BVar'.  Meant to evoke
+-- parallels to "set" from lens.
 --
 -- See documentation for '.~~' for more information.
 setVar
@@ -503,10 +506,15 @@ registerOut !v = _bvVal v <$ liftOp1_ idOp v
 -- | Turn a function @'BVar' s a -> 'BVar' s b@ into the function @a -> b@
 -- that it represents, also computing its gradient @a@ as well.
 --
+-- The Rank-N type @forall s. 'Reifies' s 'W' => ...@ is used to ensure
+-- that 'BVar's do not leak out of the context (similar to how it is used
+-- in "Control.Monad.ST"), and also as a reference to an ephemeral Wengert
+-- tape used to track the graph of references.
+--
 -- Note that every type involved has to be an instance of 'Num'.  This is
 -- because gradients all need to be "summable" (which is implemented using
--- 'sum' and '+'), and we also need to able to generate gradients of '1'
--- and '0'.  Really, only '+' and 'fromInteger' methods are used from the
+-- 'sum' and '+'), and we also need to able to generate gradients of 1
+-- and 0.  Really, only '+' and 'fromInteger' methods are used from the
 -- 'Num' typeclass.
 backprop
     :: forall a b. (Num a, Num b)

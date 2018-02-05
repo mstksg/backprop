@@ -25,7 +25,7 @@
 -- Then, you can use:
 --
 -- @
--- 'evalBP' :: ('BVar' s a -> BVar s b) -> (a -> b)
+-- 'evalBP' :: (forall s. 'Reifies' s 'W'. 'BVar' s a -> BVar s b) -> (a -> b)
 -- @
 --
 -- to turn a 'BVar' function into the function on actual values @a -> b@.
@@ -35,13 +35,14 @@
 -- Then, there's:
 --
 -- @
--- 'gradBP' :: ('BVar' s a -> BVar s b) -> (a -> a)
+-- 'gradBP' :: (forall s. 'Reifies' s 'W'. 'BVar' s a -> BVar s b) -> (a -> a)
 -- @
 --
 -- To automatically get the /gradient/, as well, for a given input.
 --
 -- See the <https://github.com/mstksg/backprop README> for more information
--- and links to demonstrations and tutorials.
+-- and links to demonstrations and tutorials, or dive striaght in by
+-- reading the docs for 'BVar'.
 --
 
 module Numeric.Backprop (
@@ -127,11 +128,7 @@ import           Numeric.Backprop.Op
 -- directly writing a @a -> b@. 'BVar' is, in this situation, a zero-cost
 -- abstraction, performance-wise.
 --
--- Note that every type involved has to be an instance of 'Num'.  This is
--- because gradients all need to be "summable" (which is implemented using
--- 'sum' and '+'), and we also need to able to generate gradients of '1'
--- and '0'.  Really, only '+' and 'fromInteger' methods are used from the
--- 'Num' typeclass.
+-- See documentation of 'backprop' for more information.
 --
 evalBP
     :: forall a b. (Num a, Num b)
@@ -151,11 +148,7 @@ evalBP f = fst . backprop f
 -- adjustment in the input.  Larger numbers indicate a greater sensitivity
 -- of change, and small numbers indicate lower sensitivity.
 --
--- Note that every type involved has to be an instance of 'Num'.  This is
--- because gradients all need to be "summable" (which is implemented using
--- 'sum' and '+'), and we also need to able to generate gradients of '1'
--- and '0'.  Really, only '+' and 'fromInteger' methods are used from the
--- 'Num' typeclass.
+-- See documentation of 'backprop' for more information.
 --
 gradBP
     :: forall a b. (Num a, Num b)
