@@ -28,7 +28,7 @@ module Numeric.Backprop.Internal (
   , W
   , constVar
   , liftOp
-  , liftOp1, liftOp2, liftOp3, liftOp4
+  , liftOp1, liftOp2, liftOp3
   , viewVar, setVar, sequenceVar, collectVar
   , backpropN, evalBPN
   ) where
@@ -311,46 +311,6 @@ liftOp3
     -> BVar s d
 liftOp3 o !v !u !w = unsafePerformIO $ liftOp3_ o v u w
 {-# INLINE liftOp3 #-}
-
-liftOp4_
-    :: forall s a b c d e. (Reifies s W, Num a, Num b, Num c, Num d, Num e)
-    => Op '[a,b,c,d] e
-    -> BVar s a
-    -> BVar s b
-    -> BVar s c
-    -> BVar s d
-    -> IO (BVar s e)
-liftOp4_ o (bvConst->Just x) (bvConst->Just y) (bvConst->Just z) (bvConst->Just w)
-    = return . constVar . evalOp o $ x ::< y ::< z ::< w ::< Ø
-liftOp4_ o !v !u !w !x = forceBVar v
-                   `seq` forceBVar u
-                   `seq` forceBVar w
-                   `seq` forceBVar x
-                   `seq` insertNode tn y (reflect (Proxy @s))
-  where
-    (y, g) = runOpWith o (_bvVal v ::< _bvVal u ::< _bvVal w ::< _bvVal x ::< Ø)
-    tn = TN { _tnInputs = IR v id :< IR u id :< IR w id :< IR x id :< Ø
-            , _tnGrad   = g
-            }
-{-# INLINE liftOp4_ #-}
-
--- | Lift an 'Op' with four inputs to be a function on a four 'BVar's.
---
--- Should preferably be used only by libraries to provide primitive 'BVar'
--- functions for their types for users.
---
--- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
--- information.
-liftOp4
-    :: forall s a b c d e. (Reifies s W, Num a, Num b, Num c, Num d, Num e)
-    => Op '[a,b,c,d] e
-    -> BVar s a
-    -> BVar s b
-    -> BVar s c
-    -> BVar s d
-    -> BVar s e
-liftOp4 o !v !u !w !x = unsafePerformIO $ liftOp4_ o v u w x
-{-# INLINE liftOp4 #-}
 
 viewVar_
     :: forall a b s. (Reifies s W, Num a)

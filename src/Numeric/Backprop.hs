@@ -53,7 +53,7 @@ module Numeric.Backprop (
   , backprop, evalBP, gradBP
     -- ** Multiple inputs
   , backprop2, evalBP2, gradBP2
-  , backpropN, evalBPN, gradBPN, Every(..)
+  , backpropN, evalBPN, gradBPN, Every
     -- * Manipulating 'BVar'
   , constVar
   , viewVar, setVar, (^^.), (.~~)
@@ -62,7 +62,7 @@ module Numeric.Backprop (
     -- ** With 'Op's#liftops#
     -- $liftops
   , liftOp
-  , liftOp1, liftOp2, liftOp3, liftOp4
+  , liftOp1, liftOp2, liftOp3
     -- * 'Op'
   , Op(..)
     -- ** Creation
@@ -103,7 +103,7 @@ import           Numeric.Backprop.Op
 -- dot :: 'BVar' s Vec -> BVar s Vec -> BVar s Double
 -- dot = 'liftOp2' . op2 $ \\xs ys ->
 --         ( sum (zipWith (*) xs ys)
---         , \g -> (map (*g) ys, map (*g) xs)
+--         , \\g -> (map (*g) ys, map (*g) xs)
 --         )
 -- @
 --

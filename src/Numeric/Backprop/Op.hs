@@ -45,9 +45,6 @@ module Numeric.Backprop.Op (
   -- * Running
   -- ** Pure
   , runOp, evalOp, gradOp, gradOpWith
-  -- * Manipulation
-  , composeOp, composeOp1, (~.)
-  , composeOp', composeOp1'
   -- * Creation
   , op0, opConst, idOp
   , opConst'
@@ -58,6 +55,9 @@ module Numeric.Backprop.Op (
   , Replicate
   -- ** From Isomorphisms
   , opCoerce, opTup, opIso, opLens
+  -- * Manipulation
+  , composeOp, composeOp1, (~.)
+  , composeOp', composeOp1'
   -- * Utility
   , pattern (:>), only, head'
   , pattern (::<), only_
