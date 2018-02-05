@@ -12,5 +12,4 @@
 *.prof
 *.prof.folded
 /samples-prof
-/samples
-
+*.dyn_o

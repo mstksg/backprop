@@ -33,7 +33,6 @@ The packages involved are:
 -   mnist-idx
 -   mwc-random
 -   one-liner-instances
--   reflection
 -   split
 -   vector
 
@@ -64,7 +63,6 @@ import           Data.Bitraversable
 import           Data.Foldable
 import           Data.IDX
 import           Data.List.Split
-import           Data.Reflection
 import           Data.Time.Clock
 import           Data.Traversable
 import           Data.Tuple

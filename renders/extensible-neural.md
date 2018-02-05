@@ -21,7 +21,6 @@ The packages involved are:
 -   mnist-idx
 -   mwc-random
 -   one-liner-instances
--   reflection
 -   singletons
 -   split
 -   vector
@@ -57,7 +56,6 @@ import           Data.Foldable
 import           Data.IDX
 import           Data.Kind
 import           Data.List.Split
-import           Data.Reflection
 import           Data.Singletons
 import           Data.Singletons.Prelude
 import           Data.Singletons.TypeLits

@@ -4,6 +4,8 @@ Changelog
 Version 0.1.0.0
 ---------------
 
+*Feb 5, 2018*
+
 <https://github.com/mstksg/backprop/releases/tag/v0.1.0.0>
 
 *   First non-alpha release.
