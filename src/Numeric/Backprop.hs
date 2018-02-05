@@ -58,7 +58,6 @@ module Numeric.Backprop (
   , constVar
   , viewVar, setVar, (^^.), (.~~)
   , sequenceVar, collectVar
-  , uncurryVar, uncurryVar3
     -- ** With 'Op's#liftops#
     -- $liftops
   , liftOp
@@ -194,6 +193,7 @@ gradBPN
     -> Tuple as
     -> Tuple as
 gradBPN f = snd . backpropN f
+{-# INELINE gradBPN #-}
 
 -- | 'backprop' for a two-argument function.
 --
@@ -219,6 +219,7 @@ evalBP2
     -> b
     -> c
 evalBP2 f x y = evalBPN (\(x' :< y' :< Ø) -> f x' y') (x ::< y ::< Ø)
+{-# INELINE evalBP2 #-}
 
 -- | 'gradBP' for a two-argument function.  See 'backprop2' for notes.
 gradBP2
@@ -228,6 +229,7 @@ gradBP2
     -> b
     -> (a, b)
 gradBP2 f x = snd . backprop2 f x
+{-# INELINE gradBP2 #-}
 
 -- | An infix version of 'viewVar', meant to evoke parallels to '^.' from
 -- lens.
@@ -293,22 +295,3 @@ infixl 8 ^^.
 l .~~ x = setVar l x
 infixl 8 .~~
 {-# INLINE (.~~) #-}
-
--- | Convenient function to uncurry a 'BVar' function, so it can be used
--- with 'backprop', 'evalBP', and 'gradBP'.
-uncurryVar
-    :: (Num a, Num b)
-    => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
-    -> (forall s. Reifies s W => BVar s (a, b) -> BVar s c)
-uncurryVar f xy = f (xy ^^. _1) (xy ^^. _2)
-{-# INLINE uncurryVar #-}
-
--- | Convenient function to uncurry a 'BVar' function, so it can be used
--- with 'backprop', 'evalBP', and 'gradBP'.
-uncurryVar3
-    :: (Num a, Num b, Num c)
-    => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c -> BVar s d)
-    -> (forall s. Reifies s W => BVar s (a, b, c) -> BVar s d)
-uncurryVar3 f xyz = f (xyz ^^. _1) (xyz ^^. _2) (xyz ^^. _3)
-{-# INLINE uncurryVar3 #-}
-

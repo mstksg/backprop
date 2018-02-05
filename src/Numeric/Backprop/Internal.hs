@@ -476,6 +476,18 @@ gradRunner _ R{..} (n,stns) = do
 -- A @'Prod' ('BVar' s) '[Double, Float, Double]@, for instance, is a tuple
 -- of @'BVar' s 'Double'@, @'BVar' s 'Float'@, and @'BVar' s 'Double'@, and
 -- can be pattern matched on using ':<' (cons) and 'Ø' (nil).
+--
+-- Tuples can be built and pattern matched on using '::<' (cons) and 'Ø'
+-- (nil), as well.
+--
+-- The @'Every' 'Num' as@ in the constraint says that every value in the
+-- type-level list @as@ must have a 'Num' instance.  This means you can
+-- use, say, @'[Double, Float, Int]@, but not @'[Double, Bool, String]@.
+--
+-- If you stick to /concerete/, monomorphic usage of this (with specific
+-- types, typed into source code, known at compile-time), then @'Every'
+-- 'Num' as@ should be fulfilled automatically.
+--
 backpropN
     :: forall as b. (Every Num as, Num b)
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
