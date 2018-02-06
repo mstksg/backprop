@@ -11,9 +11,8 @@ also [rendered as a pdf][rendered].
 [rendered]: https://github.com/mstksg/backprop/blob/master/renders/extensible-neural.pdf
 [lhs]: https://github.com/mstksg/backprop/blob/master/samples/extensible-neural.lhs
 
-The packages involved are:
+The (extra) packages involved are:
 
-*   deepseq
 *   hmatrix
 *   lens
 *   mnist-idx
@@ -21,7 +20,6 @@ The packages involved are:
 *   one-liner-instances
 *   singletons
 *   split
-*   vector
 
 > {-# LANGUAGE BangPatterns         #-}
 > {-# LANGUAGE DataKinds            #-}

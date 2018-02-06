@@ -22,16 +22,14 @@ you can run][lhs] is also available on github!
 [rendered]: https://github.com/mstksg/backprop/blob/master/renders/backprop-mnist.pdf
 [lhs]: https://github.com/mstksg/backprop/blob/master/samples/backprop-mnist.lhs
 
-The packages involved are:
+The (extra) packages involved are:
 
-*   deepseq
 *   hmatrix
 *   lens
 *   mnist-idx
 *   mwc-random
 *   one-liner-instances
 *   split
-*   vector
 
 > {-# LANGUAGE BangPatterns                     #-}
 > {-# LANGUAGE DataKinds                        #-}

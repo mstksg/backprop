@@ -15,7 +15,7 @@ extra-source-files:
 - renders/*.md
 
 # Metadata used when publishing your package
-synopsis:            Heterogeneous automatic backpropagation in Haskell
+synopsis:            Heterogeneous automatic differentation (backpropagation)
 category:            Math
 
 # To avoid duplicated efforts in documentation and dealing with the
@@ -24,6 +24,9 @@ category:            Math
 description: |
     Write your functions to compute your result, and the library will
     automatically generate functions to compute your gradient.
+
+    Implements heterogeneous reverse-mode automatic differentiation, commonly
+    known as "backpropagation".
 
     See <https://github.com/mstksg/backprop#readme README.md>
 
