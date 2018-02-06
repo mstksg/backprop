@@ -1,1 +1,0 @@
-See <https://github.com/mstksg/backprop#readme README.md>

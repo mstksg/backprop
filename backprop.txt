@@ -12,7 +12,7 @@
 --   
 --   See <a>README.md</a>
 @package backprop
-@version 0.1.0.0
+@version 0.1.1.0
 
 
 -- | Provides the <a>Op</a> type and combinators, which represent
@@ -1044,7 +1044,9 @@ I :: a -> I a
 class Reifies k (s :: k) a | s -> a
 
 
--- | Canonical strict tuples with <a>Num</a> instances for usage with
+-- | <i>Since 0.1.1.0</i>
+--   
+--   Canonical strict tuples with <a>Num</a> instances for usage with
 --   <i>backprop</i>. This is here to solve the problem of orphan instances
 --   in libraries and potential mismatched tuple types.
 --   
@@ -1085,6 +1087,8 @@ class Reifies k (s :: k) a | s -> a
 module Numeric.Backprop.Tuple
 
 -- | Strict 2-tuple with a <a>Num</a> instance.
+--   
+--   <i>Since 0.1.1.0</i>
 data T2 a b
 T2 :: !a -> !b -> T2 a b
 
@@ -1107,6 +1111,8 @@ t2_1 :: Lens (T2 a b) (T2 a' b) a a'
 t2_2 :: Lens (T2 a b) (T2 a b') b b'
 
 -- | Strict 3-tuple with a <a>Num</a> instance.
+--   
+--   <i>Since 0.1.1.0</i>
 data T3 a b c
 T3 :: !a -> !b -> !c -> T3 a b c
 
