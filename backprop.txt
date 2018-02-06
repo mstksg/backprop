@@ -264,6 +264,15 @@ opIso :: (a -> b) -> (b -> a) -> Op '[a] b
 --   numerically manipulate things before returning them.
 opLens :: Num a => Lens' a b -> Op '[a] b
 
+-- | An <a>Op</a> that runs the input value through an isomorphism between
+--   a tuple of values and a value.
+--   
+--   Warning: This is unsafe! It assumes that the isomorphisms themselves
+--   have derivative 1, so will break for things like
+--   <a>exponentiating</a>. Basically, don't use this for any "numeric"
+--   isomorphisms.
+opIsoN :: (Tuple as -> b) -> (b -> Tuple as) -> Op as b
+
 -- | Compose <a>Op</a>s together, like <a>sequence</a> for functions, or
 --   <tt>liftAN</tt>.
 --   
