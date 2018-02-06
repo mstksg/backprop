@@ -1090,13 +1090,19 @@ T2 :: !a -> !b -> T2 a b
 
 -- | Convert to a Haskell tuple.
 --   
---   Forms an isomorphism with <a>tupT2</a>. @since 0.1.1.0
+--   Forms an isomorphism with <a>tupT2</a>.
 t2Tup :: T2 a b -> (a, b)
 
 -- | Convert from Haskell tuple.
 --   
 --   Forms an isomorphism with <a>t2Tup</a>.
 tupT2 :: (a, b) -> T2 a b
+
+-- | Uncurry a function to take in a <a>T2</a> of its arguments
+uncurryT2 :: (a -> b -> c) -> T2 a b -> c
+
+-- | Curry a function taking a <a>T2</a> of its arguments
+curryT2 :: (T2 a b -> c) -> a -> b -> c
 
 -- | Lens into the first field of a <a>T2</a>. Also exported as <a>_1</a>
 --   from <a>Lens.Micro</a>.
@@ -1131,6 +1137,12 @@ t3_2 :: Lens (T3 a b c) (T3 a b' c) b b'
 -- | Lens into the third field of a <a>T3</a>. Also exported as <a>_3</a>
 --   from <a>Lens.Micro</a>.
 t3_3 :: Lens (T3 a b c) (T3 a b c') c c'
+
+-- | Uncurry a function to take in a <a>T2</a> of its arguments
+uncurryT3 :: (a -> b -> c -> d) -> T3 a b c -> d
+
+-- | Curry a function taking a <a>T3</a> of its arguments
+curryT3 :: (T3 a b c -> d) -> a -> b -> c -> d
 instance (Data.Data.Data c, Data.Data.Data b, Data.Data.Data a) => Data.Data.Data (Numeric.Backprop.Tuple.T3 a b c)
 instance GHC.Base.Functor (Numeric.Backprop.Tuple.T3 a b)
 instance GHC.Generics.Generic (Numeric.Backprop.Tuple.T3 a b c)
