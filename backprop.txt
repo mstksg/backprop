@@ -2,10 +2,13 @@
 -- See Hoogle, http://www.haskell.org/hoogle/
 
 
--- | Heterogeneous automatic backpropagation in Haskell
+-- | Heterogeneous automatic differentation (backpropagation)
 --   
 --   Write your functions to compute your result, and the library will
 --   automatically generate functions to compute your gradient.
+--   
+--   Implements heterogeneous reverse-mode automatic differentiation,
+--   commonly known as "backpropagation".
 --   
 --   See <a>README.md</a>
 @package backprop
@@ -518,10 +521,14 @@ data W
 --   
 --   See the <a>README</a> for a more detailed discussion on this issue.
 --   
---   If you need a <a>Num</a> instance for tuples, consider the
---   <a>NumInstances</a> package (in particular,
---   <a>Data.NumInstances.Tuple</a>), or else using a named product type
---   instead.
+--   If you need a <a>Num</a> instance for tuples, you can use the
+--   canonical 2- and 3-tuples for the library in
+--   <a>Numeric.Backprop.Tuple</a>. If you need one for larger tuples,
+--   consider making a custom product type instead (making Num instances
+--   with something like <a>one-liner-instances</a>). You can also use the
+--   orphan instances in the <a>NumInstances</a> package (in particular,
+--   <a>Data.NumInstances.Tuple</a>) if you are writing an application and
+--   do not have to worry about orphan instances.
 backprop :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
 
 -- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
@@ -555,10 +562,8 @@ gradBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BV
 -- | <a>backprop</a> for a two-argument function.
 --   
 --   Not strictly necessary, because you can always uncurry a function by
---   putting the arguments inside a data type, or using a tuple with
---   <a>NumInstances</a>. However, this can be convenient if you don't want
---   to make a custom tuple type or pull in orphan instances. This could
---   potentially also be more performant.
+--   passing in all of the argument inside a data type, or use <tt>T2</tt>.
+--   However, this could potentially be more performant.
 --   
 --   For 3 and more arguments, consider using <a>backpropN</a>.
 backprop2 :: forall a b c. (Num a, Num b, Num c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c, (a, b))
@@ -577,10 +582,11 @@ gradBP2 :: (Num a, Num b, Num c) => (forall s. Reifies s W => BVar s a -> BVar s
 --   
 --   Not strictly necessary, because you can always uncurry a function by
 --   passing in all of the inputs in a data type containing all of the
---   arguments. You could also pass in a giant tuple with
---   <a>NumInstances</a>. However, this can be convenient if you don't want
---   to make a custom tuple type or pull in orphan instances. This could
---   potentially also be more performant.
+--   arguments or a tuple from <a>Numeric.Backprop.Tuple</a>. You could
+--   also pass in a giant tuple with <a>NumInstances</a>. However, this can
+--   be convenient if you don't want to make a custom larger tuple type or
+--   pull in orphan instances. This could potentially also be more
+--   performant.
 --   
 --   A <tt><a>Prod</a> (<a>BVar</a> s) '[Double, Float, Double]</tt>, for
 --   instance, is a tuple of <tt><a>BVar</a> s <a>Double</a></tt>,
@@ -703,10 +709,18 @@ infixl 8 .~~
 --   
 --   Note that many automatically-generated prisms by the <i>lens</i>
 --   package use tuples, which cannot normally be backpropagated (because
---   they do not have a <a>Num</a> instance). However, you can pull in
---   orphan instances from <a>NumInstances</a>, or also chain those prisms
---   with functions to convert tuples to your own custom product types (or
---   tuple types with <a>Num</a> instances).
+--   they do not have a <a>Num</a> instance).
+--   
+--   If you are writing an application or don't have to worry about orphan
+--   instances, you can pull in the orphan instances from
+--   <a>NumInstances</a>. Alternatively, you can chain those prisms with
+--   conversions to the anonymous canonical strict tuple types in
+--   <a>Numeric.Backprop.Tuple</a>, which do have <a>Num</a> instances.
+--   
+--   <pre>
+--   myPrism                         :: <tt>Prism'</tt> c (a, b)
+--   myPrism . <tt>iso</tt> <tt>tupT2</tt> <tt>t2Tup</tt> :: <tt>Prism'</tt> c (<tt>T2</tt> a b)
+--   </pre>
 (^^?) :: forall b a s. (Num a, Reifies s W) => BVar s b -> Traversal' b a -> Maybe (BVar s a)
 
 -- | An infix version of <a>toListOfVar</a>, meant to evoke parallels to
@@ -1028,3 +1042,125 @@ newtype I a :: * -> *
 I :: a -> I a
 [getI] :: I a -> a
 class Reifies k (s :: k) a | s -> a
+
+
+-- | Canonical strict tuples with <a>Num</a> instances for usage with
+--   <i>backprop</i>. This is here to solve the problem of orphan instances
+--   in libraries and potential mismatched tuple types.
+--   
+--   If you are writing a library that needs to export <tt>BVar</tt>s of
+--   tuples, consider using the tuples in this module so that your library
+--   can have easy interoperability with other libraries using
+--   <i>backprop</i>.
+--   
+--   Because of API decisions, <tt>backprop</tt> and <tt>gradBP</tt> only
+--   work with things with <a>Num</a> instances. However, this disallows
+--   default <tt>Prelude</tt> tuples (without orphan instances from
+--   packages like <a>NumInstances</a>).
+--   
+--   Until tuples have <a>Num</a> instances in <i>base</i>, this module is
+--   intended to be a workaround for situations where:
+--   
+--   This comes up often in cases where:
+--   
+--   <ol>
+--   <li>A function wants to return more than one value (<tt><tt>BVar</tt>
+--   s (<a>T2</a> a b)</tt></li>
+--   <li>You want to uncurry a <tt>BVar</tt> function to use with
+--   <tt>backprop</tt> and <tt>gradBP</tt>.</li>
+--   <li>You want to use the useful <tt>Prism</tt>s automatically generated
+--   by the lens library, which use tuples for multiple-constructor
+--   fields.</li>
+--   </ol>
+--   
+--   Only 2-tuples and 3-tuples are provided. Any more and you should
+--   probably be using your own custom product types, with instances
+--   automatically generated from something like
+--   <a>one-liner-instances</a>.
+--   
+--   Lenses into the fields are provided, but they also work with
+--   <a>_1</a>, <a>_2</a>, and <a>_3</a> from <a>Lens.Micro</a>. However,
+--   note that these are incompatible with <a>_1</a>, <a>_2</a>, and
+--   <a>_3</a> from <a>Control.Lens</a>.
+module Numeric.Backprop.Tuple
+
+-- | Strict 2-tuple with a <a>Num</a> instance.
+data T2 a b
+T2 :: !a -> !b -> T2 a b
+
+-- | Convert to a Haskell tuple.
+--   
+--   Forms an isomorphism with <a>tupT2</a>.
+t2Tup :: T2 a b -> (a, b)
+
+-- | Convert from Haskell tuple.
+--   
+--   Forms an isomorphism with <a>t2Tup</a>.
+tupT2 :: (a, b) -> T2 a b
+
+-- | Lens into the first field of a <a>T2</a>. Also exported as <a>_1</a>
+--   from <a>Lens.Micro</a>.
+t2_1 :: Lens (T2 a b) (T2 a' b) a a'
+
+-- | Lens into the second field of a <a>T2</a>. Also exported as <a>_2</a>
+--   from <a>Lens.Micro</a>.
+t2_2 :: Lens (T2 a b) (T2 a b') b b'
+
+-- | Strict 3-tuple with a <a>Num</a> instance.
+data T3 a b c
+T3 :: !a -> !b -> !c -> T3 a b c
+
+-- | Convert to a Haskell tuple.
+--   
+--   Forms an isomorphism with <a>tupT3</a>.
+t3Tup :: T3 a b c -> (a, b, c)
+
+-- | Convert from Haskell tuple.
+--   
+--   Forms an isomorphism with <a>t3Tup</a>.
+tupT3 :: (a, b, c) -> T3 a b c
+
+-- | Lens into the first field of a <a>T3</a>. Also exported as <a>_1</a>
+--   from <a>Lens.Micro</a>.
+t3_1 :: Lens (T3 a b c) (T3 a' b c) a a'
+
+-- | Lens into the second field of a <a>T3</a>. Also exported as <a>_2</a>
+--   from <a>Lens.Micro</a>.
+t3_2 :: Lens (T3 a b c) (T3 a b' c) b b'
+
+-- | Lens into the third field of a <a>T3</a>. Also exported as <a>_3</a>
+--   from <a>Lens.Micro</a>.
+t3_3 :: Lens (T3 a b c) (T3 a b c') c c'
+instance (Data.Data.Data c, Data.Data.Data b, Data.Data.Data a) => Data.Data.Data (Numeric.Backprop.Tuple.T3 a b c)
+instance GHC.Base.Functor (Numeric.Backprop.Tuple.T3 a b)
+instance GHC.Generics.Generic (Numeric.Backprop.Tuple.T3 a b c)
+instance (GHC.Classes.Ord c, GHC.Classes.Ord b, GHC.Classes.Ord a) => GHC.Classes.Ord (Numeric.Backprop.Tuple.T3 a b c)
+instance (GHC.Classes.Eq c, GHC.Classes.Eq b, GHC.Classes.Eq a) => GHC.Classes.Eq (Numeric.Backprop.Tuple.T3 a b c)
+instance (GHC.Read.Read c, GHC.Read.Read b, GHC.Read.Read a) => GHC.Read.Read (Numeric.Backprop.Tuple.T3 a b c)
+instance (GHC.Show.Show c, GHC.Show.Show b, GHC.Show.Show a) => GHC.Show.Show (Numeric.Backprop.Tuple.T3 a b c)
+instance (Data.Data.Data b, Data.Data.Data a) => Data.Data.Data (Numeric.Backprop.Tuple.T2 a b)
+instance GHC.Base.Functor (Numeric.Backprop.Tuple.T2 a)
+instance GHC.Generics.Generic (Numeric.Backprop.Tuple.T2 a b)
+instance (GHC.Classes.Ord b, GHC.Classes.Ord a) => GHC.Classes.Ord (Numeric.Backprop.Tuple.T2 a b)
+instance (GHC.Classes.Eq b, GHC.Classes.Eq a) => GHC.Classes.Eq (Numeric.Backprop.Tuple.T2 a b)
+instance (GHC.Read.Read b, GHC.Read.Read a) => GHC.Read.Read (Numeric.Backprop.Tuple.T2 a b)
+instance (GHC.Show.Show b, GHC.Show.Show a) => GHC.Show.Show (Numeric.Backprop.Tuple.T2 a b)
+instance (Control.DeepSeq.NFData a, Control.DeepSeq.NFData b, Control.DeepSeq.NFData c) => Control.DeepSeq.NFData (Numeric.Backprop.Tuple.T3 a b c)
+instance Data.Bifunctor.Bifunctor (Numeric.Backprop.Tuple.T3 a)
+instance Lens.Micro.Internal.Field1 (Numeric.Backprop.Tuple.T3 a b c) (Numeric.Backprop.Tuple.T3 a' b c) a a'
+instance Lens.Micro.Internal.Field2 (Numeric.Backprop.Tuple.T3 a b c) (Numeric.Backprop.Tuple.T3 a b' c) b b'
+instance Lens.Micro.Internal.Field3 (Numeric.Backprop.Tuple.T3 a b c) (Numeric.Backprop.Tuple.T3 a b c') c c'
+instance (GHC.Num.Num a, GHC.Num.Num b, GHC.Num.Num c) => GHC.Num.Num (Numeric.Backprop.Tuple.T3 a b c)
+instance (GHC.Real.Fractional a, GHC.Real.Fractional b, GHC.Real.Fractional c) => GHC.Real.Fractional (Numeric.Backprop.Tuple.T3 a b c)
+instance (GHC.Float.Floating a, GHC.Float.Floating b, GHC.Float.Floating c) => GHC.Float.Floating (Numeric.Backprop.Tuple.T3 a b c)
+instance (Data.Semigroup.Semigroup a, Data.Semigroup.Semigroup b, Data.Semigroup.Semigroup c) => Data.Semigroup.Semigroup (Numeric.Backprop.Tuple.T3 a b c)
+instance (GHC.Base.Monoid a, GHC.Base.Monoid b, GHC.Base.Monoid c) => GHC.Base.Monoid (Numeric.Backprop.Tuple.T3 a b c)
+instance (Control.DeepSeq.NFData a, Control.DeepSeq.NFData b) => Control.DeepSeq.NFData (Numeric.Backprop.Tuple.T2 a b)
+instance Data.Bifunctor.Bifunctor Numeric.Backprop.Tuple.T2
+instance Lens.Micro.Internal.Field1 (Numeric.Backprop.Tuple.T2 a b) (Numeric.Backprop.Tuple.T2 a' b) a a'
+instance Lens.Micro.Internal.Field2 (Numeric.Backprop.Tuple.T2 a b) (Numeric.Backprop.Tuple.T2 a b') b b'
+instance (GHC.Num.Num a, GHC.Num.Num b) => GHC.Num.Num (Numeric.Backprop.Tuple.T2 a b)
+instance (GHC.Real.Fractional a, GHC.Real.Fractional b) => GHC.Real.Fractional (Numeric.Backprop.Tuple.T2 a b)
+instance (GHC.Float.Floating a, GHC.Float.Floating b) => GHC.Float.Floating (Numeric.Backprop.Tuple.T2 a b)
+instance (Data.Semigroup.Semigroup a, Data.Semigroup.Semigroup b) => Data.Semigroup.Semigroup (Numeric.Backprop.Tuple.T2 a b)
+instance (GHC.Base.Monoid a, GHC.Base.Monoid b) => GHC.Base.Monoid (Numeric.Backprop.Tuple.T2 a b)
