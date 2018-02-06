@@ -6,6 +6,7 @@ Pending Changes
 
 *   Added currying and uncurrying functions for tuples in
     *Numeric.Backprop.Tuple*.
+*   `opIsoN`, for isomorphisms between a tuple of values and a value.
 *   (Internal) AD engine now using `Any` from *ghc-prim* instead of `Some I`
     from *type-combinators*
 

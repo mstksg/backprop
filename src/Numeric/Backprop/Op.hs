@@ -51,7 +51,7 @@ module Numeric.Backprop.Op (
   -- ** Giving gradients directly
   , op1, op2, op3
   -- ** From Isomorphisms
-  , opCoerce, opTup, opIso, opLens
+  , opCoerce, opTup, opIso, opLens, opIsoN
   -- * Manipulation
   , composeOp, composeOp1, (~.)
   , composeOp', composeOp1'
@@ -360,6 +360,19 @@ opTup = Op $ \xs -> (xs, id)
 opIso :: (a -> b) -> (b -> a) -> Op '[ a ] b
 opIso to' from' = op1 $ \x -> (to' x, from')
 {-# INLINE opIso #-}
+
+-- | An 'Op' that runs the input value through an isomorphism between
+-- a tuple of values and a value.
+--
+-- Warning: This is unsafe!  It assumes that the isomorphisms themselves
+-- have derivative 1, so will break for things like
+-- 'Numeric.Lens.exponentiating'.  Basically, don't use this for any
+-- "numeric" isomorphisms.
+--
+-- @since 0.1.2.0
+opIsoN :: (Tuple as -> b) -> (b -> Tuple as) -> Op as b
+opIsoN to' from' = Op $ \xs -> (to' xs, from')
+{-# INLINE opIsoN #-}
 
 -- | An 'Op' that extracts a value from an input value using a 'Lens''.
 --
