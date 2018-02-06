@@ -47,6 +47,8 @@
 -- and '_3' from "Lens.Micro".  However, note that these are incompatible
 -- with '_1', '_2', and '_3' from "Control.Lens".
 --
+-- @since 0.1.1.0
+--
 
 
 module Numeric.Backprop.Tuple (
@@ -75,10 +77,14 @@ import           Lens.Micro
 import           Lens.Micro.Internal
 
 -- | Strict 2-tuple with a 'Num' instance.
+--
+-- @since 0.1.1.0
 data T2 a b   = T2 !a !b
   deriving (Show, Read, Eq, Ord, Generic, Functor, Data)
 
 -- | Strict 3-tuple with a 'Num' instance.
+--
+-- @since 0.1.1.0
 data T3 a b c = T3 !a !b !c
   deriving (Show, Read, Eq, Ord, Generic, Functor, Data)
 
@@ -94,12 +100,15 @@ instance Bifunctor (T3 a) where
 -- | Convert to a Haskell tuple.
 --
 -- Forms an isomorphism with 'tupT2'.
+-- @since 0.1.1.0
 t2Tup :: T2 a b -> (a, b)
 t2Tup (T2 x y) = (x, y)
 
 -- | Convert from Haskell tuple.
 --
 -- Forms an isomorphism with 't2Tup'.
+--
+-- @since 0.1.1.0
 tupT2 :: (a, b) -> T2 a b
 tupT2 (x, y) = T2 x y
 

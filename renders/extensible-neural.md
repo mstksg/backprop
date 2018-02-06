@@ -124,9 +124,10 @@ data Net :: Nat -> [Nat] -> Nat -> Type where
 ```
 
 Unfortunately, we can't automatically generate lenses for GADTs, so we
-have to make them by hand.\[\^poly\]
+have to make them by hand.[^1]
 
-with type safety via paraemtric polymorphism.
+[^1]: We write them originally as a polymorphic lens family to help us
+    with type safety via paraemtric polymorphism.
 
 ``` {.sourceCode .literate .haskell}
 _NO :: Lens (Net i '[] o) (Net i' '[] o')
@@ -190,7 +191,7 @@ runNetwork
     -> BVar s (R o)
 runNetwork n = \case
     SNil          -> softMax . runLayer (n ^^. _NO)
-    SCons SNat hs -> withSingI hs (runNetwork (n ^^. _NIN) hs)
+    SCons SNat hs -> runNetwork (withSingI hs (n ^^. _NIN))  hs
                    . logistic
                    . runLayer (n ^^. _NIL)
 {-# INLINE runNetwork #-}

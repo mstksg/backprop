@@ -120,7 +120,7 @@ First, our types:
 Unfortunately, we can't automatically generate lenses for GADTs, so we have
 to make them by hand.[^poly]
 
-[poly]: We write them originally as a polymorphic lens family to help us
+[^poly]: We write them originally as a polymorphic lens family to help us
 with type safety via paraemtric polymorphism.
 
 > _NO :: Lens (Net i '[] o) (Net i' '[] o')
@@ -180,7 +180,7 @@ know exactly what type of network we have:
 >     -> BVar s (R o)
 > runNetwork n = \case
 >     SNil          -> softMax . runLayer (n ^^. _NO)
->     SCons SNat hs -> withSingI hs (runNetwork (n ^^. _NIN) hs)
+>     SCons SNat hs -> runNetwork (withSingI hs (n ^^. _NIN))  hs
 >                    . logistic
 >                    . runLayer (n ^^. _NIL)
 > {-# INLINE runNetwork #-}

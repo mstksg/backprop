@@ -1,6 +1,21 @@
 Changelog
 =========
 
+Version 0.1.1.0
+---------------
+
+*Feb 6, 2018*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.1.1.0>
+
+*   Added canonical strict tuple types with `Num` instances, in the module
+    *Numeric.Backprop.Tuple*.  This is meant to be a band-aid for the problem
+    of orphan instances and potential mismatched tuple types.
+*   Fixed bug in `collectVar` that occurs if container sizes change
+*   Internal tweaks to the underlying automatic differentiation types that
+    decouple backpropagation from `Num`, internally.  `Num` is now just used
+    externally as a part of the API, which might someday be made optional.
+
 Version 0.1.0.0
 ---------------
 
