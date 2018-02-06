@@ -400,8 +400,8 @@ collectVar_
 collectVar_ !vs = withV (toList vs) $ \(vVec :: Vec n (BVar s a)) -> do
     let tn :: TapeNode (t a)
         tn = TN { _tnInputs = vecToProd (vmap ((`IR` id) . getI) vVec)
-                , _tnGrad   = maybe (error "distributeVar") vecToProd
-                            . listToVec (vecLen vVec)
+                , _tnGrad   = vecToProd
+                            . listToVecDef 0 (vecLen vVec)
                             . map I . toList
                 }
     traverse_ (evaluate . forceBVar) vs

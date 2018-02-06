@@ -16,6 +16,7 @@ module Data.Type.Util (
   , prodToVec'
   , lengthProd
   , listToVec
+  , listToVecDef
   , fillProd
   ) where
 
@@ -25,6 +26,7 @@ import           Data.Type.Length
 import           Data.Type.Nat
 import           Data.Type.Product
 import           Data.Type.Vector
+import           Type.Class.Witness
 import           Type.Family.Nat
 
 -- | @'Replicate' n a@ is a list of @a@s repeated @n@ times.
@@ -112,6 +114,21 @@ listToVec = \case
     S_ n -> \case
       []   -> Nothing
       x:xs -> (x :*) <$> listToVec n xs
+
+listToVecDef
+    :: forall f a n. ()
+    => f a
+    -> Nat n
+    -> [f a]
+    -> VecT n f a
+listToVecDef d = go
+  where
+    go :: Nat m -> [f a] -> VecT m f a
+    go = \case
+      Z_   -> \_ -> ØV
+      S_ n -> \case
+        []   -> d :* vrep d \\ n
+        x:xs -> x :* go n xs
 
 fillProd
     :: forall f g as c. ()
