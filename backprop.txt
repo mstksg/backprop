@@ -1090,7 +1090,7 @@ T2 :: !a -> !b -> T2 a b
 
 -- | Convert to a Haskell tuple.
 --   
---   Forms an isomorphism with <a>tupT2</a>.
+--   Forms an isomorphism with <a>tupT2</a>. @since 0.1.1.0
 t2Tup :: T2 a b -> (a, b)
 
 -- | Convert from Haskell tuple.
