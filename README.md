@@ -272,12 +272,19 @@ Todo
         addition, it's often useful to have anonymous products and tuples in
         general.
 
-        However, this can be resolved by using the orphan instances in the
+        This is bandaided-over by having *backprop* provide canonical
+        tuple-with-`Num` types for different libraries to use, but it's not a
+        perfect solution.
+
+        This can be resolved by using the orphan instances in the
         *[NumInstances][]* package.  Still, there might be some headache for
         application developers if different libraries using *backprop*
         accidentally pull in their orphan instances from different places.
 
         [NumInstances]: https://hackage.haskell.org/package/NumInstances
+
+        Alternatively, one day we can get `Num` instances for tuples into
+        *base*!
 
     The extra complexity that would come from adding a custom typeclass just
     for `+` / `0` / `1`, though, I feel, might not be worth the benefit.  The

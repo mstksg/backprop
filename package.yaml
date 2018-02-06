@@ -45,6 +45,7 @@ library:
   exposed-modules:
   - Numeric.Backprop
   - Numeric.Backprop.Op
+  - Numeric.Backprop.Tuple
   other-modules:
   - Numeric.Backprop.Internal
   - Data.Type.Util

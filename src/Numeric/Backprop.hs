@@ -156,10 +156,15 @@ import           Numeric.Backprop.Op
 -- See the <https://github.com/mstksg/backprop README> for a more detailed
 -- discussion on this issue.
 --
--- If you need a 'Num' instance for tuples, consider the
+-- If you need a 'Num' instance for tuples, you can use the canonical 2-
+-- and 3-tuples for the library in "Numeric.Backprop.Tuple".  If you need
+-- one for larger tuples, consider making a custom product type instead
+-- (making Num instances with something like
+-- <https://hackage.haskell.org/package/one-liner-instances one-liner-instances>).
+-- You can also use the orphan instances in the
 -- <https://hackage.haskell.org/package/NumInstances NumInstances> package
--- (in particular, "Data.NumInstances.Tuple"), or else using a named
--- product type instead.
+-- (in particular, "Data.NumInstances.Tuple") if you are writing an
+-- application and do not have to worry about orphan instances.
 backprop
     :: forall a b. (Num a, Num b)
     => (forall s. Reifies s W => BVar s a -> BVar s b)
@@ -219,11 +224,8 @@ gradBPN f = snd . backpropN f
 -- | 'backprop' for a two-argument function.
 --
 -- Not strictly necessary, because you can always uncurry a function by
--- putting the arguments inside a data type, or using a tuple with
--- <https://hackage.haskell.org/package/NumInstances NumInstances>.
--- However, this can be convenient if you don't want to make a custom tuple
--- type or pull in orphan instances.  This could potentially also be more
--- performant.
+-- passing in all of the argument inside a data type, or use 'T2'. However,
+-- this could potentially be more performant.
 --
 -- For 3 and more arguments, consider using 'backpropN'.
 backprop2
@@ -352,10 +354,19 @@ infixl 8 .~~
 --
 -- Note that many automatically-generated prisms by the /lens/ package use
 -- tuples, which cannot normally be backpropagated (because they do not
--- have a 'Num' instance).  However, you can pull in orphan instances from
--- <https://hackage.haskell.org/package/NumInstances NumInstances>, or also
--- chain those prisms with functions to convert tuples to your own custom
--- product types (or tuple types with 'Num' instances).
+-- have a 'Num' instance).
+--
+-- If you are writing an application or don't have to worry about orphan
+-- instances, you can pull in the orphan instances from
+-- <https://hackage.haskell.org/package/NumInstances NumInstances>.
+-- Alternatively, you can chain those prisms with conversions to the
+-- anonymous canonical strict tuple types in "Numeric.Backprop.Tuple",
+-- which do have 'Num' instances.
+--
+-- @
+-- myPrism                         :: 'Prism'' c (a, b)
+-- myPrism . 'iso' 'tupT2' 't2Tup' :: 'Prism'' c ('T2' a b)
+-- @
 (^^?)
     :: forall b a s. (Num a, Reifies s W)
     => BVar s b

@@ -511,11 +511,12 @@ gradRunner _ R{..} (n,stns) = do
 --
 -- Not strictly necessary, because you can always uncurry a function by
 -- passing in all of the inputs in a data type containing all of the
--- arguments.   You could also pass in a giant tuple with
+-- arguments or a tuple from "Numeric.Backprop.Tuple".   You could also
+-- pass in a giant tuple with
 -- <https://hackage.haskell.org/package/NumInstances NumInstances>.
--- However, this can be convenient if you don't want to make a custom tuple
--- type or pull in orphan instances.  This could potentially also be more
--- performant.
+-- However, this can be convenient if you don't want to make a custom
+-- larger tuple type or pull in orphan instances.  This could potentially
+-- also be more performant.
 --
 -- A @'Prod' ('BVar' s) '[Double, Float, Double]@, for instance, is a tuple
 -- of @'BVar' s 'Double'@, @'BVar' s 'Float'@, and @'BVar' s 'Double'@, and
