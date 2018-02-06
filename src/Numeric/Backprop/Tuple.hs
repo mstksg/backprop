@@ -57,6 +57,8 @@ module Numeric.Backprop.Tuple (
   -- ** Conversions
   -- $t2iso
   , t2Tup, tupT2
+  -- ** Consumption
+  , uncurryT2, curryT2
   -- ** Lenses
   , t2_1, t2_2
   -- * Three-tuples
@@ -66,6 +68,8 @@ module Numeric.Backprop.Tuple (
   , t3Tup, tupT3
   -- ** Lenses
   , t3_1, t3_2, t3_3
+  -- ** Consumption
+  , uncurryT3, curryT3
   ) where
 
 import           Control.DeepSeq
@@ -100,15 +104,12 @@ instance Bifunctor (T3 a) where
 -- | Convert to a Haskell tuple.
 --
 -- Forms an isomorphism with 'tupT2'.
--- @since 0.1.1.0
 t2Tup :: T2 a b -> (a, b)
 t2Tup (T2 x y) = (x, y)
 
 -- | Convert from Haskell tuple.
 --
 -- Forms an isomorphism with 't2Tup'.
---
--- @since 0.1.1.0
 tupT2 :: (a, b) -> T2 a b
 tupT2 (x, y) = T2 x y
 
@@ -121,8 +122,32 @@ t3Tup (T3 x y z) = (x, y, z)
 -- | Convert from Haskell tuple.
 --
 -- Forms an isomorphism with 't3Tup'.
+--
+-- @since 0.1.2.0
 tupT3 :: (a, b, c) -> T3 a b c
 tupT3 (x, y, z) = T3 x y z
+
+-- | Uncurry a function to take in a 'T2' of its arguments
+--
+-- @since 0.1.2.0
+uncurryT2 :: (a -> b -> c) -> T2 a b -> c
+uncurryT2 f (T2 x y) = f x y
+
+-- | Curry a function taking a 'T2' of its arguments
+--
+-- @since 0.1.2.0
+curryT2 :: (T2 a b -> c) -> a -> b -> c
+curryT2 f x y = f (T2 x y)
+
+-- | Uncurry a function to take in a 'T2' of its arguments
+uncurryT3 :: (a -> b -> c -> d) -> T3 a b c -> d
+uncurryT3 f (T3 x y z) = f x y z
+
+-- | Curry a function taking a 'T3' of its arguments
+--
+-- @since 0.1.2.0
+curryT3 :: (T3 a b c -> d) -> a -> b -> c -> d
+curryT3 f x y z = f (T3 x y z)
 
 instance Field1 (T2 a b) (T2 a' b) a a' where
     _1 f (T2 x y) = (`T2` y) <$> f x

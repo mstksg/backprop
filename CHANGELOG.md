@@ -1,6 +1,14 @@
 Changelog
 =========
 
+Pending Changes
+---------------
+
+*   Added currying and uncurrying functions for tuples in
+    *Numeric.Backprop.Tuple*.
+*   (Internal) AD engine now using `Any` from *ghc-prim* instead of `Some I`
+    from *type-combinators*
+
 Version 0.1.1.0
 ---------------
 
