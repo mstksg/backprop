@@ -25,16 +25,14 @@ that you can run] is also available on github!
   [rendered pdf version is available on github.]: https://github.com/mstksg/backprop/blob/master/renders/backprop-mnist.pdf
   [literate haskell version that you can run]: https://github.com/mstksg/backprop/blob/master/samples/backprop-mnist.lhs
 
-The packages involved are:
+The (extra) packages involved are:
 
--   deepseq
 -   hmatrix
 -   lens
 -   mnist-idx
 -   mwc-random
 -   one-liner-instances
 -   split
--   vector
 
 ``` {.sourceCode .literate .haskell}
 {-# LANGUAGE BangPatterns                     #-}

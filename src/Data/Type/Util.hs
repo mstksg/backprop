@@ -15,7 +15,6 @@ module Data.Type.Util (
   , vecLen
   , prodToVec'
   , lengthProd
-  , listToVec
   , listToVecDef
   , fillProd
   ) where
@@ -105,16 +104,6 @@ lengthProd x = \case
     LZ   -> Ø
     LS l -> x :< lengthProd x l
 
-listToVec
-    :: Nat n
-    -> [f a]
-    -> Maybe (VecT n f a)
-listToVec = \case
-    Z_ -> \_ -> Just ØV
-    S_ n -> \case
-      []   -> Nothing
-      x:xs -> (x :*) <$> listToVec n xs
-
 listToVecDef
     :: forall f a n. ()
     => f a
@@ -125,7 +114,7 @@ listToVecDef d = go
   where
     go :: Nat m -> [f a] -> VecT m f a
     go = \case
-      Z_   -> \_ -> ØV
+      Z_   -> const ØV
       S_ n -> \case
         []   -> d :* vrep d \\ n
         x:xs -> x :* go n xs

@@ -13,9 +13,8 @@ and [literate haskell] here). This write-up itself is available as a
   [literate haskell file]: https://github.com/mstksg/backprop/blob/master/samples/extensible-neural.lhs
   [rendered as a pdf]: https://github.com/mstksg/backprop/blob/master/renders/extensible-neural.pdf
 
-The packages involved are:
+The (extra) packages involved are:
 
--   deepseq
 -   hmatrix
 -   lens
 -   mnist-idx
@@ -23,7 +22,6 @@ The packages involved are:
 -   one-liner-instances
 -   singletons
 -   split
--   vector
 
 ``` {.sourceCode .literate .haskell}
 {-# LANGUAGE BangPatterns         #-}
