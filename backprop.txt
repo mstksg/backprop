@@ -774,6 +774,11 @@ sequenceVar :: forall t a s. (Reifies s W, Traversable t, Num a) => BVar s (t a)
 
 -- | Collect all of the <a>BVar</a>s in a container into a <a>BVar</a> of
 --   that container's contents.
+--   
+--   Note that this requires <tt>t a</tt> to have a <a>Num</a> instance. If
+--   you are using a list, I recommend using <a>vector-sized</a> instead:
+--   it's a fixed-length vector type with a very appropriate <a>Num</a>
+--   instance!
 collectVar :: forall a t s. (Reifies s W, Foldable t, Functor t, Num (t a), Num a) => t (BVar s a) -> BVar s (t a)
 
 -- | Using a <a>Traversal'</a>, extract a single value <i>inside</i> a
@@ -1147,7 +1152,7 @@ t3_2 :: Lens (T3 a b c) (T3 a b' c) b b'
 --   from <a>Lens.Micro</a>.
 t3_3 :: Lens (T3 a b c) (T3 a b c') c c'
 
--- | Uncurry a function to take in a <a>T2</a> of its arguments
+-- | Uncurry a function to take in a <a>T3</a> of its arguments
 uncurryT3 :: (a -> b -> c -> d) -> T3 a b c -> d
 
 -- | Curry a function taking a <a>T3</a> of its arguments
