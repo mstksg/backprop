@@ -122,8 +122,6 @@ t3Tup (T3 x y z) = (x, y, z)
 -- | Convert from Haskell tuple.
 --
 -- Forms an isomorphism with 't3Tup'.
---
--- @since 0.1.2.0
 tupT3 :: (a, b, c) -> T3 a b c
 tupT3 (x, y, z) = T3 x y z
 
@@ -139,7 +137,9 @@ uncurryT2 f (T2 x y) = f x y
 curryT2 :: (T2 a b -> c) -> a -> b -> c
 curryT2 f x y = f (T2 x y)
 
--- | Uncurry a function to take in a 'T2' of its arguments
+-- | Uncurry a function to take in a 'T3' of its arguments
+--
+-- @since 0.1.2.0
 uncurryT3 :: (a -> b -> c -> d) -> T3 a b c -> d
 uncurryT3 f (T3 x y z) = f x y z
 

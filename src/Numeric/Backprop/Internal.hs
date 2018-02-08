@@ -411,6 +411,11 @@ collectVar_ !vs = withV (toList vs) $ \(vVec :: Vec n (BVar s a)) -> do
 
 -- | Collect all of the 'BVar's in a container into a 'BVar' of that
 -- container's contents.
+--
+-- Note that this requires @t a@ to have a 'Num' instance.  If you are
+-- using a list, I recommend using
+-- <https://hackage.haskell.org/package/vector-sized vector-sized> instead:
+-- it's a fixed-length vector type with a very appropriate 'Num' instance!
 collectVar
     :: forall a t s. (Reifies s W, Foldable t, Functor t, Num (t a), Num a)
     => t (BVar s a)

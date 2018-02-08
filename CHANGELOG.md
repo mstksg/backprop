@@ -1,8 +1,12 @@
 Changelog
 =========
 
-Pending Changes
+Version 0.1.2.0
 ---------------
+
+*Feb 7, 2018*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.1.2.0>
 
 *   Added currying and uncurrying functions for tuples in
     *Numeric.Backprop.Tuple*.
