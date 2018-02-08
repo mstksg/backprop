@@ -12,7 +12,7 @@
 --   
 --   See <a>README.md</a>
 @package backprop
-@version 0.1.1.0
+@version 0.1.2.0
 
 
 -- | Provides the <a>Op</a> type and combinators, which represent
