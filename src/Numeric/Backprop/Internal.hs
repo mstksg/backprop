@@ -388,6 +388,12 @@ setVar l !w !v = unsafePerformIO $ setVar_ l w v
 
 -- | Extract all of the 'BVar's out of a 'Traversable' container of
 -- 'BVar's.
+--
+-- Note that this associates gradients in order of occurrence in the
+-- original data structure; the second item in the gradient is assumed to
+-- correspond with the second item in the input, etc.; this can cause
+-- unexpected behavior in 'Foldable' instances that don't have a fixed
+-- number of items.
 sequenceVar
     :: forall t a s. (Reifies s W, Traversable t, Num a)
     => BVar s (t a)
@@ -412,6 +418,12 @@ collectVar_ !vs = withV (toList vs) $ \(vVec :: Vec n (BVar s a)) -> do
 
 -- | Collect all of the 'BVar's in a container into a 'BVar' of that
 -- container's contents.
+--
+-- Note that this associates gradients in order of occurrence in the
+-- original data structure; the second item in the total derivative and
+-- gradient is assumed to correspond with the second item in the input,
+-- etc.; this can cause unexpected behavior in 'Foldable' instances that
+-- don't have a fixed number of items.
 --
 -- Note that this requires @t a@ to have a 'Num' instance.  If you are
 -- using a list, I recommend using

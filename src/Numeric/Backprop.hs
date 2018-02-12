@@ -282,6 +282,9 @@ gradBP2 f x = snd . backprop2 f x
 --
 -- This is the main way to pull out values from 'BVar' of container types.
 --
+-- __WARNING__: Do not use with any lenses that operate "numerically" on
+-- the contents (like 'multiplying').
+--
 (^^.)
     :: forall a b s. (Reifies s W, Num a)
     => BVar s b
