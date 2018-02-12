@@ -287,7 +287,7 @@ Todo
 
     However, it is worth noting that it wouldn't be too hard to add "Additive
     Typeclass" instances for any custom types -- one would just need to define
-    `(<+>) = (+)`, `zero = fromInteger 1`, and `one = fromInteger 1` (a
+    `(<+>) = (+)`, `zero = fromInteger 0`, and `one = fromInteger 1` (a
     three-liner), so it might not be too bad.
 
     But really, a lot of this would all resolve itself if we got `Num`
