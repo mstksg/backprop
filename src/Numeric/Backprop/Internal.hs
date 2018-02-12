@@ -153,17 +153,18 @@ forceTapeNode (TN inps !_) = foldMap1 forceInpRef inps `seq` ()
 {-# INLINE forceTapeNode #-}
 
 data SomeTapeNode :: Type where
-    STN :: forall a. Num a
-        => !(TapeNode a)
+    STN :: { _stnZero :: a
+           , _stnNode :: !(TapeNode a)
+           }
         -> SomeTapeNode
 
 forceSomeTapeNode :: SomeTapeNode -> ()
-forceSomeTapeNode (STN tn) = forceTapeNode tn `seq` ()
+forceSomeTapeNode (STN !_ tn) = forceTapeNode tn `seq` ()
 {-# INLINE forceSomeTapeNode #-}
 
 -- | Debugging string for a 'SomeTapeMode'.
 debugSTN :: SomeTapeNode -> String
-debugSTN (STN TN{..}) = show . foldMap1 ((:[]) . debugIR) $ _tnInputs
+debugSTN (STN _ TN{..}) = show . foldMap1 ((:[]) . debugIR) $ _tnInputs
 
 -- | An ephemeral Wengert Tape in the environment.  Used internally to
 -- track of the computational graph of variables.
@@ -184,7 +185,7 @@ insertNode
     -> IO (BVar s a)
 insertNode tn !x !w = fmap ((`BV` x) . BRIx) . atomicModifyIORef' (wRef w) $ \(!n,!t) ->
     let n' = n + 1
-        t' = STN tn:t
+        t' = STN 0 tn:t
     in  forceTapeNode tn `seq` n' `seq` t' `seq` ((n', t'), n)
 {-# INLINE insertNode #-}
 
@@ -224,7 +225,7 @@ liftOp_ o !vs = case traverse1 (fmap I . bvConst) vs of
 -- information, and "Numeric.Backprop.Op#prod" for a mini-tutorial on using
 -- 'Prod' and 'Tuple'.
 liftOp
-    :: forall s as b. (Reifies s W, Num b, Every Num as)
+    :: forall as b s. (Reifies s W, Num b, Every Num as)
     => Op as b
     -> Prod (BVar s) as
     -> BVar s b
@@ -232,7 +233,7 @@ liftOp o !vs = unsafePerformIO $ liftOp_ o vs
 {-# INLINE liftOp #-}
 
 liftOp1_
-    :: forall s a b. (Reifies s W, Num a, Num b)
+    :: forall a b s. (Reifies s W, Num a, Num b)
     => Op '[a] b
     -> BVar s a
     -> IO (BVar s b)
@@ -253,7 +254,7 @@ liftOp1_ o v = forceBVar v `seq` insertNode tn y (reflect (Proxy @s))
 -- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
 -- information.
 liftOp1
-    :: forall s a b. (Reifies s W, Num a, Num b)
+    :: forall a b s. (Reifies s W, Num a, Num b)
     => Op '[a] b
     -> BVar s a
     -> BVar s b
@@ -261,7 +262,7 @@ liftOp1 o !v = unsafePerformIO $ liftOp1_ o v
 {-# INLINE liftOp1 #-}
 
 liftOp2_
-    :: forall s a b c. (Reifies s W, Num a, Num b, Num c)
+    :: forall a b c s. (Reifies s W, Num a, Num b, Num c)
     => Op '[a,b] c
     -> BVar s a
     -> BVar s b
@@ -285,7 +286,7 @@ liftOp2_ o v u = forceBVar v
 -- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
 -- information.
 liftOp2
-    :: forall s a b c. (Reifies s W, Num a, Num b, Num c)
+    :: forall a b c s. (Reifies s W, Num a, Num b, Num c)
     => Op '[a,b] c
     -> BVar s a
     -> BVar s b
@@ -294,7 +295,7 @@ liftOp2 o !v !u = unsafePerformIO $ liftOp2_ o v u
 {-# INLINE liftOp2 #-}
 
 liftOp3_
-    :: forall s a b c d. (Reifies s W, Num a, Num b, Num c, Num d)
+    :: forall a b c d s. (Reifies s W, Num a, Num b, Num c, Num d)
     => Op '[a,b,c] d
     -> BVar s a
     -> BVar s b
@@ -321,7 +322,7 @@ liftOp3_ o v u w = forceBVar v
 -- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
 -- information.
 liftOp3
-    :: forall s a b c d. (Reifies s W, Num a, Num b, Num c, Num d)
+    :: forall a b c d s. (Reifies s W, Num a, Num b, Num c, Num d)
     => Op '[a,b,c] d
     -> BVar s a
     -> BVar s b
@@ -395,7 +396,7 @@ sequenceVar !v = unsafePerformIO $ traverseVar' id traverse v
 {-# INLINE sequenceVar #-}
 
 collectVar_
-    :: forall a t s. (Reifies s W, Foldable t, Functor t, Num (t a), Num a)
+    :: forall t a s. (Reifies s W, Foldable t, Functor t, Num (t a), Num a)
     => t (BVar s a)
     -> IO (BVar s (t a))
 collectVar_ !vs = withV (toList vs) $ \(vVec :: Vec n (BVar s a)) -> do
@@ -417,7 +418,7 @@ collectVar_ !vs = withV (toList vs) $ \(vVec :: Vec n (BVar s a)) -> do
 -- <https://hackage.haskell.org/package/vector-sized vector-sized> instead:
 -- it's a fixed-length vector type with a very appropriate 'Num' instance!
 collectVar
-    :: forall a t s. (Reifies s W, Foldable t, Functor t, Num (t a), Num a)
+    :: forall t a s. (Reifies s W, Foldable t, Functor t, Num (t a), Num a)
     => t (BVar s a)
     -> BVar s (t a)
 collectVar !vs = unsafePerformIO $ collectVar_ vs
@@ -478,8 +479,8 @@ initRunner
     -> m (Runner s)
 initRunner (n, stns) (nx,xs) = do
     delts <- MV.new n
-    for_ (zip [n-1,n-2..] stns) $ \(i, STN (TN{..} :: TapeNode c)) ->
-      MV.write delts i $ unsafeCoerce @c 0
+    for_ (zip [n-1,n-2..] stns) $ \(i, STN z (TN{..} :: TapeNode c)) ->
+      MV.write delts i $ unsafeCoerce z
     inps <- MV.new nx
     for_ (zip [0..] xs) $ \(i, Some (Wit1 :: Wit1 Num c)) ->
       MV.write inps i $ unsafeCoerce @c 0
@@ -498,7 +499,7 @@ gradRunner _ R{..} (n,stns) = do
     zipWithM_ go [n-1,n-2..] stns
   where
     go :: Int -> SomeTapeNode -> m ()
-    go i (STN TN{..}) = do
+    go i (STN _ TN{..}) = do
       delt <- MV.read _rDelta i
       let gs = _tnGrad (unsafeCoerce delt)
       zipWithPM_ propagate _tnInputs gs

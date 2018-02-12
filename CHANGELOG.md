@@ -8,6 +8,11 @@ Pending Changes
 *   `noGrad` and `noGrad1` added to *Numeric.Backprop.Op*, for functions with
     no defined gradient.
 
+*Internal*
+
+*   Completely decoupled the internal implementation from `Num`, which showed
+    some performance benefits.
+
 Version 0.1.2.0
 ---------------
 
@@ -32,6 +37,9 @@ Version 0.1.1.0
     *Numeric.Backprop.Tuple*.  This is meant to be a band-aid for the problem
     of orphan instances and potential mismatched tuple types.
 *   Fixed bug in `collectVar` that occurs if container sizes change
+
+*Internal*
+
 *   Internal tweaks to the underlying automatic differentiation types that
     decouple backpropagation from `Num`, internally.  `Num` is now just used
     externally as a part of the API, which might someday be made optional.
