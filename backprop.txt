@@ -812,7 +812,7 @@ sequenceVar :: forall t a s. (Reifies s W, Traversable t, Num a) => BVar s (t a)
 --   you are using a list, I recommend using <a>vector-sized</a> instead:
 --   it's a fixed-length vector type with a very appropriate <a>Num</a>
 --   instance!
-collectVar :: forall a t s. (Reifies s W, Foldable t, Functor t, Num (t a), Num a) => t (BVar s a) -> BVar s (t a)
+collectVar :: forall t a s. (Reifies s W, Foldable t, Functor t, Num (t a), Num a) => t (BVar s a) -> BVar s (t a)
 
 -- | Using a <a>Traversal'</a>, extract a single value <i>inside</i> a
 --   <a>BVar</a>, if it exists. If more than one traversal target exists,
@@ -839,7 +839,7 @@ toListOfVar :: forall b a s. (Num a, Reifies s W) => Traversal' b a -> BVar s b 
 --   <a>liftOp</a> for more information, and
 --   <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on using
 --   <a>Prod</a> and <a>Tuple</a>.
-liftOp :: forall s as b. (Reifies s W, Num b, Every Num as) => Op as b -> Prod (BVar s) as -> BVar s b
+liftOp :: forall as b s. (Reifies s W, Num b, Every Num as) => Op as b -> Prod (BVar s) as -> BVar s b
 
 -- | Lift an <a>Op</a> with a single input to be a function on a single
 --   <a>BVar</a>.
@@ -849,7 +849,7 @@ liftOp :: forall s as b. (Reifies s W, Num b, Every Num as) => Op as b -> Prod (
 --   
 --   See <a>Numeric.Backprop#liftops</a> and documentation for
 --   <a>liftOp</a> for more information.
-liftOp1 :: forall s a b. (Reifies s W, Num a, Num b) => Op '[a] b -> BVar s a -> BVar s b
+liftOp1 :: forall a b s. (Reifies s W, Num a, Num b) => Op '[a] b -> BVar s a -> BVar s b
 
 -- | Lift an <a>Op</a> with two inputs to be a function on a two
 --   <a>BVar</a>s.
@@ -859,7 +859,7 @@ liftOp1 :: forall s a b. (Reifies s W, Num a, Num b) => Op '[a] b -> BVar s a ->
 --   
 --   See <a>Numeric.Backprop#liftops</a> and documentation for
 --   <a>liftOp</a> for more information.
-liftOp2 :: forall s a b c. (Reifies s W, Num a, Num b, Num c) => Op '[a, b] c -> BVar s a -> BVar s b -> BVar s c
+liftOp2 :: forall a b c s. (Reifies s W, Num a, Num b, Num c) => Op '[a, b] c -> BVar s a -> BVar s b -> BVar s c
 
 -- | Lift an <a>Op</a> with three inputs to be a function on a three
 --   <a>BVar</a>s.
@@ -869,7 +869,7 @@ liftOp2 :: forall s a b c. (Reifies s W, Num a, Num b, Num c) => Op '[a, b] c ->
 --   
 --   See <a>Numeric.Backprop#liftops</a> and documentation for
 --   <a>liftOp</a> for more information.
-liftOp3 :: forall s a b c d. (Reifies s W, Num a, Num b, Num c, Num d) => Op '[a, b, c] d -> BVar s a -> BVar s b -> BVar s c -> BVar s d
+liftOp3 :: forall a b c d s. (Reifies s W, Num a, Num b, Num c, Num d) => Op '[a, b, c] d -> BVar s a -> BVar s b -> BVar s c -> BVar s d
 
 -- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
 --   <tt>as</tt> to <tt>a</tt>.
