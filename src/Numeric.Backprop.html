@@ -282,127 +282,130 @@
 </span><a name="line-282"></a><span class="hs-comment">--</span><span>
 </span><a name="line-283"></a><span class="hs-comment">-- This is the main way to pull out values from 'BVar' of container types.</span><span>
 </span><a name="line-284"></a><span class="hs-comment">--</span><span>
-</span><a name="line-285"></a><span class="hs-special">(</span><span class="hs-operator">^^.</span><span class="hs-special">)</span><span>
-</span><a name="line-286"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679082831"><a href="#local-6989586621679082831"><span class="hs-identifier">a</span></a></a><span> </span><a name="local-6989586621679082832"><a href="#local-6989586621679082832"><span class="hs-identifier">b</span></a></a><span> </span><a name="local-6989586621679082833"><a href="#local-6989586621679082833"><span class="hs-identifier">s</span></a></a><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Reifies</span><span> </span><a href="#local-6989586621679082833"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="Numeric.Backprop.Internal.html#W"><span class="hs-identifier hs-type">W</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Num</span><span> </span><a href="#local-6989586621679082831"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
-</span><a name="line-287"></a><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082833"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082832"><span class="hs-identifier hs-type">b</span></a><span>
-</span><a name="line-288"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Lens'</span><span> </span><a href="#local-6989586621679082832"><span class="hs-identifier hs-type">b</span></a><span> </span><a href="#local-6989586621679082831"><span class="hs-identifier hs-type">a</span></a><span>
-</span><a name="line-289"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082833"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082831"><span class="hs-identifier hs-type">a</span></a><span>
-</span><a name="line-290"></a><a name="local-6989586621679082876"><a href="#local-6989586621679082876"><span class="hs-identifier">x</span></a></a><span> </span><a name="%5E%5E."><a href="Numeric.Backprop.html#%5E%5E."><span class="hs-operator">^^.</span></a></a><span> </span><a name="local-6989586621679082877"><a href="#local-6989586621679082877"><span class="hs-identifier">l</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Internal.html#viewVar"><span class="hs-identifier hs-var">viewVar</span></a><span> </span><a href="#local-6989586621679082877"><span class="hs-identifier hs-var">l</span></a><span> </span><a href="#local-6989586621679082876"><span class="hs-identifier hs-var">x</span></a><span>
-</span><a name="line-291"></a><span class="hs-keyword">infixl</span><span> </span><span class="hs-number">8</span><span> </span><span class="hs-operator">^^.</span><span>
-</span><a name="line-292"></a><span class="hs-pragma">{-# INLINE (^^.) #-}</span><span>
-</span><a name="line-293"></a><span>
-</span><a name="line-294"></a><span class="hs-comment">-- | An infix version of 'setVar', meant to evoke parallels to '.~' from</span><span>
-</span><a name="line-295"></a><span class="hs-comment">-- lens.</span><span>
-</span><a name="line-296"></a><span class="hs-comment">--</span><span>
-</span><a name="line-297"></a><span class="hs-comment">-- With normal values, you can set something in a value with a lens:</span><span>
-</span><a name="line-298"></a><span class="hs-comment">-- a lens:</span><span>
+</span><a name="line-285"></a><span class="hs-comment">-- __WARNING__: Do not use with any lenses that operate &quot;numerically&quot; on</span><span>
+</span><a name="line-286"></a><span class="hs-comment">-- the contents (like 'multiplying').</span><span>
+</span><a name="line-287"></a><span class="hs-comment">--</span><span>
+</span><a name="line-288"></a><span class="hs-special">(</span><span class="hs-operator">^^.</span><span class="hs-special">)</span><span>
+</span><a name="line-289"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679082831"><a href="#local-6989586621679082831"><span class="hs-identifier">a</span></a></a><span> </span><a name="local-6989586621679082832"><a href="#local-6989586621679082832"><span class="hs-identifier">b</span></a></a><span> </span><a name="local-6989586621679082833"><a href="#local-6989586621679082833"><span class="hs-identifier">s</span></a></a><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Reifies</span><span> </span><a href="#local-6989586621679082833"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="Numeric.Backprop.Internal.html#W"><span class="hs-identifier hs-type">W</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Num</span><span> </span><a href="#local-6989586621679082831"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
+</span><a name="line-290"></a><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082833"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082832"><span class="hs-identifier hs-type">b</span></a><span>
+</span><a name="line-291"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Lens'</span><span> </span><a href="#local-6989586621679082832"><span class="hs-identifier hs-type">b</span></a><span> </span><a href="#local-6989586621679082831"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-292"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082833"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082831"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-293"></a><a name="local-6989586621679082876"><a href="#local-6989586621679082876"><span class="hs-identifier">x</span></a></a><span> </span><a name="%5E%5E."><a href="Numeric.Backprop.html#%5E%5E."><span class="hs-operator">^^.</span></a></a><span> </span><a name="local-6989586621679082877"><a href="#local-6989586621679082877"><span class="hs-identifier">l</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Internal.html#viewVar"><span class="hs-identifier hs-var">viewVar</span></a><span> </span><a href="#local-6989586621679082877"><span class="hs-identifier hs-var">l</span></a><span> </span><a href="#local-6989586621679082876"><span class="hs-identifier hs-var">x</span></a><span>
+</span><a name="line-294"></a><span class="hs-keyword">infixl</span><span> </span><span class="hs-number">8</span><span> </span><span class="hs-operator">^^.</span><span>
+</span><a name="line-295"></a><span class="hs-pragma">{-# INLINE (^^.) #-}</span><span>
+</span><a name="line-296"></a><span>
+</span><a name="line-297"></a><span class="hs-comment">-- | An infix version of 'setVar', meant to evoke parallels to '.~' from</span><span>
+</span><a name="line-298"></a><span class="hs-comment">-- lens.</span><span>
 </span><a name="line-299"></a><span class="hs-comment">--</span><span>
-</span><a name="line-300"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-301"></a><span class="hs-comment">-- x '&amp;' myLens '.~' 'y'</span><span>
-</span><a name="line-302"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-303"></a><span class="hs-comment">--</span><span>
-</span><a name="line-304"></a><span class="hs-comment">-- would &quot;set&quot; a part of @x :: b@, specified by @myLens :: 'Lens'' a b@, to</span><span>
-</span><a name="line-305"></a><span class="hs-comment">-- a new value @y :: a@.</span><span>
+</span><a name="line-300"></a><span class="hs-comment">-- With normal values, you can set something in a value with a lens:</span><span>
+</span><a name="line-301"></a><span class="hs-comment">-- a lens:</span><span>
+</span><a name="line-302"></a><span class="hs-comment">--</span><span>
+</span><a name="line-303"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-304"></a><span class="hs-comment">-- x '&amp;' myLens '.~' 'y'</span><span>
+</span><a name="line-305"></a><span class="hs-comment">-- @</span><span>
 </span><a name="line-306"></a><span class="hs-comment">--</span><span>
-</span><a name="line-307"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-308"></a><span class="hs-comment">-- xVar '&amp;' myLens '.~~' yVar</span><span>
-</span><a name="line-309"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-310"></a><span class="hs-comment">--</span><span>
-</span><a name="line-311"></a><span class="hs-comment">-- would &quot;set&quot; a part of @xVar :: 'BVar' s b@ (a 'BVar' holding a @b@),</span><span>
-</span><a name="line-312"></a><span class="hs-comment">-- specified by @myLens :: 'Lens'' a b@, to a new value given by @yVar ::</span><span>
-</span><a name="line-313"></a><span class="hs-comment">-- 'BVar' s a@.  The result is a new (updated) value of type @'BVar' s b@.</span><span>
-</span><a name="line-314"></a><span class="hs-comment">--</span><span>
-</span><a name="line-315"></a><span class="hs-comment">-- This is the main way to set values inside 'BVar's of container types.</span><span>
-</span><a name="line-316"></a><span class="hs-comment">--</span><span>
-</span><a name="line-317"></a><span class="hs-special">(</span><span class="hs-operator">.~~</span><span class="hs-special">)</span><span>
-</span><a name="line-318"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679082828"><a href="#local-6989586621679082828"><span class="hs-identifier">a</span></a></a><span> </span><a name="local-6989586621679082829"><a href="#local-6989586621679082829"><span class="hs-identifier">b</span></a></a><span> </span><a name="local-6989586621679082830"><a href="#local-6989586621679082830"><span class="hs-identifier">s</span></a></a><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Reifies</span><span> </span><a href="#local-6989586621679082830"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="Numeric.Backprop.Internal.html#W"><span class="hs-identifier hs-type">W</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Num</span><span> </span><a href="#local-6989586621679082828"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Num</span><span> </span><a href="#local-6989586621679082829"><span class="hs-identifier hs-type">b</span></a><span class="hs-special">)</span><span>
-</span><a name="line-319"></a><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-identifier hs-type">Lens'</span><span> </span><a href="#local-6989586621679082829"><span class="hs-identifier hs-type">b</span></a><span> </span><a href="#local-6989586621679082828"><span class="hs-identifier hs-type">a</span></a><span>
-</span><a name="line-320"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082830"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082828"><span class="hs-identifier hs-type">a</span></a><span>
-</span><a name="line-321"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082830"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082829"><span class="hs-identifier hs-type">b</span></a><span>
-</span><a name="line-322"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082830"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082829"><span class="hs-identifier hs-type">b</span></a><span>
-</span><a name="line-323"></a><a name="local-6989586621679082878"><a href="#local-6989586621679082878"><span class="hs-identifier">l</span></a></a><span> </span><a name=".~~"><a href="Numeric.Backprop.html#.~~"><span class="hs-operator">.~~</span></a></a><span> </span><a name="local-6989586621679082879"><a href="#local-6989586621679082879"><span class="hs-identifier">x</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Internal.html#setVar"><span class="hs-identifier hs-var">setVar</span></a><span> </span><a href="#local-6989586621679082878"><span class="hs-identifier hs-var">l</span></a><span> </span><a href="#local-6989586621679082879"><span class="hs-identifier hs-var">x</span></a><span>
-</span><a name="line-324"></a><span class="hs-keyword">infixl</span><span> </span><span class="hs-number">8</span><span> </span><span class="hs-operator">.~~</span><span>
-</span><a name="line-325"></a><span class="hs-pragma">{-# INLINE (.~~) #-}</span><span>
-</span><a name="line-326"></a><span>
-</span><a name="line-327"></a><span class="hs-comment">-- | An infix version of 'previewVar', meant to evoke parallels to '^?'</span><span>
-</span><a name="line-328"></a><span class="hs-comment">-- from lens.</span><span>
-</span><a name="line-329"></a><span class="hs-comment">--</span><span>
-</span><a name="line-330"></a><span class="hs-comment">-- With normal values, you can (potentially) extract something from that</span><span>
-</span><a name="line-331"></a><span class="hs-comment">-- value with a lens:</span><span>
+</span><a name="line-307"></a><span class="hs-comment">-- would &quot;set&quot; a part of @x :: b@, specified by @myLens :: 'Lens'' a b@, to</span><span>
+</span><a name="line-308"></a><span class="hs-comment">-- a new value @y :: a@.</span><span>
+</span><a name="line-309"></a><span class="hs-comment">--</span><span>
+</span><a name="line-310"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-311"></a><span class="hs-comment">-- xVar '&amp;' myLens '.~~' yVar</span><span>
+</span><a name="line-312"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-313"></a><span class="hs-comment">--</span><span>
+</span><a name="line-314"></a><span class="hs-comment">-- would &quot;set&quot; a part of @xVar :: 'BVar' s b@ (a 'BVar' holding a @b@),</span><span>
+</span><a name="line-315"></a><span class="hs-comment">-- specified by @myLens :: 'Lens'' a b@, to a new value given by @yVar ::</span><span>
+</span><a name="line-316"></a><span class="hs-comment">-- 'BVar' s a@.  The result is a new (updated) value of type @'BVar' s b@.</span><span>
+</span><a name="line-317"></a><span class="hs-comment">--</span><span>
+</span><a name="line-318"></a><span class="hs-comment">-- This is the main way to set values inside 'BVar's of container types.</span><span>
+</span><a name="line-319"></a><span class="hs-comment">--</span><span>
+</span><a name="line-320"></a><span class="hs-special">(</span><span class="hs-operator">.~~</span><span class="hs-special">)</span><span>
+</span><a name="line-321"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679082828"><a href="#local-6989586621679082828"><span class="hs-identifier">a</span></a></a><span> </span><a name="local-6989586621679082829"><a href="#local-6989586621679082829"><span class="hs-identifier">b</span></a></a><span> </span><a name="local-6989586621679082830"><a href="#local-6989586621679082830"><span class="hs-identifier">s</span></a></a><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Reifies</span><span> </span><a href="#local-6989586621679082830"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="Numeric.Backprop.Internal.html#W"><span class="hs-identifier hs-type">W</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Num</span><span> </span><a href="#local-6989586621679082828"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Num</span><span> </span><a href="#local-6989586621679082829"><span class="hs-identifier hs-type">b</span></a><span class="hs-special">)</span><span>
+</span><a name="line-322"></a><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-identifier hs-type">Lens'</span><span> </span><a href="#local-6989586621679082829"><span class="hs-identifier hs-type">b</span></a><span> </span><a href="#local-6989586621679082828"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-323"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082830"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082828"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-324"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082830"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082829"><span class="hs-identifier hs-type">b</span></a><span>
+</span><a name="line-325"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082830"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082829"><span class="hs-identifier hs-type">b</span></a><span>
+</span><a name="line-326"></a><a name="local-6989586621679082878"><a href="#local-6989586621679082878"><span class="hs-identifier">l</span></a></a><span> </span><a name=".~~"><a href="Numeric.Backprop.html#.~~"><span class="hs-operator">.~~</span></a></a><span> </span><a name="local-6989586621679082879"><a href="#local-6989586621679082879"><span class="hs-identifier">x</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Internal.html#setVar"><span class="hs-identifier hs-var">setVar</span></a><span> </span><a href="#local-6989586621679082878"><span class="hs-identifier hs-var">l</span></a><span> </span><a href="#local-6989586621679082879"><span class="hs-identifier hs-var">x</span></a><span>
+</span><a name="line-327"></a><span class="hs-keyword">infixl</span><span> </span><span class="hs-number">8</span><span> </span><span class="hs-operator">.~~</span><span>
+</span><a name="line-328"></a><span class="hs-pragma">{-# INLINE (.~~) #-}</span><span>
+</span><a name="line-329"></a><span>
+</span><a name="line-330"></a><span class="hs-comment">-- | An infix version of 'previewVar', meant to evoke parallels to '^?'</span><span>
+</span><a name="line-331"></a><span class="hs-comment">-- from lens.</span><span>
 </span><a name="line-332"></a><span class="hs-comment">--</span><span>
-</span><a name="line-333"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-334"></a><span class="hs-comment">-- x '^?' myPrism</span><span>
-</span><a name="line-335"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-336"></a><span class="hs-comment">--</span><span>
-</span><a name="line-337"></a><span class="hs-comment">-- would (potentially) extract a piece of @x :: b@, specified by</span><span>
-</span><a name="line-338"></a><span class="hs-comment">-- @myPrism :: 'Traversal'' b a@. The result has type @'Maybe' a@.</span><span>
+</span><a name="line-333"></a><span class="hs-comment">-- With normal values, you can (potentially) extract something from that</span><span>
+</span><a name="line-334"></a><span class="hs-comment">-- value with a lens:</span><span>
+</span><a name="line-335"></a><span class="hs-comment">--</span><span>
+</span><a name="line-336"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-337"></a><span class="hs-comment">-- x '^?' myPrism</span><span>
+</span><a name="line-338"></a><span class="hs-comment">-- @</span><span>
 </span><a name="line-339"></a><span class="hs-comment">--</span><span>
-</span><a name="line-340"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-341"></a><span class="hs-comment">-- xVar '^^?' myPrism</span><span>
-</span><a name="line-342"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-343"></a><span class="hs-comment">--</span><span>
-</span><a name="line-344"></a><span class="hs-comment">-- would (potentially) extract a piece out of @xVar :: 'BVar' s b@ (a</span><span>
-</span><a name="line-345"></a><span class="hs-comment">-- 'BVar' holding a @b@), specified by @myPrism :: Prism' b a@.</span><span>
-</span><a name="line-346"></a><span class="hs-comment">-- The result has type @'Maybe' ('BVar' s a)@ ('Maybe' a 'BVar' holding</span><span>
-</span><a name="line-347"></a><span class="hs-comment">-- a @a@).</span><span>
-</span><a name="line-348"></a><span class="hs-comment">--</span><span>
-</span><a name="line-349"></a><span class="hs-comment">-- This is intended to be used with 'Prism''s (which hits at most one</span><span>
-</span><a name="line-350"></a><span class="hs-comment">-- target), but will actually work with /any/ 'Traversal''.  If the</span><span>
-</span><a name="line-351"></a><span class="hs-comment">-- traversal hits more than one target, the first one found will be</span><span>
-</span><a name="line-352"></a><span class="hs-comment">-- extracted.</span><span>
-</span><a name="line-353"></a><span class="hs-comment">--</span><span>
-</span><a name="line-354"></a><span class="hs-comment">-- This can be used to &quot;pattern match&quot; on 'BVar's, by using prisms on</span><span>
-</span><a name="line-355"></a><span class="hs-comment">-- constructors.</span><span>
+</span><a name="line-340"></a><span class="hs-comment">-- would (potentially) extract a piece of @x :: b@, specified by</span><span>
+</span><a name="line-341"></a><span class="hs-comment">-- @myPrism :: 'Traversal'' b a@. The result has type @'Maybe' a@.</span><span>
+</span><a name="line-342"></a><span class="hs-comment">--</span><span>
+</span><a name="line-343"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-344"></a><span class="hs-comment">-- xVar '^^?' myPrism</span><span>
+</span><a name="line-345"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-346"></a><span class="hs-comment">--</span><span>
+</span><a name="line-347"></a><span class="hs-comment">-- would (potentially) extract a piece out of @xVar :: 'BVar' s b@ (a</span><span>
+</span><a name="line-348"></a><span class="hs-comment">-- 'BVar' holding a @b@), specified by @myPrism :: Prism' b a@.</span><span>
+</span><a name="line-349"></a><span class="hs-comment">-- The result has type @'Maybe' ('BVar' s a)@ ('Maybe' a 'BVar' holding</span><span>
+</span><a name="line-350"></a><span class="hs-comment">-- a @a@).</span><span>
+</span><a name="line-351"></a><span class="hs-comment">--</span><span>
+</span><a name="line-352"></a><span class="hs-comment">-- This is intended to be used with 'Prism''s (which hits at most one</span><span>
+</span><a name="line-353"></a><span class="hs-comment">-- target), but will actually work with /any/ 'Traversal''.  If the</span><span>
+</span><a name="line-354"></a><span class="hs-comment">-- traversal hits more than one target, the first one found will be</span><span>
+</span><a name="line-355"></a><span class="hs-comment">-- extracted.</span><span>
 </span><a name="line-356"></a><span class="hs-comment">--</span><span>
-</span><a name="line-357"></a><span class="hs-comment">-- Note that many automatically-generated prisms by the /lens/ package use</span><span>
-</span><a name="line-358"></a><span class="hs-comment">-- tuples, which cannot normally be backpropagated (because they do not</span><span>
-</span><a name="line-359"></a><span class="hs-comment">-- have a 'Num' instance).</span><span>
-</span><a name="line-360"></a><span class="hs-comment">--</span><span>
-</span><a name="line-361"></a><span class="hs-comment">-- If you are writing an application or don't have to worry about orphan</span><span>
-</span><a name="line-362"></a><span class="hs-comment">-- instances, you can pull in the orphan instances from</span><span>
-</span><a name="line-363"></a><span class="hs-comment">-- &lt;https://hackage.haskell.org/package/NumInstances NumInstances&gt;.</span><span>
-</span><a name="line-364"></a><span class="hs-comment">-- Alternatively, you can chain those prisms with conversions to the</span><span>
-</span><a name="line-365"></a><span class="hs-comment">-- anonymous canonical strict tuple types in &quot;Numeric.Backprop.Tuple&quot;,</span><span>
-</span><a name="line-366"></a><span class="hs-comment">-- which do have 'Num' instances.</span><span>
-</span><a name="line-367"></a><span class="hs-comment">--</span><span>
-</span><a name="line-368"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-369"></a><span class="hs-comment">-- myPrism                         :: 'Prism'' c (a, b)</span><span>
-</span><a name="line-370"></a><span class="hs-comment">-- myPrism . 'iso' 'tupT2' 't2Tup' :: 'Prism'' c ('T2' a b)</span><span>
+</span><a name="line-357"></a><span class="hs-comment">-- This can be used to &quot;pattern match&quot; on 'BVar's, by using prisms on</span><span>
+</span><a name="line-358"></a><span class="hs-comment">-- constructors.</span><span>
+</span><a name="line-359"></a><span class="hs-comment">--</span><span>
+</span><a name="line-360"></a><span class="hs-comment">-- Note that many automatically-generated prisms by the /lens/ package use</span><span>
+</span><a name="line-361"></a><span class="hs-comment">-- tuples, which cannot normally be backpropagated (because they do not</span><span>
+</span><a name="line-362"></a><span class="hs-comment">-- have a 'Num' instance).</span><span>
+</span><a name="line-363"></a><span class="hs-comment">--</span><span>
+</span><a name="line-364"></a><span class="hs-comment">-- If you are writing an application or don't have to worry about orphan</span><span>
+</span><a name="line-365"></a><span class="hs-comment">-- instances, you can pull in the orphan instances from</span><span>
+</span><a name="line-366"></a><span class="hs-comment">-- &lt;https://hackage.haskell.org/package/NumInstances NumInstances&gt;.</span><span>
+</span><a name="line-367"></a><span class="hs-comment">-- Alternatively, you can chain those prisms with conversions to the</span><span>
+</span><a name="line-368"></a><span class="hs-comment">-- anonymous canonical strict tuple types in &quot;Numeric.Backprop.Tuple&quot;,</span><span>
+</span><a name="line-369"></a><span class="hs-comment">-- which do have 'Num' instances.</span><span>
+</span><a name="line-370"></a><span class="hs-comment">--</span><span>
 </span><a name="line-371"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-372"></a><span class="hs-special">(</span><span class="hs-operator">^^?</span><span class="hs-special">)</span><span>
-</span><a name="line-373"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679082825"><a href="#local-6989586621679082825"><span class="hs-identifier">b</span></a></a><span> </span><a name="local-6989586621679082826"><a href="#local-6989586621679082826"><span class="hs-identifier">a</span></a></a><span> </span><a name="local-6989586621679082827"><a href="#local-6989586621679082827"><span class="hs-identifier">s</span></a></a><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Num</span><span> </span><a href="#local-6989586621679082826"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Reifies</span><span> </span><a href="#local-6989586621679082827"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="Numeric.Backprop.Internal.html#W"><span class="hs-identifier hs-type">W</span></a><span class="hs-special">)</span><span>
-</span><a name="line-374"></a><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082827"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082825"><span class="hs-identifier hs-type">b</span></a><span>
-</span><a name="line-375"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Traversal'</span><span> </span><a href="#local-6989586621679082825"><span class="hs-identifier hs-type">b</span></a><span> </span><a href="#local-6989586621679082826"><span class="hs-identifier hs-type">a</span></a><span>
-</span><a name="line-376"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Maybe</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082827"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082826"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
-</span><a name="line-377"></a><a name="local-6989586621679082880"><a href="#local-6989586621679082880"><span class="hs-identifier">v</span></a></a><span> </span><a name="%5E%5E%3F"><a href="Numeric.Backprop.html#%5E%5E%3F"><span class="hs-operator">^^?</span></a></a><span> </span><a name="local-6989586621679082881"><a href="#local-6989586621679082881"><span class="hs-identifier">t</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Internal.html#previewVar"><span class="hs-identifier hs-var">previewVar</span></a><span> </span><a href="#local-6989586621679082881"><span class="hs-identifier hs-var">t</span></a><span> </span><a href="#local-6989586621679082880"><span class="hs-identifier hs-var">v</span></a><span>
-</span><a name="line-378"></a><span class="hs-pragma">{-# INLINE (^^?) #-}</span><span>
-</span><a name="line-379"></a><span>
-</span><a name="line-380"></a><span class="hs-comment">-- | An infix version of 'toListOfVar', meant to evoke parallels to '^..'</span><span>
-</span><a name="line-381"></a><span class="hs-comment">-- from lens.</span><span>
-</span><a name="line-382"></a><span class="hs-comment">--</span><span>
-</span><a name="line-383"></a><span class="hs-comment">-- With normal values, you can extract all targets of a 'Traversal' from</span><span>
-</span><a name="line-384"></a><span class="hs-comment">-- that value with a:</span><span>
+</span><a name="line-372"></a><span class="hs-comment">-- myPrism                         :: 'Prism'' c (a, b)</span><span>
+</span><a name="line-373"></a><span class="hs-comment">-- myPrism . 'iso' 'tupT2' 't2Tup' :: 'Prism'' c ('T2' a b)</span><span>
+</span><a name="line-374"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-375"></a><span class="hs-special">(</span><span class="hs-operator">^^?</span><span class="hs-special">)</span><span>
+</span><a name="line-376"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679082825"><a href="#local-6989586621679082825"><span class="hs-identifier">b</span></a></a><span> </span><a name="local-6989586621679082826"><a href="#local-6989586621679082826"><span class="hs-identifier">a</span></a></a><span> </span><a name="local-6989586621679082827"><a href="#local-6989586621679082827"><span class="hs-identifier">s</span></a></a><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Num</span><span> </span><a href="#local-6989586621679082826"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Reifies</span><span> </span><a href="#local-6989586621679082827"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="Numeric.Backprop.Internal.html#W"><span class="hs-identifier hs-type">W</span></a><span class="hs-special">)</span><span>
+</span><a name="line-377"></a><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082827"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082825"><span class="hs-identifier hs-type">b</span></a><span>
+</span><a name="line-378"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Traversal'</span><span> </span><a href="#local-6989586621679082825"><span class="hs-identifier hs-type">b</span></a><span> </span><a href="#local-6989586621679082826"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-379"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Maybe</span><span> </span><span class="hs-special">(</span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082827"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082826"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
+</span><a name="line-380"></a><a name="local-6989586621679082880"><a href="#local-6989586621679082880"><span class="hs-identifier">v</span></a></a><span> </span><a name="%5E%5E%3F"><a href="Numeric.Backprop.html#%5E%5E%3F"><span class="hs-operator">^^?</span></a></a><span> </span><a name="local-6989586621679082881"><a href="#local-6989586621679082881"><span class="hs-identifier">t</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Internal.html#previewVar"><span class="hs-identifier hs-var">previewVar</span></a><span> </span><a href="#local-6989586621679082881"><span class="hs-identifier hs-var">t</span></a><span> </span><a href="#local-6989586621679082880"><span class="hs-identifier hs-var">v</span></a><span>
+</span><a name="line-381"></a><span class="hs-pragma">{-# INLINE (^^?) #-}</span><span>
+</span><a name="line-382"></a><span>
+</span><a name="line-383"></a><span class="hs-comment">-- | An infix version of 'toListOfVar', meant to evoke parallels to '^..'</span><span>
+</span><a name="line-384"></a><span class="hs-comment">-- from lens.</span><span>
 </span><a name="line-385"></a><span class="hs-comment">--</span><span>
-</span><a name="line-386"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-387"></a><span class="hs-comment">-- x '^..' myTraversal</span><span>
-</span><a name="line-388"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-389"></a><span class="hs-comment">--</span><span>
-</span><a name="line-390"></a><span class="hs-comment">-- would extract all targets inside of @x :: b@, specified by @myTraversal</span><span>
-</span><a name="line-391"></a><span class="hs-comment">-- :: 'Traversal'' b a@. The result has type @[a]@.</span><span>
+</span><a name="line-386"></a><span class="hs-comment">-- With normal values, you can extract all targets of a 'Traversal' from</span><span>
+</span><a name="line-387"></a><span class="hs-comment">-- that value with a:</span><span>
+</span><a name="line-388"></a><span class="hs-comment">--</span><span>
+</span><a name="line-389"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-390"></a><span class="hs-comment">-- x '^..' myTraversal</span><span>
+</span><a name="line-391"></a><span class="hs-comment">-- @</span><span>
 </span><a name="line-392"></a><span class="hs-comment">--</span><span>
-</span><a name="line-393"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-394"></a><span class="hs-comment">-- xVar '^^..' myTraversal</span><span>
-</span><a name="line-395"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-396"></a><span class="hs-comment">--</span><span>
-</span><a name="line-397"></a><span class="hs-comment">-- would extract all targets inside of @xVar :: 'BVar' s b@ (a 'BVar'</span><span>
-</span><a name="line-398"></a><span class="hs-comment">-- holding a @b@), specified by @myTraversal :: Traversal' b a@.   The result</span><span>
-</span><a name="line-399"></a><span class="hs-comment">-- has type @['BVar' s a]@ (A list of 'BVar's holding @a@s).</span><span>
-</span><a name="line-400"></a><span class="hs-comment">--</span><span>
-</span><a name="line-401"></a><span class="hs-special">(</span><span class="hs-operator">^^..</span><span class="hs-special">)</span><span>
-</span><a name="line-402"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679082822"><a href="#local-6989586621679082822"><span class="hs-identifier">b</span></a></a><span> </span><a name="local-6989586621679082823"><a href="#local-6989586621679082823"><span class="hs-identifier">a</span></a></a><span> </span><a name="local-6989586621679082824"><a href="#local-6989586621679082824"><span class="hs-identifier">s</span></a></a><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Num</span><span> </span><a href="#local-6989586621679082823"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Reifies</span><span> </span><a href="#local-6989586621679082824"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="Numeric.Backprop.Internal.html#W"><span class="hs-identifier hs-type">W</span></a><span class="hs-special">)</span><span>
-</span><a name="line-403"></a><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082824"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082822"><span class="hs-identifier hs-type">b</span></a><span>
-</span><a name="line-404"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Traversal'</span><span> </span><a href="#local-6989586621679082822"><span class="hs-identifier hs-type">b</span></a><span> </span><a href="#local-6989586621679082823"><span class="hs-identifier hs-type">a</span></a><span>
-</span><a name="line-405"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082824"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082823"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">]</span><span>
-</span><a name="line-406"></a><a name="local-6989586621679082882"><a href="#local-6989586621679082882"><span class="hs-identifier">v</span></a></a><span> </span><a name="%5E%5E.."><a href="Numeric.Backprop.html#%5E%5E.."><span class="hs-operator">^^..</span></a></a><span> </span><a name="local-6989586621679082883"><a href="#local-6989586621679082883"><span class="hs-identifier">t</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Internal.html#toListOfVar"><span class="hs-identifier hs-var">toListOfVar</span></a><span> </span><a href="#local-6989586621679082883"><span class="hs-identifier hs-var">t</span></a><span> </span><a href="#local-6989586621679082882"><span class="hs-identifier hs-var">v</span></a><span>
-</span><a name="line-407"></a><span class="hs-pragma">{-# INLINE (^^..) #-}</span><span>
-</span><a name="line-408"></a></pre></body></html>
+</span><a name="line-393"></a><span class="hs-comment">-- would extract all targets inside of @x :: b@, specified by @myTraversal</span><span>
+</span><a name="line-394"></a><span class="hs-comment">-- :: 'Traversal'' b a@. The result has type @[a]@.</span><span>
+</span><a name="line-395"></a><span class="hs-comment">--</span><span>
+</span><a name="line-396"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-397"></a><span class="hs-comment">-- xVar '^^..' myTraversal</span><span>
+</span><a name="line-398"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-399"></a><span class="hs-comment">--</span><span>
+</span><a name="line-400"></a><span class="hs-comment">-- would extract all targets inside of @xVar :: 'BVar' s b@ (a 'BVar'</span><span>
+</span><a name="line-401"></a><span class="hs-comment">-- holding a @b@), specified by @myTraversal :: Traversal' b a@.   The result</span><span>
+</span><a name="line-402"></a><span class="hs-comment">-- has type @['BVar' s a]@ (A list of 'BVar's holding @a@s).</span><span>
+</span><a name="line-403"></a><span class="hs-comment">--</span><span>
+</span><a name="line-404"></a><span class="hs-special">(</span><span class="hs-operator">^^..</span><span class="hs-special">)</span><span>
+</span><a name="line-405"></a><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679082822"><a href="#local-6989586621679082822"><span class="hs-identifier">b</span></a></a><span> </span><a name="local-6989586621679082823"><a href="#local-6989586621679082823"><span class="hs-identifier">a</span></a></a><span> </span><a name="local-6989586621679082824"><a href="#local-6989586621679082824"><span class="hs-identifier">s</span></a></a><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Num</span><span> </span><a href="#local-6989586621679082823"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Reifies</span><span> </span><a href="#local-6989586621679082824"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="Numeric.Backprop.Internal.html#W"><span class="hs-identifier hs-type">W</span></a><span class="hs-special">)</span><span>
+</span><a name="line-406"></a><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082824"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082822"><span class="hs-identifier hs-type">b</span></a><span>
+</span><a name="line-407"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Traversal'</span><span> </span><a href="#local-6989586621679082822"><span class="hs-identifier hs-type">b</span></a><span> </span><a href="#local-6989586621679082823"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-408"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><a href="Numeric.Backprop.Internal.html#BVar"><span class="hs-identifier hs-type">BVar</span></a><span> </span><a href="#local-6989586621679082824"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679082823"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">]</span><span>
+</span><a name="line-409"></a><a name="local-6989586621679082882"><a href="#local-6989586621679082882"><span class="hs-identifier">v</span></a></a><span> </span><a name="%5E%5E.."><a href="Numeric.Backprop.html#%5E%5E.."><span class="hs-operator">^^..</span></a></a><span> </span><a name="local-6989586621679082883"><a href="#local-6989586621679082883"><span class="hs-identifier">t</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Numeric.Backprop.Internal.html#toListOfVar"><span class="hs-identifier hs-var">toListOfVar</span></a><span> </span><a href="#local-6989586621679082883"><span class="hs-identifier hs-var">t</span></a><span> </span><a href="#local-6989586621679082882"><span class="hs-identifier hs-var">v</span></a><span>
+</span><a name="line-410"></a><span class="hs-pragma">{-# INLINE (^^..) #-}</span><span>
+</span><a name="line-411"></a></pre></body></html>

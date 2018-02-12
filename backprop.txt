@@ -12,7 +12,7 @@
 --   
 --   See <a>README.md</a>
 @package backprop
-@version 0.1.2.0
+@version 0.1.3.0
 
 
 -- | Provides the <a>Op</a> type and combinators, which represent
@@ -688,6 +688,9 @@ constVar :: a -> BVar s a
 --   
 --   This is the main way to pull out values from <a>BVar</a> of container
 --   types.
+--   
+--   <b>WARNING</b>: Do not use with any lenses that operate "numerically"
+--   on the contents (like <tt>multiplying</tt>).
 (^^.) :: forall a b s. (Reifies s W, Num a) => BVar s b -> Lens' b a -> BVar s a
 infixl 8 ^^.
 
@@ -803,10 +806,22 @@ setVar :: forall a b s. (Reifies s W, Num a, Num b) => Lens' b a -> BVar s a -> 
 
 -- | Extract all of the <a>BVar</a>s out of a <a>Traversable</a> container
 --   of <a>BVar</a>s.
+--   
+--   Note that this associates gradients in order of occurrence in the
+--   original data structure; the second item in the gradient is assumed to
+--   correspond with the second item in the input, etc.; this can cause
+--   unexpected behavior in <a>Foldable</a> instances that don't have a
+--   fixed number of items.
 sequenceVar :: forall t a s. (Reifies s W, Traversable t, Num a) => BVar s (t a) -> t (BVar s a)
 
 -- | Collect all of the <a>BVar</a>s in a container into a <a>BVar</a> of
 --   that container's contents.
+--   
+--   Note that this associates gradients in order of occurrence in the
+--   original data structure; the second item in the total derivative and
+--   gradient is assumed to correspond with the second item in the input,
+--   etc.; this can cause unexpected behavior in <a>Foldable</a> instances
+--   that don't have a fixed number of items.
 --   
 --   Note that this requires <tt>t a</tt> to have a <a>Num</a> instance. If
 --   you are using a list, I recommend using <a>vector-sized</a> instead:
@@ -1265,3 +1280,78 @@ instance (GHC.Real.Fractional a, GHC.Real.Fractional b) => GHC.Real.Fractional (
 instance (GHC.Float.Floating a, GHC.Float.Floating b) => GHC.Float.Floating (Numeric.Backprop.Tuple.T2 a b)
 instance (Data.Semigroup.Semigroup a, Data.Semigroup.Semigroup b) => Data.Semigroup.Semigroup (Numeric.Backprop.Tuple.T2 a b)
 instance (GHC.Base.Monoid a, GHC.Base.Monoid b) => GHC.Base.Monoid (Numeric.Backprop.Tuple.T2 a b)
+
+
+-- | Some lifted versions of common functions found in <tt>Prelude</tt> (or
+--   <i>base</i> in general).
+--   
+--   Intended to work with <a>Functor</a> <i> <a>Foldable</a> </i>
+--   <a>Traversable</a> instances with "fixed" number of items, i.e.
+--   <a>vector-sized</a> vectors. There might be unintended consequences
+--   when using it with instances where the number of items is not fixed.
+--   
+--   This module is intended to be a catch-all one, so feel free to suggest
+--   other functions or submit a PR if you think one would make sense.
+module Prelude.Backprop
+
+-- | Lifted <a>sum</a>
+sum :: (Foldable t, Applicative t, Num (t a), Num a, Reifies s W) => BVar s (t a) -> BVar s a
+
+-- | Lifted <a>product</a>
+product :: (Foldable t, Applicative t, Num (t a), Fractional a, Reifies s W) => BVar s (t a) -> BVar s a
+
+-- | Lifted <a>length</a>. Really intended only for <a>Foldable</a>
+--   instances with fixed number of items; untintended consequences might
+--   arise when using it with containers with variable number of items.
+length :: (Foldable t, Num (t a), Num b, Reifies s W) => BVar s (t a) -> BVar s b
+
+-- | Lifted <a>minimum</a>. Undefined for situations where <a>minimum</a>
+--   would be undefined.
+minimum :: (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W) => BVar s (t a) -> BVar s a
+
+-- | Lifted <a>maximum</a>. Undefined for situations where <a>maximum</a>
+--   would be undefined.
+maximum :: (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W) => BVar s (t a) -> BVar s a
+
+-- | Lifted <a>traverse</a>. Lifts backpropagatable functions to be
+--   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
+--   
+--   Really intended only for <a>Traversable</a> and <a>Applicative</a>
+--   instances with fixed number of items; untintended consequences might
+--   arise when using it with containers with variable number of items.
+traverse :: (Traversable t, Applicative f, Foldable f, Num a, Num b, Num (f (t b)), Num (t b), Reifies s W) => (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
+
+-- | Lifted <a>fmap</a>. Lifts backpropagatable functions to be
+--   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
+--   
+--   Really intended only for <a>Functor</a> instances with fixed number of
+--   items; untintended consequences might arise when using it with
+--   containers with variable number of items.
+fmap :: (Traversable f, Num a, Num b, Num (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
+
+-- | Alias for <a>fmap</a>.
+(<$>) :: (Traversable f, Num a, Num b, Num (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
+
+-- | Lifted <a>pure</a>. Really intended only for <a>Applicative</a>
+--   instances with fixed number of items; untintended consequences might
+--   arise when using it with containers with variable number of items.
+pure :: (Foldable t, Applicative t, Num (t a), Num a, Reifies s W) => BVar s a -> BVar s (t a)
+
+-- | Lifted <a>liftA2</a>. Lifts backpropagatable functions to be
+--   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
+--   
+--   Really intended only for <a>Traversable</a> and <a>Applicative</a>
+--   instances with fixed number of items; untintended consequences might
+--   arise when using it with containers with variable number of items.
+liftA2 :: (Traversable f, Applicative f, Num a, Num b, Num c, Num (f c), Reifies s W) => (BVar s a -> BVar s b -> BVar s c) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c)
+
+-- | Lifted <a>liftA3</a>. Lifts backpropagatable functions to be
+--   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
+--   
+--   Really intended only for <a>Traversable</a> and <a>Applicative</a>
+--   instances with fixed number of items; untintended consequences might
+--   arise when using it with containers with variable number of items.
+liftA3 :: (Traversable f, Applicative f, Num a, Num b, Num c, Num d, Num (f d), Reifies s W) => (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
+
+-- | Coerce items inside a <a>BVar</a>.
+coerce :: (Coercible a b, Num a, Num b, Reifies s W) => BVar s a -> BVar s b
