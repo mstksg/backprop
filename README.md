@@ -4,6 +4,10 @@ backprop
 [![backprop on Hackage](https://img.shields.io/hackage/v/backprop.svg?maxAge=2592000)](https://hackage.haskell.org/package/backprop)
 [![Build Status](https://travis-ci.org/mstksg/backprop.svg?branch=master)](https://travis-ci.org/mstksg/backprop)
 
+[**Introductory blog post**][blog]
+
+[blog]: https://blog.jle.im/entry/introducing-the-backprop-library.html
+
 [**Literate Haskell Tutorial/Demo on MNIST data set**][mnist-lhs] (and [PDF
 rendering][mnist-pdf])
 
@@ -27,29 +31,24 @@ up-to-date documentation is currently rendered [on github pages][docs]!
 MNIST Digit Classifier Example
 ------------------------------
 
-Tutorial and example on training on the MNIST data set [available here as a
-literate haskell file][mnist-lhs], or [rendered here as a PDF][mnist-pdf]!
-**Read this first!**
+My [blog post][blog] introduces the concepts in this library in the context of
+training a handwritten digit classifier.  I recommend reading that first.
+
+There are some [literate haskell examples][mnist-lhs] in the source, though
+([rendered as pdf here][mnist-pdf]), which can be built (if [stack][] is
+installed) using:
 
 [mnist-lhs]: https://github.com/mstksg/backprop/blob/master/samples/backprop-mnist.lhs
 [mnist-pdf]: https://github.com/mstksg/backprop/blob/master/renders/backprop-mnist.pdf
-
-The [literate haskell file][mnist-lhs] is a standalone haskell file that you
-can compile (preferably with `-O2`) on its own with stack or some other
-dependency manager.  It can also be compiled with the build script in the
-project directory (if [stack][] is installed, and appropriate dependencies are
-installed), using
-
 [stack]: http://haskellstack.org/
 
 ```bash
 $ ./Build.hs exe
 ```
 
-After the MNIST tutorial, there is a follow-up tutorial on using the library
-with more advanced types, with extensible neural networks a la [this blog
-post][blog], [available as literate haskell][neural-lhs] and also [rendered as
-a PDF][neural-pdf].
+There is a follow-up tutorial on using the library with more advanced types,
+with extensible neural networks a la [this blog post][blog], [available as
+literate haskell][neural-lhs] and also [rendered as a PDF][neural-pdf].
 
 [blog]: https://blog.jle.im/entries/series/+practical-dependent-types-in-haskell.html
 [neural-lhs]: https://github.com/mstksg/backprop/blob/master/samples/extensible-neural.lhs
@@ -57,6 +56,8 @@ a PDF][neural-pdf].
 
 Brief example
 -------------
+
+(This is a really brief version of my [blog post][blog])
 
 The quick example below describes the running of a neural network with one
 hidden layer to calculate its squared error with respect to target `targ`,
@@ -110,8 +111,8 @@ neuralNet
     -> BVar s (R o)
 neuralNet x n = z
   where
-    y = logistic $ (n ^^. weight1) #>! x + (n ^^. bias1)
-    z = logistic $ (n ^^. weight2) #>! y + (n ^^. bias2)
+    y = logistic $ (n ^^. weight1) #> x + (n ^^. bias1)
+    z = logistic $ (n ^^. weight2) #> y + (n ^^. bias2)
 
 logistic :: Floating a => a -> a
 logistic x = 1 / (1 + exp (-x))
@@ -143,13 +144,10 @@ netError
     -> BVar s (R o)
     -> BVar s (Network i h o)
     -> BVar s Double
-netError x targ n = sum' (err <.>! err)
-  where
-    err = neuralNet x - t
+netError x targ n = norm_2 (neuralNet x - t)
 ```
 
-(`sum'` is a backprop-aware vector sum, and `<.>!` is a backprop-aware dot
-product)
+(`norm_2` is a backprop-aware euclidean norm)
 
 Now, we can perform gradient descent!
 
@@ -167,8 +165,8 @@ gradDescent x targ n0 = n0 - 0.1 * gradient
 Ta dah!  We were able to compute the gradient of our error function, just by
 only saying how to compute *the error itself*.
 
-For a more fleshed out example, see the [MNIST tutorial][mnist-lhs] (also
-[rendered as a pdf][mnist-pdf])
+For a more fleshed out example, see my [blog post][blog] and the [MNIST
+tutorial][mnist-lhs] (also [rendered as a pdf][mnist-pdf])
 
 Lens Access
 -----------

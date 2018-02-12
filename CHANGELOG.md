@@ -4,6 +4,8 @@ Changelog
 Pending Changes
 ---------------
 
+*   `liftOpX` family of operators now have a more logical ordering for type
+    variables.  This change breaks backwards-compatibility.
 *   `opIsoN` added to export list of *Numeric.Backprop*
 *   `noGrad` and `noGrad1` added to *Numeric.Backprop.Op*, for functions with
     no defined gradient.
