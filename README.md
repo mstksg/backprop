@@ -8,9 +8,6 @@ backprop
 
 [blog]: https://blog.jle.im/entry/introducing-the-backprop-library.html
 
-[**Literate Haskell Tutorial/Demo on MNIST data set**][mnist-lhs] (and [PDF
-rendering][mnist-pdf])
-
 Automatic *heterogeneous* back-propagation.
 
 Write your functions to compute your result, and the library will automatically
