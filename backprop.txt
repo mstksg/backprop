@@ -256,6 +256,18 @@ opTup :: Op as (Tuple as)
 --   isomorphisms.
 opIso :: (a -> b) -> (b -> a) -> Op '[a] b
 
+-- | An <a>Op</a> that runs the input value through an isomorphism between
+--   a tuple of values and a value.
+--   
+--   Warning: This is unsafe! It assumes that the isomorphisms themselves
+--   have derivative 1, so will break for things like
+--   <a>exponentiating</a>. Basically, don't use this for any "numeric"
+--   isomorphisms.
+--   
+--   In <a>Numeric.Backprop.Op</a> since version 0.1.2.0, but only exported
+--   from <a>Numeric.Backprop</a> since version 0.1.3.0.
+opIsoN :: (Tuple as -> b) -> (b -> Tuple as) -> Op as b
+
 -- | An <a>Op</a> that extracts a value from an input value using a
 --   <a>Lens'</a>.
 --   
@@ -264,14 +276,35 @@ opIso :: (a -> b) -> (b -> a) -> Op '[a] b
 --   numerically manipulate things before returning them.
 opLens :: Num a => Lens' a b -> Op '[a] b
 
--- | An <a>Op</a> that runs the input value through an isomorphism between
---   a tuple of values and a value.
+-- | Create an <a>Op</a> with no gradient. Can be evaluated with
+--   <a>evalOp</a>, but will throw a runtime exception when asked for the
+--   gradient.
 --   
---   Warning: This is unsafe! It assumes that the isomorphisms themselves
---   have derivative 1, so will break for things like
---   <a>exponentiating</a>. Basically, don't use this for any "numeric"
---   isomorphisms.
-opIsoN :: (Tuple as -> b) -> (b -> Tuple as) -> Op as b
+--   Can be used with <tt>BVar</tt> with <tt>liftOp1</tt>, and
+--   <tt>evalBP</tt> will work fine. <tt>gradBP</tt> and <tt>backprop</tt>
+--   will also work fine if the result is never used in the final answer,
+--   but will throw a runtime exception if the final answer depends on the
+--   result of this operation.
+--   
+--   Useful if your only API is exposed through <i>backprop</i>. Just be
+--   sure to tell your users that this will explode when finding the
+--   gradient if the result is used in the final result.
+noGrad1 :: (a -> b) -> Op '[a] b
+
+-- | Create an <a>Op</a> with no gradient. Can be evaluated with
+--   <a>evalOp</a>, but will throw a runtime exception when asked for the
+--   gradient.
+--   
+--   Can be used with <tt>BVar</tt> with <tt>liftOp</tt>, and
+--   <tt>evalBP</tt> will work fine. <tt>gradBP</tt> and <tt>backprop</tt>
+--   will also work fine if the result is never used in the final answer,
+--   but will throw a runtime exception if the final answer depends on the
+--   result of this operation.
+--   
+--   Useful if your only API is exposed through <i>backprop</i>. Just be
+--   sure to tell your users that this will explode when finding the
+--   gradient if the result is used in the final result.
+noGrad :: (Tuple as -> b) -> Op as b
 
 -- | Compose <a>Op</a>s together, like <a>sequence</a> for functions, or
 --   <tt>liftAN</tt>.
@@ -1015,6 +1048,18 @@ opTup :: Op as (Tuple as)
 --   isomorphisms.
 opIso :: (a -> b) -> (b -> a) -> Op '[a] b
 
+-- | An <a>Op</a> that runs the input value through an isomorphism between
+--   a tuple of values and a value.
+--   
+--   Warning: This is unsafe! It assumes that the isomorphisms themselves
+--   have derivative 1, so will break for things like
+--   <a>exponentiating</a>. Basically, don't use this for any "numeric"
+--   isomorphisms.
+--   
+--   In <a>Numeric.Backprop.Op</a> since version 0.1.2.0, but only exported
+--   from <a>Numeric.Backprop</a> since version 0.1.3.0.
+opIsoN :: (Tuple as -> b) -> (b -> Tuple as) -> Op as b
+
 -- | An <a>Op</a> that extracts a value from an input value using a
 --   <a>Lens'</a>.
 --   
@@ -1022,6 +1067,36 @@ opIso :: (a -> b) -> (b -> a) -> Op '[a] b
 --   unchanged, with derivative 1, so will break for things that
 --   numerically manipulate things before returning them.
 opLens :: Num a => Lens' a b -> Op '[a] b
+
+-- | Create an <a>Op</a> with no gradient. Can be evaluated with
+--   <a>evalOp</a>, but will throw a runtime exception when asked for the
+--   gradient.
+--   
+--   Can be used with <tt>BVar</tt> with <tt>liftOp1</tt>, and
+--   <tt>evalBP</tt> will work fine. <tt>gradBP</tt> and <tt>backprop</tt>
+--   will also work fine if the result is never used in the final answer,
+--   but will throw a runtime exception if the final answer depends on the
+--   result of this operation.
+--   
+--   Useful if your only API is exposed through <i>backprop</i>. Just be
+--   sure to tell your users that this will explode when finding the
+--   gradient if the result is used in the final result.
+noGrad1 :: (a -> b) -> Op '[a] b
+
+-- | Create an <a>Op</a> with no gradient. Can be evaluated with
+--   <a>evalOp</a>, but will throw a runtime exception when asked for the
+--   gradient.
+--   
+--   Can be used with <tt>BVar</tt> with <tt>liftOp</tt>, and
+--   <tt>evalBP</tt> will work fine. <tt>gradBP</tt> and <tt>backprop</tt>
+--   will also work fine if the result is never used in the final answer,
+--   but will throw a runtime exception if the final answer depends on the
+--   result of this operation.
+--   
+--   Useful if your only API is exposed through <i>backprop</i>. Just be
+--   sure to tell your users that this will explode when finding the
+--   gradient if the result is used in the final result.
+noGrad :: (Tuple as -> b) -> Op as b
 data Prod k (f :: k -> *) (a :: [k]) :: forall k. () => (k -> *) -> [k] -> *
 [Ø] :: Prod k f [] k
 [:<] :: Prod k f (:) k a1 as
