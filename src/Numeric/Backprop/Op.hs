@@ -51,7 +51,9 @@ module Numeric.Backprop.Op (
   -- ** Giving gradients directly
   , op1, op2, op3
   -- ** From Isomorphisms
-  , opCoerce, opTup, opIso, opLens, opIsoN
+  , opCoerce, opTup, opIso, opIsoN, opLens
+  -- ** No gradient
+  , noGrad1, noGrad
   -- * Manipulation
   , composeOp, composeOp1, (~.)
   , composeOp', composeOp1'
@@ -333,6 +335,40 @@ opCoerce :: Coercible a b => Op '[a] b
 opCoerce = opIso coerce coerce
 {-# INLINE opCoerce #-}
 
+-- | Create an 'Op' with no gradient.  Can be evaluated with 'evalOp',  but
+-- will throw a runtime exception when asked for the gradient.
+--
+-- Can be used with 'BVar' with 'liftOp1', and 'evalBP' will work fine.
+-- 'gradBP'  and 'backprop' will also work fine if the result is never used
+-- in the final answer, but will throw a runtime exception if the final
+-- answer depends on the result of this operation.
+--
+-- Useful if your only API is exposed through /backprop/.  Just be sure to
+-- tell your users that this will explode when finding the gradient if the
+-- result is used in the final result.
+--
+-- @since 0.1.3.0
+noGrad1 :: (a -> b) -> Op '[a] b
+noGrad1 f = op1 (\x -> (f x, error "noGrad: no gradient defined"))
+{-# INLINE noGrad1 #-}
+
+-- | Create an 'Op' with no gradient.  Can be evaluated with 'evalOp',  but
+-- will throw a runtime exception when asked for the gradient.
+--
+-- Can be used with 'BVar' with 'liftOp', and 'evalBP' will work fine.
+-- 'gradBP'  and 'backprop' will also work fine if the result is never used
+-- in the final answer, but will throw a runtime exception if the final
+-- answer depends on the result of this operation.
+--
+-- Useful if your only API is exposed through /backprop/.  Just be sure to
+-- tell your users that this will explode when finding the gradient if the
+-- result is used in the final result.
+--
+-- @since 0.1.3.0
+noGrad :: (Tuple as -> b) -> Op as b
+noGrad f = Op (\xs -> (f xs, error "noGrads: no gradient defined"))
+{-# INLINE noGrad #-}
+
 -- | An 'Op' that just returns whatever it receives.  The identity
 -- function.
 --
@@ -368,6 +404,9 @@ opIso to' from' = op1 $ \x -> (to' x, from')
 -- have derivative 1, so will break for things like
 -- 'Numeric.Lens.exponentiating'.  Basically, don't use this for any
 -- "numeric" isomorphisms.
+--
+-- In "Numeric.Backprop.Op" since version 0.1.2.0, but only exported from
+-- "Numeric.Backprop" since version 0.1.3.0.
 --
 -- @since 0.1.2.0
 opIsoN :: (Tuple as -> b) -> (b -> Tuple as) -> Op as b

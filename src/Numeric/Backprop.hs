@@ -73,7 +73,9 @@ module Numeric.Backprop (
     -- *** Giving gradients directly
   , op1, op2, op3
     -- *** From Isomorphisms
-  , opCoerce, opTup, opIso, opLens
+  , opCoerce, opTup, opIso, opIsoN, opLens
+    -- *** No gradients
+  , noGrad1, noGrad
     -- * Utility
     -- ** Inductive tuples/heterogeneous lists
   , Prod(..), pattern (:>), only, head'

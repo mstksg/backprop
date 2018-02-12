@@ -1,6 +1,13 @@
 Changelog
 =========
 
+Pending Changes
+---------------
+
+*   `opIsoN` added to export list of *Numeric.Backprop*
+*   `noGrad` and `noGrad1` added to *Numeric.Backprop.Op*, for functions with
+    no defined gradient.
+
 Version 0.1.2.0
 ---------------
 

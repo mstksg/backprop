@@ -5,6 +5,7 @@ license:             BSD3
 author:              Justin Le
 maintainer:          justin@jle.im
 copyright:           (c) Justin Le 2018
+tested-with:         GHC >= 8.0
 
 extra-source-files:
 - README.md
@@ -32,8 +33,10 @@ description: |
 
 ghc-options:
 - -Wall
+- -Wcompat
+- -Wincomplete-record-updates
+- -Wredundant-constraints
 - -fprint-explicit-kinds
-- -fwarn-redundant-constraints
 dependencies:
 - base >=4.7 && <5
 - deepseq
