@@ -1,9 +1,15 @@
 Changelog
 =========
 
-Pending Changes
+Version 0.1.3.0
 ---------------
 
+*Feb 12, 2018*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.1.3.0>
+
+*   *Preulude.Backprop* module added with lifted versions of several *Prelude*
+    and base functions.
 *   `liftOpX` family of operators now have a more logical ordering for type
     variables.  This change breaks backwards-compatibility.
 *   `opIsoN` added to export list of *Numeric.Backprop*
