@@ -1295,23 +1295,21 @@ instance (GHC.Base.Monoid a, GHC.Base.Monoid b) => GHC.Base.Monoid (Numeric.Back
 module Prelude.Backprop
 
 -- | Lifted <a>sum</a>
-sum :: (Foldable t, Applicative t, Num (t a), Num a, Reifies s W) => BVar s (t a) -> BVar s a
+sum :: forall t a s. (Foldable t, Functor t, Num (t a), Num a, Reifies s W) => BVar s (t a) -> BVar s a
 
 -- | Lifted <a>product</a>
-product :: (Foldable t, Applicative t, Num (t a), Fractional a, Reifies s W) => BVar s (t a) -> BVar s a
+product :: forall t a s. (Foldable t, Functor t, Num (t a), Fractional a, Reifies s W) => BVar s (t a) -> BVar s a
 
--- | Lifted <a>length</a>. Really intended only for <a>Foldable</a>
---   instances with fixed number of items; untintended consequences might
---   arise when using it with containers with variable number of items.
-length :: (Foldable t, Num (t a), Num b, Reifies s W) => BVar s (t a) -> BVar s b
+-- | Lifted <a>length</a>.
+length :: forall t a b s. (Foldable t, Num (t a), Num b, Reifies s W) => BVar s (t a) -> BVar s b
 
 -- | Lifted <a>minimum</a>. Undefined for situations where <a>minimum</a>
 --   would be undefined.
-minimum :: (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W) => BVar s (t a) -> BVar s a
+minimum :: forall t a s. (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W) => BVar s (t a) -> BVar s a
 
 -- | Lifted <a>maximum</a>. Undefined for situations where <a>maximum</a>
 --   would be undefined.
-maximum :: (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W) => BVar s (t a) -> BVar s a
+maximum :: forall t a s. (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W) => BVar s (t a) -> BVar s a
 
 -- | Lifted <a>traverse</a>. Lifts backpropagatable functions to be
 --   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
@@ -1319,7 +1317,7 @@ maximum :: (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W) => BVar
 --   Really intended only for <a>Traversable</a> and <a>Applicative</a>
 --   instances with fixed number of items; untintended consequences might
 --   arise when using it with containers with variable number of items.
-traverse :: (Traversable t, Applicative f, Foldable f, Num a, Num b, Num (f (t b)), Num (t b), Reifies s W) => (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
+traverse :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Num a, Num b, Num (f (t b)), Num (t b), Reifies s W) => (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
 
 -- | Lifted <a>fmap</a>. Lifts backpropagatable functions to be
 --   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
@@ -1327,15 +1325,15 @@ traverse :: (Traversable t, Applicative f, Foldable f, Num a, Num b, Num (f (t b
 --   Really intended only for <a>Functor</a> instances with fixed number of
 --   items; untintended consequences might arise when using it with
 --   containers with variable number of items.
-fmap :: (Traversable f, Num a, Num b, Num (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
+fmap :: forall f a b s. (Traversable f, Num a, Num b, Num (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
 
 -- | Alias for <a>fmap</a>.
-(<$>) :: (Traversable f, Num a, Num b, Num (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
+(<$>) :: forall f a b s. (Traversable f, Num a, Num b, Num (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
 
 -- | Lifted <a>pure</a>. Really intended only for <a>Applicative</a>
 --   instances with fixed number of items; untintended consequences might
 --   arise when using it with containers with variable number of items.
-pure :: (Foldable t, Applicative t, Num (t a), Num a, Reifies s W) => BVar s a -> BVar s (t a)
+pure :: forall t a s. (Foldable t, Applicative t, Num (t a), Num a, Reifies s W) => BVar s a -> BVar s (t a)
 
 -- | Lifted <a>liftA2</a>. Lifts backpropagatable functions to be
 --   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
@@ -1343,7 +1341,7 @@ pure :: (Foldable t, Applicative t, Num (t a), Num a, Reifies s W) => BVar s a -
 --   Really intended only for <a>Traversable</a> and <a>Applicative</a>
 --   instances with fixed number of items; untintended consequences might
 --   arise when using it with containers with variable number of items.
-liftA2 :: (Traversable f, Applicative f, Num a, Num b, Num c, Num (f c), Reifies s W) => (BVar s a -> BVar s b -> BVar s c) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c)
+liftA2 :: forall f a b c s. (Traversable f, Applicative f, Num a, Num b, Num c, Num (f c), Reifies s W) => (BVar s a -> BVar s b -> BVar s c) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c)
 
 -- | Lifted <a>liftA3</a>. Lifts backpropagatable functions to be
 --   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
@@ -1351,7 +1349,7 @@ liftA2 :: (Traversable f, Applicative f, Num a, Num b, Num c, Num (f c), Reifies
 --   Really intended only for <a>Traversable</a> and <a>Applicative</a>
 --   instances with fixed number of items; untintended consequences might
 --   arise when using it with containers with variable number of items.
-liftA3 :: (Traversable f, Applicative f, Num a, Num b, Num c, Num d, Num (f d), Reifies s W) => (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
+liftA3 :: forall f a b c d s. (Traversable f, Applicative f, Num a, Num b, Num c, Num d, Num (f d), Reifies s W) => (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
 
 -- | Coerce items inside a <a>BVar</a>.
-coerce :: (Coercible a b, Num a, Num b, Reifies s W) => BVar s a -> BVar s b
+coerce :: forall a b s. (Coercible a b, Num a, Num b, Reifies s W) => BVar s a -> BVar s b
