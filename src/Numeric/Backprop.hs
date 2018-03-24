@@ -61,6 +61,8 @@ module Numeric.Backprop (
   , viewVar, setVar
   , sequenceVar, collectVar
   , previewVar, toListOfVar
+    -- ** With Isomorphisms
+  , isoVar, isoVar2, isoVar3, isoVarN
     -- ** With 'Op's#liftops#
     -- $liftops
   , liftOp
@@ -369,7 +371,7 @@ infixl 8 .~~
 -- which do have 'Num' instances.
 --
 -- @
--- myPrism                         :: 'Prism'' c (a, b)
+-- myPrism                   :: 'Prism'' c (a, b)
 -- myPrism . 'iso' 'tupT2' 't2Tup' :: 'Prism'' c ('T2' a b)
 -- @
 (^^?)
@@ -408,3 +410,63 @@ v ^^? t = previewVar t v
     -> [BVar s a]
 v ^^.. t = toListOfVar t v
 {-# INLINE (^^..) #-}
+
+-- | Convert the value inside a 'BVar' using a given isomorphism.  Useful
+-- for things like constructors.
+--
+-- Warning: This is unsafe!  It assumes that the isomorphisms themselves
+-- have derivative 1, so will break for things like 'exp' & 'log'.
+-- Basically, don't use this for any "numeric" isomorphisms.
+--
+-- @since 0.1.4.0
+isoVar
+    :: (Num a, Num b, Reifies s W)
+    => (a -> b)
+    -> (b -> a)
+    -> BVar s a
+    -> BVar s b
+isoVar f g = liftOp1 (opIso f g)
+{-# INLINE isoVar #-}
+
+-- | Convert the values inside two 'BVar's using a given isomorphism.
+-- Useful for things like constructors.  See 'isoVar' for caveats.
+--
+-- @since 0.1.4.0
+isoVar2
+    :: (Num a, Num b, Num c, Reifies s W)
+    => (a -> b -> c)
+    -> (c -> (a, b))
+    -> BVar s a
+    -> BVar s b
+    -> BVar s c
+isoVar2 f g = liftOp2 (opIso2 f g)
+{-# INLINE isoVar2 #-}
+
+-- | Convert the values inside three 'BVar's using a given isomorphism.
+-- Useful for things like constructors.  See 'isoVar' for caveats.
+--
+-- @since 0.1.4.0
+isoVar3
+    :: (Num a, Num b, Num c, Num d, Reifies s W)
+    => (a -> b -> c -> d)
+    -> (d -> (a, b, c))
+    -> BVar s a
+    -> BVar s b
+    -> BVar s c
+    -> BVar s d
+isoVar3 f g = liftOp3 (opIso3 f g)
+{-# INLINE isoVar3 #-}
+
+-- | Convert the values inside a tuple of 'BVar's using a given
+-- isomorphism. Useful for things like constructors.  See 'isoVar' for
+-- caveats.
+--
+-- @since 0.1.4.0
+isoVarN
+    :: (Every Num as, Num b, Reifies s W)
+    => (Tuple as -> b)
+    -> (b -> Tuple as)
+    -> Prod (BVar s) as
+    -> BVar s b
+isoVarN f g = liftOp (opIsoN f g)
+{-# INLINE isoVarN #-}

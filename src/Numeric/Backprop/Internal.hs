@@ -158,10 +158,6 @@ data SomeTapeNode :: Type where
            }
         -> SomeTapeNode
 
-forceSomeTapeNode :: SomeTapeNode -> ()
-forceSomeTapeNode (STN !_ tn) = forceTapeNode tn `seq` ()
-{-# INLINE forceSomeTapeNode #-}
-
 -- | Debugging string for a 'SomeTapeMode'.
 debugSTN :: SomeTapeNode -> String
 debugSTN (STN _ TN{..}) = show . foldMap1 ((:[]) . debugIR) $ _tnInputs
@@ -596,7 +592,6 @@ fillWengert f xs = do
       evaluate (forceBVar oVar)
       return (_bvVal oVar)
     t <- readIORef (wRef w)
-    traverse_ (evaluate . forceSomeTapeNode) (snd t)
     return (t, o)
   where
     inpProd :: forall s. Prod (BVar s) as

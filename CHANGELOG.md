@@ -1,6 +1,25 @@
 Changelog
 =========
 
+Version 0.1.4.0
+---------------
+
+*Feb 12, 2018*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.1.4.0>
+
+*   `isoVar`, `isoVar2`, `isoVar3`, and `isoVarN`: convenient aliases for
+    applying isomorphisms to `BVar`s.  Helpful for use with constructors and
+    deconstructors.
+*   `opIso2` and `opIso3`, for convenience.
+
+*Internal*
+
+*   Completely decoupled the internal implementation from `Num`, which showed
+    some performance benefits.  Mostly just to make the code slightly cleaner,
+    and to prepare for some day potentially decoupling the external API from
+    `Num` as well.
+
 Version 0.1.3.0
 ---------------
 

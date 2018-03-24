@@ -47,11 +47,11 @@ module Numeric.Backprop.Op (
   , runOp, evalOp, gradOp, gradOpWith
   -- * Creation
   , op0, opConst, idOp
-  , opConst'
+  , opConst', opLens
   -- ** Giving gradients directly
   , op1, op2, op3
   -- ** From Isomorphisms
-  , opCoerce, opTup, opIso, opIsoN, opLens
+  , opCoerce, opTup, opIso, opIso2, opIso3, opIsoN
   -- ** No gradient
   , noGrad1, noGrad
   -- * Manipulation
@@ -390,20 +390,30 @@ opTup = Op $ \xs -> (xs, id)
 -- | An 'Op' that runs the input value through an isomorphism.
 --
 -- Warning: This is unsafe!  It assumes that the isomorphisms themselves
--- have derivative 1, so will break for things like
--- 'Numeric.Lens.exponentiating'.  Basically, don't use this for any
--- "numeric" isomorphisms.
+-- have derivative 1, so will break for things like 'exp' & 'log'.
+-- Basically, don't use this for any "numeric" isomorphisms.
 opIso :: (a -> b) -> (b -> a) -> Op '[ a ] b
 opIso to' from' = op1 $ \x -> (to' x, from')
 {-# INLINE opIso #-}
 
--- | An 'Op' that runs the input value through an isomorphism between
--- a tuple of values and a value.
+-- | An 'Op' that runs the two input values through an isomorphism.  Useful
+-- for things like constructors.  See 'opIso' for caveats.
 --
--- Warning: This is unsafe!  It assumes that the isomorphisms themselves
--- have derivative 1, so will break for things like
--- 'Numeric.Lens.exponentiating'.  Basically, don't use this for any
--- "numeric" isomorphisms.
+-- @since 0.1.4.0
+opIso2 :: (a -> b -> c) -> (c -> (a, b)) -> Op '[a, b] c
+opIso2 to' from' = op2 $ \x y -> (to' x y, from')
+{-# INLINE opIso2 #-}
+
+-- | An 'Op' that runs the three input values through an isomorphism.
+-- Useful for things like constructors.  See 'opIso' for caveats.
+--
+-- @since 0.1.4.0
+opIso3 :: (a -> b -> c -> d) -> (d -> (a, b, c)) -> Op '[a, b, c] d
+opIso3 to' from' = op3 $ \x y z -> (to' x y z, from')
+{-# INLINE opIso3 #-}
+
+-- | An 'Op' that runs the input value through an isomorphism between
+-- a tuple of values and a value.  See 'opIso' for caveats.
 --
 -- In "Numeric.Backprop.Op" since version 0.1.2.0, but only exported from
 -- "Numeric.Backprop" since version 0.1.3.0.

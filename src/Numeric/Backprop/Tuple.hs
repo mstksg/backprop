@@ -47,6 +47,9 @@
 -- and '_3' from "Lens.Micro".  However, note that these are incompatible
 -- with '_1', '_2', and '_3' from "Control.Lens".
 --
+-- You can "construct" a @'BVar' s ('T2' a b)@ with functions like
+-- 'isoVar'.
+--
 -- @since 0.1.1.0
 --
 
