@@ -12,7 +12,7 @@
 --   
 --   See <a>README.md</a>
 @package backprop
-@version 0.1.3.0
+@version 0.1.4.0
 
 
 -- | Provides the <a>Op</a> type and combinators, which represent
@@ -1166,9 +1166,9 @@ I :: a -> I a
 class Reifies k (s :: k) a | s -> a
 
 
--- | Canonical strict tuples with <a>Num</a> instances for usage with
---   <i>backprop</i>. This is here to solve the problem of orphan instances
---   in libraries and potential mismatched tuple types.
+-- | Canonical strict tuples (and unit) with <a>Num</a> instances for usage
+--   with <i>backprop</i>. This is here to solve the problem of orphan
+--   instances in libraries and potential mismatched tuple types.
 --   
 --   If you are writing a library that needs to export <tt>BVar</tt>s of
 --   tuples, consider using the tuples in this module so that your library
@@ -1209,7 +1209,19 @@ class Reifies k (s :: k) a | s -> a
 --   functions like <tt>isoVar</tt>.
 module Numeric.Backprop.Tuple
 
--- | Strict 2-tuple with a <a>Num</a> instance.
+-- | Unit ('()') with <a>Num</a>, <a>Fractional</a>, and <a>Floating</a>
+--   instances.
+--   
+--   Be aware that the methods in its numerical instances are all
+--   non-strict:
+--   
+--   @<tt> _ + _ = <a>T0</a> <a>negate</a> _ = <a>T0</a>
+--   <a>fromIntegral</a> _ = <a>T0</a> </tt>@
+data T0
+T0 :: T0
+
+-- | Strict 2-tuple with <a>Num</a>, <a>Fractional</a>, and <a>Floating</a>
+--   instances.
 data T2 a b
 T2 :: !a -> !b -> T2 a b
 
@@ -1237,7 +1249,8 @@ t2_1 :: Lens (T2 a b) (T2 a' b) a a'
 --   from <a>Lens.Micro</a>.
 t2_2 :: Lens (T2 a b) (T2 a b') b b'
 
--- | Strict 3-tuple with a <a>Num</a> instance.
+-- | Strict 3-tuple with a <a>Num</a>, <a>Fractional</a>, and
+--   <a>Floating</a> instances.
 data T3 a b c
 T3 :: !a -> !b -> !c -> T3 a b c
 
@@ -1282,6 +1295,12 @@ instance (GHC.Classes.Ord b, GHC.Classes.Ord a) => GHC.Classes.Ord (Numeric.Back
 instance (GHC.Classes.Eq b, GHC.Classes.Eq a) => GHC.Classes.Eq (Numeric.Backprop.Tuple.T2 a b)
 instance (GHC.Read.Read b, GHC.Read.Read a) => GHC.Read.Read (Numeric.Backprop.Tuple.T2 a b)
 instance (GHC.Show.Show b, GHC.Show.Show a) => GHC.Show.Show (Numeric.Backprop.Tuple.T2 a b)
+instance Data.Data.Data Numeric.Backprop.Tuple.T0
+instance GHC.Generics.Generic Numeric.Backprop.Tuple.T0
+instance GHC.Classes.Ord Numeric.Backprop.Tuple.T0
+instance GHC.Classes.Eq Numeric.Backprop.Tuple.T0
+instance GHC.Read.Read Numeric.Backprop.Tuple.T0
+instance GHC.Show.Show Numeric.Backprop.Tuple.T0
 instance (Control.DeepSeq.NFData a, Control.DeepSeq.NFData b, Control.DeepSeq.NFData c) => Control.DeepSeq.NFData (Numeric.Backprop.Tuple.T3 a b c)
 instance Data.Bifunctor.Bifunctor (Numeric.Backprop.Tuple.T3 a)
 instance Lens.Micro.Internal.Field1 (Numeric.Backprop.Tuple.T3 a b c) (Numeric.Backprop.Tuple.T3 a' b c) a a'
@@ -1301,6 +1320,10 @@ instance (GHC.Real.Fractional a, GHC.Real.Fractional b) => GHC.Real.Fractional (
 instance (GHC.Float.Floating a, GHC.Float.Floating b) => GHC.Float.Floating (Numeric.Backprop.Tuple.T2 a b)
 instance (Data.Semigroup.Semigroup a, Data.Semigroup.Semigroup b) => Data.Semigroup.Semigroup (Numeric.Backprop.Tuple.T2 a b)
 instance (GHC.Base.Monoid a, GHC.Base.Monoid b) => GHC.Base.Monoid (Numeric.Backprop.Tuple.T2 a b)
+instance Control.DeepSeq.NFData Numeric.Backprop.Tuple.T0
+instance GHC.Num.Num Numeric.Backprop.Tuple.T0
+instance GHC.Real.Fractional Numeric.Backprop.Tuple.T0
+instance GHC.Float.Floating Numeric.Backprop.Tuple.T0
 
 
 -- | Some lifted versions of common functions found in <tt>Prelude</tt> (or
