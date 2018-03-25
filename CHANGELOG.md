@@ -11,7 +11,8 @@ Version 0.1.4.0
 *   `isoVar`, `isoVar2`, `isoVar3`, and `isoVarN`: convenient aliases for
     applying isomorphisms to `BVar`s.  Helpful for use with constructors and
     deconstructors.
-*   `opIso2` and `opIso3`, for convenience.
+*   `opIso2` and `opIso3` added to *Numeric.Backprop.Op*, for convenience.
+*   `T0` (Unit with numeric instances) added to *Numeric.Backprop.Tuple".
 
 *Internal*
 

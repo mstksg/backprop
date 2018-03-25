@@ -13,9 +13,9 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- Canonical strict tuples with 'Num' instances for usage with /backprop/.
--- This is here to solve the problem of orphan instances in libraries and
--- potential mismatched tuple types.
+-- Canonical strict tuples (and unit) with 'Num' instances for usage with
+-- /backprop/. This is here to solve the problem of orphan instances in
+-- libraries and potential mismatched tuple types.
 --
 -- If you are writing a library that needs to export 'BVar's of tuples,
 -- consider using the tuples in this module so that your library can have
@@ -55,8 +55,10 @@
 
 
 module Numeric.Backprop.Tuple (
+  -- * Zero-tuples (unit)
+    T0(..)
   -- * Two-tuples
-    T2(..)
+  , T2(..)
   -- ** Conversions
   -- $t2iso
   , t2Tup, tupT2
@@ -83,13 +85,29 @@ import           GHC.Generics        (Generic)
 import           Lens.Micro
 import           Lens.Micro.Internal
 
--- | Strict 2-tuple with a 'Num' instance.
+-- | Unit ('()') with 'Num', 'Fractional', and 'Floating' instances.
+--
+-- Be aware that the methods in its numerical instances are all non-strict:
+--
+-- @@
+-- _ + _ = 'T0'
+-- 'negate' _ = 'T0'
+-- 'fromIntegral' _ = 'T0'
+-- @@
+--
+-- @since 0.1.4.0
+data T0 = T0
+  deriving (Show, Read, Eq, Ord, Generic, Data)
+
+instance NFData T0
+
+-- | Strict 2-tuple with 'Num', 'Fractional', and 'Floating' instances.
 --
 -- @since 0.1.1.0
 data T2 a b   = T2 !a !b
   deriving (Show, Read, Eq, Ord, Generic, Functor, Data)
 
--- | Strict 3-tuple with a 'Num' instance.
+-- | Strict 3-tuple with a 'Num', 'Fractional', and 'Floating' instances.
 --
 -- @since 0.1.1.0
 data T3 a b c = T3 !a !b !c
@@ -191,6 +209,38 @@ t3_2 = _2
 -- "Lens.Micro".
 t3_3 :: Lens (T3 a b c) (T3 a b c') c c'
 t3_3 = _3
+
+instance Num T0 where
+    _ + _         = T0
+    _ - _         = T0
+    _ * _         = T0
+    negate _      = T0
+    abs    _      = T0
+    signum _      = T0
+    fromInteger _ = T0
+
+instance Fractional T0 where
+    _ / _          = T0
+    recip _        = T0
+    fromRational _ = T0
+
+instance Floating T0 where
+    pi          = T0
+    _ ** _      = T0
+    logBase _ _ = T0
+    exp   _     = T0
+    log   _     = T0
+    sqrt  _     = T0
+    sin   _     = T0
+    cos   _     = T0
+    asin  _     = T0
+    acos  _     = T0
+    atan  _     = T0
+    sinh  _     = T0
+    cosh  _     = T0
+    asinh _     = T0
+    acosh _     = T0
+    atanh _     = T0
 
 instance (Num a, Num b) => Num (T2 a b) where
     T2 x1 y1 + T2 x2 y2 = T2 (x1 + x2) (y1 + y2)
