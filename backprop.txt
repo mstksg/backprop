@@ -1296,6 +1296,16 @@ data T :: [Type] -> Type
 [TNil] :: T '[]
 [:&] :: !a -> !(T as) -> T (a : as)
 
+-- | Uncons a <a>T</a>
+--   
+--   Forms an isomorphism with <a>tupT</a>
+tTup :: T (a : as) -> (a, T as)
+
+-- | Cons a <a>T</a>
+--   
+--   Forms an isomorphism with <a>tTup</a>
+tupT :: (a, T as) -> T (a : as)
+
 -- | Lens into a given index of a <a>T</a>.
 tIx :: forall as a. Index as a -> Lens' (T as) a
 
