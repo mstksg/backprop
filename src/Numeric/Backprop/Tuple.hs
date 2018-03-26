@@ -92,7 +92,7 @@ module Numeric.Backprop.Tuple (
   , T(..)
   -- ** Conversions
   -- $tiso
-  , tTup, tupT, tOnly, onlyT
+  , tTup, tupT, tOnly, onlyT, tSplit, tAppend
   -- ** Lenses
   , tIx, tHead, tTail
   -- ** Utility
@@ -308,6 +308,26 @@ tHead f (x :& xs) = (:& xs) <$> f x
 -- @since 0.1.5.0
 tTail :: Lens (T (a ': as)) (T (a ': bs)) (T as) (T bs)
 tTail f (x :& xs) = (x :&) <$> f xs
+
+-- | Append two 'T's.
+--
+-- Forms an isomorphism with 'tSplit'.
+--
+-- @since 0.1.5.0
+tAppend :: T as -> T bs -> T (as ++ bs)
+tAppend TNil      ys = ys
+tAppend (x :& xs) ys = x :& tAppend xs ys
+infixr 5 `tAppend`
+
+-- | Split a 'T'.  For splits known at compile-time, you can use 'known' to
+-- derive the 'Length' automatically.
+--
+-- Forms an isomorphism with 'tAppend'.
+--
+-- @since 0.1.5.0
+tSplit :: Length as -> T (as ++ bs) -> (T as, T bs)
+tSplit LZ     xs        = (TNil, xs)
+tSplit (LS l) (x :& xs) = first (x :&) . tSplit l $ xs
 
 instance Num T0 where
     _ + _         = T0
