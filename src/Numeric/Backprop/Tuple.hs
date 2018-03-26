@@ -90,6 +90,10 @@ module Numeric.Backprop.Tuple (
   , uncurryT3, curryT3
   -- * N-Tuples
   , T(..)
+  -- ** Conversions
+  -- $tiso
+  , tTup, tupT
+  -- ** Lenses
   , tIx, tHead, tTail
   -- ** Utility
   , constT, mapT, zipT
@@ -189,6 +193,18 @@ t3Tup (T3 x y z) = (x, y, z)
 -- Forms an isomorphism with 't3Tup'.
 tupT3 :: (a, b, c) -> T3 a b c
 tupT3 (x, y, z) = T3 x y z
+
+-- | Uncons a 'T'
+--
+-- Forms an isomorphism with 'tupT'
+tTup :: T (a ': as) -> (a, T as)
+tTup (x :& xs) = (x, xs)
+
+-- | Cons a 'T'
+--
+-- Forms an isomorphism with 'tTup'
+tupT :: (a, T as) -> T (a ': as)
+tupT = uncurry (:&)
 
 -- | Uncurry a function to take in a 'T2' of its arguments
 --
@@ -506,4 +522,13 @@ instance (Known Length as, ListC (Semigroup <$> as), ListC (Monoid <$> as)) => M
 --
 -- @
 -- 'iso' 'tupT3' 't2Tup' :: 'Iso'' (a, b, c) ('T3' a b c)
+-- @
+
+-- $tiso
+--
+-- If using /lens/, the two conversion functions can be chained with prisms
+-- and traversals and other optics using:
+--
+-- @
+-- 'iso' 'tupT' 'tTup' :: 'Iso'' (a, T as) (T (a ': as))
 -- @
