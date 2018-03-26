@@ -1,6 +1,20 @@
 Changelog
 =========
 
+Version 0.1.5.0
+---------------
+
+*Unreleased*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.1.5.0>
+
+*   `T` added to *Numeric.Backprop.Tuple*: basically an `HList` with a `Num`
+    instance.
+
+*Internal*
+
+*   Refactored `Monoid` instances in *Numeric.Backprop.Tuple*
+
 Version 0.1.4.0
 ---------------
 

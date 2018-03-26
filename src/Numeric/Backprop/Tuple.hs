@@ -1,8 +1,21 @@
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE CPP                   #-}
+{-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE DeriveFunctor         #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE KindSignatures        #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeInType            #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 -- |
 -- Module      : Numeric.Backprop.Tuple
@@ -75,15 +88,28 @@ module Numeric.Backprop.Tuple (
   , t3_1, t3_2, t3_3
   -- ** Consumption
   , uncurryT3, curryT3
+  -- * N-Tuples
+  , T(..)
+  , tIx, tHead, tTail
+  -- ** Utility
+  , constT, mapT, zipT
   ) where
 
 import           Control.DeepSeq
 import           Data.Bifunctor
 import           Data.Data
-import           Data.Semigroup
-import           GHC.Generics        (Generic)
+import           Data.Kind
+import           Data.Type.Index
+import           Data.Type.Length
+import           GHC.Generics               (Generic)
 import           Lens.Micro
-import           Lens.Micro.Internal
+import           Lens.Micro.Internal hiding (Index)
+import           Type.Class.Known
+import           Type.Family.List
+
+#if !MIN_VERSION_base(4,11,0)
+import           Data.Semigroup
+#endif
 
 -- | Unit ('()') with 'Num', 'Fractional', and 'Floating' instances.
 --
@@ -113,8 +139,26 @@ data T2 a b   = T2 !a !b
 data T3 a b c = T3 !a !b !c
   deriving (Show, Read, Eq, Ord, Generic, Functor, Data)
 
+-- | Strict N-tuple with a 'Num', 'Fractional', and 'Floating' instances.
+--
+-- It is basically "yet another HList", like the one found in
+-- "Data.Type.Product" and many other locations on the haskell ecosystem.
+--
+-- It is provided because of its 'Num' instance, making it useful for
+-- /backproup/.  Will be obsolete when 'Data.Type.Product.Product' gets
+-- numerical instances.
+--
+-- @since 0.1.5.0
+data T :: [Type] -> Type where
+    TNil :: T '[]
+    (:&) :: !a -> !(T as) -> T (a ': as)
+
 instance (NFData a, NFData b) => NFData (T2 a b)
 instance (NFData a, NFData b, NFData c) => NFData (T3 a b c)
+instance ListC (NFData <$> as) => NFData (T as) where
+    rnf = \case
+      TNil       -> ()
+      (!_) :& xs -> rnf xs
 
 instance Bifunctor T2 where
     bimap f g (T2 x y) = T2 (f x) (g y)
@@ -171,44 +215,63 @@ curryT3 :: (T3 a b c -> d) -> a -> b -> c -> d
 curryT3 f x y z = f (T3 x y z)
 
 instance Field1 (T2 a b) (T2 a' b) a a' where
-    _1 f (T2 x y) = (`T2` y) <$> f x
+    _1 = t2_1
 
 instance Field2 (T2 a b) (T2 a b') b b' where
-    _2 f (T2 x y) = T2 x <$> f y
+    _2 = t2_2
 
 instance Field1 (T3 a b c) (T3 a' b c) a a' where
-    _1 f (T3 x y z) = (\x' -> T3 x' y z) <$> f x
+    _1 = t3_1
 
 instance Field2 (T3 a b c) (T3 a b' c) b b' where
-    _2 f (T3 x y z) = (\y' -> T3 x y' z) <$> f y
+    _2 = t3_2
 
 instance Field3 (T3 a b c) (T3 a b c') c c' where
-    _3 f (T3 x y z) = T3 x y <$> f z
+    _3 = t3_3
 
 -- | Lens into the first field of a 'T2'.  Also exported as '_1' from
 -- "Lens.Micro".
 t2_1 :: Lens (T2 a b) (T2 a' b) a a'
-t2_1 = _1
+t2_1 f (T2 x y) = (`T2` y) <$> f x
 
 -- | Lens into the second field of a 'T2'.  Also exported as '_2' from
 -- "Lens.Micro".
 t2_2 :: Lens (T2 a b) (T2 a b') b b'
-t2_2 = _2
+t2_2 f (T2 x y) = T2 x <$> f y
 
 -- | Lens into the first field of a 'T3'.  Also exported as '_1' from
 -- "Lens.Micro".
 t3_1 :: Lens (T3 a b c) (T3 a' b c) a a'
-t3_1 = _1
+t3_1 f (T3 x y z) = (\x' -> T3 x' y z) <$> f x
 
 -- | Lens into the second field of a 'T3'.  Also exported as '_2' from
 -- "Lens.Micro".
 t3_2 :: Lens (T3 a b c) (T3 a b' c) b b'
-t3_2 = _2
+t3_2 f (T3 x y z) = (\y' -> T3 x y' z) <$> f y
 
 -- | Lens into the third field of a 'T3'.  Also exported as '_3' from
 -- "Lens.Micro".
 t3_3 :: Lens (T3 a b c) (T3 a b c') c c'
-t3_3 = _3
+t3_3 f (T3 x y z) = T3 x y <$> f z
+
+-- | Lens into a given index of a 'T'.
+--
+-- @since 0.1.5.0
+tIx :: forall as a. Index as a -> Lens' (T as) a
+tIx IZ     f (x :& xs) = (:& xs) <$> f x
+tIx (IS i) f (x :& xs) = (x :&)  <$> tIx i f xs
+
+-- | Lens into the head of a 'T'
+--
+-- @since 0.1.5.0
+tHead :: Lens (T (a ': as)) (T (b ': as)) a b
+tHead f (x :& xs) = (:& xs) <$> f x
+
+-- | Lens into the tail of a 'T'
+--
+-- @since 0.1.5.0
+tTail :: Lens (T (a ': as)) (T (a ': bs)) (T as) (T bs)
+tTail f (x :& xs) = (x :&) <$> f xs
 
 instance Num T0 where
     _ + _         = T0
@@ -241,6 +304,13 @@ instance Floating T0 where
     asinh _     = T0
     acosh _     = T0
     atanh _     = T0
+
+instance Semigroup T0 where
+    _ <> _ = T0
+
+instance Monoid T0 where
+    mempty = T0
+    mappend = (<>)
 
 instance (Num a, Num b) => Num (T2 a b) where
     T2 x1 y1 + T2 x2 y2 = T2 (x1 + x2) (y1 + y2)
@@ -277,9 +347,13 @@ instance (Floating a, Floating b) => Floating (T2 a b) where
 instance (Semigroup a, Semigroup b) => Semigroup (T2 a b) where
     T2 x1 y1 <> T2 x2 y2 = T2 (x1 <> x2) (y1 <> y2)
 
+#if MIN_VERSION_base(4,11,0)
 instance (Monoid a, Monoid b) => Monoid (T2 a b) where
-    mappend (T2 x1 y1) (T2 x2 y2) = T2 (mappend x1 x2) (mappend y1 y2)
-    mempty                        = T2 mempty mempty
+#else
+instance (Semigroup a, Semigroup b, Monoid a, Monoid b) => Monoid (T2 a b) where
+#endif
+    mappend = (<>)
+    mempty  = T2 mempty mempty
 
 instance (Num a, Num b, Num c) => Num (T3 a b c) where
     T3 x1 y1 z1 + T3 x2 y2 z2 = T3 (x1 + x2) (y1 + y2) (z1 + z2)
@@ -316,9 +390,105 @@ instance (Floating a, Floating b, Floating c) => Floating (T3 a b c) where
 instance (Semigroup a, Semigroup b, Semigroup c) => Semigroup (T3 a b c) where
     T3 x1 y1 z1 <> T3 x2 y2 z2 = T3 (x1 <> x2) (y1 <> y2) (z1 <> z2)
 
+#if MIN_VERSION_base(4,11,0)
 instance (Monoid a, Monoid b, Monoid c) => Monoid (T3 a b c) where
-    mappend (T3 x1 y1 z1) (T3 x2 y2 z2) = T3 (mappend x1 x2) (mappend y1 y2) (mappend z1 z2)
-    mempty                              = T3 mempty mempty mempty
+#else
+instance (Semigroup a, Semigroup b, Semigroup c, Monoid a, Monoid b, Monoid c) => Monoid (T3 a b c) where
+#endif
+    mappend = (<>)
+    mempty  = T3 mempty mempty mempty
+
+-- | Initialize a 'T' with a Rank-N value.  Mostly used internally, but
+-- provided in case useful.
+--
+-- Must be used with /TypeApplications/ to provide the Rank-N constraint.
+--
+-- @since 0.1.5.0
+constT
+    :: forall c as. ListC (c <$> as)
+    => (forall a. c a => a)
+    -> Length as
+    -> T as
+constT x = go
+  where
+    go :: forall bs. ListC (c <$> bs) => Length bs -> T bs
+    go LZ     = TNil
+    go (LS l) = x :& go l
+
+-- | Map over a 'T' with a Rank-N function.  Mostly used internally, but
+-- provided in case useful.
+--
+-- Must be used with /TypeApplications/ to provide the Rank-N constraint.
+--
+-- @since 0.1.5.0
+mapT
+    :: forall c as. ListC (c <$> as)
+    => (forall a. c a => a -> a)
+    -> T as
+    -> T as
+mapT f = go
+  where
+    go :: forall bs. ListC (c <$> bs) => T bs -> T bs
+    go TNil      = TNil
+    go (x :& xs) = f x :& go xs
+
+-- | Map over a 'T' with a Rank-N function.  Mostly used internally, but
+-- provided in case useful.
+--
+-- Must be used with /TypeApplications/ to provide the Rank-N constraint.
+--
+-- @since 0.1.5.0
+zipT
+    :: forall c as. ListC (c <$> as)
+    => (forall a. c a => a -> a -> a)
+    -> T as
+    -> T as
+    -> T as
+zipT f = go
+  where
+    go :: forall bs. ListC (c <$> bs) => T bs -> T bs -> T bs
+    go TNil      TNil      = TNil
+    go (x :& xs) (y :& ys) = f x y :& go xs ys
+
+instance (Known Length as, ListC (Num <$> as)) => Num (T as) where
+    (+)           = zipT @Num (+)
+    (-)           = zipT @Num (-)
+    (*)           = zipT @Num (*)
+    negate        = mapT @Num negate
+    abs           = mapT @Num abs
+    signum        = mapT @Num signum
+    fromInteger x = constT @Num (fromInteger x) known
+
+instance (Known Length as, ListC (Num <$> as), ListC (Fractional <$> as)) => Fractional (T as) where
+    (/)            = zipT @Fractional (/)
+    recip          = mapT @Fractional recip
+    fromRational x = constT @Fractional (fromRational x) known
+
+instance (Known Length as, ListC (Num <$> as), ListC (Fractional <$> as), ListC (Floating <$> as))
+        => Floating (T as) where
+    pi      = constT @Floating pi known
+    (**)    = zipT @Floating (**)
+    logBase = zipT @Floating logBase
+    exp     = mapT @Floating exp
+    log     = mapT @Floating log
+    sqrt    = mapT @Floating sqrt
+    sin     = mapT @Floating sin
+    cos     = mapT @Floating cos
+    asin    = mapT @Floating asin
+    acos    = mapT @Floating acos
+    atan    = mapT @Floating atan
+    sinh    = mapT @Floating sinh
+    cosh    = mapT @Floating cosh
+    asinh   = mapT @Floating asinh
+    acosh   = mapT @Floating acosh
+    atanh   = mapT @Floating atanh
+
+instance ListC (Semigroup <$> as) => Semigroup (T as) where
+    (<>) = zipT @Semigroup (<>)
+
+instance (Known Length as, ListC (Semigroup <$> as), ListC (Monoid <$> as)) => Monoid (T as) where
+    mempty  = constT @Monoid mempty known
+    mappend = (<>)
 
 -- $t2iso
 --
