@@ -12,7 +12,7 @@
 --   
 --   See <a>README.md</a>
 @package backprop
-@version 0.1.4.0
+@version 0.1.5.0
 
 
 -- | Provides the <a>Op</a> type and combinators, which represent
@@ -1281,6 +1281,50 @@ uncurryT3 :: (a -> b -> c -> d) -> T3 a b c -> d
 
 -- | Curry a function taking a <a>T3</a> of its arguments
 curryT3 :: (T3 a b c -> d) -> a -> b -> c -> d
+
+-- | Strict N-tuple with a <a>Num</a>, <a>Fractional</a>, and
+--   <a>Floating</a> instances.
+--   
+--   It is basically "yet another HList", like the one found in
+--   <a>Data.Type.Product</a> and many other locations on the haskell
+--   ecosystem.
+--   
+--   It is provided because of its <a>Num</a> instance, making it useful
+--   for <i>backproup</i>. Will be obsolete when <a>Product</a> gets
+--   numerical instances.
+data T :: [Type] -> Type
+[TNil] :: T '[]
+[:&] :: !a -> !(T as) -> T (a : as)
+
+-- | Lens into a given index of a <a>T</a>.
+tIx :: forall as a. Index as a -> Lens' (T as) a
+
+-- | Lens into the head of a <a>T</a>
+tHead :: Lens (T (a : as)) (T (b : as)) a b
+
+-- | Lens into the tail of a <a>T</a>
+tTail :: Lens (T (a : as)) (T (a : bs)) (T as) (T bs)
+
+-- | Initialize a <a>T</a> with a Rank-N value. Mostly used internally, but
+--   provided in case useful.
+--   
+--   Must be used with <i>TypeApplications</i> to provide the Rank-N
+--   constraint.
+constT :: forall c as. ListC (c <$> as) => (forall a. c a => a) -> Length as -> T as
+
+-- | Map over a <a>T</a> with a Rank-N function. Mostly used internally,
+--   but provided in case useful.
+--   
+--   Must be used with <i>TypeApplications</i> to provide the Rank-N
+--   constraint.
+mapT :: forall c as. ListC (c <$> as) => (forall a. c a => a -> a) -> T as -> T as
+
+-- | Map over a <a>T</a> with a Rank-N function. Mostly used internally,
+--   but provided in case useful.
+--   
+--   Must be used with <i>TypeApplications</i> to provide the Rank-N
+--   constraint.
+zipT :: forall c as. ListC (c <$> as) => (forall a. c a => a -> a -> a) -> T as -> T as -> T as
 instance (Data.Data.Data c, Data.Data.Data b, Data.Data.Data a) => Data.Data.Data (Numeric.Backprop.Tuple.T3 a b c)
 instance GHC.Base.Functor (Numeric.Backprop.Tuple.T3 a b)
 instance GHC.Generics.Generic (Numeric.Backprop.Tuple.T3 a b c)
@@ -1301,6 +1345,12 @@ instance GHC.Classes.Ord Numeric.Backprop.Tuple.T0
 instance GHC.Classes.Eq Numeric.Backprop.Tuple.T0
 instance GHC.Read.Read Numeric.Backprop.Tuple.T0
 instance GHC.Show.Show Numeric.Backprop.Tuple.T0
+instance Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint Control.DeepSeq.NFData as) => Control.DeepSeq.NFData (Numeric.Backprop.Tuple.T as)
+instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint GHC.Num.Num as)) => GHC.Num.Num (Numeric.Backprop.Tuple.T as)
+instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint GHC.Num.Num as), Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint GHC.Real.Fractional as)) => GHC.Real.Fractional (Numeric.Backprop.Tuple.T as)
+instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint GHC.Num.Num as), Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint GHC.Real.Fractional as), Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint GHC.Float.Floating as)) => GHC.Float.Floating (Numeric.Backprop.Tuple.T as)
+instance Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint Data.Semigroup.Semigroup as) => Data.Semigroup.Semigroup (Numeric.Backprop.Tuple.T as)
+instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint Data.Semigroup.Semigroup as), Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint GHC.Base.Monoid as)) => GHC.Base.Monoid (Numeric.Backprop.Tuple.T as)
 instance (Control.DeepSeq.NFData a, Control.DeepSeq.NFData b, Control.DeepSeq.NFData c) => Control.DeepSeq.NFData (Numeric.Backprop.Tuple.T3 a b c)
 instance Data.Bifunctor.Bifunctor (Numeric.Backprop.Tuple.T3 a)
 instance Lens.Micro.Internal.Field1 (Numeric.Backprop.Tuple.T3 a b c) (Numeric.Backprop.Tuple.T3 a' b c) a a'
@@ -1310,7 +1360,7 @@ instance (GHC.Num.Num a, GHC.Num.Num b, GHC.Num.Num c) => GHC.Num.Num (Numeric.B
 instance (GHC.Real.Fractional a, GHC.Real.Fractional b, GHC.Real.Fractional c) => GHC.Real.Fractional (Numeric.Backprop.Tuple.T3 a b c)
 instance (GHC.Float.Floating a, GHC.Float.Floating b, GHC.Float.Floating c) => GHC.Float.Floating (Numeric.Backprop.Tuple.T3 a b c)
 instance (Data.Semigroup.Semigroup a, Data.Semigroup.Semigroup b, Data.Semigroup.Semigroup c) => Data.Semigroup.Semigroup (Numeric.Backprop.Tuple.T3 a b c)
-instance (GHC.Base.Monoid a, GHC.Base.Monoid b, GHC.Base.Monoid c) => GHC.Base.Monoid (Numeric.Backprop.Tuple.T3 a b c)
+instance (Data.Semigroup.Semigroup a, Data.Semigroup.Semigroup b, Data.Semigroup.Semigroup c, GHC.Base.Monoid a, GHC.Base.Monoid b, GHC.Base.Monoid c) => GHC.Base.Monoid (Numeric.Backprop.Tuple.T3 a b c)
 instance (Control.DeepSeq.NFData a, Control.DeepSeq.NFData b) => Control.DeepSeq.NFData (Numeric.Backprop.Tuple.T2 a b)
 instance Data.Bifunctor.Bifunctor Numeric.Backprop.Tuple.T2
 instance Lens.Micro.Internal.Field1 (Numeric.Backprop.Tuple.T2 a b) (Numeric.Backprop.Tuple.T2 a' b) a a'
@@ -1319,11 +1369,13 @@ instance (GHC.Num.Num a, GHC.Num.Num b) => GHC.Num.Num (Numeric.Backprop.Tuple.T
 instance (GHC.Real.Fractional a, GHC.Real.Fractional b) => GHC.Real.Fractional (Numeric.Backprop.Tuple.T2 a b)
 instance (GHC.Float.Floating a, GHC.Float.Floating b) => GHC.Float.Floating (Numeric.Backprop.Tuple.T2 a b)
 instance (Data.Semigroup.Semigroup a, Data.Semigroup.Semigroup b) => Data.Semigroup.Semigroup (Numeric.Backprop.Tuple.T2 a b)
-instance (GHC.Base.Monoid a, GHC.Base.Monoid b) => GHC.Base.Monoid (Numeric.Backprop.Tuple.T2 a b)
+instance (Data.Semigroup.Semigroup a, Data.Semigroup.Semigroup b, GHC.Base.Monoid a, GHC.Base.Monoid b) => GHC.Base.Monoid (Numeric.Backprop.Tuple.T2 a b)
 instance Control.DeepSeq.NFData Numeric.Backprop.Tuple.T0
 instance GHC.Num.Num Numeric.Backprop.Tuple.T0
 instance GHC.Real.Fractional Numeric.Backprop.Tuple.T0
 instance GHC.Float.Floating Numeric.Backprop.Tuple.T0
+instance Data.Semigroup.Semigroup Numeric.Backprop.Tuple.T0
+instance GHC.Base.Monoid Numeric.Backprop.Tuple.T0
 
 
 -- | Some lifted versions of common functions found in <tt>Prelude</tt> (or
