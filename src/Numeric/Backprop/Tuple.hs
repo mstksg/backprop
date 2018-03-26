@@ -92,7 +92,7 @@ module Numeric.Backprop.Tuple (
   , T(..)
   -- ** Conversions
   -- $tiso
-  , tTup, tupT
+  , tTup, tupT, tOnly, onlyT
   -- ** Lenses
   , tIx, tHead, tTail
   -- ** Utility
@@ -197,14 +197,34 @@ tupT3 (x, y, z) = T3 x y z
 -- | Uncons a 'T'
 --
 -- Forms an isomorphism with 'tupT'
+--
+-- @since 0.1.5.0
 tTup :: T (a ': as) -> (a, T as)
 tTup (x :& xs) = (x, xs)
 
 -- | Cons a 'T'
 --
 -- Forms an isomorphism with 'tTup'
+--
+-- @since 0.1.5.0
 tupT :: (a, T as) -> T (a ': as)
 tupT = uncurry (:&)
+
+-- | A singleton 'T'
+--
+-- Forms an isomorphism with 'tOnly'
+--
+-- @since 0.1.5.0
+onlyT :: a -> T '[a]
+onlyT = (:& TNil)
+
+-- | Extract a singleton 'T'
+--
+-- Forms an isomorphism with 'onlyT'
+--
+-- @since 0.1.5.0
+tOnly :: T '[a] -> a
+tOnly (x :& _) = x
 
 -- | Uncurry a function to take in a 'T2' of its arguments
 --
@@ -531,4 +551,8 @@ instance (Known Length as, ListC (Semigroup <$> as), ListC (Monoid <$> as)) => M
 --
 -- @
 -- 'iso' 'tupT' 'tTup' :: 'Iso'' (a, T as) (T (a ': as))
+-- @
+--
+-- @
+-- 'iso' 'onlyT' 'tOnly' :: 'Iso'' a (T '[a])
 -- @
