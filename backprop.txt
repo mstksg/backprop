@@ -1337,6 +1337,16 @@ tHead :: Lens (T (a : as)) (T (b : as)) a b
 -- | Lens into the tail of a <a>T</a>
 tTail :: Lens (T (a : as)) (T (a : bs)) (T as) (T bs)
 
+-- | Lens into the initial portion of a <a>T</a>. For splits known at
+--   compile-time, you can use <a>known</a> to derive the <a>Length</a>
+--   automatically.
+tTake :: forall as bs cs. Length as -> Lens (T (as ++ bs)) (T (cs ++ bs)) (T as) (T cs)
+
+-- | Lens into the ending portion of a <a>T</a>. For splits known at
+--   compile-time, you can use <a>known</a> to derive the <a>Length</a>
+--   automatically.
+tDrop :: forall as bs cs. Length as -> Lens (T (as ++ bs)) (T (as ++ cs)) (T bs) (T cs)
+
 -- | Initialize a <a>T</a> with a Rank-N value. Mostly used internally, but
 --   provided in case useful.
 --   
