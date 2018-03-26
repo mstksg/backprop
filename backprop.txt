@@ -1316,6 +1316,18 @@ tOnly :: T '[a] -> a
 --   Forms an isomorphism with <a>tOnly</a>
 onlyT :: a -> T '[a]
 
+-- | Split a <a>T</a>. For splits known at compile-time, you can use
+--   <a>known</a> to derive the <a>Length</a> automatically.
+--   
+--   Forms an isomorphism with <a>tAppend</a>.
+tSplit :: Length as -> T (as ++ bs) -> (T as, T bs)
+
+-- | Append two <a>T</a>s.
+--   
+--   Forms an isomorphism with <a>tSplit</a>.
+tAppend :: T as -> T bs -> T (as ++ bs)
+infixr 5 `tAppend`
+
 -- | Lens into a given index of a <a>T</a>.
 tIx :: forall as a. Index as a -> Lens' (T as) a
 
