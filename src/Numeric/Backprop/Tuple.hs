@@ -16,6 +16,7 @@
 {-# LANGUAGE TypeInType            #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 -- |
 -- Module      : Numeric.Backprop.Tuple
@@ -94,7 +95,7 @@ module Numeric.Backprop.Tuple (
   -- $tiso
   , tTup, tupT, tOnly, onlyT, tSplit, tAppend
   -- ** Lenses
-  , tIx, tHead, tTail
+  , tIx, tHead, tTail, tTake, tDrop
   -- ** Utility
   , constT, mapT, zipT
   ) where
@@ -328,6 +329,16 @@ infixr 5 `tAppend`
 tSplit :: Length as -> T (as ++ bs) -> (T as, T bs)
 tSplit LZ     xs        = (TNil, xs)
 tSplit (LS l) (x :& xs) = first (x :&) . tSplit l $ xs
+
+-- | Lens into the initial portion of a 'T'.  For splits known at
+-- compile-time, you can use 'known' to derive the 'Length' automatically.
+tTake :: forall as bs cs. Length as -> Lens (T (as ++ bs)) (T (cs ++ bs)) (T as) (T cs)
+tTake l f (tSplit l->(xs,ys)) = flip (tAppend @cs @bs) ys <$> f xs
+
+-- | Lens into the ending portion of a 'T'.  For splits known at
+-- compile-time, you can use 'known' to derive the 'Length' automatically.
+tDrop :: forall as bs cs. Length as -> Lens (T (as ++ bs)) (T (as ++ cs)) (T bs) (T cs)
+tDrop l f (tSplit l->(xs,ys)) = tAppend xs <$> f ys
 
 instance Num T0 where
     _ + _         = T0
