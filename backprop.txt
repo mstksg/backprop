@@ -1306,6 +1306,16 @@ tTup :: T (a : as) -> (a, T as)
 --   Forms an isomorphism with <a>tTup</a>
 tupT :: (a, T as) -> T (a : as)
 
+-- | Extract a singleton <a>T</a>
+--   
+--   Forms an isomorphism with <a>onlyT</a>
+tOnly :: T '[a] -> a
+
+-- | A singleton <a>T</a>
+--   
+--   Forms an isomorphism with <a>tOnly</a>
+onlyT :: a -> T '[a]
+
 -- | Lens into a given index of a <a>T</a>.
 tIx :: forall as a. Index as a -> Lens' (T as) a
 
