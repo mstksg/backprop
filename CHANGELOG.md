@@ -10,6 +10,7 @@ Version 0.1.5.0
 
 *   `T` added to *Numeric.Backprop.Tuple*: basically an `HList` with a `Num`
     instance.
+*   `Eq` and `Ord` instances for `BVar`.  Is this sound?
 
 *Internal*
 

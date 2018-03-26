@@ -42,6 +42,7 @@ import           Control.Monad.ST
 import           Control.Monad.Trans.State
 import           Data.Bifunctor
 import           Data.Foldable
+import           Data.Function
 import           Data.IORef
 import           Data.Kind
 import           Data.Maybe
@@ -665,6 +666,23 @@ instance (Floating a, Reifies s W) => Floating (BVar s a) where
     {-# INLINE acosh #-}
     atanh   = liftOp1 atanhOp
     {-# INLINE atanh #-}
+
+-- | Compares the values inside the 'BVar'.
+--
+-- @since 0.1.5.0
+instance Eq a => Eq (BVar s a) where
+    (==) = (==) `on` _bvVal
+    (/=) = (/=) `on` _bvVal
+
+-- | Compares the values inside the 'BVar'.
+--
+-- @since 0.1.5.0
+instance Ord a => Ord (BVar s a) where
+    compare = compare `on` _bvVal
+    (<)     = (<)     `on` _bvVal
+    (<=)    = (<=)    `on` _bvVal
+    (>)     = (>)     `on` _bvVal
+    (>=)    = (>=)    `on` _bvVal
 
 -- Some utility functions to get around a lens dependency
 itraverse
