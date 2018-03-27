@@ -1296,16 +1296,6 @@ data T :: [Type] -> Type
 [TNil] :: T '[]
 [:&] :: !a -> !(T as) -> T (a : as)
 
--- | Uncons a <a>T</a>
---   
---   Forms an isomorphism with <a>tupT</a>
-tTup :: T (a : as) -> (a, T as)
-
--- | Cons a <a>T</a>
---   
---   Forms an isomorphism with <a>tTup</a>
-tupT :: (a, T as) -> T (a : as)
-
 -- | Extract a singleton <a>T</a>
 --   
 --   Forms an isomorphism with <a>onlyT</a>
@@ -1327,6 +1317,16 @@ tSplit :: Length as -> T (as ++ bs) -> (T as, T bs)
 --   Forms an isomorphism with <a>tSplit</a>.
 tAppend :: T as -> T bs -> T (as ++ bs)
 infixr 5 `tAppend`
+
+-- | Convert a <a>T</a> to a <a>Tuple</a>.
+--   
+--   Forms an isomorphism with <a>prodT</a>.
+tProd :: T as -> Tuple as
+
+-- | Convert a <a>Tuple</a> to a <a>T</a>.
+--   
+--   Forms an isomorphism with <a>tProd</a>.
+prodT :: Tuple as -> T as
 
 -- | Lens into a given index of a <a>T</a>.
 tIx :: forall as a. Index as a -> Lens' (T as) a
