@@ -93,7 +93,7 @@ module Numeric.Backprop.Tuple (
   , T(..)
   -- ** Conversions
   -- $tiso
-  , tTup, tupT, tOnly, onlyT, tSplit, tAppend, tProd, prodT
+  , tOnly, onlyT, tSplit, tAppend, tProd, prodT
   -- ** Lenses
   , tIx, tHead, tTail, tTake, tDrop
   -- ** Utility
@@ -196,22 +196,6 @@ t3Tup (T3 x y z) = (x, y, z)
 -- Forms an isomorphism with 't3Tup'.
 tupT3 :: (a, b, c) -> T3 a b c
 tupT3 (x, y, z) = T3 x y z
-
--- | Uncons a 'T'
---
--- Forms an isomorphism with 'tupT'
---
--- @since 0.1.5.0
-tTup :: T (a ': as) -> (a, T as)
-tTup (x :& xs) = (x, xs)
-
--- | Cons a 'T'
---
--- Forms an isomorphism with 'tTup'
---
--- @since 0.1.5.0
-tupT :: (a, T as) -> T (a ': as)
-tupT = uncurry (:&)
 
 -- | A singleton 'T'
 --
@@ -596,10 +580,6 @@ instance (Known Length as, ListC (Semigroup <$> as), ListC (Monoid <$> as)) => M
 --
 -- If using /lens/, the two conversion functions can be chained with prisms
 -- and traversals and other optics using:
---
--- @
--- 'iso' 'tupT' 'tTup' :: 'Iso'' (a, T as) (T (a ': as))
--- @
 --
 -- @
 -- 'iso' 'onlyT' 'tOnly' :: 'Iso'' a (T '[a])
