@@ -93,7 +93,7 @@ module Numeric.Backprop.Tuple (
   , T(..)
   -- ** Conversions
   -- $tiso
-  , tTup, tupT, tOnly, onlyT, tSplit, tAppend
+  , tTup, tupT, tOnly, onlyT, tSplit, tAppend, tProd, prodT
   -- ** Lenses
   , tIx, tHead, tTail, tTake, tDrop
   -- ** Utility
@@ -104,8 +104,10 @@ import           Control.DeepSeq
 import           Data.Bifunctor
 import           Data.Data
 import           Data.Kind
+import           Data.Type.Combinator
 import           Data.Type.Index
 import           Data.Type.Length
+import           Data.Type.Product
 import           GHC.Generics               (Generic)
 import           Lens.Micro
 import           Lens.Micro.Internal hiding (Index)
@@ -339,6 +341,21 @@ tTake l f (tSplit l->(xs,ys)) = flip (tAppend @cs @bs) ys <$> f xs
 -- compile-time, you can use 'known' to derive the 'Length' automatically.
 tDrop :: forall as bs cs. Length as -> Lens (T (as ++ bs)) (T (as ++ cs)) (T bs) (T cs)
 tDrop l f (tSplit l->(xs,ys)) = tAppend xs <$> f ys
+
+-- | Convert a 'T' to a 'Tuple'.
+--
+-- Forms an isomorphism with 'prodT'.
+tProd :: T as -> Tuple as
+tProd TNil      = Ø
+tProd (x :& xs) = x ::< tProd xs
+
+-- | Convert a 'Tuple' to a 'T'.
+--
+-- Forms an isomorphism with 'tProd'.
+prodT :: Tuple as -> T as
+prodT Ø           = TNil
+prodT (I x :< xs) = x :& prodT xs
+
 
 instance Num T0 where
     _ + _         = T0
