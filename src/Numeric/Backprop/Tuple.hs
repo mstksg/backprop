@@ -91,12 +91,13 @@ module Numeric.Backprop.Tuple (
   , uncurryT3, curryT3
   -- * N-Tuples
   , T(..)
+  , indexT
   -- ** Conversions
   -- $tiso
   , tOnly, onlyT, tSplit, tAppend, tProd, prodT
   -- ** Lenses
   , tIx, tHead, tTail, tTake, tDrop
-  -- ** Utility
+  -- ** Internal Utility
   , constT, mapT, zipT
   ) where
 
@@ -146,10 +147,14 @@ data T2 a b   = T2 !a !b
 data T3 a b c = T3 !a !b !c
   deriving (Show, Read, Eq, Ord, Generic, Functor, Data)
 
--- | Strict N-tuple with a 'Num', 'Fractional', and 'Floating' instances.
+-- | Strict inductive N-tuple with a 'Num', 'Fractional', and 'Floating'
+-- instances.
 --
 -- It is basically "yet another HList", like the one found in
 -- "Data.Type.Product" and many other locations on the haskell ecosystem.
+-- Because it's inductively defined, it has O(n) random indexing, but is
+-- efficient for zipping and mapping and other sequential consumption
+-- patterns.
 --
 -- It is provided because of its 'Num' instance, making it useful for
 -- /backproup/.  Will be obsolete when 'Data.Type.Product.Product' gets
@@ -252,6 +257,15 @@ instance Field2 (T3 a b c) (T3 a b' c) b b' where
 instance Field3 (T3 a b c) (T3 a b c') c c' where
     _3 = t3_3
 
+instance Field1 (T (a ': as)) (T (a ': as)) a a where
+    _1 = tIx IZ
+
+instance Field2 (T (a ': b ': as)) (T (a ': b ': as)) b b where
+    _2 = tIx (IS IZ)
+
+instance Field3 (T (a ': b ': c ': as)) (T (a ': b ': c ': as)) c c where
+    _3 = tIx (IS (IS IZ))
+
 -- | Lens into the first field of a 'T2'.  Also exported as '_1' from
 -- "Lens.Micro".
 t2_1 :: Lens (T2 a b) (T2 a' b) a a'
@@ -277,10 +291,18 @@ t3_2 f (T3 x y z) = (\y' -> T3 x y' z) <$> f y
 t3_3 :: Lens (T3 a b c) (T3 a b c') c c'
 t3_3 f (T3 x y z) = T3 x y <$> f z
 
+-- | Index into a 'T'.
+--
+-- /O(i)/
+--
+-- @since 0.1.5.0
+indexT :: Index as a -> T as -> a
+indexT = flip (^.) . tIx
+
 -- | Lens into a given index of a 'T'.
 --
 -- @since 0.1.5.0
-tIx :: forall as a. Index as a -> Lens' (T as) a
+tIx :: Index as a -> Lens' (T as) a
 tIx IZ     f (x :& xs) = (:& xs) <$> f x
 tIx (IS i) f (x :& xs) = (x :&)  <$> tIx i f xs
 
@@ -318,17 +340,23 @@ tSplit (LS l) (x :& xs) = first (x :&) . tSplit l $ xs
 
 -- | Lens into the initial portion of a 'T'.  For splits known at
 -- compile-time, you can use 'known' to derive the 'Length' automatically.
+--
+-- @since 0.1.5.0
 tTake :: forall as bs cs. Length as -> Lens (T (as ++ bs)) (T (cs ++ bs)) (T as) (T cs)
 tTake l f (tSplit l->(xs,ys)) = flip (tAppend @cs @bs) ys <$> f xs
 
 -- | Lens into the ending portion of a 'T'.  For splits known at
 -- compile-time, you can use 'known' to derive the 'Length' automatically.
+--
+-- @since 0.1.5.0
 tDrop :: forall as bs cs. Length as -> Lens (T (as ++ bs)) (T (as ++ cs)) (T bs) (T cs)
 tDrop l f (tSplit l->(xs,ys)) = tAppend xs <$> f ys
 
 -- | Convert a 'T' to a 'Tuple'.
 --
 -- Forms an isomorphism with 'prodT'.
+--
+-- @since 0.1.5.0
 tProd :: T as -> Tuple as
 tProd TNil      = Ø
 tProd (x :& xs) = x ::< tProd xs
@@ -336,6 +364,8 @@ tProd (x :& xs) = x ::< tProd xs
 -- | Convert a 'Tuple' to a 'T'.
 --
 -- Forms an isomorphism with 'tProd'.
+--
+-- @since 0.1.5.0
 prodT :: Tuple as -> T as
 prodT Ø           = TNil
 prodT (I x :< xs) = x :& prodT xs
