@@ -1215,8 +1215,11 @@ module Numeric.Backprop.Tuple
 --   Be aware that the methods in its numerical instances are all
 --   non-strict:
 --   
---   @<tt> _ + _ = <a>T0</a> <a>negate</a> _ = <a>T0</a>
---   <a>fromIntegral</a> _ = <a>T0</a> </tt>@
+--   <pre>
+--   _ + _ = <a>T0</a>
+--   <a>negate</a> _ = <a>T0</a>
+--   <a>fromIntegral</a> _ = <a>T0</a>
+--   </pre>
 data T0
 T0 :: T0
 
@@ -1394,6 +1397,9 @@ instance GHC.Classes.Ord Numeric.Backprop.Tuple.T0
 instance GHC.Classes.Eq Numeric.Backprop.Tuple.T0
 instance GHC.Read.Read Numeric.Backprop.Tuple.T0
 instance GHC.Show.Show Numeric.Backprop.Tuple.T0
+instance Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint GHC.Show.Show as) => GHC.Show.Show (Numeric.Backprop.Tuple.T as)
+instance Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint GHC.Classes.Eq as) => GHC.Classes.Eq (Numeric.Backprop.Tuple.T as)
+instance (Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint GHC.Classes.Eq as), Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint GHC.Classes.Ord as)) => GHC.Classes.Ord (Numeric.Backprop.Tuple.T as)
 instance Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint Control.DeepSeq.NFData as) => Control.DeepSeq.NFData (Numeric.Backprop.Tuple.T as)
 instance Lens.Micro.Internal.Field1 (Numeric.Backprop.Tuple.T ((':) * a as)) (Numeric.Backprop.Tuple.T ((':) * a as)) a a
 instance Lens.Micro.Internal.Field2 (Numeric.Backprop.Tuple.T ((':) * a ((':) * b as))) (Numeric.Backprop.Tuple.T ((':) * a ((':) * b as))) b b
