@@ -3,6 +3,7 @@
 {-# LANGUAGE CPP                   #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE DeriveFunctor         #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -12,6 +13,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE StandaloneDeriving    #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeInType            #-}
 {-# LANGUAGE TypeOperators         #-}
@@ -123,15 +125,15 @@ import           Data.Semigroup
 --
 -- Be aware that the methods in its numerical instances are all non-strict:
 --
--- @@
+-- @
 -- _ + _ = 'T0'
 -- 'negate' _ = 'T0'
 -- 'fromIntegral' _ = 'T0'
--- @@
+-- @
 --
 -- @since 0.1.4.0
 data T0 = T0
-  deriving (Show, Read, Eq, Ord, Generic, Data)
+  deriving (Show, Read, Eq, Ord, Generic, Data, Typeable)
 
 instance NFData T0
 
@@ -139,13 +141,13 @@ instance NFData T0
 --
 -- @since 0.1.1.0
 data T2 a b   = T2 !a !b
-  deriving (Show, Read, Eq, Ord, Generic, Functor, Data)
+  deriving (Show, Read, Eq, Ord, Generic, Functor, Data, Typeable)
 
 -- | Strict 3-tuple with a 'Num', 'Fractional', and 'Floating' instances.
 --
 -- @since 0.1.1.0
 data T3 a b c = T3 !a !b !c
-  deriving (Show, Read, Eq, Ord, Generic, Functor, Data)
+  deriving (Show, Read, Eq, Ord, Generic, Functor, Data, Typeable)
 
 -- | Strict inductive N-tuple with a 'Num', 'Fractional', and 'Floating'
 -- instances.
@@ -165,12 +167,17 @@ data T :: [Type] -> Type where
     TNil :: T '[]
     (:&) :: !a -> !(T as) -> T (a ': as)
 
+deriving instance ListC (Show <$> as) => Show (T as)
+deriving instance ListC (Eq <$> as) => Eq (T as)
+deriving instance (ListC (Eq <$> as), ListC (Ord <$> as)) => Ord (T as)
+deriving instance Typeable (T as)
+
 instance (NFData a, NFData b) => NFData (T2 a b)
 instance (NFData a, NFData b, NFData c) => NFData (T3 a b c)
 instance ListC (NFData <$> as) => NFData (T as) where
     rnf = \case
-      TNil       -> ()
-      (!_) :& xs -> rnf xs
+      TNil    -> ()
+      x :& xs -> rnf x `seq` rnf xs
 
 instance Bifunctor T2 where
     bimap f g (T2 x y) = T2 (f x) (g y)

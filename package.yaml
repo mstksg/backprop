@@ -58,7 +58,6 @@ library:
   - primitive
   - reflection
   - type-combinators
-  # - profunctors
 
 benchmarks:
   backprop-mnist-bench:

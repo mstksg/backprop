@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns        #-}
+{-# LANGUAGE DeriveDataTypeable  #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE GADTs               #-}
@@ -53,6 +54,7 @@ import           Data.Type.Index
 import           Data.Type.Product hiding  (toList)
 import           Data.Type.Util
 import           Data.Type.Vector hiding   (itraverse)
+import           Data.Typeable
 import           GHC.Exts                  (Any)
 import           GHC.Generics
 import           Lens.Micro
@@ -106,6 +108,7 @@ import qualified Data.Vector.Mutable       as MV
 data BVar s a = BV { _bvRef :: !(BRef s)
                    , _bvVal :: !a
                    }
+  deriving Typeable
 
 data BRef (s :: Type) = BRInp !Int
                       | BRIx !Int

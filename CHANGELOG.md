@@ -1,6 +1,21 @@
 Changelog
 =========
 
+Version 0.1.5.1
+---------------
+
+*Unreleased*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.1.5.1>
+
+*   Fixed `NFData` instance for `T`; before, was shallow.
+*   Added `Typeable` instances for all tuple types, and for `BVar`.
+*   Added `Eq`, `Ord`, `Show`, etc. instances for `T`.
+
+*Internal*
+
+*   Refactored `Monoid` instances in *Numeric.Backprop.Tuple*
+
 Version 0.1.5.0
 ---------------
 
