@@ -1,8 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE BangPatterns          #-}
 {-# LANGUAGE CPP                   #-}
 {-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE DeriveFunctor         #-}
 {-# LANGUAGE DeriveGeneric         #-}
@@ -134,7 +132,7 @@ import           Data.Semigroup
 --
 -- @since 0.1.4.0
 data T0 = T0
-  deriving (Show, Read, Eq, Ord, Generic, Data, Typeable)
+  deriving (Show, Read, Eq, Ord, Generic, Data)
 
 -- | Strict 2-tuple with 'Num', 'Fractional', and 'Floating' instances.
 --
@@ -166,10 +164,21 @@ data T :: [Type] -> Type where
     TNil :: T '[]
     (:&) :: !a -> !(T as) -> T (a ': as)
 
+-- | @since 0.1.5.1
 deriving instance ListC (Show <$> as) => Show (T as)
+-- | @since 0.1.5.1
 deriving instance ListC (Eq <$> as) => Eq (T as)
+-- | @since 0.1.5.1
 deriving instance (ListC (Eq <$> as), ListC (Ord <$> as)) => Ord (T as)
+-- | @since 0.1.5.1
 deriving instance Typeable (T as)
+
+-- | @since 0.1.5.1
+deriving instance Typeable T0
+-- | @since 0.1.5.1
+deriving instance Typeable (T2 a b)
+-- | @since 0.1.5.1
+deriving instance Typeable (T3 a b c)
 
 instance NFData T0
 instance (NFData a, NFData b) => NFData (T2 a b)
@@ -180,8 +189,12 @@ instance ListC (NFData <$> as) => NFData (T as) where
       x :& xs -> rnf x `seq` rnf xs
 
 -- TODO: optimize
+
+-- | @since 0.1.5.1
 instance Bi.Binary T0
+-- | @since 0.1.5.1
 instance (Bi.Binary a, Bi.Binary b) => Bi.Binary (T2 a b)
+-- | @since 0.1.5.1
 instance (Bi.Binary a, Bi.Binary b, Bi.Binary c) => Bi.Binary (T3 a b c)
 
 instance Bifunctor T2 where
@@ -600,6 +613,7 @@ instance (Known Length as, ListC (Semigroup <$> as), ListC (Monoid <$> as)) => M
     mempty  = constT @Monoid mempty known
     mappend = (<>)
 
+-- | @since 0.1.5.1
 instance (Known Length as, ListC (Bi.Binary <$> as)) => Bi.Binary (T as) where
     put = \case
       TNil -> pure ()

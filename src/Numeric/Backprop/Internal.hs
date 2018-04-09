@@ -6,6 +6,7 @@
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving  #-}
 {-# LANGUAGE TupleSections       #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeInType          #-}
@@ -108,7 +109,9 @@ import qualified Data.Vector.Mutable       as MV
 data BVar s a = BV { _bvRef :: !(BRef s)
                    , _bvVal :: !a
                    }
-  deriving Typeable
+
+-- | @since 0.1.5.1
+deriving instance Typeable (BVar s a)
 
 data BRef (s :: Type) = BRInp !Int
                       | BRIx !Int

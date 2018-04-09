@@ -13,10 +13,6 @@ Version 0.1.5.1
 *   Added `Eq`, `Ord`, `Show`, etc. instances for `T`.
 *   Added `Binary` instances for all tuple types
 
-*Internal*
-
-*   Refactored `Monoid` instances in *Numeric.Backprop.Tuple*
-
 Version 0.1.5.0
 ---------------
 
