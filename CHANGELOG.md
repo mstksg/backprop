@@ -11,6 +11,7 @@ Version 0.1.5.1
 *   Fixed `NFData` instance for `T`; before, was shallow.
 *   Added `Typeable` instances for all tuple types, and for `BVar`.
 *   Added `Eq`, `Ord`, `Show`, etc. instances for `T`.
+*   Added `Binary` instances for all tuple types
 
 *Internal*
 

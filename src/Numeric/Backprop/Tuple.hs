@@ -116,6 +116,7 @@ import           Lens.Micro
 import           Lens.Micro.Internal hiding (Index)
 import           Type.Class.Known
 import           Type.Family.List
+import qualified Data.Binary                as Bi
 
 #if !MIN_VERSION_base(4,11,0)
 import           Data.Semigroup
@@ -134,8 +135,6 @@ import           Data.Semigroup
 -- @since 0.1.4.0
 data T0 = T0
   deriving (Show, Read, Eq, Ord, Generic, Data, Typeable)
-
-instance NFData T0
 
 -- | Strict 2-tuple with 'Num', 'Fractional', and 'Floating' instances.
 --
@@ -172,12 +171,18 @@ deriving instance ListC (Eq <$> as) => Eq (T as)
 deriving instance (ListC (Eq <$> as), ListC (Ord <$> as)) => Ord (T as)
 deriving instance Typeable (T as)
 
+instance NFData T0
 instance (NFData a, NFData b) => NFData (T2 a b)
 instance (NFData a, NFData b, NFData c) => NFData (T3 a b c)
 instance ListC (NFData <$> as) => NFData (T as) where
     rnf = \case
       TNil    -> ()
       x :& xs -> rnf x `seq` rnf xs
+
+-- TODO: optimize
+instance Bi.Binary T0
+instance (Bi.Binary a, Bi.Binary b) => Bi.Binary (T2 a b)
+instance (Bi.Binary a, Bi.Binary b, Bi.Binary c) => Bi.Binary (T3 a b c)
 
 instance Bifunctor T2 where
     bimap f g (T2 x y) = T2 (f x) (g y)
@@ -594,6 +599,22 @@ instance ListC (Semigroup <$> as) => Semigroup (T as) where
 instance (Known Length as, ListC (Semigroup <$> as), ListC (Monoid <$> as)) => Monoid (T as) where
     mempty  = constT @Monoid mempty known
     mappend = (<>)
+
+instance (Known Length as, ListC (Bi.Binary <$> as)) => Bi.Binary (T as) where
+    put = \case
+      TNil -> pure ()
+      x :& xs -> do
+        Bi.put x
+        Bi.put xs
+    get = getT known
+
+getT :: ListC (Bi.Binary <$> as) => Length as -> Bi.Get (T as)
+getT = \case
+    LZ   -> pure TNil
+    LS l -> do
+      x  <- Bi.get
+      xs <- getT l
+      pure (x :& xs)
 
 -- $t2iso
 --

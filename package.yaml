@@ -58,6 +58,7 @@ library:
   - primitive
   - reflection
   - type-combinators
+  - binary
 
 benchmarks:
   backprop-mnist-bench:
