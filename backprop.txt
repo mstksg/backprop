@@ -1409,7 +1409,9 @@ instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Type.Family
 instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint GHC.Num.Num as), Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint GHC.Real.Fractional as), Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint GHC.Float.Floating as)) => GHC.Float.Floating (Numeric.Backprop.Tuple.T as)
 instance Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint Data.Semigroup.Semigroup as) => Data.Semigroup.Semigroup (Numeric.Backprop.Tuple.T as)
 instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint Data.Semigroup.Semigroup as), Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint GHC.Base.Monoid as)) => GHC.Base.Monoid (Numeric.Backprop.Tuple.T as)
+instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint Data.Binary.Class.Binary as)) => Data.Binary.Class.Binary (Numeric.Backprop.Tuple.T as)
 instance (Control.DeepSeq.NFData a, Control.DeepSeq.NFData b, Control.DeepSeq.NFData c) => Control.DeepSeq.NFData (Numeric.Backprop.Tuple.T3 a b c)
+instance (Data.Binary.Class.Binary a, Data.Binary.Class.Binary b, Data.Binary.Class.Binary c) => Data.Binary.Class.Binary (Numeric.Backprop.Tuple.T3 a b c)
 instance Data.Bifunctor.Bifunctor (Numeric.Backprop.Tuple.T3 a)
 instance Lens.Micro.Internal.Field1 (Numeric.Backprop.Tuple.T3 a b c) (Numeric.Backprop.Tuple.T3 a' b c) a a'
 instance Lens.Micro.Internal.Field2 (Numeric.Backprop.Tuple.T3 a b c) (Numeric.Backprop.Tuple.T3 a b' c) b b'
@@ -1420,6 +1422,7 @@ instance (GHC.Float.Floating a, GHC.Float.Floating b, GHC.Float.Floating c) => G
 instance (Data.Semigroup.Semigroup a, Data.Semigroup.Semigroup b, Data.Semigroup.Semigroup c) => Data.Semigroup.Semigroup (Numeric.Backprop.Tuple.T3 a b c)
 instance (Data.Semigroup.Semigroup a, Data.Semigroup.Semigroup b, Data.Semigroup.Semigroup c, GHC.Base.Monoid a, GHC.Base.Monoid b, GHC.Base.Monoid c) => GHC.Base.Monoid (Numeric.Backprop.Tuple.T3 a b c)
 instance (Control.DeepSeq.NFData a, Control.DeepSeq.NFData b) => Control.DeepSeq.NFData (Numeric.Backprop.Tuple.T2 a b)
+instance (Data.Binary.Class.Binary a, Data.Binary.Class.Binary b) => Data.Binary.Class.Binary (Numeric.Backprop.Tuple.T2 a b)
 instance Data.Bifunctor.Bifunctor Numeric.Backprop.Tuple.T2
 instance Lens.Micro.Internal.Field1 (Numeric.Backprop.Tuple.T2 a b) (Numeric.Backprop.Tuple.T2 a' b) a a'
 instance Lens.Micro.Internal.Field2 (Numeric.Backprop.Tuple.T2 a b) (Numeric.Backprop.Tuple.T2 a b') b b'
@@ -1429,6 +1432,7 @@ instance (GHC.Float.Floating a, GHC.Float.Floating b) => GHC.Float.Floating (Num
 instance (Data.Semigroup.Semigroup a, Data.Semigroup.Semigroup b) => Data.Semigroup.Semigroup (Numeric.Backprop.Tuple.T2 a b)
 instance (Data.Semigroup.Semigroup a, Data.Semigroup.Semigroup b, GHC.Base.Monoid a, GHC.Base.Monoid b) => GHC.Base.Monoid (Numeric.Backprop.Tuple.T2 a b)
 instance Control.DeepSeq.NFData Numeric.Backprop.Tuple.T0
+instance Data.Binary.Class.Binary Numeric.Backprop.Tuple.T0
 instance GHC.Num.Num Numeric.Backprop.Tuple.T0
 instance GHC.Real.Fractional Numeric.Backprop.Tuple.T0
 instance GHC.Float.Floating Numeric.Backprop.Tuple.T0
