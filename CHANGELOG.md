@@ -4,14 +4,17 @@ Changelog
 Version 0.1.5.1
 ---------------
 
-*Unreleased*
+*Apr 8, 2018*
 
 <https://github.com/mstksg/backprop/releases/tag/v0.1.5.1>
 
 *   Fixed `NFData` instance for `T`; before, was shallow.
 *   Added `Typeable` instances for all tuple types, and for `BVar`.
 *   Added `Eq`, `Ord`, `Show`, etc. instances for `T`.
-*   Added `Binary` instances for all tuple types
+*   Added `Binary` instances for all tuple types.  Note that this does incur a
+    *binary* dependency only because of the tuple types; however, this will
+    hopefully be not too much of an issue because *binary* is a GHC library
+    anyway.
 
 Version 0.1.5.0
 ---------------
