@@ -1,16 +1,19 @@
-{-# LANGUAGE BangPatterns        #-}
-{-# LANGUAGE DeriveDataTypeable  #-}
-{-# LANGUAGE DeriveGeneric       #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving  #-}
-{-# LANGUAGE TupleSections       #-}
-{-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeInType          #-}
-{-# LANGUAGE ViewPatterns        #-}
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE TupleSections         #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeInType            #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 -- |
 -- Module      : Numeric.Backprop.Internal
@@ -53,6 +56,7 @@ import           Data.Maybe
 import           Data.Monoid hiding        (Any(..))
 import           Data.Proxy
 import           Data.Reflection
+import           Data.Type.Combinator
 import           Data.Type.Index
 import           Data.Type.Product hiding  (toList)
 import           Data.Type.Util
@@ -497,6 +501,52 @@ coerceVar v@(BV r x) = forceBVar v `seq` BV r (coerce x)
 data Runner s = R { _rDelta  :: !(MV.MVector s Any)
                   , _rInputs :: !(MV.MVector s Any)
                   }
+
+-- gsplitVar
+--     :: Reifies s W
+--     => BVar s (f I)
+--     -> f (BVar s)
+-- gsplitVar = undefined
+
+class GSplitVar s f g where
+    gsplitVar_ :: BVar s (f p) -> IO (g p)
+
+instance GSplitVar s (K1 i a) (K1 i (BVar s a)) where
+    gsplitVar_ v@(BV r (K1 x)) = forceBVar v `seq` pure (K1 (BV r x))
+
+instance (Reifies s W, GSplitVar s f1 g1, GSplitVar s f2 g2) => GSplitVar s (f1 :*: f2) (g1 :*: g2) where
+    gsplitVar_ v@(BV r (x :*: y)) = forceBVar v `seq` do
+        vx <- gsplitVar_ @s =<< insertNode tnx x (reflect (Proxy @s))
+        vy <- gsplitVar_ @s =<< insertNode tny y (reflect (Proxy @s))
+        pure $ vx :*: vy
+      where
+        tnx = TN { _tnInputs = IR v p1 _ :< Ø
+                 , _tnGrad   = only_
+                 }
+        tny = TN { _tnInputs = IR v p2 _ :< Ø
+                 , _tnGrad   = only_
+                 }
+        p1 :: Lens' ((f :*: g) a) (f a)
+        p1 f (a :*: b) = (:*: b) <$> f a
+        p2 :: Lens' ((f :*: g) a) (g a)
+        p2 f (a :*: b) = (a :*:) <$> f b
+
+-- viewVar_ l v = forceBVar v `seq` insertNode tn y (reflect (Proxy @s))
+--   where
+--     y = _bvVal v ^. l
+--     tn = TN { _tnInputs = IR v l (+) :< Ø
+--             , _tnGrad   = only_
+--             }
+
+-- gsplitK1
+--     :: Reifies s W
+--     => BVar s (K1 i a p)
+--     -> K1 i (BVar s a) p
+-- gsplitK1 v@(BV r (K1 x)) = forceBVar v `seq` K1 (BV r x)
+
+-- gsplitProd
+--     :: BVar s ()
+
 
 initRunner
     :: (PrimMonad m, PrimState m ~ s)
