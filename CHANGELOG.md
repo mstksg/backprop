@@ -1,10 +1,19 @@
 Changelog
 =========
 
+Version 0.1.6.0
+---------------
+
+*Unreleased*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.1.6.0>
+
+*   Added `coerceVar` to *Numeric.Backprop*
+
 Version 0.1.5.1
 ---------------
 
-*Apr 8, 2018*
+*Apr 9, 2018*
 
 <https://github.com/mstksg/backprop/releases/tag/v0.1.5.1>
 

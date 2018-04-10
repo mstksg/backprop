@@ -31,6 +31,7 @@ module Numeric.Backprop.Internal (
   , constVar
   , liftOp, liftOp1, liftOp2, liftOp3
   , viewVar, setVar, sequenceVar, collectVar, previewVar, toListOfVar
+  , coerceVar
   -- * Debug
   , debugSTN
   , debugIR
@@ -43,6 +44,7 @@ import           Control.Monad.Primitive
 import           Control.Monad.ST
 import           Control.Monad.Trans.State
 import           Data.Bifunctor
+import           Data.Coerce
 import           Data.Foldable
 import           Data.Function
 import           Data.IORef
@@ -483,6 +485,15 @@ toListOfVar
 toListOfVar t !v = unsafePerformIO $ traverseVar' (toListOf t) t v
 {-# INLINE toListOfVar #-}
 
+-- | Coerce a 'BVar' contents.  Useful for things like newtype wrappers.
+--
+-- @since 0.1.6.0
+coerceVar
+    :: Coercible a b
+    => BVar s a
+    -> BVar s b
+coerceVar v@(BV r x) = forceBVar v `seq` BV r (coerce x)
+
 data Runner s = R { _rDelta  :: !(MV.MVector s Any)
                   , _rInputs :: !(MV.MVector s Any)
                   }
@@ -716,3 +727,4 @@ ixt t i f xs = stuff <$> ixi i f contents
         go []     = error "asList"
         go (y:ys) = (y, ys)
 {-# INLINE ixt #-}
+

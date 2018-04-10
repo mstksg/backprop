@@ -56,7 +56,7 @@ module Numeric.Backprop (
   , backprop2, evalBP2, gradBP2
   , backpropN, evalBPN, gradBPN, Every
     -- * Manipulating 'BVar'
-  , constVar
+  , constVar, coerceVar
   , (^^.), (.~~), (^^?), (^^..)
   , viewVar, setVar
   , sequenceVar, collectVar
