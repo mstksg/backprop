@@ -12,6 +12,7 @@
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeInType            #-}
 {-# LANGUAGE TypeOperators         #-}
@@ -102,6 +103,7 @@ module Numeric.Backprop.Tuple (
   ) where
 
 import           Control.DeepSeq
+import           Control.Monad.Trans.State
 import           Data.Bifunctor
 import           Data.Data
 import           Data.Kind
@@ -112,6 +114,7 @@ import           Data.Type.Product
 import           GHC.Generics               (Generic)
 import           Lens.Micro
 import           Lens.Micro.Internal hiding (Index)
+import           System.Random
 import           Type.Class.Known
 import           Type.Family.List
 import qualified Data.Binary                as Bi
@@ -188,7 +191,34 @@ instance ListC (NFData <$> as) => NFData (T as) where
       TNil    -> ()
       x :& xs -> rnf x `seq` rnf xs
 
--- TODO: optimize
+-- | @since 0.1.6.0
+instance Random T0 where
+    randomR  _   = (T0,)
+    random       = (T0,)
+    randomRs _ _ = repeat T0
+    randoms  _   = repeat T0
+    randomIO     = pure T0
+
+-- | @since 0.1.6.0
+instance (Random a, Random b) => Random (T2 a b) where
+    randomR (T2 lx ly, T2 ux uy) = runState $
+        T2 <$> state (randomR (lx, ux))
+           <*> state (randomR (ly, uy))
+    random = runState $
+        T2 <$> state random <*> state random
+
+-- | @since 0.1.6.0
+instance (Random a, Random b, Random c) => Random (T3 a b c) where
+    randomR (T3 lx ly lz, T3 ux uy uz) = runState $
+        T3 <$> state (randomR (lx, ux))
+           <*> state (randomR (ly, uy))
+           <*> state (randomR (lz, uz))
+    random = runState $
+        T3 <$> state random <*> state random <*> state random
+
+
+
+-- TODO: optimize?
 
 -- | @since 0.1.5.1
 instance Bi.Binary T0
@@ -629,6 +659,37 @@ getT = \case
       x  <- Bi.get
       xs <- getT l
       pure (x :& xs)
+
+-- | @since 0.1.6.0
+instance (Known Length as, ListC (Random <$> as)) => Random (T as) where
+    randomR (l, u) = runState (randomRT l u)
+    random         = runState (randomT known)
+
+randomRT
+    :: (ListC (Random <$> as), RandomGen g)
+    => T as
+    -> T as
+    -> State g (T as)
+randomRT = \case
+    TNil -> \case
+      TNil -> pure TNil
+    lx :& lxs -> \case
+      ux :& uxs -> (:&) <$> state (randomR (lx, ux)) <*> randomRT lxs uxs
+
+randomT
+    :: (ListC (Random <$> as), RandomGen g)
+    => Length as
+    -> State g (T as)
+randomT = \case
+    LZ   -> pure TNil
+    LS l -> (:&) <$> state random <*> randomT l
+
+    -- put = \case
+    --   TNil -> pure ()
+    --   x :& xs -> do
+    --     Bi.put x
+    --     Bi.put xs
+    -- get = getT known
 
 -- $t2iso
 --

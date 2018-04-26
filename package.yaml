@@ -54,15 +54,16 @@ library:
   - Numeric.Backprop.Internal
   - Data.Type.Util
   dependencies:
+  - binary
   - microlens
   - primitive
+  - random
   - reflection
   - type-combinators
-  - binary
 
 benchmarks:
   backprop-mnist-bench:
-    main: MNISTBench.hs
+    main: bench.hs
     source-dirs: bench
     ghc-options:
     - -threaded

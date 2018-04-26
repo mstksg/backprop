@@ -13,7 +13,6 @@ module Data.Type.Util (
   , zipWithPM_
   , vecToProd
   , vecLen
-  , prodToVec'
   , lengthProd
   , listToVecDef
   , fillProd
@@ -51,16 +50,6 @@ vecLen
 vecLen = \case
     ØV      -> Z_
     _ :* xs -> S_ (vecLen xs)
-
-prodToVec'
-    :: Nat n
-    -> Prod f (Replicate n a)
-    -> VecT n f a
-prodToVec' = \case
-    Z_   -> \case
-      Ø       -> ØV
-    S_ n -> \case
-      x :< xs -> x :* prodToVec' n xs
 
 zipWithPM_
     :: forall h f g as. Applicative h

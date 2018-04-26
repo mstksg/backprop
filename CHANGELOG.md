@@ -9,6 +9,10 @@ Version 0.1.6.0
 <https://github.com/mstksg/backprop/releases/tag/v0.1.6.0>
 
 *   Added `coerceVar` to *Numeric.Backprop*
+*   Added `Random` instaces for all tuple types.  Same as for `Binary`, this
+    does incur a *random* and *time* dependency only from the tuple types.
+    Again, because these packages are a part of GHC's boot libraries, this
+    is hopefully not too bad.
 
 Version 0.1.5.1
 ---------------
