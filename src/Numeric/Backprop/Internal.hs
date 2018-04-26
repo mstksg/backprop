@@ -487,7 +487,7 @@ toListOfVar t !v = unsafePerformIO $ traverseVar' (toListOf t) t v
 
 -- | Coerce a 'BVar' contents.  Useful for things like newtype wrappers.
 --
--- @since 0.1.6.0
+-- @since 0.1.5.2
 coerceVar
     :: Coercible a b
     => BVar s a

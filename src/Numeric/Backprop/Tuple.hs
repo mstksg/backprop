@@ -191,7 +191,7 @@ instance ListC (NFData <$> as) => NFData (T as) where
       TNil    -> ()
       x :& xs -> rnf x `seq` rnf xs
 
--- | @since 0.1.6.0
+-- | @since 0.1.5.2
 instance Random T0 where
     randomR  _   = (T0,)
     random       = (T0,)
@@ -199,7 +199,7 @@ instance Random T0 where
     randoms  _   = repeat T0
     randomIO     = pure T0
 
--- | @since 0.1.6.0
+-- | @since 0.1.5.2
 instance (Random a, Random b) => Random (T2 a b) where
     randomR (T2 lx ly, T2 ux uy) = runState $
         T2 <$> state (randomR (lx, ux))
@@ -207,7 +207,7 @@ instance (Random a, Random b) => Random (T2 a b) where
     random = runState $
         T2 <$> state random <*> state random
 
--- | @since 0.1.6.0
+-- | @since 0.1.5.2
 instance (Random a, Random b, Random c) => Random (T3 a b c) where
     randomR (T3 lx ly lz, T3 ux uy uz) = runState $
         T3 <$> state (randomR (lx, ux))
@@ -660,7 +660,7 @@ getT = \case
       xs <- getT l
       pure (x :& xs)
 
--- | @since 0.1.6.0
+-- | @since 0.1.5.2
 instance (Known Length as, ListC (Random <$> as)) => Random (T as) where
     randomR (l, u) = runState (randomRT l u)
     random         = runState (randomT known)
@@ -683,13 +683,6 @@ randomT
 randomT = \case
     LZ   -> pure TNil
     LS l -> (:&) <$> state random <*> randomT l
-
-    -- put = \case
-    --   TNil -> pure ()
-    --   x :& xs -> do
-    --     Bi.put x
-    --     Bi.put xs
-    -- get = getT known
 
 -- $t2iso
 --

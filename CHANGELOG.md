@@ -1,12 +1,12 @@
 Changelog
 =========
 
-Version 0.1.6.0
+Version 0.1.5.2
 ---------------
 
-*Unreleased*
+*Apr 26, 2018*
 
-<https://github.com/mstksg/backprop/releases/tag/v0.1.6.0>
+<https://github.com/mstksg/backprop/releases/tag/v0.1.5.2>
 
 *   Added `coerceVar` to *Numeric.Backprop*
 *   Added `Random` instaces for all tuple types.  Same as for `Binary`, this
