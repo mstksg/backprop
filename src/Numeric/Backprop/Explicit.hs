@@ -1,54 +1,9 @@
-{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE GADTs             #-}
 {-# LANGUAGE PatternSynonyms   #-}
 {-# LANGUAGE RankNTypes        #-}
 
--- |
--- Module      : Numeric.Backprop
--- Copyright   : (c) Justin Le 2018
--- License     : BSD3
---
--- Maintainer  : justin@jle.im
--- Stability   : experimental
--- Portability : non-portable
---
--- Automatic differentation and backpropagation.
---
--- Main idea: Write a function computing what you want, and the library
--- automatically provies the gradient of that function as well, for usage
--- with gradient descent and other training methods.
---
--- In more detail: instead of working directly with values to produce your
--- result, you work with 'BVar's containing those values.  Working with
--- these 'BVar's is made smooth with the usage of lenses and other
--- combinators, and libraries can offer operatons on 'BVar's instead of
--- those on normal types directly.
---
--- Then, you can use:
---
--- @
--- 'evalBP' :: (forall s. 'Reifies' s 'W'. 'BVar' s a -> BVar s b) -> (a -> b)
--- @
---
--- to turn a 'BVar' function into the function on actual values @a -> b@.
--- This has virtually zero overhead over writing the actual function
--- directly.
---
--- Then, there's:
---
--- @
--- 'gradBP' :: (forall s. 'Reifies' s 'W'. 'BVar' s a -> BVar s b) -> (a -> a)
--- @
---
--- to automatically get the /gradient/, as well, for a given input.
---
--- See the <https://github.com/mstksg/backprop README> for more information
--- and links to demonstrations and tutorials, or dive striaght in by
--- reading the docs for 'BVar'.
---
-
-module Numeric.Backprop (
+module Numeric.Backprop.Explicit (
     -- * Types
     BVar, W
     -- * Running
@@ -58,7 +13,7 @@ module Numeric.Backprop (
   , backpropN, evalBPN, gradBPN, Every
     -- * Manipulating 'BVar'
   , constVar, coerceVar
-  , (^^.), (.~~), (^^?), (^^..)
+  -- , (^^.), (.~~), (^^?), (^^..)
   , viewVar, setVar
   , sequenceVar, collectVar
   , previewVar, toListOfVar
@@ -94,21 +49,6 @@ import           Data.Type.Index
 import           Lens.Micro
 import           Numeric.Backprop.Internal
 import           Numeric.Backprop.Op
-
-class Zero a where
-    zero :: a -> a
-
-    default zero :: Num a => a -> a
-    zero _ = 0
-
-class Scale a where
-    scale :: a -> a -> a
-
-    default scale :: Num a => a -> a -> a
-    scale = (+)
-
-scaleFunc :: Scale a => ScaleFunc a
-scaleFunc = SF scale
 
 -- $liftops
 --
@@ -277,155 +217,155 @@ gradBP2
 gradBP2 f x = snd . backprop2 f x
 {-# INLINE gradBP2 #-}
 
--- | An infix version of 'viewVar', meant to evoke parallels to '^.' from
--- lens.
---
--- With normal values, you can extract something from that value with
--- a lens:
---
--- @
--- x '^.' myLens
--- @
---
--- would extract a piece of @x :: b@, specified by @myLens :: 'Lens'' b a@.
--- The result has type @a@.
---
--- @
--- xVar '^^.' myLens
--- @
---
--- would extract a piece out of @xVar :: 'BVar' s b@ (a 'BVar' holding a
--- @b@), specified by @myLens :: Lens' b a@.   The result has type @'BVar'
--- s a@ (a 'BVar' holding a @a@)
---
--- This is the main way to pull out values from 'BVar' of container types.
---
--- __WARNING__: Do not use with any lenses that operate "numerically" on
--- the contents (like 'multiplying').
---
-(^^.)
-    :: forall a b s. (Reifies s W, Num a)
-    => BVar s b
-    -> Lens' b a
-    -> BVar s a
-x ^^. l = viewVar l x
-infixl 8 ^^.
-{-# INLINE (^^.) #-}
+---- | An infix version of 'viewVar', meant to evoke parallels to '^.' from
+---- lens.
+----
+---- With normal values, you can extract something from that value with
+---- a lens:
+----
+---- @
+---- x '^.' myLens
+---- @
+----
+---- would extract a piece of @x :: b@, specified by @myLens :: 'Lens'' b a@.
+---- The result has type @a@.
+----
+---- @
+---- xVar '^^.' myLens
+---- @
+----
+---- would extract a piece out of @xVar :: 'BVar' s b@ (a 'BVar' holding a
+---- @b@), specified by @myLens :: Lens' b a@.   The result has type @'BVar'
+---- s a@ (a 'BVar' holding a @a@)
+----
+---- This is the main way to pull out values from 'BVar' of container types.
+----
+---- __WARNING__: Do not use with any lenses that operate "numerically" on
+---- the contents (like 'multiplying').
+----
+--(^^.)
+--    :: forall a b s. (Reifies s W, Num a)
+--    => BVar s b
+--    -> Lens' b a
+--    -> BVar s a
+--x ^^. l = viewVar l x
+--infixl 8 ^^.
+--{-# INLINE (^^.) #-}
 
--- | An infix version of 'setVar', meant to evoke parallels to '.~' from
--- lens.
---
--- With normal values, you can set something in a value with a lens:
--- a lens:
---
--- @
--- x '&' myLens '.~' 'y'
--- @
---
--- would "set" a part of @x :: b@, specified by @myLens :: 'Lens'' a b@, to
--- a new value @y :: a@.
---
--- @
--- xVar '&' myLens '.~~' yVar
--- @
---
--- would "set" a part of @xVar :: 'BVar' s b@ (a 'BVar' holding a @b@),
--- specified by @myLens :: 'Lens'' a b@, to a new value given by @yVar ::
--- 'BVar' s a@.  The result is a new (updated) value of type @'BVar' s b@.
---
--- This is the main way to set values inside 'BVar's of container types.
---
-(.~~)
-    :: forall a b s. (Reifies s W, Num a, Num b)
-    => Lens' b a
-    -> BVar s a
-    -> BVar s b
-    -> BVar s b
-l .~~ x = setVar l x
-infixl 8 .~~
-{-# INLINE (.~~) #-}
+---- | An infix version of 'setVar', meant to evoke parallels to '.~' from
+---- lens.
+----
+---- With normal values, you can set something in a value with a lens:
+---- a lens:
+----
+---- @
+---- x '&' myLens '.~' 'y'
+---- @
+----
+---- would "set" a part of @x :: b@, specified by @myLens :: 'Lens'' a b@, to
+---- a new value @y :: a@.
+----
+---- @
+---- xVar '&' myLens '.~~' yVar
+---- @
+----
+---- would "set" a part of @xVar :: 'BVar' s b@ (a 'BVar' holding a @b@),
+---- specified by @myLens :: 'Lens'' a b@, to a new value given by @yVar ::
+---- 'BVar' s a@.  The result is a new (updated) value of type @'BVar' s b@.
+----
+---- This is the main way to set values inside 'BVar's of container types.
+----
+--(.~~)
+--    :: forall a b s. (Reifies s W, Num a, Num b)
+--    => Lens' b a
+--    -> BVar s a
+--    -> BVar s b
+--    -> BVar s b
+--l .~~ x = setVar l x
+--infixl 8 .~~
+--{-# INLINE (.~~) #-}
 
--- | An infix version of 'previewVar', meant to evoke parallels to '^?'
--- from lens.
---
--- With normal values, you can (potentially) extract something from that
--- value with a lens:
---
--- @
--- x '^?' myPrism
--- @
---
--- would (potentially) extract a piece of @x :: b@, specified by
--- @myPrism :: 'Traversal'' b a@. The result has type @'Maybe' a@.
---
--- @
--- xVar '^^?' myPrism
--- @
---
--- would (potentially) extract a piece out of @xVar :: 'BVar' s b@ (a
--- 'BVar' holding a @b@), specified by @myPrism :: Prism' b a@.
--- The result has type @'Maybe' ('BVar' s a)@ ('Maybe' a 'BVar' holding
--- a @a@).
---
--- This is intended to be used with 'Prism''s (which hits at most one
--- target), but will actually work with /any/ 'Traversal''.  If the
--- traversal hits more than one target, the first one found will be
--- extracted.
---
--- This can be used to "pattern match" on 'BVar's, by using prisms on
--- constructors.
---
--- Note that many automatically-generated prisms by the /lens/ package use
--- tuples, which cannot normally be backpropagated (because they do not
--- have a 'Num' instance).
---
--- If you are writing an application or don't have to worry about orphan
--- instances, you can pull in the orphan instances from
--- <https://hackage.haskell.org/package/NumInstances NumInstances>.
--- Alternatively, you can chain those prisms with conversions to the
--- anonymous canonical strict tuple types in "Numeric.Backprop.Tuple",
--- which do have 'Num' instances.
---
--- @
--- myPrism                   :: 'Prism'' c (a, b)
--- myPrism . 'iso' 'tupT2' 't2Tup' :: 'Prism'' c ('T2' a b)
--- @
-(^^?)
-    :: forall b a s. (Num a, Reifies s W)
-    => BVar s b
-    -> Traversal' b a
-    -> Maybe (BVar s a)
-v ^^? t = previewVar t v
-{-# INLINE (^^?) #-}
+---- | An infix version of 'previewVar', meant to evoke parallels to '^?'
+---- from lens.
+----
+---- With normal values, you can (potentially) extract something from that
+---- value with a lens:
+----
+---- @
+---- x '^?' myPrism
+---- @
+----
+---- would (potentially) extract a piece of @x :: b@, specified by
+---- @myPrism :: 'Traversal'' b a@. The result has type @'Maybe' a@.
+----
+---- @
+---- xVar '^^?' myPrism
+---- @
+----
+---- would (potentially) extract a piece out of @xVar :: 'BVar' s b@ (a
+---- 'BVar' holding a @b@), specified by @myPrism :: Prism' b a@.
+---- The result has type @'Maybe' ('BVar' s a)@ ('Maybe' a 'BVar' holding
+---- a @a@).
+----
+---- This is intended to be used with 'Prism''s (which hits at most one
+---- target), but will actually work with /any/ 'Traversal''.  If the
+---- traversal hits more than one target, the first one found will be
+---- extracted.
+----
+---- This can be used to "pattern match" on 'BVar's, by using prisms on
+---- constructors.
+----
+---- Note that many automatically-generated prisms by the /lens/ package use
+---- tuples, which cannot normally be backpropagated (because they do not
+---- have a 'Num' instance).
+----
+---- If you are writing an application or don't have to worry about orphan
+---- instances, you can pull in the orphan instances from
+---- <https://hackage.haskell.org/package/NumInstances NumInstances>.
+---- Alternatively, you can chain those prisms with conversions to the
+---- anonymous canonical strict tuple types in "Numeric.Backprop.Tuple",
+---- which do have 'Num' instances.
+----
+---- @
+---- myPrism                   :: 'Prism'' c (a, b)
+---- myPrism . 'iso' 'tupT2' 't2Tup' :: 'Prism'' c ('T2' a b)
+---- @
+--(^^?)
+--    :: forall b a s. (Num a, Reifies s W)
+--    => BVar s b
+--    -> Traversal' b a
+--    -> Maybe (BVar s a)
+--v ^^? t = previewVar t v
+--{-# INLINE (^^?) #-}
 
--- | An infix version of 'toListOfVar', meant to evoke parallels to '^..'
--- from lens.
---
--- With normal values, you can extract all targets of a 'Traversal' from
--- that value with a:
---
--- @
--- x '^..' myTraversal
--- @
---
--- would extract all targets inside of @x :: b@, specified by @myTraversal
--- :: 'Traversal'' b a@. The result has type @[a]@.
---
--- @
--- xVar '^^..' myTraversal
--- @
---
--- would extract all targets inside of @xVar :: 'BVar' s b@ (a 'BVar'
--- holding a @b@), specified by @myTraversal :: Traversal' b a@.   The result
--- has type @['BVar' s a]@ (A list of 'BVar's holding @a@s).
---
-(^^..)
-    :: forall b a s. (Num a, Reifies s W)
-    => BVar s b
-    -> Traversal' b a
-    -> [BVar s a]
-v ^^.. t = toListOfVar t v
-{-# INLINE (^^..) #-}
+---- | An infix version of 'toListOfVar', meant to evoke parallels to '^..'
+---- from lens.
+----
+---- With normal values, you can extract all targets of a 'Traversal' from
+---- that value with a:
+----
+---- @
+---- x '^..' myTraversal
+---- @
+----
+---- would extract all targets inside of @x :: b@, specified by @myTraversal
+---- :: 'Traversal'' b a@. The result has type @[a]@.
+----
+---- @
+---- xVar '^^..' myTraversal
+---- @
+----
+---- would extract all targets inside of @xVar :: 'BVar' s b@ (a 'BVar'
+---- holding a @b@), specified by @myTraversal :: Traversal' b a@.   The result
+---- has type @['BVar' s a]@ (A list of 'BVar's holding @a@s).
+----
+--(^^..)
+--    :: forall b a s. (Num a, Reifies s W)
+--    => BVar s b
+--    -> Traversal' b a
+--    -> [BVar s a]
+--v ^^.. t = toListOfVar t v
+--{-# INLINE (^^..) #-}
 
 -- | Convert the value inside a 'BVar' using a given isomorphism.  Useful
 -- for things like constructors.
@@ -437,7 +377,9 @@ v ^^.. t = toListOfVar t v
 -- @since 0.1.4.0
 isoVar
     :: (Num a, Num b, Reifies s W)
-    => (a -> b)
+    => b                    -- ^ "zerod" version of output
+    -> ScaleFunc a
+    -> (a -> b)
     -> (b -> a)
     -> BVar s a
     -> BVar s b

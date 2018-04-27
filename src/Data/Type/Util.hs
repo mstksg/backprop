@@ -16,6 +16,7 @@ module Data.Type.Util (
   , lengthProd
   , listToVecDef
   , fillProd
+  , zipVecList
   ) where
 
 import           Data.Bifunctor
@@ -122,3 +123,18 @@ fillProd f = go
       x :< xs -> \case
         []   -> Nothing
         y:ys -> (f x y :<) <$> go xs ys
+
+zipVecList
+    :: forall a b c f g n. ()
+    => (f a -> Maybe b -> g c)
+    -> VecT n f a
+    -> [b]
+    -> VecT n g c
+zipVecList f = go
+  where
+    go :: VecT m f a -> [b] -> VecT m g c
+    go = \case
+      ØV -> const ØV
+      x :* xs -> \case
+        []   -> f x Nothing  :* go xs []
+        y:ys -> f x (Just y) :* go xs ys

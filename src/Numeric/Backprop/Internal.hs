@@ -28,6 +28,8 @@
 module Numeric.Backprop.Internal (
     BVar
   , W
+  , ScaleFunc(..), sfNum
+  , ZeroFunc(..), zfNum
   , backpropN, evalBPN
   , constVar
   , liftOp, liftOp1, liftOp2, liftOp3
@@ -186,12 +188,12 @@ initWengert = W <$> newIORef (0,[])
 insertNode
     :: TapeNode a
     -> a                    -- ^ val
-    -> a                    -- ^ zero
+    -> ZeroFunc a
     -> W
     -> IO (BVar s a)
-insertNode tn !x z !w = fmap ((`BV` x) . BRIx) . atomicModifyIORef' (wRef w) $ \(!n,!t) ->
+insertNode tn !x zf !w = fmap ((`BV` x) . BRIx) . atomicModifyIORef' (wRef w) $ \(!n,!t) ->
     let n' = n + 1
-        t' = STN z tn : t
+        t' = STN (runZF zf x) tn : t
     in  forceTapeNode tn `seq` n' `seq` t' `seq` ((n', t'), n)
 {-# INLINE insertNode #-}
 
@@ -203,15 +205,21 @@ constVar :: a -> BVar s a
 constVar = BV BRC
 {-# INLINE constVar #-}
 
+newtype ZeroFunc  a = ZF { runZF :: a -> a }
 newtype ScaleFunc a = SF { runSF :: a -> a -> a }
 
 sfNum :: Num a => ScaleFunc a
 sfNum = SF (+)
+{-# INLINE sfNum #-}
+
+zfNum :: Num a => ZeroFunc a
+zfNum = ZF (const 0)
+{-# INLINE zfNum #-}
 
 liftOp_
     :: forall s as b. Reifies s W
-    => b                    -- ^ zero
-    -> Prod ScaleFunc as    -- ^ scalers
+    => ZeroFunc b
+    -> Prod ScaleFunc as
     -> Op as b
     -> Prod (BVar s) as
     -> IO (BVar s b)
@@ -239,17 +247,17 @@ liftOp_ z sfs o !vs = case traverse1 (fmap I . bvConst) vs of
 -- 'Prod' and 'Tuple'.
 liftOp
     :: forall as b s. Reifies s W
-    => b                    -- ^ zero
-    -> Prod ScaleFunc as    -- ^ scalers
+    => ZeroFunc b
+    -> Prod ScaleFunc as
     -> Op as b
     -> Prod (BVar s) as
     -> BVar s b
-liftOp o sfs z !vs = unsafePerformIO $ liftOp_ o sfs z vs
+liftOp z sfs o !vs = unsafePerformIO $ liftOp_ z sfs o vs
 {-# INLINE liftOp #-}
 
 liftOp1_
     :: forall a b s. Reifies s W
-    => b                    -- ^ zero
+    => ZeroFunc b           -- ^ zero
     -> ScaleFunc a          -- ^ scaler
     -> Op '[a] b
     -> BVar s a
@@ -272,7 +280,7 @@ liftOp1_ z sf o v = forceBVar v `seq` insertNode tn y z (reflect (Proxy @s))
 -- information.
 liftOp1
     :: forall a b s. Reifies s W
-    => b                    -- ^ zero
+    => ZeroFunc b           -- ^ zero
     -> ScaleFunc a          -- ^ scaler
     -> Op '[a] b
     -> BVar s a
@@ -282,7 +290,7 @@ liftOp1 z sf o !v = unsafePerformIO $ liftOp1_ z sf o v
 
 liftOp2_
     :: forall a b c s. Reifies s W
-    => c                    -- ^ zero
+    => ZeroFunc c
     -> ScaleFunc a
     -> ScaleFunc b
     -> Op '[a,b] c
@@ -310,7 +318,7 @@ liftOp2_ z sfa sfb o v u = forceBVar v
 -- information.
 liftOp2
     :: forall a b c s. Reifies s W
-    => c                -- ^ zero
+    => ZeroFunc c
     -> ScaleFunc a
     -> ScaleFunc b
     -> Op '[a,b] c
@@ -322,7 +330,7 @@ liftOp2 z sfa sfb o !v !u = unsafePerformIO $ liftOp2_ z sfa sfb o v u
 
 liftOp3_
     :: forall a b c d s. Reifies s W
-    => d                    -- ^ zero
+    => ZeroFunc d
     -> ScaleFunc a
     -> ScaleFunc b
     -> ScaleFunc c
@@ -356,7 +364,7 @@ liftOp3_ z sfa sfb sfc o v u w = forceBVar v
 -- information.
 liftOp3
     :: forall a b c d s. Reifies s W
-    => d                    -- ^ zero
+    => ZeroFunc d
     -> ScaleFunc a
     -> ScaleFunc b
     -> ScaleFunc c
@@ -371,7 +379,7 @@ liftOp3 z sfa sfb sfc o !v !u !w = unsafePerformIO $ liftOp3_ z sfa sfb sfc o v 
 -- TODO: can we get the zero and scale func from the lens?
 viewVar_
     :: forall a b s. Reifies s W
-    => a                -- ^ zero
+    => ZeroFunc a
     -> ScaleFunc a
     -> Lens' b a
     -> BVar s b
@@ -390,7 +398,7 @@ viewVar_ z sf l v = forceBVar v `seq` insertNode tn y z (reflect (Proxy @s))
 -- See documentation for '^^.' for more information.
 viewVar
     :: forall a b s. Reifies s W
-    => a                    -- ^ zero
+    => ZeroFunc a
     -> ScaleFunc a
     -> Lens' b a
     -> BVar s b
@@ -401,8 +409,8 @@ viewVar z sf l !v = unsafePerformIO $ viewVar_ z sf l v
 -- TODO: can zero and scale func be gotten from the input bvars?
 setVar_
     :: forall a b s. Reifies s W
-    => a                -- ^ zero
-    -> b                -- ^ zero
+    => ZeroFunc a
+    -> ZeroFunc b
     -> ScaleFunc a
     -> ScaleFunc b
     -> Lens' b a
@@ -415,7 +423,7 @@ setVar_ za zb sfa sfb l w v = forceBVar v
   where
     y = _bvVal v & l .~ _bvVal w
     tn = TN { _tnInputs = IR w (runSF sfa) :< IR v (runSF sfb) :< Ø
-            , _tnGrad   = \d -> let (dw,dv) = l (, za) d
+            , _tnGrad   = \d -> let (dw,dv) = l (\x -> (x, runZF za x)) d
                                 in  dw ::< dv ::< Ø
             }
 {-# INLINE setVar_ #-}
@@ -426,8 +434,8 @@ setVar_ za zb sfa sfb l w v = forceBVar v
 -- See documentation for '.~~' for more information.
 setVar
     :: forall a b s. Reifies s W
-    => a                -- ^ zero
-    -> b                -- ^ zero
+    => ZeroFunc a
+    -> ZeroFunc b
     -> ScaleFunc a
     -> ScaleFunc b
     -> Lens' b a
@@ -447,7 +455,7 @@ setVar za zb sfa sfb l !w !v = unsafePerformIO $ setVar_ za zb sfa sfb l w v
 -- number of items.
 sequenceVar
     :: forall t a s. (Reifies s W, Traversable t)
-    => a                    -- ^ zero
+    => ZeroFunc a
     -> ScaleFunc a
     -> BVar s (t a)
     -> t (BVar s a)
@@ -457,18 +465,19 @@ sequenceVar z sf !v = unsafePerformIO $ traverseVar' z sf id traverse v
 -- TODO: can scale funcs and zeros be had from bvars and Functor instance?
 collectVar_
     :: forall t a s. (Reifies s W, Foldable t, Functor t)
-    => a                      -- ^ zero
-    -> t a                    -- ^ zero
+    => ZeroFunc a
+    -> ZeroFunc (t a)
     -> ScaleFunc a
     -> t (BVar s a)
     -> IO (BVar s (t a))
 collectVar_ z z' sf !vs = withV (toList vs) $ \(vVec :: Vec n (BVar s a)) -> do
     let tn :: TapeNode (t a)
-        tn = TN { _tnInputs = vecToProd (vmap ((`IR` runSF sf) . getI) vVec)
-                , _tnGrad   = vecToProd
-                            . listToVecDef (I z) (vecLen vVec)
-                            . map I . toList
-                }
+        tn = TN
+          { _tnInputs = vecToProd (vmap ((`IR` runSF sf) . getI) vVec)
+          , _tnGrad   = vecToProd
+                      . zipVecList (\(I v) -> I . fromMaybe (runZF z (_bvVal v))) vVec
+                      . toList
+          }
     traverse_ (evaluate . forceBVar) vs
     insertNode tn (_bvVal <$> vs) z' (reflect (Proxy @s))
 {-# INLINE collectVar_ #-}
@@ -488,8 +497,8 @@ collectVar_ z z' sf !vs = withV (toList vs) $ \(vVec :: Vec n (BVar s a)) -> do
 -- it's a fixed-length vector type with a very appropriate 'Num' instance!
 collectVar
     :: forall t a s. (Reifies s W, Foldable t, Functor t)
-    => a
-    -> t a                  -- ^ zero
+    => ZeroFunc a
+    -> ZeroFunc (t a)
     -> ScaleFunc a
     -> t (BVar s a)
     -> BVar s (t a)
@@ -498,7 +507,7 @@ collectVar z z' sf !vs = unsafePerformIO $ collectVar_ z z' sf vs
 
 traverseVar'
     :: forall b a f s. (Reifies s W, Traversable f)
-    => a                    -- ^ zero
+    => ZeroFunc a
     -> ScaleFunc a
     -> (b -> f a)
     -> Traversal' b a
@@ -524,7 +533,7 @@ traverseVar' z sf f t v = forceBVar v
 -- See documentation for '^^?' for more information.
 previewVar
     :: forall b a s. Reifies s W
-    => a                -- ^ zero
+    => ZeroFunc a
     -> ScaleFunc a
     -> Traversal' b a
     -> BVar s b
@@ -538,7 +547,7 @@ previewVar z sf t !v = unsafePerformIO $ traverseVar' z sf (listToMaybe . toList
 -- See documentation for '^^..' for more information.
 toListOfVar
     :: forall b a s. Reifies s W
-    => a                    -- ^ zero
+    => ZeroFunc a
     -> ScaleFunc a
     -> Traversal' b a
     -> BVar s b
@@ -789,4 +798,66 @@ ixt t i f xs = stuff <$> ixi i f contents
         go []     = error "asList"
         go (y:ys) = (y, ys)
 {-# INLINE ixt #-}
+
+instance Num a => Num (ZeroFunc a) where
+    z1 + z2     = ZF $ (+) <$> runZF z1 <*> runZF z2
+    {-# INLINE (+) #-}
+    z1 - z2     = ZF $ (-) <$> runZF z1 <*> runZF z2
+    {-# INLINE (-) #-}
+    z1 * z2     = ZF $ (*) <$> runZF z1 <*> runZF z2
+    {-# INLINE (*) #-}
+    negate      = ZF . fmap negate . runZF
+    {-# INLINE negate #-}
+    abs         = ZF . fmap abs . runZF
+    {-# INLINE abs #-}
+    signum      = ZF . fmap signum . runZF
+    {-# INLINE signum #-}
+    fromInteger = ZF . const . fromInteger
+    {-# INLINE fromInteger #-}
+
+instance Fractional a => Fractional (ZeroFunc a) where
+    z1 / z2      = ZF $ (/) <$> runZF z1 <*> runZF z2
+    {-# INLINE (/) #-}
+    recip        = ZF . fmap recip . runZF
+    {-# INLINE recip #-}
+    fromRational = ZF . const . fromRational
+    {-# INLINE fromRational #-}
+
+instance Floating a => Floating (ZeroFunc a) where
+    pi      = ZF $ const pi
+    {-# INLINE pi #-}
+    exp     = ZF . fmap exp . runZF
+    {-# INLINE exp #-}
+    log     = ZF . fmap log . runZF
+    {-# INLINE log #-}
+    sqrt    = ZF . fmap sqrt . runZF
+    {-# INLINE sqrt #-}
+    z1 ** z2 = ZF $ (**) <$> runZF z1 <*> runZF z2
+    {-# INLINE (**) #-}
+    logBase z1 z2 = ZF $ logBase <$> runZF z1 <*> runZF z2
+    {-# INLINE logBase #-}
+    sin     = ZF . fmap sin . runZF
+    {-# INLINE sin #-}
+    cos     = ZF . fmap cos . runZF
+    {-# INLINE cos #-}
+    tan     =  ZF . fmap tan . runZF
+    {-# INLINE tan  #-}
+    asin    = ZF . fmap asin . runZF
+    {-# INLINE asin #-}
+    acos    = ZF . fmap acos . runZF
+    {-# INLINE acos #-}
+    atan    = ZF . fmap atan . runZF
+    {-# INLINE atan #-}
+    sinh    = ZF . fmap sinh . runZF
+    {-# INLINE sinh #-}
+    cosh    = ZF . fmap cosh . runZF
+    {-# INLINE cosh #-}
+    tanh    = ZF . fmap tanh . runZF
+    {-# INLINE tanh #-}
+    asinh   = ZF . fmap asinh . runZF
+    {-# INLINE asinh #-}
+    acosh   = ZF . fmap acosh . runZF
+    {-# INLINE acosh #-}
+    atanh   = ZF . fmap atanh . runZF
+    {-# INLINE atanh #-}
 

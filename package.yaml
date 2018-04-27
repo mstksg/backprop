@@ -46,10 +46,11 @@ dependencies:
 library:
   source-dirs: src
   exposed-modules:
-  - Numeric.Backprop
+  # - Numeric.Backprop
   - Numeric.Backprop.Op
   - Numeric.Backprop.Tuple
-  - Prelude.Backprop
+  - Numeric.Backprop.Explicit
+  # - Prelude.Backprop
   other-modules:
   - Numeric.Backprop.Internal
   - Data.Type.Util
