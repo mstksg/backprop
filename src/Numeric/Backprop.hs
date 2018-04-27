@@ -420,7 +420,7 @@ v ^^.. t = toListOfVar t v
 --
 -- @since 0.1.4.0
 isoVar
-    :: (Num b, Reifies s W)
+    :: (Num a, Num b, Reifies s W)
     => (a -> b)
     -> (b -> a)
     -> BVar s a
@@ -433,7 +433,7 @@ isoVar f g = liftOp1 (opIso f g)
 --
 -- @since 0.1.4.0
 isoVar2
-    :: (Num c, Reifies s W)
+    :: (Num a, Num b, Num c, Reifies s W)
     => (a -> b -> c)
     -> (c -> (a, b))
     -> BVar s a
@@ -447,7 +447,7 @@ isoVar2 f g = liftOp2 (opIso2 f g)
 --
 -- @since 0.1.4.0
 isoVar3
-    :: (Num d, Reifies s W)
+    :: (Num a, Num b, Num c, Num d, Reifies s W)
     => (a -> b -> c -> d)
     -> (d -> (a, b, c))
     -> BVar s a
@@ -463,7 +463,7 @@ isoVar3 f g = liftOp3 (opIso3 f g)
 --
 -- @since 0.1.4.0
 isoVarN
-    :: (Num b, Reifies s W)
+    :: (Every Num as, Num b, Reifies s W)
     => (Tuple as -> b)
     -> (b -> Tuple as)
     -> Prod (BVar s) as
