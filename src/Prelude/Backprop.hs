@@ -50,7 +50,7 @@ import qualified Data.Coerce         as C
 import qualified Prelude             as P
 
 -- | Lifted 'P.sum'
-sum :: forall t a s. (Foldable t, Functor t, Num (t a), Num a, Reifies s W)
+sum :: forall t a s. (Foldable t, Functor t, Num a, Reifies s W)
     => BVar s (t a)
     -> BVar s a
 sum = liftOp1 . op1 $ \xs ->
@@ -74,7 +74,7 @@ pure = liftOp1 . op1 $ \x ->
 
 -- | Lifted 'P.product'
 product
-    :: forall t a s. (Foldable t, Functor t, Num (t a), Fractional a, Reifies s W)
+    :: forall t a s. (Foldable t, Functor t, Fractional a, Reifies s W)
     => BVar s (t a)
     -> BVar s a
 product = liftOp1 . op1 $ \xs ->
@@ -98,7 +98,7 @@ length = liftOp1 . op1 $ \xs ->
 -- | Lifted 'P.minimum'.  Undefined for situations where 'P.minimum' would
 -- be undefined.
 minimum
-    :: forall t a s. (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W)
+    :: forall t a s. (Foldable t, Functor t, Num a, Ord a, Reifies s W)
     => BVar s (t a)
     -> BVar s a
 minimum = liftOp1 . op1 $ \xs ->
@@ -111,7 +111,7 @@ minimum = liftOp1 . op1 $ \xs ->
 -- | Lifted 'P.maximum'.  Undefined for situations where 'P.maximum' would
 -- be undefined.
 maximum
-    :: forall t a s. (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W)
+    :: forall t a s. (Foldable t, Functor t, Num a, Ord a, Reifies s W)
     => BVar s (t a)
     -> BVar s a
 maximum = liftOp1 . op1 $ \xs ->
@@ -207,8 +207,8 @@ liftA3 f x y z = collectVar $ f P.<$> sequenceVar x
 
 -- | Coerce items inside a 'BVar'.
 coerce
-    :: forall a b s. (C.Coercible a b, Num a, Num b, Reifies s W)
+    :: forall a b s. C.Coercible a b
     => BVar s a
     -> BVar s b
-coerce = liftOp1 $ opIso C.coerce C.coerce
+coerce = coerceVar
 {-# INLINE coerce #-}
