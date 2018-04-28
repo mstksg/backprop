@@ -205,3 +205,18 @@ instance One a => One [a] where
     one = oneFunctor
 instance One a => One (NonEmpty a) where
     one = oneFunctor
+
+instance (Zero a, Zero b) => Zero (a, b) where
+    zero (x, y) = (zero x, zero y)
+instance (Zero a, Zero b, Zero c) => Zero (a, b, c) where
+    zero (x, y, z) = (zero x, zero y, zero z)
+
+instance (Add a, Add b) => Add (a, b) where
+    add (x1, y1) (x2, y2) = (add x1 x2, add y1 y2)
+instance (Add a, Add b, Add c) => Add (a, b, c) where
+    add (x1, y1, z1) (x2, y2, z2) = (add x1 x2, add y1 y2, add z1 z2)
+
+instance (One a, One b) => One (a, b) where
+    one (x, y) = (one x, one y)
+instance (One a, One b, One c) => One (a, b, c) where
+    one (x, y, z) = (one x, one y, one z)
