@@ -184,18 +184,46 @@ initWengert :: IO W
 initWengert = W <$> newIORef (0,[])
 {-# INLINE initWengert #-}
 
+-- | "Zero out" all components of a value.  For scalar values, this should
+-- just be @'const' 0@.  For vectors and matrices, this should set all
+-- components to zero, the additive identity.
+--
+-- Each type should ideally only have one 'ZeroFunc'.  This coherence
+-- constraint is given by the typeclass 'Zero'.
 newtype ZeroFunc a = ZF { runZF :: a -> a }
+
+-- | Add together two values of a type.  To combine contributions of
+-- gradients, so should ideally be information-preserving.  For any other
+-- valid 'ZeroFunc', should ideally obey:
+--
+-- @
+-- \af zf x y -> 'runAF' af x ('runZF' zf y) == x
+--            && 'runAF' af ('runZF' zf x) y == y
+-- @
+--
+-- Each type should ideally only have one 'AddFunc'.  This coherence
+-- constraint is given by the typeclass 'Add'.
 newtype AddFunc  a = AF { runAF :: a -> a -> a }
+
+-- | "One" all components of a value.  For scalar values, this should
+-- just be @'const' 1@.  For vectors and matrices, this should set all
+-- components to one, the multiplicative identity.
+--
+-- Each type should ideally only have one 'ZeroFunc'.  This coherence
+-- constraint is given by the typeclass 'One'.
 newtype OneFunc  a = OF { runOF :: a -> a }
 
+-- | If a type has a 'Num' instance, this is the canonical 'AddFunc'.
 afNum :: Num a => AddFunc a
 afNum = AF (+)
 {-# INLINE afNum #-}
 
+-- | If a type has a 'Num' instance, this is the canonical 'ZeroFunc'.
 zfNum :: Num a => ZeroFunc a
 zfNum = ZF (const 0)
 {-# INLINE zfNum #-}
 
+-- | If a type has a 'Num' instance, this is the canonical 'OneFunc'.
 ofNum :: Num a => OneFunc a
 ofNum = OF (const 1)
 {-# INLINE ofNum #-}
@@ -262,8 +290,8 @@ liftOp afs z o !vs = unsafePerformIO $ liftOp_ afs z o vs
 
 liftOp1_
     :: forall a b s. Reifies s W
-    => AddFunc a          -- ^ scaler
-    -> ZeroFunc b           -- ^ zero
+    => AddFunc a
+    -> ZeroFunc b
     -> Op '[a] b
     -> BVar s a
     -> IO (BVar s b)
@@ -285,8 +313,8 @@ liftOp1_ af z o v = forceBVar v `seq` insertNode tn y z (reflect (Proxy @s))
 -- information.
 liftOp1
     :: forall a b s. Reifies s W
-    => AddFunc a          -- ^ scaler
-    -> ZeroFunc b           -- ^ zero
+    => AddFunc a
+    -> ZeroFunc b
     -> Op '[a] b
     -> BVar s a
     -> BVar s b

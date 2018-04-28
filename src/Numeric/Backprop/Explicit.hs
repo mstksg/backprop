@@ -6,6 +6,9 @@
 module Numeric.Backprop.Explicit (
     -- * Types
     BVar, W
+  , AddFunc(..), afNum
+  , ZeroFunc(..), zfNum
+  , OneFunc(..), ofNum
     -- * Running
   , backprop, evalBP, gradBP
     -- ** Multiple inputs

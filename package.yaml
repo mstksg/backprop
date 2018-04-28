@@ -50,6 +50,7 @@ library:
   - Numeric.Backprop.Op
   - Numeric.Backprop.Tuple
   - Numeric.Backprop.Explicit
+  - Numeric.Backprop.Class
   # - Prelude.Backprop
   other-modules:
   - Numeric.Backprop.Internal
