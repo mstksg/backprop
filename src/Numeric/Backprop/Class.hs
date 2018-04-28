@@ -4,9 +4,9 @@
 {-# LANGUAGE TypeApplications  #-}
 
 module Numeric.Backprop.Class (
-    Zero(..), ZeroFunc(..), zeroFunc, zeroFuncs, zfNum, zfNums
-  , Add(..), AddFunc(..), addFunc, addFuncs, afNum, afNums
-  , One(..), OneFunc(..), oneFunc, oneFuncs, ofNum, ofNums
+    Zero(..), ZeroFunc(..), zeroNum, zeroFunc, zeroFuncs, zfNum, zfNums
+  , Add(..), AddFunc(..), addNum, addFunc, addFuncs, afNum, afNums
+  , One(..), OneFunc(..), oneNum, oneFunc, oneFuncs, ofNum, ofNums
   , zeroVec, addVec, oneVec
   , zeroFunctor, addIsList, oneFunctor
   ) where
@@ -88,7 +88,11 @@ class Zero a where
     zero :: a -> a
 
     default zero :: Num a => a -> a
-    zero _ = 0
+    zero = zeroNum
+
+zeroNum :: Num a => a -> a
+zeroNum _ = 0
+{-# INLINE zeroNum #-}
 
 zeroFunc :: Zero a => ZeroFunc a
 zeroFunc = ZF zero
@@ -101,7 +105,11 @@ class Add a where
     add :: a -> a -> a
 
     default add :: Num a => a -> a -> a
-    add = (+)
+    add = addNum
+
+addNum :: Num a => a -> a -> a
+addNum = (+)
+{-# INLINE addNum #-}
 
 addFunc :: Add a => AddFunc a
 addFunc = AF add
@@ -114,7 +122,11 @@ class One a where
     one :: a -> a
 
     default one :: Num a => a -> a
-    one _ = 1
+    one = oneNum
+
+oneNum :: Num a => a -> a
+oneNum _ = 1
+{-# INLINE oneNum #-}
 
 oneFunc :: One a => OneFunc a
 oneFunc = OF one
