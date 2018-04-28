@@ -377,7 +377,7 @@ gradBP2 f x = snd . backprop2 f x
 -- @since 0.1.4.0
 isoVar
     :: (Num a, Num b, Reifies s W)
-    => b                    -- ^ "zerod" version of output
+    => ZeroFunc b
     -> ScaleFunc a
     -> (a -> b)
     -> (b -> a)
