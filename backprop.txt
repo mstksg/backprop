@@ -506,10 +506,36 @@ OF :: (a -> a) -> OneFunc a
 [runOF] :: OneFunc a -> a -> a
 oneFunc :: One a => OneFunc a
 oneFuncs :: (Every One as, Known Length as) => Prod OneFunc as
+zeroVec :: (Vector v a, Zero a) => v a -> v a
+addVec :: (Vector v a, Add a) => v a -> v a -> v a
+oneVec :: (Vector v a, One a) => v a -> v a
+zeroFunctor :: (Functor f, Zero a) => f a -> f a
+addIsList :: (IsList a, Add (Item a)) => a -> a -> a
+oneFunctor :: (Functor f, One a) => f a -> f a
+instance Numeric.Backprop.Class.One GHC.Types.Float
+instance Numeric.Backprop.Class.One GHC.Types.Double
+instance Numeric.Backprop.Class.One a => Numeric.Backprop.Class.One (Data.Vector.Vector a)
+instance (Data.Vector.Unboxed.Base.Unbox a, Numeric.Backprop.Class.One a) => Numeric.Backprop.Class.One (Data.Vector.Unboxed.Base.Vector a)
+instance (Foreign.Storable.Storable a, Numeric.Backprop.Class.One a) => Numeric.Backprop.Class.One (Data.Vector.Storable.Vector a)
+instance (Data.Primitive.Types.Prim a, Numeric.Backprop.Class.One a) => Numeric.Backprop.Class.One (Data.Vector.Primitive.Vector a)
+instance Numeric.Backprop.Class.One a => Numeric.Backprop.Class.One [a]
+instance Numeric.Backprop.Class.One a => Numeric.Backprop.Class.One (Data.List.NonEmpty.NonEmpty a)
 instance Numeric.Backprop.Class.Add GHC.Types.Float
 instance Numeric.Backprop.Class.Add GHC.Types.Double
+instance Numeric.Backprop.Class.Add a => Numeric.Backprop.Class.Add (Data.Vector.Vector a)
+instance (Data.Vector.Unboxed.Base.Unbox a, Numeric.Backprop.Class.Add a) => Numeric.Backprop.Class.Add (Data.Vector.Unboxed.Base.Vector a)
+instance (Foreign.Storable.Storable a, Numeric.Backprop.Class.Add a) => Numeric.Backprop.Class.Add (Data.Vector.Storable.Vector a)
+instance (Data.Primitive.Types.Prim a, Numeric.Backprop.Class.Add a) => Numeric.Backprop.Class.Add (Data.Vector.Primitive.Vector a)
+instance Numeric.Backprop.Class.Add a => Numeric.Backprop.Class.Add [a]
+instance Numeric.Backprop.Class.Add a => Numeric.Backprop.Class.Add (Data.List.NonEmpty.NonEmpty a)
 instance Numeric.Backprop.Class.Zero GHC.Types.Float
 instance Numeric.Backprop.Class.Zero GHC.Types.Double
+instance Numeric.Backprop.Class.Zero a => Numeric.Backprop.Class.Zero (Data.Vector.Vector a)
+instance (Data.Vector.Unboxed.Base.Unbox a, Numeric.Backprop.Class.Zero a) => Numeric.Backprop.Class.Zero (Data.Vector.Unboxed.Base.Vector a)
+instance (Foreign.Storable.Storable a, Numeric.Backprop.Class.Zero a) => Numeric.Backprop.Class.Zero (Data.Vector.Storable.Vector a)
+instance (Data.Primitive.Types.Prim a, Numeric.Backprop.Class.Zero a) => Numeric.Backprop.Class.Zero (Data.Vector.Primitive.Vector a)
+instance Numeric.Backprop.Class.Zero a => Numeric.Backprop.Class.Zero [a]
+instance Numeric.Backprop.Class.Zero a => Numeric.Backprop.Class.Zero (Data.List.NonEmpty.NonEmpty a)
 
 module Numeric.Backprop.Explicit
 
