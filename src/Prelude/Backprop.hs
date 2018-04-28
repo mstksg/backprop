@@ -13,12 +13,6 @@
 -- Some lifted versions of common functions found in 'Prelude' (or /base/
 -- in general).
 --
--- Intended to work with 'Functor' / 'Foldable' / 'Traversable' instances
--- with "fixed" number of items, i.e.
--- <https://hackage.haskell.org/package/vector-sized vector-sized> vectors.
--- There might be unintended consequences when using it with instances
--- where the number of items is not fixed.
---
 -- This module is intended to be a catch-all one, so feel free to suggest
 -- other functions or submit a PR if you think one would make sense.
 --
@@ -47,10 +41,11 @@ import           Numeric.Backprop
 import           Prelude             (Num(..), Fractional(..), Eq(..), Ord(..), Functor, Foldable, Traversable, Applicative, (.), ($))
 import qualified Control.Applicative as P
 import qualified Data.Coerce         as C
+import qualified Data.Foldable       as P
 import qualified Prelude             as P
 
 -- | Lifted 'P.sum'
-sum :: forall t a s. (Foldable t, Functor t, Num (t a), Num a, Reifies s W)
+sum :: forall t a s. (Foldable t, Functor t, Backprop (t a), Backprop a, Num a, Reifies s W)
     => BVar s (t a)
     -> BVar s a
 sum = liftOp1 . op1 $ \xs ->
@@ -59,22 +54,21 @@ sum = liftOp1 . op1 $ \xs ->
     )
 {-# INLINE sum #-}
 
--- | Lifted 'P.pure'.  Really intended only for 'Applicative' instances
--- with fixed number of items; untintended consequences might arise when
--- using it with containers with variable number of items.
+-- | Lifted 'P.pure'.
 pure
-    :: forall t a s. (Foldable t, Applicative t, Num (t a), Num a, Reifies s W)
+    :: forall t a s. (Foldable t, Applicative t, Backprop (t a), Backprop a, Reifies s W)
     => BVar s a
     -> BVar s (t a)
 pure = liftOp1 . op1 $ \x ->
     ( P.pure x
-    , P.sum
+    , P.foldl' add (zero x)
+    -- , P.foldl' add zero
     )
 {-# INLINE pure #-}
 
 -- | Lifted 'P.product'
 product
-    :: forall t a s. (Foldable t, Functor t, Num (t a), Fractional a, Reifies s W)
+    :: forall t a s. (Foldable t, Functor t, Backprop (t a), Backprop a, Fractional a, Reifies s W)
     => BVar s (t a)
     -> BVar s a
 product = liftOp1 . op1 $ \xs ->
@@ -86,49 +80,45 @@ product = liftOp1 . op1 $ \xs ->
 
 -- | Lifted 'P.length'.
 length
-    :: forall t a b s. (Foldable t, Num (t a), Num b, Reifies s W)
+    :: forall t a b s. (Foldable t, Backprop (t a), Backprop b, Num b, Reifies s W)
     => BVar s (t a)
     -> BVar s b
 length = liftOp1 . op1 $ \xs ->
     ( P.fromIntegral (P.length xs)
-    , P.const 0
+    , P.const (zero xs)
     )
 {-# INLINE length #-}
 
 -- | Lifted 'P.minimum'.  Undefined for situations where 'P.minimum' would
 -- be undefined.
 minimum
-    :: forall t a s. (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W)
+    :: forall t a s. (Foldable t, Functor t, Backprop a, Ord a, Backprop (t a), Reifies s W)
     => BVar s (t a)
     -> BVar s a
 minimum = liftOp1 . op1 $ \xs ->
     let m = P.minimum xs
     in  ( m
-        , \d -> (\x -> if x == m then d else 0) P.<$> xs
+        , \d -> (\x -> if x == m then d else zero x) P.<$> xs
         )
 {-# INLINE minimum #-}
 
 -- | Lifted 'P.maximum'.  Undefined for situations where 'P.maximum' would
 -- be undefined.
 maximum
-    :: forall t a s. (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W)
+    :: forall t a s. (Foldable t, Functor t, Backprop a, Ord a, Backprop (t a), Reifies s W)
     => BVar s (t a)
     -> BVar s a
 maximum = liftOp1 . op1 $ \xs ->
     let m = P.maximum xs
     in  ( m
-        , \d -> (\x -> if x == m then d else 0) P.<$> xs
+        , \d -> (\x -> if x == m then d else zero x) P.<$> xs
         )
 {-# INLINE maximum #-}
 
 -- | Lifted 'P.fmap'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Functor's.
---
--- Really intended only for 'Functor' instances with fixed number of items;
--- untintended consequences might arise when using it with containers with
--- variable number of items.
 fmap
-    :: forall f a b s. (Traversable f, Num a, Num b, Num (f b), Reifies s W)
+    :: forall f a b s. (Traversable f, Backprop a, Backprop b, Backprop (f b), Reifies s W)
     => (BVar s a -> BVar s b)
     -> BVar s (f a)
     -> BVar s (f b)
@@ -137,7 +127,7 @@ fmap f = collectVar . P.fmap f . sequenceVar
 
 -- | Alias for 'fmap'.
 (<$>)
-    :: forall f a b s. (Traversable f, Num a, Num b, Num (f b), Reifies s W)
+    :: forall f a b s. (Traversable f, Backprop a, Backprop b, Backprop (f b), Reifies s W)
     => (BVar s a -> BVar s b)
     -> BVar s (f a)
     -> BVar s (f b)
@@ -146,12 +136,8 @@ fmap f = collectVar . P.fmap f . sequenceVar
 
 -- | Lifted 'P.traverse'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Functor's.
---
--- Really intended only for 'Traversable' and 'Applicative' instances with
--- fixed number of items; untintended consequences might arise when using
--- it with containers with variable number of items.
 traverse
-    :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Num a, Num b, Num (f (t b)), Num (t b), Reifies s W)
+    :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Backprop a, Backprop b, Backprop (f (t b)), Backprop (t b), Reifies s W)
     => (BVar s a -> f (BVar s b))
     -> BVar s (t a)
     -> BVar s (f (t b))
@@ -163,15 +149,11 @@ traverse f = collectVar
 
 -- | Lifted 'P.liftA2'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Applicative's.
---
--- Really intended only for 'Traversable' and 'Applicative' instances with
--- fixed number of items; untintended consequences might arise when using
--- it with containers with variable number of items.
 liftA2
     :: forall f a b c s.
        ( Traversable f
        , Applicative f
-       , Num a, Num b, Num c, Num (f c)
+       , Backprop a, Backprop b, Backprop c, Backprop (f c)
        , Reifies s W
        )
     => (BVar s a -> BVar s b -> BVar s c)
@@ -184,15 +166,11 @@ liftA2 f x y = collectVar $ f P.<$> sequenceVar x
 
 -- | Lifted 'P.liftA3'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Applicative's.
---
--- Really intended only for 'Traversable' and 'Applicative' instances with
--- fixed number of items; untintended consequences might arise when using
--- it with containers with variable number of items.
 liftA3
     :: forall f a b c d s.
        ( Traversable f
        , Applicative f
-       , Num a, Num b, Num c, Num d, Num (f d)
+       , Backprop a, Backprop b, Backprop c, Backprop d, Backprop (f d)
        , Reifies s W
        )
     => (BVar s a -> BVar s b -> BVar s c -> BVar s d)

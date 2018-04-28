@@ -52,7 +52,7 @@ library:
   - Numeric.Backprop.Explicit
   - Numeric.Backprop.Num
   - Numeric.Backprop.Class
-  # - Prelude.Backprop
+  - Prelude.Backprop
   other-modules:
   - Numeric.Backprop.Internal
   - Data.Type.Util

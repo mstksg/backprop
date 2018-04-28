@@ -11,7 +11,7 @@ module Numeric.Backprop.Class (
   -- * Derived methods
   , zeroNum, addNum, oneNum
   , zeroVec, addVec, oneVec
-  , zeroFunctor, addIsList, oneFunctor
+  , zeroFunctor, addIsList, addAsList, oneFunctor
   , genericZero, genericAdd, genericOne
   -- * Usable by /backprop/
   , ZeroFunc(..), zeroFunc, zeroFuncs, zfNum, zfNums
@@ -23,6 +23,7 @@ module Numeric.Backprop.Class (
 
 import           Data.Complex
 import           Data.List.NonEmpty       (NonEmpty(..))
+import           Data.Maybe
 import           Data.Ratio
 import           Data.Type.Index
 import           Data.Type.Length
@@ -117,23 +118,30 @@ ofNums = map1 (\i -> ofNum \\ every @_ @Num i) indices
 --
 -- [/identity/]
 --
---   * @'add' x ('zero' y) == x@
+--   * @'add' x ('zero' y) = x@
 --
---   * @'add' ('zero' x) y == y@
+--   * @'add' ('zero' x) y = y@
 --
 -- [/commutativity/]
 --
---   * @'add' x y == 'add' y x@
+--   * @'add' x y = 'add' y x@
 --
 -- [/associativity/]
 --
---   * @'add' x ('add' y z) == 'add' ('add' x y) z@
+--   * @'add' x ('add' y z) = 'add' ('add' x y) z@
 --
 -- [/idempotence/]
 -- 
---   * @'zero' '.' 'zero' == 'zero'@
+--   * @'zero' '.' 'zero' = 'zero'@
 --
---   * @'one' '.' 'one' == 'one'@
+--   * @'one' '.' 'one' = 'one'@
+--
+-- Note that not all values in the backpropagation process needs all of
+-- these methods: Only the "final result" needs 'one', for example.  These
+-- are all grouped under one typeclass for convenience in defining
+-- instances, and also to talk about sensible laws.  For fine-grained
+-- control, use the "explicit" versions of library functions (for example,
+-- in "Numeric.Backprop.Explicit") instead of 'Backprop' based ones.
 --
 class Backprop a where
     -- | "Zero out" all components of a value.  For scalar values, this
@@ -227,7 +235,11 @@ zeroFunctor = fmap zero
 {-# INLINE zeroFunctor #-}
 
 addIsList :: (IsList a, Backprop (Item a)) => a -> a -> a
-addIsList x y = fromList $ go (toList x) (toList y)
+addIsList = addAsList toList fromList
+{-# INLINE addIsList #-}
+
+addAsList :: Backprop b => (a -> [b]) -> ([b] -> a) -> a -> a -> a
+addAsList f g x y = g $ go (f x) (f y)
   where
     go = \case
       [] -> id
@@ -429,6 +441,14 @@ instance Backprop a => Backprop (NonEmpty a) where
     zero = zeroFunctor
     {-# INLINE zero #-}
     add  = addIsList
+    {-# INLINE add #-}
+    one  = oneFunctor
+    {-# INLINE one #-}
+
+instance Backprop a => Backprop (Maybe a) where
+    zero = zeroFunctor
+    {-# INLINE zero #-}
+    add  = addAsList maybeToList listToMaybe
     {-# INLINE add #-}
     one  = oneFunctor
     {-# INLINE one #-}
