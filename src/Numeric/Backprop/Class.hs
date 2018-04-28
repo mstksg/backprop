@@ -4,11 +4,13 @@
 {-# LANGUAGE TypeApplications  #-}
 
 module Numeric.Backprop.Class (
-    Zero(..), ZeroFunc(..), zeroNum, zeroFunc, zeroFuncs, zfNum, zfNums
-  , Add(..), AddFunc(..), addNum, addFunc, addFuncs, afNum, afNums
-  , One(..), OneFunc(..), oneNum, oneFunc, oneFuncs, ofNum, ofNums
+    Backprop(..)
+  , zeroNum, addNum, oneNum
   , zeroVec, addVec, oneVec
   , zeroFunctor, addIsList, oneFunctor
+  , ZeroFunc(..), zeroFunc, zeroFuncs, zfNum, zfNums
+  , AddFunc(..), addFunc, addFuncs, afNum, afNums
+  , OneFunc(..), oneFunc, oneFuncs, ofNum, ofNums
   ) where
 
 import           Data.List.NonEmpty       (NonEmpty(..))
@@ -84,70 +86,48 @@ ofNum = OF (const 1)
 ofNums :: (Every Num as, Known Length as) => Prod OneFunc as
 ofNums = map1 (\i -> ofNum \\ every @_ @Num i) indices
 
-class Zero a where
+class Backprop a where
     zero :: a -> a
-
-    default zero :: Num a => a -> a
-    zero = zeroNum
+    one  :: a -> a
+    add  :: a -> a -> a
 
 zeroNum :: Num a => a -> a
 zeroNum _ = 0
 {-# INLINE zeroNum #-}
 
-zeroFunc :: Zero a => ZeroFunc a
-zeroFunc = ZF zero
-{-# INLINE zeroFunc #-}
-
-zeroFuncs :: (Every Zero as, Known Length as) => Prod ZeroFunc as
-zeroFuncs = map1 (\i -> zeroFunc \\ every @_ @Zero i) indices
-
-class Add a where
-    add :: a -> a -> a
-
-    default add :: Num a => a -> a -> a
-    add = addNum
-
 addNum :: Num a => a -> a -> a
 addNum = (+)
 {-# INLINE addNum #-}
-
-addFunc :: Add a => AddFunc a
-addFunc = AF add
-{-# INLINE addFunc #-}
-
-addFuncs :: (Every Add as, Known Length as) => Prod AddFunc as
-addFuncs = map1 (\i -> addFunc \\ every @_ @Add i) indices
-
-class One a where
-    one :: a -> a
-
-    default one :: Num a => a -> a
-    one = oneNum
 
 oneNum :: Num a => a -> a
 oneNum _ = 1
 {-# INLINE oneNum #-}
 
-oneFunc :: One a => OneFunc a
+zeroFunc :: Backprop a => ZeroFunc a
+zeroFunc = ZF zero
+{-# INLINE zeroFunc #-}
+
+addFunc :: Backprop a => AddFunc a
+addFunc = AF add
+{-# INLINE addFunc #-}
+
+oneFunc :: Backprop a => OneFunc a
 oneFunc = OF one
 {-# INLINE oneFunc #-}
 
-oneFuncs :: (Every One as, Known Length as) => Prod OneFunc as
-oneFuncs = map1 (\i -> oneFunc \\ every @_ @One i) indices
+addFuncs :: (Every Backprop as, Known Length as) => Prod AddFunc as
+addFuncs = map1 (\i -> addFunc \\ every @_ @Backprop i) indices
 
-instance Zero Float
-instance Zero Double
+zeroFuncs :: (Every Backprop as, Known Length as) => Prod ZeroFunc as
+zeroFuncs = map1 (\i -> zeroFunc \\ every @_ @Backprop i) indices
 
-instance Add Float
-instance Add Double
+oneFuncs :: (Every Backprop as, Known Length as) => Prod OneFunc as
+oneFuncs = map1 (\i -> oneFunc \\ every @_ @Backprop i) indices
 
-instance One Float
-instance One Double
-
-zeroVec :: (VG.Vector v a, Zero a) => v a -> v a
+zeroVec :: (VG.Vector v a, Backprop a) => v a -> v a
 zeroVec = VG.map zero
 
-addVec :: (VG.Vector v a, Add a) => v a -> v a -> v a
+addVec :: (VG.Vector v a, Backprop a) => v a -> v a -> v a
 addVec x y = case compare lX lY of
     LT -> let (y1,y2) = VG.splitAt (lY - lX) y
           in  VG.zipWith add x y1 VG.++ y2
@@ -158,43 +138,13 @@ addVec x y = case compare lX lY of
     lX = VG.length x
     lY = VG.length y
 
-oneVec :: (VG.Vector v a, One a) => v a -> v a
+oneVec :: (VG.Vector v a, Backprop a) => v a -> v a
 oneVec = VG.map one
 
-instance Zero a => Zero (V.Vector a) where
-    zero = zeroVec
-instance (VU.Unbox a, Zero a) => Zero (VU.Vector a) where
-    zero = zeroVec
-instance (VS.Storable a, Zero a) => Zero (VS.Vector a) where
-    zero = zeroVec
-instance (VP.Prim a, Zero a) => Zero (VP.Vector a) where
-    zero = zeroVec
-
-instance Add a => Add (V.Vector a) where
-    add = addVec
-instance (VU.Unbox a, Add a) => Add (VU.Vector a) where
-    add = addVec
-instance (VS.Storable a, Add a) => Add (VS.Vector a) where
-    add = addVec
-instance (VP.Prim a, Add a) => Add (VP.Vector a) where
-    add = addVec
-
-instance One a => One (V.Vector a) where
-    one = oneVec
-instance (VU.Unbox a, One a) => One (VU.Vector a) where
-    one = oneVec
-instance (VS.Storable a, One a) => One (VS.Vector a) where
-    one = oneVec
-instance (VP.Prim a, One a) => One (VP.Vector a) where
-    one = oneVec
-
-zeroFunctor :: (Functor f, Zero a) => f a -> f a
+zeroFunctor :: (Functor f, Backprop a) => f a -> f a
 zeroFunctor = fmap zero
 
-oneFunctor :: (Functor f, One a) => f a -> f a
-oneFunctor = fmap one
-
-addIsList :: (IsList a, Add (Item a)) => a -> a -> a
+addIsList :: (IsList a, Backprop (Item a)) => a -> a -> a
 addIsList x y = fromList $ go (toList x) (toList y)
   where
     go = \case
@@ -203,32 +153,71 @@ addIsList x y = fromList $ go (toList x) (toList y)
         []    -> o
         y':ys -> add x' y' : go xs ys
 
-instance Zero a => Zero [a] where
-    zero = zeroFunctor
-instance Zero a => Zero (NonEmpty a) where
-    zero = zeroFunctor
+oneFunctor :: (Functor f, Backprop a) => f a -> f a
+oneFunctor = fmap one
 
-instance Add a => Add [a] where
-    add = addIsList
-instance Add a => Add (NonEmpty a) where
-    add = addIsList
+-- instance Zero Float
+-- instance Zero Double
 
-instance One a => One [a] where
-    one = oneFunctor
-instance One a => One (NonEmpty a) where
-    one = oneFunctor
+-- instance Add Float
+-- instance Add Double
 
-instance (Zero a, Zero b) => Zero (a, b) where
-    zero (x, y) = (zero x, zero y)
-instance (Zero a, Zero b, Zero c) => Zero (a, b, c) where
-    zero (x, y, z) = (zero x, zero y, zero z)
+-- instance One Float
+-- instance One Double
 
-instance (Add a, Add b) => Add (a, b) where
-    add (x1, y1) (x2, y2) = (add x1 x2, add y1 y2)
-instance (Add a, Add b, Add c) => Add (a, b, c) where
-    add (x1, y1, z1) (x2, y2, z2) = (add x1 x2, add y1 y2, add z1 z2)
+-- instance Zero a => Zero (V.Vector a) where
+--     zero = zeroVec
+-- instance (VU.Unbox a, Zero a) => Zero (VU.Vector a) where
+--     zero = zeroVec
+-- instance (VS.Storable a, Zero a) => Zero (VS.Vector a) where
+--     zero = zeroVec
+-- instance (VP.Prim a, Zero a) => Zero (VP.Vector a) where
+--     zero = zeroVec
 
-instance (One a, One b) => One (a, b) where
-    one (x, y) = (one x, one y)
-instance (One a, One b, One c) => One (a, b, c) where
-    one (x, y, z) = (one x, one y, one z)
+-- instance Add a => Add (V.Vector a) where
+--     add = addVec
+-- instance (VU.Unbox a, Add a) => Add (VU.Vector a) where
+--     add = addVec
+-- instance (VS.Storable a, Add a) => Add (VS.Vector a) where
+--     add = addVec
+-- instance (VP.Prim a, Add a) => Add (VP.Vector a) where
+--     add = addVec
+
+-- instance One a => One (V.Vector a) where
+--     one = oneVec
+-- instance (VU.Unbox a, One a) => One (VU.Vector a) where
+--     one = oneVec
+-- instance (VS.Storable a, One a) => One (VS.Vector a) where
+--     one = oneVec
+-- instance (VP.Prim a, One a) => One (VP.Vector a) where
+--     one = oneVec
+
+-- instance Zero a => Zero [a] where
+--     zero = zeroFunctor
+-- instance Zero a => Zero (NonEmpty a) where
+--     zero = zeroFunctor
+
+-- instance Add a => Add [a] where
+--     add = addIsList
+-- instance Add a => Add (NonEmpty a) where
+--     add = addIsList
+
+-- instance One a => One [a] where
+--     one = oneFunctor
+-- instance One a => One (NonEmpty a) where
+--     one = oneFunctor
+
+-- instance (Zero a, Zero b) => Zero (a, b) where
+--     zero (x, y) = (zero x, zero y)
+-- instance (Zero a, Zero b, Zero c) => Zero (a, b, c) where
+--     zero (x, y, z) = (zero x, zero y, zero z)
+
+-- instance (Add a, Add b) => Add (a, b) where
+--     add (x1, y1) (x2, y2) = (add x1 x2, add y1 y2)
+-- instance (Add a, Add b, Add c) => Add (a, b, c) where
+--     add (x1, y1, z1) (x2, y2, z2) = (add x1 x2, add y1 y2, add z1 z2)
+
+-- instance (One a, One b) => One (a, b) where
+--     one (x, y) = (one x, one y)
+-- instance (One a, One b, One c) => One (a, b, c) where
+--     one (x, y, z) = (one x, one y, one z)

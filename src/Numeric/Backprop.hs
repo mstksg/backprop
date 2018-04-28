@@ -50,7 +50,7 @@
 
 module Numeric.Backprop (
     -- * Types
-    BVar, W, Zero(..), Add(..), One(..)
+    BVar, W, Backprop(..)
     -- * Running
   , backprop, E.evalBP, gradBP
     -- ** Multiple inputs
@@ -170,7 +170,7 @@ import qualified Numeric.Backprop.Explicit as E
 -- 'Num' as@ should be fulfilled automatically.
 --
 backpropN
-    :: forall as b. (Every Zero as, Known Length as, One b)
+    :: forall as b. (Every Backprop as, Known Length as, Backprop b)
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> (b, Tuple as)
@@ -209,7 +209,7 @@ backpropN = E.backpropN zeroFuncs oneFunc
 -- (in particular, "Data.NumInstances.Tuple") if you are writing an
 -- application and do not have to worry about orphan instances.
 backprop
-    :: forall a b. (Zero a, One b)
+    :: forall a b. (Backprop a, Backprop b)
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> (b, a)
@@ -245,7 +245,7 @@ backprop = E.backprop zeroFunc oneFunc
 -- See documentation of 'backprop' for more information.
 --
 gradBP
-    :: forall a b. (Zero a, One b)
+    :: forall a b. (Backprop a, Backprop b)
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> a
@@ -255,7 +255,7 @@ gradBP = E.gradBP zeroFunc oneFunc
 -- | 'gradBP' generalized to multiple inputs of different types.  See
 -- documentation for 'backpropN' for more details.
 gradBPN
-    :: forall as b. (Every Zero as, Known Length as, One b)
+    :: forall as b. (Every Backprop as, Known Length as, Backprop b)
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> Tuple as
@@ -270,7 +270,7 @@ gradBPN = E.gradBPN zeroFuncs oneFunc
 --
 -- For 3 and more arguments, consider using 'backpropN'.
 backprop2
-    :: forall a b c. (Zero a, Zero b, One c)
+    :: forall a b c. (Backprop a, Backprop b, Backprop c)
     => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
     -> a
     -> b
@@ -289,7 +289,7 @@ backprop2 = E.backprop2 zeroFunc zeroFunc oneFunc
 
 -- | 'gradBP' for a two-argument function.  See 'backprop2' for notes.
 gradBP2
-    :: (Zero a, Zero b, One c)
+    :: (Backprop a, Backprop b, Backprop c)
     => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
     -> a
     -> b
@@ -324,7 +324,7 @@ gradBP2 = E.gradBP2 zeroFunc zeroFunc oneFunc
 -- the contents (like 'multiplying').
 --
 (^^.)
-    :: forall a b s. (Reifies s W, Add a, Zero a)
+    :: forall a b s. (Reifies s W, Backprop a)
     => BVar s b
     -> Lens' b a
     -> BVar s a
@@ -337,7 +337,7 @@ infixl 8 ^^.
 --
 -- See documentation for '^^.' for more information.
 viewVar
-    :: forall a b s. (Reifies s W, Add a, Zero a)
+    :: forall a b s. (Reifies s W, Backprop a)
     => Lens' b a
     -> BVar s b
     -> BVar s a
@@ -369,7 +369,7 @@ viewVar = E.viewVar addFunc zeroFunc
 -- This is the main way to set values inside 'BVar's of container types.
 --
 (.~~)
-    :: forall a b s. (Reifies s W, Add a, Add b, Zero a, Zero b)
+    :: forall a b s. (Reifies s W, Backprop a, Backprop b)
     => Lens' b a
     -> BVar s a
     -> BVar s b
@@ -383,7 +383,7 @@ infixl 8 .~~
 --
 -- See documentation for '.~~' for more information.
 setVar
-    :: forall a b s. (Reifies s W, Add a, Add b, Zero a, Zero b)
+    :: forall a b s. (Reifies s W, Backprop a, Backprop b)
     => Lens' b a
     -> BVar s a
     -> BVar s b
@@ -438,7 +438,7 @@ setVar = E.setVar addFunc addFunc zeroFunc zeroFunc
 -- myPrism . 'iso' 'tupT2' 't2Tup' :: 'Prism'' c ('T2' a b)
 -- @
 (^^?)
-    :: forall b a s. (Add a, Zero a, Reifies s W)
+    :: forall b a s. (Backprop a, Reifies s W)
     => BVar s b
     -> Traversal' b a
     -> Maybe (BVar s a)
@@ -452,7 +452,7 @@ v ^^? t = previewVar t v
 --
 -- See documentation for '^^?' for more information.
 previewVar
-    :: forall b a s. (Reifies s W, Add a, Zero a)
+    :: forall b a s. (Reifies s W, Backprop a)
     => Traversal' b a
     -> BVar s b
     -> Maybe (BVar s a)
@@ -481,7 +481,7 @@ previewVar = E.previewVar addFunc zeroFunc
 -- has type @['BVar' s a]@ (A list of 'BVar's holding @a@s).
 --
 (^^..)
-    :: forall b a s. (Add a, Zero a, Reifies s W)
+    :: forall b a s. (Backprop a, Reifies s W)
     => BVar s b
     -> Traversal' b a
     -> [BVar s a]
@@ -493,7 +493,7 @@ v ^^.. t = toListOfVar t v
 --
 -- See documentation for '^^..' for more information.
 toListOfVar
-    :: forall b a s. (Add a, Zero a, Reifies s W)
+    :: forall b a s. (Backprop a, Reifies s W)
     => Traversal' b a
     -> BVar s b
     -> [BVar s a]
@@ -509,7 +509,7 @@ toListOfVar = E.toListOfVar addFunc zeroFunc
 -- unexpected behavior in 'Foldable' instances that don't have a fixed
 -- number of items.
 sequenceVar
-    :: forall t a s. (Add a, Zero a, Reifies s W, Traversable t)
+    :: forall t a s. (Backprop a, Reifies s W, Traversable t)
     => BVar s (t a)
     -> t (BVar s a)
 sequenceVar = E.sequenceVar addFunc zeroFunc
@@ -529,7 +529,7 @@ sequenceVar = E.sequenceVar addFunc zeroFunc
 -- <https://hackage.haskell.org/package/vector-sized vector-sized> instead:
 -- it's a fixed-length vector type with a very appropriate 'Num' instance!
 collectVar
-    :: forall t a s. (Add a, Zero a, Zero (t a), Reifies s W, Foldable t, Functor t)
+    :: forall t a s. (Backprop a, Backprop (t a), Reifies s W, Foldable t, Functor t)
     => t (BVar s a)
     -> BVar s (t a)
 collectVar = E.collectVar addFunc zeroFunc zeroFunc
@@ -545,7 +545,7 @@ collectVar = E.collectVar addFunc zeroFunc zeroFunc
 -- information, and "Numeric.Backprop.Op#prod" for a mini-tutorial on using
 -- 'Prod' and 'Tuple'.
 liftOp
-    :: forall as b s. (Every Add as, Known Length as, Zero b, Reifies s W)
+    :: forall as b s. (Every Backprop as, Known Length as, Backprop b, Reifies s W)
     => Op as b
     -> Prod (BVar s) as
     -> BVar s b
@@ -560,7 +560,7 @@ liftOp = E.liftOp addFuncs zeroFunc
 -- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
 -- information.
 liftOp1
-    :: forall a b s. (Add a, Zero b, Reifies s W)
+    :: forall a b s. (Backprop a, Backprop b, Reifies s W)
     => Op '[a] b
     -> BVar s a
     -> BVar s b
@@ -575,7 +575,7 @@ liftOp1 = E.liftOp1 addFunc zeroFunc
 -- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
 -- information.
 liftOp2
-    :: forall a b c s. (Add a, Add b, Zero c, Reifies s W)
+    :: forall a b c s. (Backprop a, Backprop b, Backprop c, Reifies s W)
     => Op '[a,b] c
     -> BVar s a
     -> BVar s b
@@ -591,7 +591,7 @@ liftOp2 = E.liftOp2 addFunc addFunc zeroFunc
 -- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
 -- information.
 liftOp3
-    :: forall a b c d s. (Add a, Add b, Add c, Zero d, Reifies s W)
+    :: forall a b c d s. (Backprop a, Backprop b, Backprop c, Backprop d, Reifies s W)
     => Op '[a,b,c] d
     -> BVar s a
     -> BVar s b
@@ -609,7 +609,7 @@ liftOp3 = E.liftOp3 addFunc addFunc addFunc zeroFunc
 --
 -- @since 0.1.4.0
 isoVar
-    :: (Add a, Zero b, Reifies s W)
+    :: (Backprop a, Backprop b, Reifies s W)
     => (a -> b)
     -> (b -> a)
     -> BVar s a
@@ -622,7 +622,7 @@ isoVar f g = liftOp1 (opIso f g)
 --
 -- @since 0.1.4.0
 isoVar2
-    :: (Add a, Add b, Zero c, Reifies s W)
+    :: (Backprop a, Backprop b, Backprop c, Reifies s W)
     => (a -> b -> c)
     -> (c -> (a, b))
     -> BVar s a
@@ -636,7 +636,7 @@ isoVar2 f g = liftOp2 (opIso2 f g)
 --
 -- @since 0.1.4.0
 isoVar3
-    :: (Add a, Add b, Add c, Zero d, Reifies s W)
+    :: (Backprop a, Backprop b, Backprop c, Backprop d, Reifies s W)
     => (a -> b -> c -> d)
     -> (d -> (a, b, c))
     -> BVar s a
@@ -652,7 +652,7 @@ isoVar3 f g = liftOp3 (opIso3 f g)
 --
 -- @since 0.1.4.0
 isoVarN
-    :: (Every Add as, Known Length as, Zero b, Reifies s W)
+    :: (Every Backprop as, Known Length as, Backprop b, Reifies s W)
     => (Tuple as -> b)
     -> (b -> Tuple as)
     -> Prod (BVar s) as
