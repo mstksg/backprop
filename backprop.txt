@@ -35,8 +35,8 @@ module Numeric.Backprop.Class
 --   </ul>
 --   
 --   <ul>
---   <li><pre><a>add</a> x (<a>zero</a> y) == x</pre></li>
---   <li><pre><a>add</a> (<a>zero</a> x) y == y</pre></li>
+--   <li><pre><a>add</a> x (<a>zero</a> y) = x</pre></li>
+--   <li><pre><a>add</a> (<a>zero</a> x) y = y</pre></li>
 --   </ul>
 --   
 --   <ul>
@@ -44,7 +44,7 @@ module Numeric.Backprop.Class
 --   </ul>
 --   
 --   <ul>
---   <li><pre><a>add</a> x y == <a>add</a> y x</pre></li>
+--   <li><pre><a>add</a> x y = <a>add</a> y x</pre></li>
 --   </ul>
 --   
 --   <ul>
@@ -52,7 +52,7 @@ module Numeric.Backprop.Class
 --   </ul>
 --   
 --   <ul>
---   <li><pre><a>add</a> x (<a>add</a> y z) == <a>add</a> (<a>add</a> x y)
+--   <li><pre><a>add</a> x (<a>add</a> y z) = <a>add</a> (<a>add</a> x y)
 --   z</pre></li>
 --   </ul>
 --   
@@ -61,9 +61,18 @@ module Numeric.Backprop.Class
 --   </ul>
 --   
 --   <ul>
---   <li><pre><a>zero</a> <a>.</a> <a>zero</a> == <a>zero</a></pre></li>
---   <li><pre><a>one</a> <a>.</a> <a>one</a> == <a>one</a></pre></li>
+--   <li><pre><a>zero</a> <a>.</a> <a>zero</a> = <a>zero</a></pre></li>
+--   <li><pre><a>one</a> <a>.</a> <a>one</a> = <a>one</a></pre></li>
 --   </ul>
+--   
+--   Note that not all values in the backpropagation process needs all of
+--   these methods: Only the "final result" needs <a>one</a>, only the
+--   inputs need <a>add</a>, only results need <a>zero</a>. These are all
+--   grouped under one typeclass for convenience in defining instances, and
+--   also to talk about sensible laws. For fine-grained control, use the
+--   "explicit" versions of library functions (for example, in
+--   <a>Numeric.Backprop.Explicit</a>) instead of <a>Backprop</a> based
+--   ones.
 class Backprop a
 
 -- | "Zero out" all components of a value. For scalar values, this should
@@ -2099,8 +2108,8 @@ data W
 --   </ul>
 --   
 --   <ul>
---   <li><pre><a>add</a> x (<a>zero</a> y) == x</pre></li>
---   <li><pre><a>add</a> (<a>zero</a> x) y == y</pre></li>
+--   <li><pre><a>add</a> x (<a>zero</a> y) = x</pre></li>
+--   <li><pre><a>add</a> (<a>zero</a> x) y = y</pre></li>
 --   </ul>
 --   
 --   <ul>
@@ -2108,7 +2117,7 @@ data W
 --   </ul>
 --   
 --   <ul>
---   <li><pre><a>add</a> x y == <a>add</a> y x</pre></li>
+--   <li><pre><a>add</a> x y = <a>add</a> y x</pre></li>
 --   </ul>
 --   
 --   <ul>
@@ -2116,7 +2125,7 @@ data W
 --   </ul>
 --   
 --   <ul>
---   <li><pre><a>add</a> x (<a>add</a> y z) == <a>add</a> (<a>add</a> x y)
+--   <li><pre><a>add</a> x (<a>add</a> y z) = <a>add</a> (<a>add</a> x y)
 --   z</pre></li>
 --   </ul>
 --   
@@ -2125,9 +2134,18 @@ data W
 --   </ul>
 --   
 --   <ul>
---   <li><pre><a>zero</a> <a>.</a> <a>zero</a> == <a>zero</a></pre></li>
---   <li><pre><a>one</a> <a>.</a> <a>one</a> == <a>one</a></pre></li>
+--   <li><pre><a>zero</a> <a>.</a> <a>zero</a> = <a>zero</a></pre></li>
+--   <li><pre><a>one</a> <a>.</a> <a>one</a> = <a>one</a></pre></li>
 --   </ul>
+--   
+--   Note that not all values in the backpropagation process needs all of
+--   these methods: Only the "final result" needs <a>one</a>, only the
+--   inputs need <a>add</a>, only results need <a>zero</a>. These are all
+--   grouped under one typeclass for convenience in defining instances, and
+--   also to talk about sensible laws. For fine-grained control, use the
+--   "explicit" versions of library functions (for example, in
+--   <a>Numeric.Backprop.Explicit</a>) instead of <a>Backprop</a> based
+--   ones.
 class Backprop a
 
 -- | "Zero out" all components of a value. For scalar values, this should
