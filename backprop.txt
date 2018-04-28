@@ -14,6 +14,112 @@
 @package backprop
 @version 0.1.5.2
 
+module Numeric.Backprop.Class
+class Zero a
+zero :: Zero a => a -> a
+zero :: (Zero a, Num a) => a -> a
+
+-- | "Zero out" all components of a value. For scalar values, this should
+--   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
+--   set all components to zero, the additive identity.
+--   
+--   Each type should ideally only have one <a>ZeroFunc</a>. This coherence
+--   constraint is given by the typeclass <a>Zero</a>.
+newtype ZeroFunc a
+ZF :: (a -> a) -> ZeroFunc a
+[runZF] :: ZeroFunc a -> a -> a
+zeroFunc :: Zero a => ZeroFunc a
+zeroFuncs :: (Every Zero as, Known Length as) => Prod ZeroFunc as
+
+-- | If a type has a <a>Num</a> instance, this is the canonical
+--   <a>ZeroFunc</a>.
+zfNum :: Num a => ZeroFunc a
+
+-- | <a>ZeroFunc</a>s for every item in a type level list based on their
+--   <a>Num</a> instances
+zfNums :: (Every Num as, Known Length as) => Prod ZeroFunc as
+class Add a
+add :: Add a => a -> a -> a
+add :: (Add a, Num a) => a -> a -> a
+
+-- | Add together two values of a type. To combine contributions of
+--   gradients, so should ideally be information-preserving. For any other
+--   valid <a>ZeroFunc</a>, should ideally obey:
+--   
+--   <pre>
+--   af zf x y -&gt; <a>runAF</a> af x (<a>runZF</a> zf y) == x
+--              &amp;&amp; <a>runAF</a> af (<a>runZF</a> zf x) y == y
+--   </pre>
+--   
+--   Each type should ideally only have one <a>AddFunc</a>. This coherence
+--   constraint is given by the typeclass <a>Add</a>.
+newtype AddFunc a
+AF :: (a -> a -> a) -> AddFunc a
+[runAF] :: AddFunc a -> a -> a -> a
+addFunc :: Add a => AddFunc a
+addFuncs :: (Every Add as, Known Length as) => Prod AddFunc as
+
+-- | If a type has a <a>Num</a> instance, this is the canonical
+--   <a>AddFunc</a>.
+afNum :: Num a => AddFunc a
+
+-- | <a>ZeroFunc</a>s for every item in a type level list based on their
+--   <a>Num</a> instances
+afNums :: (Every Num as, Known Length as) => Prod AddFunc as
+class One a
+one :: One a => a -> a
+one :: (One a, Num a) => a -> a
+
+-- | <a>One</a> all components of a value. For scalar values, this should
+--   just be <tt><a>const</a> 1</tt>. For vectors and matrices, this should
+--   set all components to one, the multiplicative identity.
+--   
+--   Each type should ideally only have one <a>ZeroFunc</a>. This coherence
+--   constraint is given by the typeclass <a>One</a>.
+newtype OneFunc a
+OF :: (a -> a) -> OneFunc a
+[runOF] :: OneFunc a -> a -> a
+oneFunc :: One a => OneFunc a
+oneFuncs :: (Every One as, Known Length as) => Prod OneFunc as
+
+-- | If a type has a <a>Num</a> instance, this is the canonical
+--   <a>OneFunc</a>.
+ofNum :: Num a => OneFunc a
+
+-- | <a>ZeroFunc</a>s for every item in a type level list based on their
+--   <a>Num</a> instances
+ofNums :: (Every Num as, Known Length as) => Prod OneFunc as
+zeroVec :: (Vector v a, Zero a) => v a -> v a
+addVec :: (Vector v a, Add a) => v a -> v a -> v a
+oneVec :: (Vector v a, One a) => v a -> v a
+zeroFunctor :: (Functor f, Zero a) => f a -> f a
+addIsList :: (IsList a, Add (Item a)) => a -> a -> a
+oneFunctor :: (Functor f, One a) => f a -> f a
+instance Numeric.Backprop.Class.One GHC.Types.Float
+instance Numeric.Backprop.Class.One GHC.Types.Double
+instance Numeric.Backprop.Class.One a => Numeric.Backprop.Class.One (Data.Vector.Vector a)
+instance (Data.Vector.Unboxed.Base.Unbox a, Numeric.Backprop.Class.One a) => Numeric.Backprop.Class.One (Data.Vector.Unboxed.Base.Vector a)
+instance (Foreign.Storable.Storable a, Numeric.Backprop.Class.One a) => Numeric.Backprop.Class.One (Data.Vector.Storable.Vector a)
+instance (Data.Primitive.Types.Prim a, Numeric.Backprop.Class.One a) => Numeric.Backprop.Class.One (Data.Vector.Primitive.Vector a)
+instance Numeric.Backprop.Class.One a => Numeric.Backprop.Class.One [a]
+instance Numeric.Backprop.Class.One a => Numeric.Backprop.Class.One (Data.List.NonEmpty.NonEmpty a)
+instance Numeric.Backprop.Class.Add GHC.Types.Float
+instance Numeric.Backprop.Class.Add GHC.Types.Double
+instance Numeric.Backprop.Class.Add a => Numeric.Backprop.Class.Add (Data.Vector.Vector a)
+instance (Data.Vector.Unboxed.Base.Unbox a, Numeric.Backprop.Class.Add a) => Numeric.Backprop.Class.Add (Data.Vector.Unboxed.Base.Vector a)
+instance (Foreign.Storable.Storable a, Numeric.Backprop.Class.Add a) => Numeric.Backprop.Class.Add (Data.Vector.Storable.Vector a)
+instance (Data.Primitive.Types.Prim a, Numeric.Backprop.Class.Add a) => Numeric.Backprop.Class.Add (Data.Vector.Primitive.Vector a)
+instance Numeric.Backprop.Class.Add a => Numeric.Backprop.Class.Add [a]
+instance Numeric.Backprop.Class.Add a => Numeric.Backprop.Class.Add (Data.List.NonEmpty.NonEmpty a)
+instance Numeric.Backprop.Class.Zero GHC.Types.Float
+instance Numeric.Backprop.Class.Zero GHC.Types.Double
+instance Numeric.Backprop.Class.Zero a => Numeric.Backprop.Class.Zero (Data.Vector.Vector a)
+instance (Data.Vector.Unboxed.Base.Unbox a, Numeric.Backprop.Class.Zero a) => Numeric.Backprop.Class.Zero (Data.Vector.Unboxed.Base.Vector a)
+instance (Foreign.Storable.Storable a, Numeric.Backprop.Class.Zero a) => Numeric.Backprop.Class.Zero (Data.Vector.Storable.Vector a)
+instance (Data.Primitive.Types.Prim a, Numeric.Backprop.Class.Zero a) => Numeric.Backprop.Class.Zero (Data.Vector.Primitive.Vector a)
+instance Numeric.Backprop.Class.Zero a => Numeric.Backprop.Class.Zero [a]
+instance Numeric.Backprop.Class.Zero a => Numeric.Backprop.Class.Zero (Data.List.NonEmpty.NonEmpty a)
+
 
 -- | Provides the <a>Op</a> type and combinators, which represent
 --   differentiable functions/operations on values, and are used internally
@@ -455,88 +561,6 @@ instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.I
 instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.Index.Every * GHC.Real.Fractional as, Data.Type.Index.Every * GHC.Num.Num as, GHC.Real.Fractional a) => GHC.Real.Fractional (Numeric.Backprop.Op.Op as a)
 instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.Index.Every * GHC.Float.Floating as, Data.Type.Index.Every * GHC.Real.Fractional as, Data.Type.Index.Every * GHC.Num.Num as, GHC.Float.Floating a) => GHC.Float.Floating (Numeric.Backprop.Op.Op as a)
 
-module Numeric.Backprop.Class
-class Zero a
-zero :: Zero a => a -> a
-zero :: (Zero a, Num a) => a -> a
-
--- | "Zero out" all components of a value. For scalar values, this should
---   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
---   set all components to zero, the additive identity.
---   
---   Each type should ideally only have one <a>ZeroFunc</a>. This coherence
---   constraint is given by the typeclass <tt>Zero</tt>.
-newtype ZeroFunc a
-ZF :: (a -> a) -> ZeroFunc a
-[runZF] :: ZeroFunc a -> a -> a
-zeroFunc :: Zero a => ZeroFunc a
-zeroFuncs :: (Every Zero as, Known Length as) => Prod ZeroFunc as
-class Add a
-add :: Add a => a -> a -> a
-add :: (Add a, Num a) => a -> a -> a
-
--- | Add together two values of a type. To combine contributions of
---   gradients, so should ideally be information-preserving. For any other
---   valid <a>ZeroFunc</a>, should ideally obey:
---   
---   <pre>
---   af zf x y -&gt; <a>runAF</a> af x (<a>runZF</a> zf y) == x
---              &amp;&amp; <a>runAF</a> af (<a>runZF</a> zf x) y == y
---   </pre>
---   
---   Each type should ideally only have one <a>AddFunc</a>. This coherence
---   constraint is given by the typeclass <tt>Add</tt>.
-newtype AddFunc a
-AF :: (a -> a -> a) -> AddFunc a
-[runAF] :: AddFunc a -> a -> a -> a
-addFunc :: Add a => AddFunc a
-addFuncs :: (Every Add as, Known Length as) => Prod AddFunc as
-class One a
-one :: One a => a -> a
-one :: (One a, Num a) => a -> a
-
--- | <a>One</a> all components of a value. For scalar values, this should
---   just be <tt><a>const</a> 1</tt>. For vectors and matrices, this should
---   set all components to one, the multiplicative identity.
---   
---   Each type should ideally only have one <a>ZeroFunc</a>. This coherence
---   constraint is given by the typeclass <tt>One</tt>.
-newtype OneFunc a
-OF :: (a -> a) -> OneFunc a
-[runOF] :: OneFunc a -> a -> a
-oneFunc :: One a => OneFunc a
-oneFuncs :: (Every One as, Known Length as) => Prod OneFunc as
-zeroVec :: (Vector v a, Zero a) => v a -> v a
-addVec :: (Vector v a, Add a) => v a -> v a -> v a
-oneVec :: (Vector v a, One a) => v a -> v a
-zeroFunctor :: (Functor f, Zero a) => f a -> f a
-addIsList :: (IsList a, Add (Item a)) => a -> a -> a
-oneFunctor :: (Functor f, One a) => f a -> f a
-instance Numeric.Backprop.Class.One GHC.Types.Float
-instance Numeric.Backprop.Class.One GHC.Types.Double
-instance Numeric.Backprop.Class.One a => Numeric.Backprop.Class.One (Data.Vector.Vector a)
-instance (Data.Vector.Unboxed.Base.Unbox a, Numeric.Backprop.Class.One a) => Numeric.Backprop.Class.One (Data.Vector.Unboxed.Base.Vector a)
-instance (Foreign.Storable.Storable a, Numeric.Backprop.Class.One a) => Numeric.Backprop.Class.One (Data.Vector.Storable.Vector a)
-instance (Data.Primitive.Types.Prim a, Numeric.Backprop.Class.One a) => Numeric.Backprop.Class.One (Data.Vector.Primitive.Vector a)
-instance Numeric.Backprop.Class.One a => Numeric.Backprop.Class.One [a]
-instance Numeric.Backprop.Class.One a => Numeric.Backprop.Class.One (Data.List.NonEmpty.NonEmpty a)
-instance Numeric.Backprop.Class.Add GHC.Types.Float
-instance Numeric.Backprop.Class.Add GHC.Types.Double
-instance Numeric.Backprop.Class.Add a => Numeric.Backprop.Class.Add (Data.Vector.Vector a)
-instance (Data.Vector.Unboxed.Base.Unbox a, Numeric.Backprop.Class.Add a) => Numeric.Backprop.Class.Add (Data.Vector.Unboxed.Base.Vector a)
-instance (Foreign.Storable.Storable a, Numeric.Backprop.Class.Add a) => Numeric.Backprop.Class.Add (Data.Vector.Storable.Vector a)
-instance (Data.Primitive.Types.Prim a, Numeric.Backprop.Class.Add a) => Numeric.Backprop.Class.Add (Data.Vector.Primitive.Vector a)
-instance Numeric.Backprop.Class.Add a => Numeric.Backprop.Class.Add [a]
-instance Numeric.Backprop.Class.Add a => Numeric.Backprop.Class.Add (Data.List.NonEmpty.NonEmpty a)
-instance Numeric.Backprop.Class.Zero GHC.Types.Float
-instance Numeric.Backprop.Class.Zero GHC.Types.Double
-instance Numeric.Backprop.Class.Zero a => Numeric.Backprop.Class.Zero (Data.Vector.Vector a)
-instance (Data.Vector.Unboxed.Base.Unbox a, Numeric.Backprop.Class.Zero a) => Numeric.Backprop.Class.Zero (Data.Vector.Unboxed.Base.Vector a)
-instance (Foreign.Storable.Storable a, Numeric.Backprop.Class.Zero a) => Numeric.Backprop.Class.Zero (Data.Vector.Storable.Vector a)
-instance (Data.Primitive.Types.Prim a, Numeric.Backprop.Class.Zero a) => Numeric.Backprop.Class.Zero (Data.Vector.Primitive.Vector a)
-instance Numeric.Backprop.Class.Zero a => Numeric.Backprop.Class.Zero [a]
-instance Numeric.Backprop.Class.Zero a => Numeric.Backprop.Class.Zero (Data.List.NonEmpty.NonEmpty a)
-
 module Numeric.Backprop.Explicit
 
 -- | A <tt><a>BVar</a> s a</tt> is a value of type <tt>a</tt> that can be
@@ -600,7 +624,7 @@ data W
 --   </pre>
 --   
 --   Each type should ideally only have one <a>AddFunc</a>. This coherence
---   constraint is given by the typeclass <tt>Add</tt>.
+--   constraint is given by the typeclass <a>Add</a>.
 newtype AddFunc a
 AF :: (a -> a -> a) -> AddFunc a
 [runAF] :: AddFunc a -> a -> a -> a
@@ -609,12 +633,21 @@ AF :: (a -> a -> a) -> AddFunc a
 --   <a>AddFunc</a>.
 afNum :: Num a => AddFunc a
 
+-- | <a>ZeroFunc</a>s for every item in a type level list based on their
+--   <a>Num</a> instances
+afNums :: (Every Num as, Known Length as) => Prod AddFunc as
+class Add a
+add :: Add a => a -> a -> a
+add :: (Add a, Num a) => a -> a -> a
+addFunc :: Add a => AddFunc a
+addFuncs :: (Every Add as, Known Length as) => Prod AddFunc as
+
 -- | "Zero out" all components of a value. For scalar values, this should
 --   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
 --   set all components to zero, the additive identity.
 --   
 --   Each type should ideally only have one <a>ZeroFunc</a>. This coherence
---   constraint is given by the typeclass <tt>Zero</tt>.
+--   constraint is given by the typeclass <a>Zero</a>.
 newtype ZeroFunc a
 ZF :: (a -> a) -> ZeroFunc a
 [runZF] :: ZeroFunc a -> a -> a
@@ -623,12 +656,21 @@ ZF :: (a -> a) -> ZeroFunc a
 --   <a>ZeroFunc</a>.
 zfNum :: Num a => ZeroFunc a
 
+-- | <a>ZeroFunc</a>s for every item in a type level list based on their
+--   <a>Num</a> instances
+zfNums :: (Every Num as, Known Length as) => Prod ZeroFunc as
+class Zero a
+zero :: Zero a => a -> a
+zero :: (Zero a, Num a) => a -> a
+zeroFunc :: Zero a => ZeroFunc a
+zeroFuncs :: (Every Zero as, Known Length as) => Prod ZeroFunc as
+
 -- | <a>One</a> all components of a value. For scalar values, this should
 --   just be <tt><a>const</a> 1</tt>. For vectors and matrices, this should
 --   set all components to one, the multiplicative identity.
 --   
 --   Each type should ideally only have one <a>ZeroFunc</a>. This coherence
---   constraint is given by the typeclass <tt>One</tt>.
+--   constraint is given by the typeclass <a>One</a>.
 newtype OneFunc a
 OF :: (a -> a) -> OneFunc a
 [runOF] :: OneFunc a -> a -> a
@@ -636,6 +678,15 @@ OF :: (a -> a) -> OneFunc a
 -- | If a type has a <a>Num</a> instance, this is the canonical
 --   <a>OneFunc</a>.
 ofNum :: Num a => OneFunc a
+
+-- | <a>ZeroFunc</a>s for every item in a type level list based on their
+--   <a>Num</a> instances
+ofNums :: (Every Num as, Known Length as) => Prod OneFunc as
+class One a
+one :: One a => a -> a
+one :: (One a, Num a) => a -> a
+oneFunc :: One a => OneFunc a
+oneFuncs :: (Every One as, Known Length as) => Prod OneFunc as
 
 -- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
 --   the function <tt>a -&gt; b</tt> that it represents, also computing its
@@ -881,6 +932,720 @@ liftOp2 :: forall a b c s. Reifies s W => AddFunc a -> AddFunc b -> ZeroFunc c -
 --   See <a>Numeric.Backprop#liftops</a> and documentation for
 --   <a>liftOp</a> for more information.
 liftOp3 :: forall a b c d s. Reifies s W => AddFunc a -> AddFunc b -> AddFunc c -> ZeroFunc d -> Op '[a, b, c] d -> BVar s a -> BVar s b -> BVar s c -> BVar s d
+
+-- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
+--   <tt>as</tt> to <tt>a</tt>.
+--   
+--   For example, a value of type
+--   
+--   <pre>
+--   <a>Op</a> '[Int, Bool] Double
+--   </pre>
+--   
+--   is a function from an <a>Int</a> and a <a>Bool</a>, returning a
+--   <a>Double</a>. It can be differentiated to give a <i>gradient</i> of
+--   an <a>Int</a> and a <a>Bool</a> if given a total derivative for the
+--   <tt>Double</tt>. If we call <a>Bool</a> &lt;math&gt;, then,
+--   mathematically, it is akin to a:
+--   
+--   &lt;math&gt;
+--   
+--   See <a>runOp</a>, <a>gradOp</a>, and <a>gradOpWith</a> for examples on
+--   how to run it, and <a>Op</a> for instructions on creating it.
+--   
+--   It is simpler to not use this type constructor directly, and instead
+--   use the <a>op2</a>, <a>op1</a>, <a>op2</a>, and <a>op3</a> helper
+--   smart constructors.
+--   
+--   See <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on using
+--   <a>Prod</a> and <a>Tuple</a>.
+newtype Op as a
+
+-- | Construct an <a>Op</a> by giving a function creating the result, and
+--   also a continuation on how to create the gradient, given the total
+--   derivative of <tt>a</tt>.
+--   
+--   See the module documentation for <a>Numeric.Backprop.Op</a> for more
+--   details on the function that this constructor and <a>Op</a> expect.
+Op :: (Tuple as -> (a, a -> Tuple as)) -> Op as a
+
+-- | Run the function that the <a>Op</a> encodes, returning a continuation
+--   to compute the gradient, given the total derivative of <tt>a</tt>. See
+--   documentation for <a>Numeric.Backprop.Op</a> for more information.
+[runOpWith] :: Op as a -> Tuple as -> (a, a -> Tuple as)
+
+-- | Create an <a>Op</a> that takes no inputs and always returns the given
+--   value.
+--   
+--   There is no gradient, of course (using <a>gradOp</a> will give you an
+--   empty tuple), because there is no input to have a gradient of.
+--   
+--   <pre>
+--   &gt;&gt;&gt; runOp (op0 10) Ø
+--   (10, Ø)
+--   </pre>
+--   
+--   For a constant <a>Op</a> that takes input and ignores it, see
+--   <a>opConst</a> and <a>opConst'</a>.
+op0 :: a -> Op '[] a
+
+-- | An <a>Op</a> that ignores all of its inputs and returns a given
+--   constant value.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' (opConst 10) (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø)
+--   (10, 0 ::&lt; 0 ::&lt; 0 ::&lt; Ø)
+--   </pre>
+opConst :: (Every Num as, Known Length as) => a -> Op as a
+
+-- | An <a>Op</a> that just returns whatever it receives. The identity
+--   function.
+--   
+--   <pre>
+--   <a>idOp</a> = <a>opIso</a> <a>id</a> <a>id</a>
+--   </pre>
+idOp :: Op '[a] a
+
+-- | A version of <a>opConst</a> taking explicit <a>Length</a>, indicating
+--   the number of inputs and their types.
+--   
+--   Requiring an explicit <a>Length</a> is mostly useful for rare
+--   "extremely polymorphic" situations, where GHC can't infer the type and
+--   length of the the expected input tuple. If you ever actually
+--   explicitly write down <tt>as</tt> as a list of types, you should be
+--   able to just use <a>opConst</a>.
+opConst' :: Every Num as => Length as -> a -> Op as a
+
+-- | Create an <a>Op</a> of a function taking one input, by giving its
+--   explicit derivative. The function should return a tuple containing the
+--   result of the function, and also a function taking the derivative of
+--   the result and return the derivative of the input.
+--   
+--   If we have
+--   
+--   &lt;math&gt;
+--   
+--   Then the derivative &lt;math&gt;, it would be:
+--   
+--   &lt;math&gt;
+--   
+--   If our <a>Op</a> represents &lt;math&gt;, then the second item in the
+--   resulting tuple should be a function that takes &lt;math&gt; and
+--   returns &lt;math&gt;.
+--   
+--   As an example, here is an <a>Op</a> that squares its input:
+--   
+--   <pre>
+--   square :: Num a =&gt; <a>Op</a> '[a] a
+--   square = <a>op1</a> $ \x -&gt; (x*x, \d -&gt; 2 * d * x
+--                        )
+--   </pre>
+--   
+--   Remember that, generally, end users shouldn't directly construct
+--   <a>Op</a>s; they should be provided by libraries or generated
+--   automatically.
+op1 :: (a -> (b, b -> a)) -> Op '[a] b
+
+-- | Create an <a>Op</a> of a function taking two inputs, by giving its
+--   explicit gradient. The function should return a tuple containing the
+--   result of the function, and also a function taking the derivative of
+--   the result and return the derivative of the input.
+--   
+--   If we have
+--   
+--   &lt;math&gt;
+--   
+--   Then the gradient &lt;math&gt; would be:
+--   
+--   &lt;math&gt;
+--   
+--   If our <a>Op</a> represents &lt;math&gt;, then the second item in the
+--   resulting tuple should be a function that takes &lt;math&gt; and
+--   returns &lt;math&gt;.
+--   
+--   As an example, here is an <a>Op</a> that multiplies its inputs:
+--   
+--   <pre>
+--   mul :: Num a =&gt; <a>Op</a> '[a, a] a
+--   mul = <tt>op2'</tt> $ \x y -&gt; (x*y, \d -&gt; (d*y, x*d)
+--                        )
+--   </pre>
+--   
+--   Remember that, generally, end users shouldn't directly construct
+--   <a>Op</a>s; they should be provided by libraries or generated
+--   automatically.
+op2 :: (a -> b -> (c, c -> (a, b))) -> Op '[a, b] c
+
+-- | Create an <a>Op</a> of a function taking three inputs, by giving its
+--   explicit gradient. See documentation for <a>op2</a> for more details.
+op3 :: (a -> b -> c -> (d, d -> (a, b, c))) -> Op '[a, b, c] d
+
+-- | An <a>Op</a> that coerces an item into another item whose type has the
+--   same runtime representation.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' opCoerce (Identity 5) :: (Int, Identity Int)
+--   (5, Identity 1)
+--   </pre>
+--   
+--   <pre>
+--   <a>opCoerce</a> = <a>opIso</a> <tt>coerced</tt> <a>coerce</a>
+--   </pre>
+opCoerce :: Coercible a b => Op '[a] b
+
+-- | An <a>Op</a> that takes <tt>as</tt> and returns exactly the input
+--   tuple.
+--   
+--   <pre>
+--   &gt;&gt;&gt; gradOp' opTup (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø)
+--   (1 ::&lt; 2 ::&lt; 3 ::&lt; Ø, 1 ::&lt; 1 ::&lt; 1 ::&lt; Ø)
+--   </pre>
+opTup :: Op as (Tuple as)
+
+-- | An <a>Op</a> that runs the input value through an isomorphism.
+--   
+--   Warning: This is unsafe! It assumes that the isomorphisms themselves
+--   have derivative 1, so will break for things like <a>exp</a> &amp;
+--   <a>log</a>. Basically, don't use this for any "numeric" isomorphisms.
+opIso :: (a -> b) -> (b -> a) -> Op '[a] b
+
+-- | An <a>Op</a> that runs the input value through an isomorphism between
+--   a tuple of values and a value. See <a>opIso</a> for caveats.
+--   
+--   In <a>Numeric.Backprop.Op</a> since version 0.1.2.0, but only exported
+--   from <a>Numeric.Backprop</a> since version 0.1.3.0.
+opIsoN :: (Tuple as -> b) -> (b -> Tuple as) -> Op as b
+
+-- | An <a>Op</a> that extracts a value from an input value using a
+--   <a>Lens'</a>.
+--   
+--   Warning: This is unsafe! It assumes that it extracts a specific value
+--   unchanged, with derivative 1, so will break for things that
+--   numerically manipulate things before returning them.
+opLens :: Num a => Lens' a b -> Op '[a] b
+
+-- | Create an <a>Op</a> with no gradient. Can be evaluated with
+--   <a>evalOp</a>, but will throw a runtime exception when asked for the
+--   gradient.
+--   
+--   Can be used with <tt>BVar</tt> with <tt>liftOp1</tt>, and
+--   <tt>evalBP</tt> will work fine. <tt>gradBP</tt> and <tt>backprop</tt>
+--   will also work fine if the result is never used in the final answer,
+--   but will throw a runtime exception if the final answer depends on the
+--   result of this operation.
+--   
+--   Useful if your only API is exposed through <i>backprop</i>. Just be
+--   sure to tell your users that this will explode when finding the
+--   gradient if the result is used in the final result.
+noGrad1 :: (a -> b) -> Op '[a] b
+
+-- | Create an <a>Op</a> with no gradient. Can be evaluated with
+--   <a>evalOp</a>, but will throw a runtime exception when asked for the
+--   gradient.
+--   
+--   Can be used with <tt>BVar</tt> with <tt>liftOp</tt>, and
+--   <tt>evalBP</tt> will work fine. <tt>gradBP</tt> and <tt>backprop</tt>
+--   will also work fine if the result is never used in the final answer,
+--   but will throw a runtime exception if the final answer depends on the
+--   result of this operation.
+--   
+--   Useful if your only API is exposed through <i>backprop</i>. Just be
+--   sure to tell your users that this will explode when finding the
+--   gradient if the result is used in the final result.
+noGrad :: (Tuple as -> b) -> Op as b
+data Prod k (f :: k -> *) (a :: [k]) :: forall k. () => (k -> *) -> [k] -> *
+[Ø] :: Prod k f [] k
+[:<] :: Prod k f (:) k a1 as
+
+-- | Construct a two element Prod. Since the precedence of (:&gt;) is
+--   higher than (:&lt;), we can conveniently write lists like:
+--   
+--   <pre>
+--   &gt;&gt;&gt; a :&lt; b :&gt; c
+--   </pre>
+--   
+--   Which is identical to:
+--   
+--   <pre>
+--   &gt;&gt;&gt; a :&lt; b :&lt; c :&lt; Ø
+--   </pre>
+infix 6 :>
+
+-- | Build a singleton Prod.
+only :: () => f a -> Prod k f (:) k a [] k
+head' :: () => Prod k f (:<) k a as -> f a
+
+-- | A Prod of simple Haskell types.
+type Tuple = Prod * I
+
+-- | Cons onto a Tuple.
+infixr 5 ::<
+
+-- | Singleton Tuple.
+only_ :: () => a -> Tuple (:) * a [] *
+newtype I a :: * -> *
+I :: a -> I a
+[getI] :: I a -> a
+class Reifies k (s :: k) a | s -> a
+
+
+-- | Automatic differentation and backpropagation.
+--   
+--   Main idea: Write a function computing what you want, and the library
+--   automatically provies the gradient of that function as well, for usage
+--   with gradient descent and other training methods.
+--   
+--   In more detail: instead of working directly with values to produce
+--   your result, you work with <a>BVar</a>s containing those values.
+--   Working with these <a>BVar</a>s is made smooth with the usage of
+--   lenses and other combinators, and libraries can offer operatons on
+--   <a>BVar</a>s instead of those on normal types directly.
+--   
+--   Then, you can use:
+--   
+--   <pre>
+--   <tt>evalBP</tt> :: (forall s. <a>Reifies</a> s <a>W</a>. <a>BVar</a> s a -&gt; BVar s b) -&gt; (a -&gt; b)
+--   </pre>
+--   
+--   to turn a <a>BVar</a> function into the function on actual values
+--   <tt>a -&gt; b</tt>. This has virtually zero overhead over writing the
+--   actual function directly.
+--   
+--   Then, there's:
+--   
+--   <pre>
+--   <a>gradBP</a> :: (forall s. <a>Reifies</a> s <a>W</a>. <a>BVar</a> s a -&gt; BVar s b) -&gt; (a -&gt; a)
+--   </pre>
+--   
+--   to automatically get the <i>gradient</i>, as well, for a given input.
+--   
+--   See the <a>README</a> for more information and links to demonstrations
+--   and tutorials, or dive striaght in by reading the docs for
+--   <a>BVar</a>.
+module Numeric.Backprop.Num
+
+-- | A <tt><a>BVar</a> s a</tt> is a value of type <tt>a</tt> that can be
+--   "backpropagated".
+--   
+--   Functions referring to <a>BVar</a>s are tracked by the library and can
+--   be automatically differentiated to get their gradients and results.
+--   
+--   For simple numeric values, you can use its <a>Num</a>,
+--   <a>Fractional</a>, and <a>Floating</a> instances to manipulate them as
+--   if they were the numbers they represent.
+--   
+--   If <tt>a</tt> contains items, the items can be accessed and extracted
+--   using lenses. A <tt><a>Lens'</a> b a</tt> can be used to access an
+--   <tt>a</tt> inside a <tt>b</tt>, using <tt>^^.</tt> (<a>viewVar</a>):
+--   
+--   <pre>
+--   (<a>^.</a>)  ::        a -&gt; <a>Lens'</a> a b -&gt;        b
+--   (<tt>^^.</tt>) :: <a>BVar</a> s a -&gt; <a>Lens'</a> a b -&gt; <a>BVar</a> s b
+--   </pre>
+--   
+--   There is also <tt>^^?</tt> (<a>previewVar</a>), to use a
+--   <tt>Prism'</tt> or <a>Traversal'</a> to extract a target that may or
+--   may not be present (which can implement pattern matching),
+--   <tt>^^..</tt> (<a>toListOfVar</a>) to use a <a>Traversal'</a> to
+--   extract <i>all</i> targets inside a <a>BVar</a>, and <tt>.~~</tt>
+--   (<a>setVar</a>) to set and update values inside a <a>BVar</a>.
+--   
+--   For more complex operations, libraries can provide functions on
+--   <a>BVar</a>s using <a>liftOp</a> and related functions. This is how
+--   you can create primitive functions that users can use to manipulate
+--   your library's values.
+--   
+--   For example, the <i>hmatrix</i> library has a matrix-vector
+--   multiplication function, <tt>#&gt; :: L m n -&gt; R n -&gt; L m</tt>.
+--   
+--   A library could instead provide a function <tt>#&gt; :: <a>BVar</a> (L
+--   m n) -&gt; BVar (R n) -&gt; BVar (R m)</tt>, which the user can then
+--   use to manipulate their <a>BVar</a>s of <tt>L m n</tt>s and <tt>R
+--   n</tt>s, etc.
+--   
+--   See <a>Numeric.Backprop#liftops</a> and documentation for
+--   <a>liftOp</a> for more information.
+data BVar s a
+
+-- | An ephemeral Wengert Tape in the environment. Used internally to track
+--   of the computational graph of variables.
+--   
+--   For the end user, one can just imagine <tt><a>Reifies</a> s
+--   <a>W</a></tt> as a required constraint on <tt>s</tt> that allows
+--   backpropagation to work.
+data W
+
+-- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
+--   the function <tt>a -&gt; b</tt> that it represents, also computing its
+--   gradient <tt>a</tt> as well.
+--   
+--   The Rank-N type <tt>forall s. <a>Reifies</a> s <a>W</a> =&gt; ...</tt>
+--   is used to ensure that <a>BVar</a>s do not leak out of the context
+--   (similar to how it is used in <a>Control.Monad.ST</a>), and also as a
+--   reference to an ephemeral Wengert tape used to track the graph of
+--   references.
+--   
+--   Note that every type involved has to be an instance of <a>Num</a>.
+--   This is because gradients all need to be "summable" (which is
+--   implemented using <a>sum</a> and <a>+</a>), and we also need to able
+--   to generate gradients of 1 and 0. Really, only <a>+</a> and
+--   <a>fromInteger</a> methods are used from the <a>Num</a> typeclass.
+--   
+--   This might change in the future, to allow easier integration with
+--   tuples (which typically do not have a <a>Num</a> instance), and
+--   potentially make types easier to use (by only requiring <a>+</a>, 0,
+--   and 1, and not the rest of the <a>Num</a> class).
+--   
+--   See the <a>README</a> for a more detailed discussion on this issue.
+--   
+--   If you need a <a>Num</a> instance for tuples, you can use the
+--   canonical 2- and 3-tuples for the library in
+--   <a>Numeric.Backprop.Tuple</a>. If you need one for larger tuples,
+--   consider making a custom product type instead (making Num instances
+--   with something like <a>one-liner-instances</a>). You can also use the
+--   orphan instances in the <a>NumInstances</a> package (in particular,
+--   <a>Data.NumInstances.Tuple</a>) if you are writing an application and
+--   do not have to worry about orphan instances.
+backprop :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
+
+-- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
+--   the function <tt>a -&gt; b</tt> that it represents.
+--   
+--   Benchmarks show that this should have virtually no overhead over
+--   directly writing a <tt>a -&gt; b</tt>. <a>BVar</a> is, in this
+--   situation, a zero-cost abstraction, performance-wise.
+--   
+--   Has a nice advantage over using <a>backprop</a> in that it doesn't
+--   require <a>Num</a> constraints on the input and output.
+--   
+--   See documentation of <a>backprop</a> for more information.
+evalBP :: (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
+
+-- | Take a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt>,
+--   interpreted as a function <tt>a -&gt; b</tt>, and compute its gradient
+--   with respect to its input.
+--   
+--   The resulting <tt>a -&gt; a</tt> tells how the input (and its
+--   components) affects the output. Positive numbers indicate that the
+--   result will vary in the same direction as any adjustment in the input.
+--   Negative numbers indicate that the result will vary in the opposite
+--   direction as any adjustment in the input. Larger numbers indicate a
+--   greater sensitivity of change, and small numbers indicate lower
+--   sensitivity.
+--   
+--   See documentation of <a>backprop</a> for more information.
+gradBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
+
+-- | <a>backprop</a> for a two-argument function.
+--   
+--   Not strictly necessary, because you can always uncurry a function by
+--   passing in all of the argument inside a data type, or use <tt>T2</tt>.
+--   However, this could potentially be more performant.
+--   
+--   For 3 and more arguments, consider using <a>backpropN</a>.
+backprop2 :: forall a b c. (Num a, Num b, Num c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c, (a, b))
+
+-- | <a>evalBP</a> for a two-argument function. See <a>backprop2</a> for
+--   notes.
+evalBP2 :: (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> c
+
+-- | <a>gradBP</a> for a two-argument function. See <a>backprop2</a> for
+--   notes.
+gradBP2 :: (Num a, Num b, Num c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (a, b)
+
+-- | <a>backprop</a> generalized to multiple inputs of different types. See
+--   the <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on
+--   heterogeneous lists.
+--   
+--   Not strictly necessary, because you can always uncurry a function by
+--   passing in all of the inputs in a data type containing all of the
+--   arguments or a tuple from <a>Numeric.Backprop.Tuple</a>. You could
+--   also pass in a giant tuple with <a>NumInstances</a>. However, this can
+--   be convenient if you don't want to make a custom larger tuple type or
+--   pull in orphan instances. This could potentially also be more
+--   performant.
+--   
+--   A <tt><a>Prod</a> (<a>BVar</a> s) '[Double, Float, Double]</tt>, for
+--   instance, is a tuple of <tt><a>BVar</a> s <a>Double</a></tt>,
+--   <tt><a>BVar</a> s <a>Float</a></tt>, and <tt><a>BVar</a> s
+--   <a>Double</a></tt>, and can be pattern matched on using <a>:&lt;</a>
+--   (cons) and 'Ø' (nil).
+--   
+--   Tuples can be built and pattern matched on using <a>::&lt;</a> (cons)
+--   and 'Ø' (nil), as well.
+--   
+--   The <tt><a>Every</a> <a>Num</a> as</tt> in the constraint says that
+--   every value in the type-level list <tt>as</tt> must have a <a>Num</a>
+--   instance. This means you can use, say, <tt>'[Double, Float, Int]</tt>,
+--   but not <tt>'[Double, Bool, String]</tt>.
+--   
+--   If you stick to <i>concerete</i>, monomorphic usage of this (with
+--   specific types, typed into source code, known at compile-time), then
+--   <tt><a>Every</a> <a>Num</a> as</tt> should be fulfilled automatically.
+backpropN :: forall as b. (Every Num as, Known Length as, Num b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b, Tuple as)
+
+-- | <tt>evalBP</tt> generalized to multiple inputs of different types. See
+--   documentation for <a>backpropN</a> for more details.
+evalBPN :: forall as b. () => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> b
+
+-- | <a>gradBP</a> generalized to multiple inputs of different types. See
+--   documentation for <a>backpropN</a> for more details.
+gradBPN :: forall as b. (Every Num as, Known Length as, Num b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> Tuple as
+class EveryC k c as => Every k (c :: k -> Constraint) (as :: [k])
+
+-- | Lift a value into a <a>BVar</a> representing a constant value.
+--   
+--   This value will not be considered an input, and its gradients will not
+--   be backpropagated.
+constVar :: a -> BVar s a
+
+-- | Coerce a <a>BVar</a> contents. Useful for things like newtype
+--   wrappers.
+coerceVar :: Coercible a b => BVar s a -> BVar s b
+
+-- | An infix version of <a>viewVar</a>, meant to evoke parallels to
+--   <a>^.</a> from lens.
+--   
+--   With normal values, you can extract something from that value with a
+--   lens:
+--   
+--   <pre>
+--   x <a>^.</a> myLens
+--   </pre>
+--   
+--   would extract a piece of <tt>x :: b</tt>, specified by <tt>myLens ::
+--   <a>Lens'</a> b a</tt>. The result has type <tt>a</tt>.
+--   
+--   <pre>
+--   xVar <a>^^.</a> myLens
+--   </pre>
+--   
+--   would extract a piece out of <tt>xVar :: <a>BVar</a> s b</tt> (a
+--   <a>BVar</a> holding a <tt>b</tt>), specified by <tt>myLens :: Lens' b
+--   a</tt>. The result has type <tt><a>BVar</a> s a</tt> (a <a>BVar</a>
+--   holding a <tt>a</tt>)
+--   
+--   This is the main way to pull out values from <a>BVar</a> of container
+--   types.
+--   
+--   <b>WARNING</b>: Do not use with any lenses that operate "numerically"
+--   on the contents (like <tt>multiplying</tt>).
+(^^.) :: forall a b s. (Reifies s W, Num a) => BVar s b -> Lens' b a -> BVar s a
+infixl 8 ^^.
+
+-- | An infix version of <a>setVar</a>, meant to evoke parallels to
+--   <a>.~</a> from lens.
+--   
+--   With normal values, you can set something in a value with a lens: a
+--   lens:
+--   
+--   <pre>
+--   x <a>&amp;</a> myLens <a>.~</a> <tt>y</tt>
+--   </pre>
+--   
+--   would "set" a part of <tt>x :: b</tt>, specified by <tt>myLens ::
+--   <a>Lens'</a> a b</tt>, to a new value <tt>y :: a</tt>.
+--   
+--   <pre>
+--   xVar <a>&amp;</a> myLens <a>.~~</a> yVar
+--   </pre>
+--   
+--   would "set" a part of <tt>xVar :: <a>BVar</a> s b</tt> (a <a>BVar</a>
+--   holding a <tt>b</tt>), specified by <tt>myLens :: <a>Lens'</a> a
+--   b</tt>, to a new value given by <tt>yVar :: <a>BVar</a> s a</tt>. The
+--   result is a new (updated) value of type <tt><a>BVar</a> s b</tt>.
+--   
+--   This is the main way to set values inside <a>BVar</a>s of container
+--   types.
+(.~~) :: forall a b s. (Reifies s W, Num a, Num b) => Lens' b a -> BVar s a -> BVar s b -> BVar s b
+infixl 8 .~~
+
+-- | An infix version of <a>previewVar</a>, meant to evoke parallels to
+--   <a>^?</a> from lens.
+--   
+--   With normal values, you can (potentially) extract something from that
+--   value with a lens:
+--   
+--   <pre>
+--   x <a>^?</a> myPrism
+--   </pre>
+--   
+--   would (potentially) extract a piece of <tt>x :: b</tt>, specified by
+--   <tt>myPrism :: <a>Traversal'</a> b a</tt>. The result has type
+--   <tt><a>Maybe</a> a</tt>.
+--   
+--   <pre>
+--   xVar <a>^^?</a> myPrism
+--   </pre>
+--   
+--   would (potentially) extract a piece out of <tt>xVar :: <a>BVar</a> s
+--   b</tt> (a <a>BVar</a> holding a <tt>b</tt>), specified by <tt>myPrism
+--   :: Prism' b a</tt>. The result has type <tt><a>Maybe</a> (<a>BVar</a>
+--   s a)</tt> (<a>Maybe</a> a <a>BVar</a> holding a <tt>a</tt>).
+--   
+--   This is intended to be used with <tt>Prism'</tt>s (which hits at most
+--   one target), but will actually work with <i>any</i> <a>Traversal'</a>.
+--   If the traversal hits more than one target, the first one found will
+--   be extracted.
+--   
+--   This can be used to "pattern match" on <a>BVar</a>s, by using prisms
+--   on constructors.
+--   
+--   Note that many automatically-generated prisms by the <i>lens</i>
+--   package use tuples, which cannot normally be backpropagated (because
+--   they do not have a <a>Num</a> instance).
+--   
+--   If you are writing an application or don't have to worry about orphan
+--   instances, you can pull in the orphan instances from
+--   <a>NumInstances</a>. Alternatively, you can chain those prisms with
+--   conversions to the anonymous canonical strict tuple types in
+--   <a>Numeric.Backprop.Tuple</a>, which do have <a>Num</a> instances.
+--   
+--   <pre>
+--   myPrism                   :: <tt>Prism'</tt> c (a, b)
+--   myPrism . <tt>iso</tt> <tt>tupT2</tt> <tt>t2Tup</tt> :: <tt>Prism'</tt> c (<tt>T2</tt> a b)
+--   </pre>
+(^^?) :: forall b a s. (Num a, Reifies s W) => BVar s b -> Traversal' b a -> Maybe (BVar s a)
+
+-- | An infix version of <a>toListOfVar</a>, meant to evoke parallels to
+--   <a>^..</a> from lens.
+--   
+--   With normal values, you can extract all targets of a <a>Traversal</a>
+--   from that value with a:
+--   
+--   <pre>
+--   x <a>^..</a> myTraversal
+--   </pre>
+--   
+--   would extract all targets inside of <tt>x :: b</tt>, specified by
+--   <tt>myTraversal :: <a>Traversal'</a> b a</tt>. The result has type
+--   <tt>[a]</tt>.
+--   
+--   <pre>
+--   xVar <a>^^..</a> myTraversal
+--   </pre>
+--   
+--   would extract all targets inside of <tt>xVar :: <a>BVar</a> s b</tt>
+--   (a <a>BVar</a> holding a <tt>b</tt>), specified by <tt>myTraversal ::
+--   Traversal' b a</tt>. The result has type <tt>[<a>BVar</a> s a]</tt> (A
+--   list of <a>BVar</a>s holding <tt>a</tt>s).
+(^^..) :: forall b a s. (Num a, Reifies s W) => BVar s b -> Traversal' b a -> [BVar s a]
+
+-- | Using a <a>Lens'</a>, extract a value <i>inside</i> a <a>BVar</a>.
+--   Meant to evoke parallels to <tt>view</tt> from lens.
+--   
+--   See documentation for <a>^^.</a> for more information.
+viewVar :: forall a b s. (Reifies s W, Num a) => Lens' b a -> BVar s b -> BVar s a
+
+-- | Using a <a>Lens'</a>, set a value <i>inside</i> a <a>BVar</a>. Meant
+--   to evoke parallels to "set" from lens.
+--   
+--   See documentation for <a>.~~</a> for more information.
+setVar :: forall a b s. (Reifies s W, Num a, Num b) => Lens' b a -> BVar s a -> BVar s b -> BVar s b
+
+-- | Extract all of the <a>BVar</a>s out of a <a>Traversable</a> container
+--   of <a>BVar</a>s.
+--   
+--   Note that this associates gradients in order of occurrence in the
+--   original data structure; the second item in the gradient is assumed to
+--   correspond with the second item in the input, etc.; this can cause
+--   unexpected behavior in <a>Foldable</a> instances that don't have a
+--   fixed number of items.
+sequenceVar :: forall t a s. (Num a, Reifies s W, Traversable t) => BVar s (t a) -> t (BVar s a)
+
+-- | Collect all of the <a>BVar</a>s in a container into a <a>BVar</a> of
+--   that container's contents.
+--   
+--   Note that this associates gradients in order of occurrence in the
+--   original data structure; the second item in the total derivative and
+--   gradient is assumed to correspond with the second item in the input,
+--   etc.; this can cause unexpected behavior in <a>Foldable</a> instances
+--   that don't have a fixed number of items.
+--   
+--   Note that this requires <tt>t a</tt> to have a <a>Num</a> instance. If
+--   you are using a list, I recommend using <a>vector-sized</a> instead:
+--   it's a fixed-length vector type with a very appropriate <a>Num</a>
+--   instance!
+collectVar :: forall t a s. (Num a, Num (t a), Reifies s W, Foldable t, Functor t) => t (BVar s a) -> BVar s (t a)
+
+-- | Using a <a>Traversal'</a>, extract a single value <i>inside</i> a
+--   <a>BVar</a>, if it exists. If more than one traversal target exists,
+--   returns te first. Meant to evoke parallels to <tt>preview</tt> from
+--   lens. Really only intended to be used wth <tt>Prism'</tt>s, or
+--   up-to-one target traversals.
+--   
+--   See documentation for <a>^^?</a> for more information.
+previewVar :: forall b a s. (Reifies s W, Num a) => Traversal' b a -> BVar s b -> Maybe (BVar s a)
+
+-- | Using a <a>Traversal'</a>, extract all targeted values <i>inside</i> a
+--   <a>BVar</a>. Meant to evoke parallels to <a>toListOf</a> from lens.
+--   
+--   See documentation for <a>^^..</a> for more information.
+toListOfVar :: forall b a s. (Num a, Reifies s W) => Traversal' b a -> BVar s b -> [BVar s a]
+
+-- | Convert the value inside a <a>BVar</a> using a given isomorphism.
+--   Useful for things like constructors.
+--   
+--   Warning: This is unsafe! It assumes that the isomorphisms themselves
+--   have derivative 1, so will break for things like <a>exp</a> &amp;
+--   <a>log</a>. Basically, don't use this for any "numeric" isomorphisms.
+isoVar :: (Num a, Num b, Reifies s W) => (a -> b) -> (b -> a) -> BVar s a -> BVar s b
+
+-- | Convert the values inside two <a>BVar</a>s using a given isomorphism.
+--   Useful for things like constructors. See <a>isoVar</a> for caveats.
+isoVar2 :: (Num a, Num b, Num c, Reifies s W) => (a -> b -> c) -> (c -> (a, b)) -> BVar s a -> BVar s b -> BVar s c
+
+-- | Convert the values inside three <a>BVar</a>s using a given
+--   isomorphism. Useful for things like constructors. See <a>isoVar</a>
+--   for caveats.
+isoVar3 :: (Num a, Num b, Num c, Num d, Reifies s W) => (a -> b -> c -> d) -> (d -> (a, b, c)) -> BVar s a -> BVar s b -> BVar s c -> BVar s d
+
+-- | Convert the values inside a tuple of <a>BVar</a>s using a given
+--   isomorphism. Useful for things like constructors. See <a>isoVar</a>
+--   for caveats.
+isoVarN :: (Every Num as, Known Length as, Num b, Reifies s W) => (Tuple as -> b) -> (b -> Tuple as) -> Prod (BVar s) as -> BVar s b
+
+-- | Lift an <a>Op</a> with an arbitrary number of inputs to a function on
+--   the appropriate number of <a>BVar</a>s.
+--   
+--   Should preferably be used only by libraries to provide primitive
+--   <a>BVar</a> functions for their types for users.
+--   
+--   See <a>Numeric.Backprop#liftops</a> and documentation for
+--   <a>liftOp</a> for more information, and
+--   <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on using
+--   <a>Prod</a> and <a>Tuple</a>.
+liftOp :: forall as b s. (Every Num as, Known Length as, Num b, Reifies s W) => Op as b -> Prod (BVar s) as -> BVar s b
+
+-- | Lift an <a>Op</a> with a single input to be a function on a single
+--   <a>BVar</a>.
+--   
+--   Should preferably be used only by libraries to provide primitive
+--   <a>BVar</a> functions for their types for users.
+--   
+--   See <a>Numeric.Backprop#liftops</a> and documentation for
+--   <a>liftOp</a> for more information.
+liftOp1 :: forall a b s. (Num a, Num b, Reifies s W) => Op '[a] b -> BVar s a -> BVar s b
+
+-- | Lift an <a>Op</a> with two inputs to be a function on a two
+--   <a>BVar</a>s.
+--   
+--   Should preferably be used only by libraries to provide primitive
+--   <a>BVar</a> functions for their types for users.
+--   
+--   See <a>Numeric.Backprop#liftops</a> and documentation for
+--   <a>liftOp</a> for more information.
+liftOp2 :: forall a b c s. (Num a, Num b, Num c, Reifies s W) => Op '[a, b] c -> BVar s a -> BVar s b -> BVar s c
+
+-- | Lift an <a>Op</a> with three inputs to be a function on a three
+--   <a>BVar</a>s.
+--   
+--   Should preferably be used only by libraries to provide primitive
+--   <a>BVar</a> functions for their types for users.
+--   
+--   See <a>Numeric.Backprop#liftops</a> and documentation for
+--   <a>liftOp</a> for more information.
+liftOp3 :: forall a b c d s. (Num a, Num b, Num c, Num d, Reifies s W) => Op '[a, b, c] d -> BVar s a -> BVar s b -> BVar s c -> BVar s d
 
 -- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
 --   <tt>as</tt> to <tt>a</tt>.
