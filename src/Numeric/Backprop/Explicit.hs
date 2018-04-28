@@ -128,13 +128,13 @@ import           Numeric.Backprop.Op
 -- (in particular, "Data.NumInstances.Tuple") if you are writing an
 -- application and do not have to worry about orphan instances.
 backprop
-    :: AddFunc a
+    :: ZeroFunc a
     -> OneFunc b
     -> (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> (b, a)
-backprop afa ofb f = second (getI . head')
-                   . backpropN (afa :< Ø) ofb (f . head')
+backprop zfa ofb f = second (getI . head')
+                   . backpropN (zfa :< Ø) ofb (f . head')
                    . only_
 {-# INLINE backprop #-}
 
@@ -167,23 +167,23 @@ evalBP f = evalBPN (f . head') . only_
 -- See documentation of 'backprop' for more information.
 --
 gradBP
-    :: AddFunc a
+    :: ZeroFunc a
     -> OneFunc b
     -> (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> a
-gradBP afa ofb f = snd . backprop afa ofb f
+gradBP zfa ofb f = snd . backprop zfa ofb f
 {-# INLINE gradBP #-}
 
 -- | 'gradBP' generalized to multiple inputs of different types.  See
 -- documentation for 'backpropN' for more details.
 gradBPN
-    :: Prod AddFunc as
+    :: Prod ZeroFunc as
     -> OneFunc b
     -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> Tuple as
-gradBPN afas ofb f = snd . backpropN afas ofb f
+gradBPN zfas ofb f = snd . backpropN zfas ofb f
 {-# INLINE gradBPN #-}
 
 -- | 'backprop' for a two-argument function.
@@ -194,15 +194,15 @@ gradBPN afas ofb f = snd . backpropN afas ofb f
 --
 -- For 3 and more arguments, consider using 'backpropN'.
 backprop2
-    :: AddFunc a
-    -> AddFunc b
+    :: ZeroFunc a
+    -> ZeroFunc b
     -> OneFunc c
     -> (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
     -> a
     -> b
     -> (c, (a, b))
-backprop2 afa afb ofc f x y = second (\(dx ::< dy ::< Ø) -> (dx, dy)) $
-    backpropN (afa :< afb :< Ø) ofc
+backprop2 zfa zfb ofc f x y = second (\(dx ::< dy ::< Ø) -> (dx, dy)) $
+    backpropN (zfa :< zfb :< Ø) ofc
         (\(x' :< y' :< Ø) -> f x' y')
         (x ::< y ::< Ø)
 {-# INLINE backprop2 #-}
@@ -218,14 +218,14 @@ evalBP2 f x y = evalBPN (\(x' :< y' :< Ø) -> f x' y') (x ::< y ::< Ø)
 
 -- | 'gradBP' for a two-argument function.  See 'backprop2' for notes.
 gradBP2
-    :: AddFunc a
-    -> AddFunc b
+    :: ZeroFunc a
+    -> ZeroFunc b
     -> OneFunc c
     -> (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
     -> a
     -> b
     -> (a, b)
-gradBP2 afa afb ofc f x = snd . backprop2 afa afb ofc f x
+gradBP2 zfa zfb ofc f x = snd . backprop2 zfa zfb ofc f x
 {-# INLINE gradBP2 #-}
 
 ---- | An infix version of 'viewVar', meant to evoke parallels to '^.' from

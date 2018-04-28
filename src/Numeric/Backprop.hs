@@ -50,7 +50,7 @@
 
 module Numeric.Backprop (
     -- * Types
-    BVar, W
+    BVar, W, Zero(..), Add(..), One(..)
     -- * Running
   , backprop, E.evalBP, gradBP
     -- ** Multiple inputs
@@ -170,11 +170,11 @@ import qualified Numeric.Backprop.Explicit as E
 -- 'Num' as@ should be fulfilled automatically.
 --
 backpropN
-    :: forall as b. (Every Add as, Known Length as, One b)
+    :: forall as b. (Every Zero as, Known Length as, One b)
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> (b, Tuple as)
-backpropN = E.backpropN addFuncs oneFunc
+backpropN = E.backpropN zeroFuncs oneFunc
 {-# INLINE backpropN #-}
 
 -- | Turn a function @'BVar' s a -> 'BVar' s b@ into the function @a -> b@
@@ -209,11 +209,11 @@ backpropN = E.backpropN addFuncs oneFunc
 -- (in particular, "Data.NumInstances.Tuple") if you are writing an
 -- application and do not have to worry about orphan instances.
 backprop
-    :: forall a b. (Add a, One b)
+    :: forall a b. (Zero a, One b)
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> (b, a)
-backprop = E.backprop addFunc oneFunc
+backprop = E.backprop zeroFunc oneFunc
 {-# INLINE backprop #-}
 
 ---- | Turn a function @'BVar' s a -> 'BVar' s b@ into the function @a -> b@
@@ -245,21 +245,21 @@ backprop = E.backprop addFunc oneFunc
 -- See documentation of 'backprop' for more information.
 --
 gradBP
-    :: forall a b. (Add a, One b)
+    :: forall a b. (Zero a, One b)
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> a
-gradBP = E.gradBP addFunc oneFunc
+gradBP = E.gradBP zeroFunc oneFunc
 {-# INLINE gradBP #-}
 
 -- | 'gradBP' generalized to multiple inputs of different types.  See
 -- documentation for 'backpropN' for more details.
 gradBPN
-    :: forall as b. (Every Add as, Known Length as, One b)
+    :: forall as b. (Every Zero as, Known Length as, One b)
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> Tuple as
-gradBPN = E.gradBPN addFuncs oneFunc
+gradBPN = E.gradBPN zeroFuncs oneFunc
 {-# INLINE gradBPN #-}
 
 -- | 'backprop' for a two-argument function.
@@ -270,12 +270,12 @@ gradBPN = E.gradBPN addFuncs oneFunc
 --
 -- For 3 and more arguments, consider using 'backpropN'.
 backprop2
-    :: forall a b c. (Add a, Add b, One c)
+    :: forall a b c. (Zero a, Zero b, One c)
     => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
     -> a
     -> b
     -> (c, (a, b))
-backprop2 = E.backprop2 addFunc addFunc oneFunc
+backprop2 = E.backprop2 zeroFunc zeroFunc oneFunc
 {-# INLINE backprop2 #-}
 
 -- -- | 'evalBP' for a two-argument function.  See 'backprop2' for notes.
@@ -289,12 +289,12 @@ backprop2 = E.backprop2 addFunc addFunc oneFunc
 
 -- | 'gradBP' for a two-argument function.  See 'backprop2' for notes.
 gradBP2
-    :: (Add a, Add b, One c)
+    :: (Zero a, Zero b, One c)
     => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
     -> a
     -> b
     -> (a, b)
-gradBP2 = E.gradBP2 addFunc addFunc oneFunc
+gradBP2 = E.gradBP2 zeroFunc zeroFunc oneFunc
 {-# INLINE gradBP2 #-}
 
 -- | An infix version of 'viewVar', meant to evoke parallels to '^.' from

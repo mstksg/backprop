@@ -332,3 +332,16 @@ instance (Num a, Num b) => Num (a, b) where
 --     tsum = HM.sumElements . extract $ targ
 --     t    = constVar targ
 
+instance (KnownNat i, KnownNat o, KnownNat h2, KnownNat h1) => Add (Network i h1 h2 o)
+instance (KnownNat i, KnownNat o) => Add (Layer i o)
+instance (KnownNat i, KnownNat o, KnownNat h2, KnownNat h1) => Zero (Network i h1 h2 o)
+instance (KnownNat i, KnownNat o) => Zero (Layer i o)
+instance (KnownNat i, KnownNat o, KnownNat h2, KnownNat h1) => One (Network i h1 h2 o)
+instance (KnownNat i, KnownNat o) => One (Layer i o)
+
+instance Add (R n)
+instance (KnownNat n, KnownNat m) => Add (L m n)
+instance Zero (R n)
+instance (KnownNat n, KnownNat m) => Zero (L m n)
+instance One (R n)
+instance (KnownNat n, KnownNat m) => One (L m n)

@@ -672,26 +672,26 @@ gradRunner one R{..} (n,stns) = do
 --
 backpropN
     :: forall as b. ()
-    => Prod AddFunc as
+    => Prod ZeroFunc as
     -> OneFunc b
     -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> (b, Tuple as)
-backpropN afs ofb f !xs = (y, g)
+backpropN zfs ofb f !xs = (y, g)
   where
     !(!tp@(!_,!_),!y) = unsafePerformIO $ fillWengert f xs
     g :: Tuple as
     g = runST $ do
         r <- initRunner tp $ bimap getSum (`appEndo` [])
                            . fst
-                           $ zipWithPM_ go afs xs
+                           $ zipWithPM_ go zfs xs
         gradRunner (runOF ofb y) r tp
         delts <- toList <$> V.freeze (_rInputs r)
         return . fromMaybe (error "backpropN") $
           fillProd (\_ d -> I (unsafeCoerce d)) xs delts
       where
-        go :: forall a. AddFunc a -> I a -> ((Sum Int, Endo [Any]),())
-        go af (I x) = ((1, Endo (unsafeCoerce (runAF af x) :)), ())
+        go :: forall a. ZeroFunc a -> I a -> ((Sum Int, Endo [Any]),())
+        go zf (I x) = ((1, Endo (unsafeCoerce (runZF zf x) :)), ())
         {-# INLINE go #-}
 {-# INLINE backpropN #-}
 
