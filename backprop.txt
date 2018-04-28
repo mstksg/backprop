@@ -668,7 +668,7 @@ ofNum :: Num a => OneFunc a
 --   orphan instances in the <a>NumInstances</a> package (in particular,
 --   <a>Data.NumInstances.Tuple</a>) if you are writing an application and
 --   do not have to worry about orphan instances.
-backprop :: AddFunc a -> OneFunc b -> (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
+backprop :: ZeroFunc a -> OneFunc b -> (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
 
 -- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
 --   the function <tt>a -&gt; b</tt> that it represents.
@@ -696,7 +696,7 @@ evalBP :: (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
 --   sensitivity.
 --   
 --   See documentation of <a>backprop</a> for more information.
-gradBP :: AddFunc a -> OneFunc b -> (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
+gradBP :: ZeroFunc a -> OneFunc b -> (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
 
 -- | <a>backprop</a> for a two-argument function.
 --   
@@ -705,7 +705,7 @@ gradBP :: AddFunc a -> OneFunc b -> (forall s. Reifies s W => BVar s a -> BVar s
 --   However, this could potentially be more performant.
 --   
 --   For 3 and more arguments, consider using <a>backpropN</a>.
-backprop2 :: AddFunc a -> AddFunc b -> OneFunc c -> (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c, (a, b))
+backprop2 :: ZeroFunc a -> ZeroFunc b -> OneFunc c -> (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c, (a, b))
 
 -- | <a>evalBP</a> for a two-argument function. See <a>backprop2</a> for
 --   notes.
@@ -713,7 +713,7 @@ evalBP2 :: (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b
 
 -- | <a>gradBP</a> for a two-argument function. See <a>backprop2</a> for
 --   notes.
-gradBP2 :: AddFunc a -> AddFunc b -> OneFunc c -> (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (a, b)
+gradBP2 :: ZeroFunc a -> ZeroFunc b -> OneFunc c -> (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (a, b)
 
 -- | <tt>backprop</tt> generalized to multiple inputs of different types.
 --   See the <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on
@@ -745,7 +745,7 @@ gradBP2 :: AddFunc a -> AddFunc b -> OneFunc c -> (forall s. Reifies s W => BVar
 --   specific types, typed into source code, known at compile-time), then
 --   <tt><tt>Every</tt> <a>Num</a> as</tt> should be fulfilled
 --   automatically.
-backpropN :: forall as b. () => Prod AddFunc as -> OneFunc b -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b, Tuple as)
+backpropN :: forall as b. () => Prod ZeroFunc as -> OneFunc b -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b, Tuple as)
 
 -- | <tt>evalBP</tt> generalized to multiple inputs of different types. See
 --   documentation for <a>backpropN</a> for more details.
@@ -753,7 +753,7 @@ evalBPN :: forall as b. () => (forall s. Reifies s W => Prod (BVar s) as -> BVar
 
 -- | <a>gradBP</a> generalized to multiple inputs of different types. See
 --   documentation for <a>backpropN</a> for more details.
-gradBPN :: Prod AddFunc as -> OneFunc b -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> Tuple as
+gradBPN :: Prod ZeroFunc as -> OneFunc b -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> Tuple as
 class EveryC k c as => Every k (c :: k -> Constraint) (as :: [k])
 
 -- | Lift a value into a <a>BVar</a> representing a constant value.
@@ -1223,6 +1223,15 @@ data BVar s a
 --   <a>W</a></tt> as a required constraint on <tt>s</tt> that allows
 --   backpropagation to work.
 data W
+class Zero a
+zero :: Zero a => a -> a
+zero :: (Zero a, Num a) => a -> a
+class Add a
+add :: Add a => a -> a -> a
+add :: (Add a, Num a) => a -> a -> a
+class One a
+one :: One a => a -> a
+one :: (One a, Num a) => a -> a
 
 -- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
 --   the function <tt>a -&gt; b</tt> that it represents, also computing its
@@ -1255,7 +1264,7 @@ data W
 --   orphan instances in the <a>NumInstances</a> package (in particular,
 --   <a>Data.NumInstances.Tuple</a>) if you are writing an application and
 --   do not have to worry about orphan instances.
-backprop :: forall a b. (Add a, One b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
+backprop :: forall a b. (Zero a, One b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
 
 -- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
 --   the function <tt>a -&gt; b</tt> that it represents.
@@ -1283,7 +1292,7 @@ evalBP :: (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
 --   sensitivity.
 --   
 --   See documentation of <a>backprop</a> for more information.
-gradBP :: forall a b. (Add a, One b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
+gradBP :: forall a b. (Zero a, One b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
 
 -- | <a>backprop</a> for a two-argument function.
 --   
@@ -1292,7 +1301,7 @@ gradBP :: forall a b. (Add a, One b) => (forall s. Reifies s W => BVar s a -> BV
 --   However, this could potentially be more performant.
 --   
 --   For 3 and more arguments, consider using <a>backpropN</a>.
-backprop2 :: forall a b c. (Add a, Add b, One c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c, (a, b))
+backprop2 :: forall a b c. (Zero a, Zero b, One c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c, (a, b))
 
 -- | <a>evalBP</a> for a two-argument function. See <a>backprop2</a> for
 --   notes.
@@ -1300,7 +1309,7 @@ evalBP2 :: (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b
 
 -- | <a>gradBP</a> for a two-argument function. See <a>backprop2</a> for
 --   notes.
-gradBP2 :: (Add a, Add b, One c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (a, b)
+gradBP2 :: (Zero a, Zero b, One c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (a, b)
 
 -- | <a>backprop</a> generalized to multiple inputs of different types. See
 --   the <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on
@@ -1331,7 +1340,7 @@ gradBP2 :: (Add a, Add b, One c) => (forall s. Reifies s W => BVar s a -> BVar s
 --   If you stick to <i>concerete</i>, monomorphic usage of this (with
 --   specific types, typed into source code, known at compile-time), then
 --   <tt><a>Every</a> <a>Num</a> as</tt> should be fulfilled automatically.
-backpropN :: forall as b. (Every Add as, Known Length as, One b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b, Tuple as)
+backpropN :: forall as b. (Every Zero as, Known Length as, One b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b, Tuple as)
 
 -- | <tt>evalBP</tt> generalized to multiple inputs of different types. See
 --   documentation for <a>backpropN</a> for more details.
@@ -1339,7 +1348,7 @@ evalBPN :: forall as b. () => (forall s. Reifies s W => Prod (BVar s) as -> BVar
 
 -- | <a>gradBP</a> generalized to multiple inputs of different types. See
 --   documentation for <a>backpropN</a> for more details.
-gradBPN :: forall as b. (Every Add as, Known Length as, One b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> Tuple as
+gradBPN :: forall as b. (Every Zero as, Known Length as, One b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> Tuple as
 class EveryC k c as => Every k (c :: k -> Constraint) (as :: [k])
 
 -- | Lift a value into a <a>BVar</a> representing a constant value.
