@@ -6,13 +6,19 @@
 {-# LANGUAGE TypeOperators     #-}
 
 module Numeric.Backprop.Class (
+  -- * Backpropagatable types
     Backprop(..)
+  -- * Derived methods
   , zeroNum, addNum, oneNum
   , zeroVec, addVec, oneVec
   , zeroFunctor, addIsList, oneFunctor
+  , genericZero, genericAdd, genericOne
+  -- * Usable by /backprop/
   , ZeroFunc(..), zeroFunc, zeroFuncs, zfNum, zfNums
   , AddFunc(..), addFunc, addFuncs, afNum, afNums
   , OneFunc(..), oneFunc, oneFuncs, ofNum, ofNums
+  -- * Generics
+  , GZero(..), GAdd(..), GOne(..)
   ) where
 
 import           Data.List.NonEmpty       (NonEmpty(..))
@@ -95,11 +101,26 @@ class Backprop a where
     one  :: a -> a
 
     default zero :: (Generic a, GZero (Rep a)) => a -> a
-    zero = to . gzero . from
+    zero = genericZero
+    {-# INLINE zero #-}
     default add :: (Generic a, GAdd (Rep a)) => a -> a -> a
-    add x y = to $ gadd (from x) (from y)
+    add = genericAdd
+    {-# INLINE add #-}
     default one :: (Generic a, GOne (Rep a)) => a -> a
-    one = to . gone . from
+    one = genericOne
+    {-# INLINE one #-}
+
+genericZero :: (Generic a, GZero (Rep a)) => a -> a
+genericZero = to . gzero . from
+{-# INLINE genericZero #-}
+
+genericAdd :: (Generic a, GAdd (Rep a)) => a -> a -> a
+genericAdd x y = to $ gadd (from x) (from y)
+{-# INLINE genericAdd #-}
+
+genericOne :: (Generic a, GOne (Rep a)) => a -> a
+genericOne = to . gone . from
+{-# INLINE genericOne #-}
 
 zeroNum :: Num a => a -> a
 zeroNum _ = 0
@@ -136,6 +157,7 @@ oneFuncs = map1 (\i -> oneFunc \\ every @_ @Backprop i) indices
 
 zeroVec :: (VG.Vector v a, Backprop a) => v a -> v a
 zeroVec = VG.map zero
+{-# INLINE zeroVec #-}
 
 addVec :: (VG.Vector v a, Backprop a) => v a -> v a -> v a
 addVec x y = case compare lX lY of
@@ -150,9 +172,11 @@ addVec x y = case compare lX lY of
 
 oneVec :: (VG.Vector v a, Backprop a) => v a -> v a
 oneVec = VG.map one
+{-# INLINE oneVec #-}
 
 zeroFunctor :: (Functor f, Backprop a) => f a -> f a
 zeroFunctor = fmap zero
+{-# INLINE zeroFunctor #-}
 
 addIsList :: (IsList a, Backprop (Item a)) => a -> a -> a
 addIsList x y = fromList $ go (toList x) (toList y)
@@ -165,6 +189,7 @@ addIsList x y = fromList $ go (toList x) (toList y)
 
 oneFunctor :: (Functor f, Backprop a) => f a -> f a
 oneFunctor = fmap one
+{-# INLINE oneFunctor #-}
 
 
 
@@ -176,25 +201,32 @@ class GZero f where
 
 instance Backprop a => GZero (K1 i a) where
     gzero (K1 x) = K1 (zero x)
+    {-# INLINE gzero #-}
 
 instance (GZero f, GZero g) => GZero (f :*: g) where
     gzero (x :*: y) = gzero x :*: gzero y
+    {-# INLINE gzero #-}
 
 instance (GZero f, GZero g) => GZero (f :+: g) where
     gzero (L1 x) = L1 (gzero x)
     gzero (R1 x) = R1 (gzero x)
+    {-# INLINE gzero #-}
 
 instance GZero V1 where
     gzero = \case
+    {-# INLINE gzero #-}
 
 instance GZero U1 where
     gzero _ = U1
+    {-# INLINE gzero #-}
 
 instance GZero f => GZero (M1 i c f) where
     gzero (M1 x) = M1 (gzero x)
+    {-# INLINE gzero #-}
 
 instance GZero f => GZero (f :.: g) where
     gzero (Comp1 x) = Comp1 (gzero x)
+    {-# INLINE gzero #-}
 
 
 class GAdd f where
@@ -202,21 +234,27 @@ class GAdd f where
 
 instance Backprop a => GAdd (K1 i a) where
     gadd (K1 x) (K1 y) = K1 (add x y)
+    {-# INLINE gadd #-}
 
 instance (GAdd f, GAdd g) => GAdd (f :*: g) where
     gadd (x1 :*: y1) (x2 :*: y2) = gadd x1 x2 :*: gadd y1 y2
+    {-# INLINE gadd #-}
 
 instance GAdd V1 where
     gadd = \case
+    {-# INLINE gadd #-}
 
 instance GAdd U1 where
     gadd _ _ = U1
+    {-# INLINE gadd #-}
 
 instance GAdd f => GAdd (M1 i c f) where
     gadd (M1 x) (M1 y) = M1 (gadd x y)
+    {-# INLINE gadd #-}
 
 instance GAdd f => GAdd (f :.: g) where
     gadd (Comp1 x) (Comp1 y) = Comp1 (gadd x y)
+    {-# INLINE gadd #-}
 
 
 class GOne f where
@@ -224,77 +262,117 @@ class GOne f where
 
 instance Backprop a => GOne (K1 i a) where
     gone (K1 x) = K1 (one x)
+    {-# INLINE gone #-}
 
 instance (GOne f, GOne g) => GOne (f :*: g) where
     gone (x :*: y) = gone x :*: gone y
+    {-# INLINE gone #-}
 
 instance (GOne f, GOne g) => GOne (f :+: g) where
     gone (L1 x) = L1 (gone x)
     gone (R1 x) = R1 (gone x)
+    {-# INLINE gone #-}
 
 instance GOne V1 where
     gone = \case
+    {-# INLINE gone #-}
 
 instance GOne U1 where
     gone _ = U1
+    {-# INLINE gone #-}
 
 instance GOne f => GOne (M1 i c f) where
     gone (M1 x) = M1 (gone x)
+    {-# INLINE gone #-}
 
 instance GOne f => GOne (f :.: g) where
     gone (Comp1 x) = Comp1 (gone x)
+    {-# INLINE gone #-}
 
 instance Backprop Float where
     zero = zeroNum
+    {-# INLINE zero #-}
     add  = addNum
+    {-# INLINE add #-}
     one  = oneNum
+    {-# INLINE one #-}
 
 instance Backprop Double where
     zero = zeroNum
+    {-# INLINE zero #-}
     add  = addNum
+    {-# INLINE add #-}
     one  = oneNum
+    {-# INLINE one #-}
 
 instance Backprop a => Backprop (V.Vector a) where
     zero = zeroVec
+    {-# INLINE zero #-}
     add  = addVec
+    {-# INLINE add #-}
     one  = oneVec
+    {-# INLINE one #-}
 
 instance (VU.Unbox a, Backprop a) => Backprop (VU.Vector a) where
     zero = zeroVec
+    {-# INLINE zero #-}
     add  = addVec
+    {-# INLINE add #-}
     one  = oneVec
+    {-# INLINE one #-}
 
 instance (VS.Storable a, Backprop a) => Backprop (VS.Vector a) where
     zero = zeroVec
+    {-# INLINE zero #-}
     add  = addVec
+    {-# INLINE add #-}
     one  = oneVec
+    {-# INLINE one #-}
 
 instance (VP.Prim a, Backprop a) => Backprop (VP.Vector a) where
     zero = zeroVec
+    {-# INLINE zero #-}
     add  = addVec
+    {-# INLINE add #-}
     one  = oneVec
+    {-# INLINE one #-}
 
 instance Backprop a => Backprop [a] where
     zero = zeroFunctor
+    {-# INLINE zero #-}
     add  = addIsList
+    {-# INLINE add #-}
     one  = oneFunctor
+    {-# INLINE one #-}
 
 instance Backprop a => Backprop (NonEmpty a) where
     zero = zeroFunctor
+    {-# INLINE zero #-}
     add  = addIsList
+    {-# INLINE add #-}
     one  = oneFunctor
+    {-# INLINE one #-}
 
 instance (Backprop a, Backprop b) => Backprop (a, b) where
     zero (x, y) = (zero x, zero y)
+    {-# INLINE zero #-}
     add (x1, y1) (x2, y2) = (add x1 x2, add y1 y2)
+    {-# INLINE add #-}
     one (x, y) = (one x, one y)
+    {-# INLINE one #-}
 
 instance (Backprop a, Backprop b, Backprop c) => Backprop (a, b, c) where
     zero (x, y, z) = (zero x, zero y, zero z)
+    {-# INLINE zero #-}
     add (x1, y1, z1) (x2, y2, z2) = (add x1 x2, add y1 y2, add z1 z2)
+    {-# INLINE add #-}
     one (x, y, z) = (one x, one y, one z)
+    {-# INLINE one #-}
 
 instance (Backprop a, Backprop b, Backprop c, Backprop d) => Backprop (a, b, c, d) where
     zero (x, y, z, w) = (zero x, zero y, zero z, zero w)
+    {-# INLINE zero #-}
     add (x1, y1, z1, w1) (x2, y2, z2, w2) = (add x1 x2, add y1 y2, add z1 z2, add w1 w2)
+    {-# INLINE add #-}
     one (x, y, z, w) = (one x, one y, one z, one w)
+    {-# INLINE one #-}
