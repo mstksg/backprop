@@ -66,13 +66,12 @@ module Numeric.Backprop.Class
 --   </ul>
 --   
 --   Note that not all values in the backpropagation process needs all of
---   these methods: Only the "final result" needs <a>one</a>, only the
---   inputs need <a>add</a>, only results need <a>zero</a>. These are all
---   grouped under one typeclass for convenience in defining instances, and
---   also to talk about sensible laws. For fine-grained control, use the
---   "explicit" versions of library functions (for example, in
---   <a>Numeric.Backprop.Explicit</a>) instead of <a>Backprop</a> based
---   ones.
+--   these methods: Only the "final result" needs <a>one</a>, for example.
+--   These are all grouped under one typeclass for convenience in defining
+--   instances, and also to talk about sensible laws. For fine-grained
+--   control, use the "explicit" versions of library functions (for
+--   example, in <a>Numeric.Backprop.Explicit</a>) instead of
+--   <a>Backprop</a> based ones.
 class Backprop a
 
 -- | "Zero out" all components of a value. For scalar values, this should
@@ -110,6 +109,7 @@ addVec :: (Vector v a, Backprop a) => v a -> v a -> v a
 oneVec :: (Vector v a, Backprop a) => v a -> v a
 zeroFunctor :: (Functor f, Backprop a) => f a -> f a
 addIsList :: (IsList a, Backprop (Item a)) => a -> a -> a
+addAsList :: Backprop b => (a -> [b]) -> ([b] -> a) -> a -> a -> a
 oneFunctor :: (Functor f, Backprop a) => f a -> f a
 genericZero :: (Generic a, GZero (Rep a)) => a -> a
 genericAdd :: (Generic a, GAdd (Rep a)) => a -> a -> a
@@ -204,6 +204,7 @@ instance (Foreign.Storable.Storable a, Numeric.Backprop.Class.Backprop a) => Num
 instance (Data.Primitive.Types.Prim a, Numeric.Backprop.Class.Backprop a) => Numeric.Backprop.Class.Backprop (Data.Vector.Primitive.Vector a)
 instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop [a]
 instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (Data.List.NonEmpty.NonEmpty a)
+instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (GHC.Base.Maybe a)
 instance (Numeric.Backprop.Class.Backprop a, Numeric.Backprop.Class.Backprop b) => Numeric.Backprop.Class.Backprop (a, b)
 instance (Numeric.Backprop.Class.Backprop a, Numeric.Backprop.Class.Backprop b, Numeric.Backprop.Class.Backprop c) => Numeric.Backprop.Class.Backprop (a, b, c)
 instance (Numeric.Backprop.Class.Backprop a, Numeric.Backprop.Class.Backprop b, Numeric.Backprop.Class.Backprop c, Numeric.Backprop.Class.Backprop d) => Numeric.Backprop.Class.Backprop (a, b, c, d)
@@ -2139,13 +2140,12 @@ data W
 --   </ul>
 --   
 --   Note that not all values in the backpropagation process needs all of
---   these methods: Only the "final result" needs <a>one</a>, only the
---   inputs need <a>add</a>, only results need <a>zero</a>. These are all
---   grouped under one typeclass for convenience in defining instances, and
---   also to talk about sensible laws. For fine-grained control, use the
---   "explicit" versions of library functions (for example, in
---   <a>Numeric.Backprop.Explicit</a>) instead of <a>Backprop</a> based
---   ones.
+--   these methods: Only the "final result" needs <a>one</a>, for example.
+--   These are all grouped under one typeclass for convenience in defining
+--   instances, and also to talk about sensible laws. For fine-grained
+--   control, use the "explicit" versions of library functions (for
+--   example, in <a>Numeric.Backprop.Explicit</a>) instead of
+--   <a>Backprop</a> based ones.
 class Backprop a
 
 -- | "Zero out" all components of a value. For scalar values, this should
@@ -3080,3 +3080,53 @@ instance GHC.Real.Fractional Numeric.Backprop.Tuple.T0
 instance GHC.Float.Floating Numeric.Backprop.Tuple.T0
 instance Data.Semigroup.Semigroup Numeric.Backprop.Tuple.T0
 instance GHC.Base.Monoid Numeric.Backprop.Tuple.T0
+
+
+-- | Some lifted versions of common functions found in <tt>Prelude</tt> (or
+--   <i>base</i> in general).
+--   
+--   This module is intended to be a catch-all one, so feel free to suggest
+--   other functions or submit a PR if you think one would make sense.
+module Prelude.Backprop
+
+-- | Lifted <a>sum</a>
+sum :: forall t a s. (Foldable t, Functor t, Backprop (t a), Backprop a, Num a, Reifies s W) => BVar s (t a) -> BVar s a
+
+-- | Lifted <a>product</a>
+product :: forall t a s. (Foldable t, Functor t, Backprop (t a), Backprop a, Fractional a, Reifies s W) => BVar s (t a) -> BVar s a
+
+-- | Lifted <a>length</a>.
+length :: forall t a b s. (Foldable t, Backprop (t a), Backprop b, Num b, Reifies s W) => BVar s (t a) -> BVar s b
+
+-- | Lifted <a>minimum</a>. Undefined for situations where <a>minimum</a>
+--   would be undefined.
+minimum :: forall t a s. (Foldable t, Functor t, Backprop a, Ord a, Backprop (t a), Reifies s W) => BVar s (t a) -> BVar s a
+
+-- | Lifted <a>maximum</a>. Undefined for situations where <a>maximum</a>
+--   would be undefined.
+maximum :: forall t a s. (Foldable t, Functor t, Backprop a, Ord a, Backprop (t a), Reifies s W) => BVar s (t a) -> BVar s a
+
+-- | Lifted <a>traverse</a>. Lifts backpropagatable functions to be
+--   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
+traverse :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Backprop a, Backprop b, Backprop (f (t b)), Backprop (t b), Reifies s W) => (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
+
+-- | Lifted <a>fmap</a>. Lifts backpropagatable functions to be
+--   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
+fmap :: forall f a b s. (Traversable f, Backprop a, Backprop b, Backprop (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
+
+-- | Alias for <a>fmap</a>.
+(<$>) :: forall f a b s. (Traversable f, Backprop a, Backprop b, Backprop (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
+
+-- | Lifted <a>pure</a>.
+pure :: forall t a s. (Foldable t, Applicative t, Backprop (t a), Backprop a, Reifies s W) => BVar s a -> BVar s (t a)
+
+-- | Lifted <a>liftA2</a>. Lifts backpropagatable functions to be
+--   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
+liftA2 :: forall f a b c s. (Traversable f, Applicative f, Backprop a, Backprop b, Backprop c, Backprop (f c), Reifies s W) => (BVar s a -> BVar s b -> BVar s c) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c)
+
+-- | Lifted <a>liftA3</a>. Lifts backpropagatable functions to be
+--   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
+liftA3 :: forall f a b c d s. (Traversable f, Applicative f, Backprop a, Backprop b, Backprop c, Backprop d, Backprop (f d), Reifies s W) => (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
+
+-- | Coerce items inside a <a>BVar</a>.
+coerce :: forall a b s. Coercible a b => BVar s a -> BVar s b
