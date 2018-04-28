@@ -21,7 +21,9 @@ module Numeric.Backprop.Class (
   , GZero(..), GAdd(..), GOne(..)
   ) where
 
+import           Data.Complex
 import           Data.List.NonEmpty       (NonEmpty(..))
+import           Data.Ratio
 import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Product hiding (toList)
@@ -40,18 +42,19 @@ import qualified Data.Vector.Unboxed      as VU
 -- just be @'const' 0@.  For vectors and matrices, this should set all
 -- components to zero, the additive identity.
 --
+-- Should be idempotent: Applying the function twice is the same as
+-- applying it just once.
+--
 -- Each type should ideally only have one 'ZeroFunc'.  This coherence
 -- constraint is given by the typeclass 'Zero'.
 newtype ZeroFunc a = ZF { runZF :: a -> a }
 
 -- | Add together two values of a type.  To combine contributions of
--- gradients, so should ideally be information-preserving.  For any other
--- valid 'ZeroFunc', should ideally obey:
+-- gradients, so should ideally be information-preserving.
 --
--- @
--- \af zf x y -> 'runAF' af x ('runZF' zf y) == x
---            && 'runAF' af ('runZF' zf x) y == y
--- @
+-- See laws for 'Backprop' for the laws this should be expected to
+-- preserve.  Namely, it should be commutative and associative, with an
+-- identity for a valid 'ZeroFunc'.
 --
 -- Each type should ideally only have one 'AddFunc'.  This coherence
 -- constraint is given by the typeclass 'Add'.
@@ -60,6 +63,9 @@ newtype AddFunc  a = AF { runAF :: a -> a -> a }
 -- | "One" all components of a value.  For scalar values, this should
 -- just be @'const' 1@.  For vectors and matrices, this should set all
 -- components to one, the multiplicative identity.
+--
+-- Should be idempotent: Applying the function twice is the same as
+-- applying it just once.
 --
 -- Each type should ideally only have one 'ZeroFunc'.  This coherence
 -- constraint is given by the typeclass 'One'.
@@ -95,9 +101,51 @@ ofNum = OF (const 1)
 ofNums :: (Every Num as, Known Length as) => Prod OneFunc as
 ofNums = map1 (\i -> ofNum \\ every @_ @Num i) indices
 
+-- | Class of values that can be backpropagated in general.
+--
+-- For instances of 'Num', these methods can be given by 'zeroNum',
+-- 'addNum', and 'oneNum'.  There are also generic options given in
+-- "Numeric.Backprop.Class" for functors, 'IsList' instances, and 'Generic'
+-- instances.
+--
+-- If you leave the body of an instance declaration blank, GHC Generics
+-- will be used to derive instances if the type has a single constructor
+-- and each field is an instance of 'Backprop'.
+--
+-- To ensure that backpropagation works in a sound way, should obey the
+-- laws:
+--
+-- [/identity/]
+--
+--   * @'add' x ('zero' y) == x@
+--
+--   * @'add' ('zero' x) y == y@
+--
+-- [/commutativity/]
+--
+--   * @'add' x y == 'add' y x@
+--
+-- [/associativity/]
+--
+--   * @'add' x ('add' y z) == 'add' ('add' x y) z@
+--
+-- [/idempotence/]
+-- 
+--   * @'zero' '.' 'zero' == 'zero'@
+--
+--   * @'one' '.' 'one' == 'one'@
+--
 class Backprop a where
+    -- | "Zero out" all components of a value.  For scalar values, this
+    -- should just be @'const' 0@.  For vectors and matrices, this should
+    -- set all components to zero, the additive identity.
     zero :: a -> a
+    -- | Add together two values of a type.  To combine contributions of
+    -- gradients, so should ideally be information-preserving.
     add  :: a -> a -> a
+    -- | "One" all components of a value.  For scalar values, this should
+    -- just be @'const' 1@.  For vectors and matrices, this should set all
+    -- components to one, the multiplicative identity.
     one  :: a -> a
 
     default zero :: (Generic a, GZero (Rep a)) => a -> a
@@ -288,6 +336,38 @@ instance GOne f => GOne (M1 i c f) where
 instance GOne f => GOne (f :.: g) where
     gone (Comp1 x) = Comp1 (gone x)
     {-# INLINE gone #-}
+
+instance Backprop Int where
+    zero = zeroNum
+    {-# INLINE zero #-}
+    add  = addNum
+    {-# INLINE add #-}
+    one  = oneNum
+    {-# INLINE one #-}
+
+instance Backprop Integer where
+    zero = zeroNum
+    {-# INLINE zero #-}
+    add  = addNum
+    {-# INLINE add #-}
+    one  = oneNum
+    {-# INLINE one #-}
+
+instance Integral a => Backprop (Ratio a) where
+    zero = zeroNum
+    {-# INLINE zero #-}
+    add  = addNum
+    {-# INLINE add #-}
+    one  = oneNum
+    {-# INLINE one #-}
+
+instance RealFloat a => Backprop (Complex a) where
+    zero = zeroNum
+    {-# INLINE zero #-}
+    add  = addNum
+    {-# INLINE add #-}
+    one  = oneNum
+    {-# INLINE one #-}
 
 instance Backprop Float where
     zero = zeroNum
