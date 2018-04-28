@@ -322,26 +322,15 @@ instance (Num a, Num b) => Num (a, b) where
     signum (x, y)     = (signum x, signum y)
     fromInteger x     = (fromInteger x, fromInteger x)
 
--- softMaxCrossEntropy
---     :: KnownNat n
---     => R n
---     -> BPOpI s '[ R n ] Double
--- softMaxCrossEntropy targ (r :< Ø) =  realToFrac tsum * log (vsum .$ (r :< Ø))
---                                        - (dot .$ (r :< t :< Ø))
---   where
---     tsum = HM.sumElements . extract $ targ
---     t    = constVar targ
+instance Backprop (R n) where
+    zero = zeroNum
+    add  = addNum
+    one  = oneNum
 
-instance (KnownNat i, KnownNat o, KnownNat h2, KnownNat h1) => Add (Network i h1 h2 o)
-instance (KnownNat i, KnownNat o) => Add (Layer i o)
-instance (KnownNat i, KnownNat o, KnownNat h2, KnownNat h1) => Zero (Network i h1 h2 o)
-instance (KnownNat i, KnownNat o) => Zero (Layer i o)
-instance (KnownNat i, KnownNat o, KnownNat h2, KnownNat h1) => One (Network i h1 h2 o)
-instance (KnownNat i, KnownNat o) => One (Layer i o)
+instance (KnownNat n, KnownNat m) => Backprop (L m n) where
+    zero = zeroNum
+    add  = addNum
+    one  = oneNum
 
-instance Add (R n)
-instance (KnownNat n, KnownNat m) => Add (L m n)
-instance Zero (R n)
-instance (KnownNat n, KnownNat m) => Zero (L m n)
-instance One (R n)
-instance (KnownNat n, KnownNat m) => One (L m n)
+instance (KnownNat i, KnownNat o) => Backprop (Layer i o)
+instance (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o) => Backprop (Network i h1 h2 o)
