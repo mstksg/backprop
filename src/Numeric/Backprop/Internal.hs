@@ -28,9 +28,6 @@
 module Numeric.Backprop.Internal (
     BVar
   , W
-  , AddFunc(..), afNum
-  , ZeroFunc(..), zfNum
-  , OneFunc(..), ofNum
   , backpropN, evalBPN
   , constVar
   , liftOp, liftOp1, liftOp2, liftOp3
@@ -65,6 +62,7 @@ import           Data.Typeable
 import           GHC.Exts                  (Any)
 import           GHC.Generics
 import           Lens.Micro
+import           Numeric.Backprop.Class
 import           Numeric.Backprop.Op
 import           System.IO.Unsafe
 import           Type.Class.Higher
@@ -183,51 +181,6 @@ newtype W = W { wRef :: IORef (Int, [SomeTapeNode]) }
 initWengert :: IO W
 initWengert = W <$> newIORef (0,[])
 {-# INLINE initWengert #-}
-
--- | "Zero out" all components of a value.  For scalar values, this should
--- just be @'const' 0@.  For vectors and matrices, this should set all
--- components to zero, the additive identity.
---
--- Each type should ideally only have one 'ZeroFunc'.  This coherence
--- constraint is given by the typeclass 'Zero'.
-newtype ZeroFunc a = ZF { runZF :: a -> a }
-
--- | Add together two values of a type.  To combine contributions of
--- gradients, so should ideally be information-preserving.  For any other
--- valid 'ZeroFunc', should ideally obey:
---
--- @
--- \af zf x y -> 'runAF' af x ('runZF' zf y) == x
---            && 'runAF' af ('runZF' zf x) y == y
--- @
---
--- Each type should ideally only have one 'AddFunc'.  This coherence
--- constraint is given by the typeclass 'Add'.
-newtype AddFunc  a = AF { runAF :: a -> a -> a }
-
--- | "One" all components of a value.  For scalar values, this should
--- just be @'const' 1@.  For vectors and matrices, this should set all
--- components to one, the multiplicative identity.
---
--- Each type should ideally only have one 'ZeroFunc'.  This coherence
--- constraint is given by the typeclass 'One'.
-newtype OneFunc  a = OF { runOF :: a -> a }
-
--- | If a type has a 'Num' instance, this is the canonical 'AddFunc'.
-afNum :: Num a => AddFunc a
-afNum = AF (+)
-{-# INLINE afNum #-}
-
--- | If a type has a 'Num' instance, this is the canonical 'ZeroFunc'.
-zfNum :: Num a => ZeroFunc a
-zfNum = ZF (const 0)
-{-# INLINE zfNum #-}
-
--- | If a type has a 'Num' instance, this is the canonical 'OneFunc'.
-ofNum :: Num a => OneFunc a
-ofNum = OF (const 1)
-{-# INLINE ofNum #-}
-
 
 insertNode
     :: TapeNode a
@@ -622,9 +575,9 @@ gradRunner
     -> Runner s
     -> (Int, [SomeTapeNode])
     -> m ()
-gradRunner one R{..} (n,stns) = do
+gradRunner o R{..} (n,stns) = do
     when (n > 0) $
-      MV.write _rDelta (n - 1) (unsafeCoerce one)
+      MV.write _rDelta (n - 1) (unsafeCoerce o)
     zipWithM_ go [n-1,n-2..] stns
   where
     go :: Int -> SomeTapeNode -> m ()
@@ -834,66 +787,3 @@ ixt t i f xs = stuff <$> ixi i f contents
         go []     = error "asList"
         go (y:ys) = (y, ys)
 {-# INLINE ixt #-}
-
-instance Num a => Num (ZeroFunc a) where
-    z1 + z2     = ZF $ (+) <$> runZF z1 <*> runZF z2
-    {-# INLINE (+) #-}
-    z1 - z2     = ZF $ (-) <$> runZF z1 <*> runZF z2
-    {-# INLINE (-) #-}
-    z1 * z2     = ZF $ (*) <$> runZF z1 <*> runZF z2
-    {-# INLINE (*) #-}
-    negate      = ZF . fmap negate . runZF
-    {-# INLINE negate #-}
-    abs         = ZF . fmap abs . runZF
-    {-# INLINE abs #-}
-    signum      = ZF . fmap signum . runZF
-    {-# INLINE signum #-}
-    fromInteger = ZF . const . fromInteger
-    {-# INLINE fromInteger #-}
-
-instance Fractional a => Fractional (ZeroFunc a) where
-    z1 / z2      = ZF $ (/) <$> runZF z1 <*> runZF z2
-    {-# INLINE (/) #-}
-    recip        = ZF . fmap recip . runZF
-    {-# INLINE recip #-}
-    fromRational = ZF . const . fromRational
-    {-# INLINE fromRational #-}
-
-instance Floating a => Floating (ZeroFunc a) where
-    pi      = ZF $ const pi
-    {-# INLINE pi #-}
-    exp     = ZF . fmap exp . runZF
-    {-# INLINE exp #-}
-    log     = ZF . fmap log . runZF
-    {-# INLINE log #-}
-    sqrt    = ZF . fmap sqrt . runZF
-    {-# INLINE sqrt #-}
-    z1 ** z2 = ZF $ (**) <$> runZF z1 <*> runZF z2
-    {-# INLINE (**) #-}
-    logBase z1 z2 = ZF $ logBase <$> runZF z1 <*> runZF z2
-    {-# INLINE logBase #-}
-    sin     = ZF . fmap sin . runZF
-    {-# INLINE sin #-}
-    cos     = ZF . fmap cos . runZF
-    {-# INLINE cos #-}
-    tan     =  ZF . fmap tan . runZF
-    {-# INLINE tan  #-}
-    asin    = ZF . fmap asin . runZF
-    {-# INLINE asin #-}
-    acos    = ZF . fmap acos . runZF
-    {-# INLINE acos #-}
-    atan    = ZF . fmap atan . runZF
-    {-# INLINE atan #-}
-    sinh    = ZF . fmap sinh . runZF
-    {-# INLINE sinh #-}
-    cosh    = ZF . fmap cosh . runZF
-    {-# INLINE cosh #-}
-    tanh    = ZF . fmap tanh . runZF
-    {-# INLINE tanh #-}
-    asinh   = ZF . fmap asinh . runZF
-    {-# INLINE asinh #-}
-    acosh   = ZF . fmap acosh . runZF
-    {-# INLINE acosh #-}
-    atanh   = ZF . fmap atanh . runZF
-    {-# INLINE atanh #-}
-

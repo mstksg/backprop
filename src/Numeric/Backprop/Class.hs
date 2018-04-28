@@ -4,27 +4,85 @@
 {-# LANGUAGE TypeApplications  #-}
 
 module Numeric.Backprop.Class (
-    Zero(..), ZeroFunc(..), zeroFunc, zeroFuncs
-  , Add(..), AddFunc(..), addFunc, addFuncs
-  , One(..), OneFunc(..), oneFunc, oneFuncs
+    Zero(..), ZeroFunc(..), zeroFunc, zeroFuncs, zfNum, zfNums
+  , Add(..), AddFunc(..), addFunc, addFuncs, afNum, afNums
+  , One(..), OneFunc(..), oneFunc, oneFuncs, ofNum, ofNums
   , zeroVec, addVec, oneVec
   , zeroFunctor, addIsList, oneFunctor
   ) where
 
-import           Data.List.NonEmpty        (NonEmpty(..))
+import           Data.List.NonEmpty       (NonEmpty(..))
 import           Data.Type.Index
 import           Data.Type.Length
-import           Data.Type.Product hiding  (toList)
+import           Data.Type.Product hiding (toList)
 import           GHC.Exts
-import           Numeric.Backprop.Internal
 import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness
-import qualified Data.Vector               as V
-import qualified Data.Vector.Generic       as VG
-import qualified Data.Vector.Primitive     as VP
-import qualified Data.Vector.Storable      as VS
-import qualified Data.Vector.Unboxed       as VU
+import qualified Data.Vector              as V
+import qualified Data.Vector.Generic      as VG
+import qualified Data.Vector.Primitive    as VP
+import qualified Data.Vector.Storable     as VS
+import qualified Data.Vector.Unboxed      as VU
+
+-- | "Zero out" all components of a value.  For scalar values, this should
+-- just be @'const' 0@.  For vectors and matrices, this should set all
+-- components to zero, the additive identity.
+--
+-- Each type should ideally only have one 'ZeroFunc'.  This coherence
+-- constraint is given by the typeclass 'Zero'.
+newtype ZeroFunc a = ZF { runZF :: a -> a }
+
+-- | Add together two values of a type.  To combine contributions of
+-- gradients, so should ideally be information-preserving.  For any other
+-- valid 'ZeroFunc', should ideally obey:
+--
+-- @
+-- \af zf x y -> 'runAF' af x ('runZF' zf y) == x
+--            && 'runAF' af ('runZF' zf x) y == y
+-- @
+--
+-- Each type should ideally only have one 'AddFunc'.  This coherence
+-- constraint is given by the typeclass 'Add'.
+newtype AddFunc  a = AF { runAF :: a -> a -> a }
+
+-- | "One" all components of a value.  For scalar values, this should
+-- just be @'const' 1@.  For vectors and matrices, this should set all
+-- components to one, the multiplicative identity.
+--
+-- Each type should ideally only have one 'ZeroFunc'.  This coherence
+-- constraint is given by the typeclass 'One'.
+newtype OneFunc  a = OF { runOF :: a -> a }
+
+-- | If a type has a 'Num' instance, this is the canonical 'ZeroFunc'.
+zfNum :: Num a => ZeroFunc a
+zfNum = ZF (const 0)
+{-# INLINE zfNum #-}
+
+-- | 'ZeroFunc's for every item in a type level list based on their
+-- 'Num' instances
+zfNums :: (Every Num as, Known Length as) => Prod ZeroFunc as
+zfNums = map1 (\i -> zfNum \\ every @_ @Num i) indices
+
+-- | If a type has a 'Num' instance, this is the canonical 'AddFunc'.
+afNum :: Num a => AddFunc a
+afNum = AF (+)
+{-# INLINE afNum #-}
+
+-- | 'ZeroFunc's for every item in a type level list based on their
+-- 'Num' instances
+afNums :: (Every Num as, Known Length as) => Prod AddFunc as
+afNums = map1 (\i -> afNum \\ every @_ @Num i) indices
+
+-- | If a type has a 'Num' instance, this is the canonical 'OneFunc'.
+ofNum :: Num a => OneFunc a
+ofNum = OF (const 1)
+{-# INLINE ofNum #-}
+
+-- | 'ZeroFunc's for every item in a type level list based on their
+-- 'Num' instances
+ofNums :: (Every Num as, Known Length as) => Prod OneFunc as
+ofNums = map1 (\i -> ofNum \\ every @_ @Num i) indices
 
 class Zero a where
     zero :: a -> a
@@ -34,6 +92,7 @@ class Zero a where
 
 zeroFunc :: Zero a => ZeroFunc a
 zeroFunc = ZF zero
+{-# INLINE zeroFunc #-}
 
 zeroFuncs :: (Every Zero as, Known Length as) => Prod ZeroFunc as
 zeroFuncs = map1 (\i -> zeroFunc \\ every @_ @Zero i) indices
@@ -46,6 +105,7 @@ class Add a where
 
 addFunc :: Add a => AddFunc a
 addFunc = AF add
+{-# INLINE addFunc #-}
 
 addFuncs :: (Every Add as, Known Length as) => Prod AddFunc as
 addFuncs = map1 (\i -> addFunc \\ every @_ @Add i) indices
@@ -58,6 +118,7 @@ class One a where
 
 oneFunc :: One a => OneFunc a
 oneFunc = OF one
+{-# INLINE oneFunc #-}
 
 oneFuncs :: (Every One as, Known Length as) => Prod OneFunc as
 oneFuncs = map1 (\i -> oneFunc \\ every @_ @One i) indices

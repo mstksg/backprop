@@ -6,9 +6,9 @@
 module Numeric.Backprop.Explicit (
     -- * Types
     BVar, W
-  , AddFunc(..), afNum
-  , ZeroFunc(..), zfNum
-  , OneFunc(..), ofNum
+  , AddFunc(..), afNum, afNums, Add(..), addFunc, addFuncs
+  , ZeroFunc(..), zfNum, zfNums, Zero(..), zeroFunc, zeroFuncs
+  , OneFunc(..), ofNum, ofNums, One(..), oneFunc, oneFuncs
     -- * Running
   , backprop, evalBP, gradBP
     -- ** Multiple inputs
@@ -49,6 +49,7 @@ module Numeric.Backprop.Explicit (
 import           Data.Bifunctor
 import           Data.Reflection
 import           Data.Type.Index
+import           Numeric.Backprop.Class
 import           Numeric.Backprop.Internal
 import           Numeric.Backprop.Op
 
