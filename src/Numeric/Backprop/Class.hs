@@ -1,5 +1,6 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE TypeApplications  #-}
 
 module Numeric.Backprop.Class (
@@ -7,11 +8,14 @@ module Numeric.Backprop.Class (
   , Add(..), AddFunc(..), addFunc, addFuncs
   , One(..), OneFunc(..), oneFunc, oneFuncs
   , zeroVec, addVec, oneVec
+  , zeroFunctor, addIsList, oneFunctor
   ) where
 
+import           Data.List.NonEmpty        (NonEmpty(..))
 import           Data.Type.Index
 import           Data.Type.Length
-import           Data.Type.Product
+import           Data.Type.Product hiding  (toList)
+import           GHC.Exts
 import           Numeric.Backprop.Internal
 import           Type.Class.Higher
 import           Type.Class.Known
@@ -70,11 +74,13 @@ instance One Double
 zeroVec :: (VG.Vector v a, Zero a) => v a -> v a
 zeroVec = VG.map zero
 
-addVec :: (VG.Vector v a, Num a) => v a -> v a -> v a
+addVec :: (VG.Vector v a, Add a) => v a -> v a -> v a
 addVec x y = case compare lX lY of
-    LT -> VG.zipWith (+) (x VG.++ VG.replicate (lY - lX) 0) y
-    EQ -> VG.zipWith (+) x y
-    GT -> VG.zipWith (+) x (y VG.++ VG.replicate (lX - lY) 0)
+    LT -> let (y1,y2) = VG.splitAt (lY - lX) y
+          in  VG.zipWith add x y1 VG.++ y2
+    EQ -> VG.zipWith add x y
+    GT -> let (x1,x2) = VG.splitAt (lX - lY) x
+          in  VG.zipWith add x1 y VG.++ x2
   where
     lX = VG.length x
     lY = VG.length y
@@ -91,13 +97,13 @@ instance (VS.Storable a, Zero a) => Zero (VS.Vector a) where
 instance (VP.Prim a, Zero a) => Zero (VP.Vector a) where
     zero = zeroVec
 
-instance Num a => Add (V.Vector a) where
+instance Add a => Add (V.Vector a) where
     add = addVec
-instance (VU.Unbox a, Num a) => Add (VU.Vector a) where
+instance (VU.Unbox a, Add a) => Add (VU.Vector a) where
     add = addVec
-instance (VS.Storable a, Num a) => Add (VS.Vector a) where
+instance (VS.Storable a, Add a) => Add (VS.Vector a) where
     add = addVec
-instance (VP.Prim a, Num a) => Add (VP.Vector a) where
+instance (VP.Prim a, Add a) => Add (VP.Vector a) where
     add = addVec
 
 instance One a => One (V.Vector a) where
@@ -108,3 +114,33 @@ instance (VS.Storable a, One a) => One (VS.Vector a) where
     one = oneVec
 instance (VP.Prim a, One a) => One (VP.Vector a) where
     one = oneVec
+
+zeroFunctor :: (Functor f, Zero a) => f a -> f a
+zeroFunctor = fmap zero
+
+oneFunctor :: (Functor f, One a) => f a -> f a
+oneFunctor = fmap one
+
+addIsList :: (IsList a, Add (Item a)) => a -> a -> a
+addIsList x y = fromList $ go (toList x) (toList y)
+  where
+    go = \case
+      [] -> id
+      o@(x':xs) -> \case
+        []    -> o
+        y':ys -> add x' y' : go xs ys
+
+instance Zero a => Zero [a] where
+    zero = zeroFunctor
+instance Zero a => Zero (NonEmpty a) where
+    zero = zeroFunctor
+
+instance Add a => Add [a] where
+    add = addIsList
+instance Add a => Add (NonEmpty a) where
+    add = addIsList
+
+instance One a => One [a] where
+    one = oneFunctor
+instance One a => One (NonEmpty a) where
+    one = oneFunctor

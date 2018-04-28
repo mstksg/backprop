@@ -140,8 +140,8 @@ forceBVar (BV r !_) = force r `seq` ()
 {-# INLINE forceBVar #-}
 
 data InpRef :: Type -> Type where
-    IR :: { _irIx    :: !(BVar s b)
-          , _irScale :: !(a -> b -> b)
+    IR :: { _irIx  :: !(BVar s b)
+          , _irAdd :: !(a -> b -> b)
           }
        -> InpRef a
 
@@ -611,7 +611,7 @@ initRunner (n, stns) (nx,xs) = do
     for_ (zip [n-1,n-2..] stns) $ \(i, STN z (TN{..} :: TapeNode c)) ->
       MV.write delts i $ unsafeCoerce z
     inps <- MV.new nx
-    for_ (zip [0..] xs) $ \(i, z) ->
+    for_ (zip [0..] xs) . uncurry $ \i z ->
       MV.write inps i z
     return $ R delts inps
 {-# INLINE initRunner #-}
@@ -634,13 +634,12 @@ gradRunner one R{..} (n,stns) = do
       zipWithPM_ propagate _tnInputs gs
     {-# INLINE go #-}
     propagate :: forall x. InpRef x -> I x -> m ()
-    propagate = undefined
-    -- propagate (IR v ln) (I d) = case _bvRef v of
-    --   BRInp i -> flip (MV.modify _rInputs) i $
-    --     unsafeCoerce . (ln %~ (+* d)) . unsafeCoerce
-    --   BRIx i -> flip (MV.modify _rDelta) i $
-    --     unsafeCoerce . (ln %~ (+* d)) . unsafeCoerce
-    --   BRC     -> return ()
+    propagate (IR v (+*)) (I d) = case _bvRef v of
+      BRInp i -> flip (MV.modify _rInputs) i $
+        unsafeCoerce . (d +*) . unsafeCoerce
+      BRIx i -> flip (MV.modify _rDelta) i $
+        unsafeCoerce . (d +*) . unsafeCoerce
+      BRC     -> return ()
     {-# INLINE propagate #-}
 {-# INLINE gradRunner #-}
 
