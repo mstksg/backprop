@@ -46,7 +46,6 @@ module Numeric.Backprop.Explicit (
 import           Data.Bifunctor
 import           Data.Reflection
 import           Data.Type.Index
-import           Lens.Micro
 import           Numeric.Backprop.Internal
 import           Numeric.Backprop.Op
 
@@ -376,14 +375,14 @@ gradBP2 f x = snd . backprop2 f x
 --
 -- @since 0.1.4.0
 isoVar
-    :: (Num a, Num b, Reifies s W)
-    => ZeroFunc b
-    -> ScaleFunc a
+    :: Reifies s W
+    => AddFunc a
+    -> ZeroFunc b
     -> (a -> b)
     -> (b -> a)
     -> BVar s a
     -> BVar s b
-isoVar f g = liftOp1 (opIso f g)
+isoVar af z f g = liftOp1 af z (opIso f g)
 {-# INLINE isoVar #-}
 
 -- | Convert the values inside two 'BVar's using a given isomorphism.
@@ -391,13 +390,16 @@ isoVar f g = liftOp1 (opIso f g)
 --
 -- @since 0.1.4.0
 isoVar2
-    :: (Num a, Num b, Num c, Reifies s W)
-    => (a -> b -> c)
+    :: Reifies s W
+    => AddFunc a
+    -> AddFunc b
+    -> ZeroFunc c
+    -> (a -> b -> c)
     -> (c -> (a, b))
     -> BVar s a
     -> BVar s b
     -> BVar s c
-isoVar2 f g = liftOp2 (opIso2 f g)
+isoVar2 afa afb z f g = liftOp2 afa afb z (opIso2 f g)
 {-# INLINE isoVar2 #-}
 
 -- | Convert the values inside three 'BVar's using a given isomorphism.
@@ -405,14 +407,18 @@ isoVar2 f g = liftOp2 (opIso2 f g)
 --
 -- @since 0.1.4.0
 isoVar3
-    :: (Num a, Num b, Num c, Num d, Reifies s W)
-    => (a -> b -> c -> d)
+    :: Reifies s W
+    => AddFunc a
+    -> AddFunc b
+    -> AddFunc c
+    -> ZeroFunc d
+    -> (a -> b -> c -> d)
     -> (d -> (a, b, c))
     -> BVar s a
     -> BVar s b
     -> BVar s c
     -> BVar s d
-isoVar3 f g = liftOp3 (opIso3 f g)
+isoVar3 afa afb afc z f g = liftOp3 afa afb afc z (opIso3 f g)
 {-# INLINE isoVar3 #-}
 
 -- | Convert the values inside a tuple of 'BVar's using a given
@@ -421,10 +427,12 @@ isoVar3 f g = liftOp3 (opIso3 f g)
 --
 -- @since 0.1.4.0
 isoVarN
-    :: (Every Num as, Num b, Reifies s W)
-    => (Tuple as -> b)
+    :: Reifies s W
+    => Prod AddFunc as
+    -> ZeroFunc b
+    -> (Tuple as -> b)
     -> (b -> Tuple as)
     -> Prod (BVar s) as
     -> BVar s b
-isoVarN f g = liftOp (opIsoN f g)
+isoVarN afs z f g = liftOp afs z (opIsoN f g)
 {-# INLINE isoVarN #-}

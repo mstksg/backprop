@@ -11,6 +11,7 @@ module Data.Type.Util (
   , unzipP
   , zipP
   , zipWithPM_
+  , zipWithPM3_
   , vecToProd
   , vecLen
   , lengthProd
@@ -67,6 +68,23 @@ zipWithPM_ f = go
       x :< xs -> \case
         y :< ys -> f x y *> go xs ys
 
+zipWithPM3_
+    :: forall m f g h as. Applicative m
+    => (forall a. f a -> g a -> h a -> m ())
+    -> Prod f as
+    -> Prod g as
+    -> Prod h as
+    -> m ()
+zipWithPM3_ f = go
+  where
+    go :: forall bs. Prod f bs -> Prod g bs -> Prod h bs -> m ()
+    go = \case
+      Ø -> \case
+        Ø -> \case
+          Ø -> pure ()
+      x :< xs -> \case
+        y :< ys -> \case
+          z :< zs -> f x y z *> go xs ys zs
 
 zipP
     :: Prod f as
