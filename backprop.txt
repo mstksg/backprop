@@ -15,21 +15,111 @@
 @version 0.1.5.2
 
 module Numeric.Backprop.Class
-class Zero a
-zero :: Zero a => a -> a
-zero :: (Zero a, Num a) => a -> a
+
+-- | Class of values that can be backpropagated in general.
+--   
+--   For instances of <a>Num</a>, these methods can be given by
+--   <a>zeroNum</a>, <a>addNum</a>, and <a>oneNum</a>. There are also
+--   generic options given in <a>Numeric.Backprop.Class</a> for functors,
+--   <a>IsList</a> instances, and <a>Generic</a> instances.
+--   
+--   If you leave the body of an instance declaration blank, GHC Generics
+--   will be used to derive instances if the type has a single constructor
+--   and each field is an instance of <a>Backprop</a>.
+--   
+--   To ensure that backpropagation works in a sound way, should obey the
+--   laws:
+--   
+--   <ul>
+--   <li><i><i>identity</i></i></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><pre><a>add</a> x (<a>zero</a> y) == x</pre></li>
+--   <li><pre><a>add</a> (<a>zero</a> x) y == y</pre></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><i><i>commutativity</i></i></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><pre><a>add</a> x y == <a>add</a> y x</pre></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><i><i>associativity</i></i></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><pre><a>add</a> x (<a>add</a> y z) == <a>add</a> (<a>add</a> x y)
+--   z</pre></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><i><i>idempotence</i></i></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><pre><a>zero</a> <a>.</a> <a>zero</a> == <a>zero</a></pre></li>
+--   <li><pre><a>one</a> <a>.</a> <a>one</a> == <a>one</a></pre></li>
+--   </ul>
+class Backprop a
+
+-- | "Zero out" all components of a value. For scalar values, this should
+--   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
+--   set all components to zero, the additive identity.
+zero :: Backprop a => a -> a
+
+-- | Add together two values of a type. To combine contributions of
+--   gradients, so should ideally be information-preserving.
+add :: Backprop a => a -> a -> a
+
+-- | <a>One</a> all components of a value. For scalar values, this should
+--   just be <tt><a>const</a> 1</tt>. For vectors and matrices, this should
+--   set all components to one, the multiplicative identity.
+one :: Backprop a => a -> a
+
+-- | "Zero out" all components of a value. For scalar values, this should
+--   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
+--   set all components to zero, the additive identity.
+zero :: (Backprop a, Generic a, GZero (Rep a)) => a -> a
+
+-- | Add together two values of a type. To combine contributions of
+--   gradients, so should ideally be information-preserving.
+add :: (Backprop a, Generic a, GAdd (Rep a)) => a -> a -> a
+
+-- | <a>One</a> all components of a value. For scalar values, this should
+--   just be <tt><a>const</a> 1</tt>. For vectors and matrices, this should
+--   set all components to one, the multiplicative identity.
+one :: (Backprop a, Generic a, GOne (Rep a)) => a -> a
+zeroNum :: Num a => a -> a
+addNum :: Num a => a -> a -> a
+oneNum :: Num a => a -> a
+zeroVec :: (Vector v a, Backprop a) => v a -> v a
+addVec :: (Vector v a, Backprop a) => v a -> v a -> v a
+oneVec :: (Vector v a, Backprop a) => v a -> v a
+zeroFunctor :: (Functor f, Backprop a) => f a -> f a
+addIsList :: (IsList a, Backprop (Item a)) => a -> a -> a
+oneFunctor :: (Functor f, Backprop a) => f a -> f a
+genericZero :: (Generic a, GZero (Rep a)) => a -> a
+genericAdd :: (Generic a, GAdd (Rep a)) => a -> a -> a
+genericOne :: (Generic a, GOne (Rep a)) => a -> a
 
 -- | "Zero out" all components of a value. For scalar values, this should
 --   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
 --   set all components to zero, the additive identity.
 --   
+--   Should be idempotent: Applying the function twice is the same as
+--   applying it just once.
+--   
 --   Each type should ideally only have one <a>ZeroFunc</a>. This coherence
---   constraint is given by the typeclass <a>Zero</a>.
+--   constraint is given by the typeclass <tt>Zero</tt>.
 newtype ZeroFunc a
 ZF :: (a -> a) -> ZeroFunc a
 [runZF] :: ZeroFunc a -> a -> a
-zeroFunc :: Zero a => ZeroFunc a
-zeroFuncs :: (Every Zero as, Known Length as) => Prod ZeroFunc as
+zeroFunc :: Backprop a => ZeroFunc a
+zeroFuncs :: (Every Backprop as, Known Length as) => Prod ZeroFunc as
 
 -- | If a type has a <a>Num</a> instance, this is the canonical
 --   <a>ZeroFunc</a>.
@@ -38,26 +128,21 @@ zfNum :: Num a => ZeroFunc a
 -- | <a>ZeroFunc</a>s for every item in a type level list based on their
 --   <a>Num</a> instances
 zfNums :: (Every Num as, Known Length as) => Prod ZeroFunc as
-class Add a
-add :: Add a => a -> a -> a
-add :: (Add a, Num a) => a -> a -> a
 
 -- | Add together two values of a type. To combine contributions of
---   gradients, so should ideally be information-preserving. For any other
---   valid <a>ZeroFunc</a>, should ideally obey:
+--   gradients, so should ideally be information-preserving.
 --   
---   <pre>
---   af zf x y -&gt; <a>runAF</a> af x (<a>runZF</a> zf y) == x
---              &amp;&amp; <a>runAF</a> af (<a>runZF</a> zf x) y == y
---   </pre>
+--   See laws for <a>Backprop</a> for the laws this should be expected to
+--   preserve. Namely, it should be commutative and associative, with an
+--   identity for a valid <a>ZeroFunc</a>.
 --   
 --   Each type should ideally only have one <a>AddFunc</a>. This coherence
---   constraint is given by the typeclass <a>Add</a>.
+--   constraint is given by the typeclass <tt>Add</tt>.
 newtype AddFunc a
 AF :: (a -> a -> a) -> AddFunc a
 [runAF] :: AddFunc a -> a -> a -> a
-addFunc :: Add a => AddFunc a
-addFuncs :: (Every Add as, Known Length as) => Prod AddFunc as
+addFunc :: Backprop a => AddFunc a
+addFuncs :: (Every Backprop as, Known Length as) => Prod AddFunc as
 
 -- | If a type has a <a>Num</a> instance, this is the canonical
 --   <a>AddFunc</a>.
@@ -66,21 +151,21 @@ afNum :: Num a => AddFunc a
 -- | <a>ZeroFunc</a>s for every item in a type level list based on their
 --   <a>Num</a> instances
 afNums :: (Every Num as, Known Length as) => Prod AddFunc as
-class One a
-one :: One a => a -> a
-one :: (One a, Num a) => a -> a
 
 -- | <a>One</a> all components of a value. For scalar values, this should
 --   just be <tt><a>const</a> 1</tt>. For vectors and matrices, this should
 --   set all components to one, the multiplicative identity.
 --   
+--   Should be idempotent: Applying the function twice is the same as
+--   applying it just once.
+--   
 --   Each type should ideally only have one <a>ZeroFunc</a>. This coherence
---   constraint is given by the typeclass <a>One</a>.
+--   constraint is given by the typeclass <tt>One</tt>.
 newtype OneFunc a
 OF :: (a -> a) -> OneFunc a
 [runOF] :: OneFunc a -> a -> a
-oneFunc :: One a => OneFunc a
-oneFuncs :: (Every One as, Known Length as) => Prod OneFunc as
+oneFunc :: Backprop a => OneFunc a
+oneFuncs :: (Every Backprop as, Known Length as) => Prod OneFunc as
 
 -- | If a type has a <a>Num</a> instance, this is the canonical
 --   <a>OneFunc</a>.
@@ -89,36 +174,47 @@ ofNum :: Num a => OneFunc a
 -- | <a>ZeroFunc</a>s for every item in a type level list based on their
 --   <a>Num</a> instances
 ofNums :: (Every Num as, Known Length as) => Prod OneFunc as
-zeroVec :: (Vector v a, Zero a) => v a -> v a
-addVec :: (Vector v a, Add a) => v a -> v a -> v a
-oneVec :: (Vector v a, One a) => v a -> v a
-zeroFunctor :: (Functor f, Zero a) => f a -> f a
-addIsList :: (IsList a, Add (Item a)) => a -> a -> a
-oneFunctor :: (Functor f, One a) => f a -> f a
-instance Numeric.Backprop.Class.One GHC.Types.Float
-instance Numeric.Backprop.Class.One GHC.Types.Double
-instance Numeric.Backprop.Class.One a => Numeric.Backprop.Class.One (Data.Vector.Vector a)
-instance (Data.Vector.Unboxed.Base.Unbox a, Numeric.Backprop.Class.One a) => Numeric.Backprop.Class.One (Data.Vector.Unboxed.Base.Vector a)
-instance (Foreign.Storable.Storable a, Numeric.Backprop.Class.One a) => Numeric.Backprop.Class.One (Data.Vector.Storable.Vector a)
-instance (Data.Primitive.Types.Prim a, Numeric.Backprop.Class.One a) => Numeric.Backprop.Class.One (Data.Vector.Primitive.Vector a)
-instance Numeric.Backprop.Class.One a => Numeric.Backprop.Class.One [a]
-instance Numeric.Backprop.Class.One a => Numeric.Backprop.Class.One (Data.List.NonEmpty.NonEmpty a)
-instance Numeric.Backprop.Class.Add GHC.Types.Float
-instance Numeric.Backprop.Class.Add GHC.Types.Double
-instance Numeric.Backprop.Class.Add a => Numeric.Backprop.Class.Add (Data.Vector.Vector a)
-instance (Data.Vector.Unboxed.Base.Unbox a, Numeric.Backprop.Class.Add a) => Numeric.Backprop.Class.Add (Data.Vector.Unboxed.Base.Vector a)
-instance (Foreign.Storable.Storable a, Numeric.Backprop.Class.Add a) => Numeric.Backprop.Class.Add (Data.Vector.Storable.Vector a)
-instance (Data.Primitive.Types.Prim a, Numeric.Backprop.Class.Add a) => Numeric.Backprop.Class.Add (Data.Vector.Primitive.Vector a)
-instance Numeric.Backprop.Class.Add a => Numeric.Backprop.Class.Add [a]
-instance Numeric.Backprop.Class.Add a => Numeric.Backprop.Class.Add (Data.List.NonEmpty.NonEmpty a)
-instance Numeric.Backprop.Class.Zero GHC.Types.Float
-instance Numeric.Backprop.Class.Zero GHC.Types.Double
-instance Numeric.Backprop.Class.Zero a => Numeric.Backprop.Class.Zero (Data.Vector.Vector a)
-instance (Data.Vector.Unboxed.Base.Unbox a, Numeric.Backprop.Class.Zero a) => Numeric.Backprop.Class.Zero (Data.Vector.Unboxed.Base.Vector a)
-instance (Foreign.Storable.Storable a, Numeric.Backprop.Class.Zero a) => Numeric.Backprop.Class.Zero (Data.Vector.Storable.Vector a)
-instance (Data.Primitive.Types.Prim a, Numeric.Backprop.Class.Zero a) => Numeric.Backprop.Class.Zero (Data.Vector.Primitive.Vector a)
-instance Numeric.Backprop.Class.Zero a => Numeric.Backprop.Class.Zero [a]
-instance Numeric.Backprop.Class.Zero a => Numeric.Backprop.Class.Zero (Data.List.NonEmpty.NonEmpty a)
+class GZero f
+gzero :: GZero f => f t -> f t
+class GAdd f
+gadd :: GAdd f => f t -> f t -> f t
+class GOne f
+gone :: GOne f => f t -> f t
+instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.GZero (GHC.Generics.K1 * i a)
+instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.GAdd (GHC.Generics.K1 * i a)
+instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.GOne (GHC.Generics.K1 * i a)
+instance Numeric.Backprop.Class.Backprop GHC.Types.Int
+instance Numeric.Backprop.Class.Backprop GHC.Integer.Type.Integer
+instance GHC.Real.Integral a => Numeric.Backprop.Class.Backprop (GHC.Real.Ratio a)
+instance GHC.Float.RealFloat a => Numeric.Backprop.Class.Backprop (Data.Complex.Complex a)
+instance Numeric.Backprop.Class.Backprop GHC.Types.Float
+instance Numeric.Backprop.Class.Backprop GHC.Types.Double
+instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (Data.Vector.Vector a)
+instance (Data.Vector.Unboxed.Base.Unbox a, Numeric.Backprop.Class.Backprop a) => Numeric.Backprop.Class.Backprop (Data.Vector.Unboxed.Base.Vector a)
+instance (Foreign.Storable.Storable a, Numeric.Backprop.Class.Backprop a) => Numeric.Backprop.Class.Backprop (Data.Vector.Storable.Vector a)
+instance (Data.Primitive.Types.Prim a, Numeric.Backprop.Class.Backprop a) => Numeric.Backprop.Class.Backprop (Data.Vector.Primitive.Vector a)
+instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop [a]
+instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (Data.List.NonEmpty.NonEmpty a)
+instance (Numeric.Backprop.Class.Backprop a, Numeric.Backprop.Class.Backprop b) => Numeric.Backprop.Class.Backprop (a, b)
+instance (Numeric.Backprop.Class.Backprop a, Numeric.Backprop.Class.Backprop b, Numeric.Backprop.Class.Backprop c) => Numeric.Backprop.Class.Backprop (a, b, c)
+instance (Numeric.Backprop.Class.Backprop a, Numeric.Backprop.Class.Backprop b, Numeric.Backprop.Class.Backprop c, Numeric.Backprop.Class.Backprop d) => Numeric.Backprop.Class.Backprop (a, b, c, d)
+instance (Numeric.Backprop.Class.GOne f, Numeric.Backprop.Class.GOne g) => Numeric.Backprop.Class.GOne ((GHC.Generics.:*:) * f g)
+instance (Numeric.Backprop.Class.GOne f, Numeric.Backprop.Class.GOne g) => Numeric.Backprop.Class.GOne ((GHC.Generics.:+:) * f g)
+instance Numeric.Backprop.Class.GOne (GHC.Generics.V1 *)
+instance Numeric.Backprop.Class.GOne (GHC.Generics.U1 *)
+instance Numeric.Backprop.Class.GOne f => Numeric.Backprop.Class.GOne (GHC.Generics.M1 * i c f)
+instance Numeric.Backprop.Class.GOne f => Numeric.Backprop.Class.GOne ((GHC.Generics.:.:) * * f g)
+instance (Numeric.Backprop.Class.GAdd f, Numeric.Backprop.Class.GAdd g) => Numeric.Backprop.Class.GAdd ((GHC.Generics.:*:) * f g)
+instance Numeric.Backprop.Class.GAdd (GHC.Generics.V1 *)
+instance Numeric.Backprop.Class.GAdd (GHC.Generics.U1 *)
+instance Numeric.Backprop.Class.GAdd f => Numeric.Backprop.Class.GAdd (GHC.Generics.M1 * i c f)
+instance Numeric.Backprop.Class.GAdd f => Numeric.Backprop.Class.GAdd ((GHC.Generics.:.:) * * f g)
+instance (Numeric.Backprop.Class.GZero f, Numeric.Backprop.Class.GZero g) => Numeric.Backprop.Class.GZero ((GHC.Generics.:*:) * f g)
+instance (Numeric.Backprop.Class.GZero f, Numeric.Backprop.Class.GZero g) => Numeric.Backprop.Class.GZero ((GHC.Generics.:+:) * f g)
+instance Numeric.Backprop.Class.GZero (GHC.Generics.V1 *)
+instance Numeric.Backprop.Class.GZero (GHC.Generics.U1 *)
+instance Numeric.Backprop.Class.GZero f => Numeric.Backprop.Class.GZero (GHC.Generics.M1 * i c f)
+instance Numeric.Backprop.Class.GZero f => Numeric.Backprop.Class.GZero ((GHC.Generics.:.:) * * f g)
 
 
 -- | Provides the <a>Op</a> type and combinators, which represent
@@ -615,16 +711,14 @@ data BVar s a
 data W
 
 -- | Add together two values of a type. To combine contributions of
---   gradients, so should ideally be information-preserving. For any other
---   valid <a>ZeroFunc</a>, should ideally obey:
+--   gradients, so should ideally be information-preserving.
 --   
---   <pre>
---   af zf x y -&gt; <a>runAF</a> af x (<a>runZF</a> zf y) == x
---              &amp;&amp; <a>runAF</a> af (<a>runZF</a> zf x) y == y
---   </pre>
+--   See laws for <a>Backprop</a> for the laws this should be expected to
+--   preserve. Namely, it should be commutative and associative, with an
+--   identity for a valid <a>ZeroFunc</a>.
 --   
 --   Each type should ideally only have one <a>AddFunc</a>. This coherence
---   constraint is given by the typeclass <a>Add</a>.
+--   constraint is given by the typeclass <tt>Add</tt>.
 newtype AddFunc a
 AF :: (a -> a -> a) -> AddFunc a
 [runAF] :: AddFunc a -> a -> a -> a
@@ -636,18 +730,18 @@ afNum :: Num a => AddFunc a
 -- | <a>ZeroFunc</a>s for every item in a type level list based on their
 --   <a>Num</a> instances
 afNums :: (Every Num as, Known Length as) => Prod AddFunc as
-class Add a
-add :: Add a => a -> a -> a
-add :: (Add a, Num a) => a -> a -> a
-addFunc :: Add a => AddFunc a
-addFuncs :: (Every Add as, Known Length as) => Prod AddFunc as
+addFunc :: Backprop a => AddFunc a
+addFuncs :: (Every Backprop as, Known Length as) => Prod AddFunc as
 
 -- | "Zero out" all components of a value. For scalar values, this should
 --   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
 --   set all components to zero, the additive identity.
 --   
+--   Should be idempotent: Applying the function twice is the same as
+--   applying it just once.
+--   
 --   Each type should ideally only have one <a>ZeroFunc</a>. This coherence
---   constraint is given by the typeclass <a>Zero</a>.
+--   constraint is given by the typeclass <tt>Zero</tt>.
 newtype ZeroFunc a
 ZF :: (a -> a) -> ZeroFunc a
 [runZF] :: ZeroFunc a -> a -> a
@@ -659,18 +753,18 @@ zfNum :: Num a => ZeroFunc a
 -- | <a>ZeroFunc</a>s for every item in a type level list based on their
 --   <a>Num</a> instances
 zfNums :: (Every Num as, Known Length as) => Prod ZeroFunc as
-class Zero a
-zero :: Zero a => a -> a
-zero :: (Zero a, Num a) => a -> a
-zeroFunc :: Zero a => ZeroFunc a
-zeroFuncs :: (Every Zero as, Known Length as) => Prod ZeroFunc as
+zeroFunc :: Backprop a => ZeroFunc a
+zeroFuncs :: (Every Backprop as, Known Length as) => Prod ZeroFunc as
 
 -- | <a>One</a> all components of a value. For scalar values, this should
 --   just be <tt><a>const</a> 1</tt>. For vectors and matrices, this should
 --   set all components to one, the multiplicative identity.
 --   
+--   Should be idempotent: Applying the function twice is the same as
+--   applying it just once.
+--   
 --   Each type should ideally only have one <a>ZeroFunc</a>. This coherence
---   constraint is given by the typeclass <a>One</a>.
+--   constraint is given by the typeclass <tt>One</tt>.
 newtype OneFunc a
 OF :: (a -> a) -> OneFunc a
 [runOF] :: OneFunc a -> a -> a
@@ -682,11 +776,8 @@ ofNum :: Num a => OneFunc a
 -- | <a>ZeroFunc</a>s for every item in a type level list based on their
 --   <a>Num</a> instances
 ofNums :: (Every Num as, Known Length as) => Prod OneFunc as
-class One a
-one :: One a => a -> a
-one :: (One a, Num a) => a -> a
-oneFunc :: One a => OneFunc a
-oneFuncs :: (Every One as, Known Length as) => Prod OneFunc as
+oneFunc :: Backprop a => OneFunc a
+oneFuncs :: (Every Backprop as, Known Length as) => Prod OneFunc as
 
 -- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
 --   the function <tt>a -&gt; b</tt> that it represents, also computing its
@@ -1988,15 +2079,84 @@ data BVar s a
 --   <a>W</a></tt> as a required constraint on <tt>s</tt> that allows
 --   backpropagation to work.
 data W
-class Zero a
-zero :: Zero a => a -> a
-zero :: (Zero a, Num a) => a -> a
-class Add a
-add :: Add a => a -> a -> a
-add :: (Add a, Num a) => a -> a -> a
-class One a
-one :: One a => a -> a
-one :: (One a, Num a) => a -> a
+
+-- | Class of values that can be backpropagated in general.
+--   
+--   For instances of <a>Num</a>, these methods can be given by
+--   <a>zeroNum</a>, <a>addNum</a>, and <a>oneNum</a>. There are also
+--   generic options given in <a>Numeric.Backprop.Class</a> for functors,
+--   <a>IsList</a> instances, and <a>Generic</a> instances.
+--   
+--   If you leave the body of an instance declaration blank, GHC Generics
+--   will be used to derive instances if the type has a single constructor
+--   and each field is an instance of <a>Backprop</a>.
+--   
+--   To ensure that backpropagation works in a sound way, should obey the
+--   laws:
+--   
+--   <ul>
+--   <li><i><i>identity</i></i></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><pre><a>add</a> x (<a>zero</a> y) == x</pre></li>
+--   <li><pre><a>add</a> (<a>zero</a> x) y == y</pre></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><i><i>commutativity</i></i></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><pre><a>add</a> x y == <a>add</a> y x</pre></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><i><i>associativity</i></i></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><pre><a>add</a> x (<a>add</a> y z) == <a>add</a> (<a>add</a> x y)
+--   z</pre></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><i><i>idempotence</i></i></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><pre><a>zero</a> <a>.</a> <a>zero</a> == <a>zero</a></pre></li>
+--   <li><pre><a>one</a> <a>.</a> <a>one</a> == <a>one</a></pre></li>
+--   </ul>
+class Backprop a
+
+-- | "Zero out" all components of a value. For scalar values, this should
+--   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
+--   set all components to zero, the additive identity.
+zero :: Backprop a => a -> a
+
+-- | Add together two values of a type. To combine contributions of
+--   gradients, so should ideally be information-preserving.
+add :: Backprop a => a -> a -> a
+
+-- | <a>One</a> all components of a value. For scalar values, this should
+--   just be <tt><a>const</a> 1</tt>. For vectors and matrices, this should
+--   set all components to one, the multiplicative identity.
+one :: Backprop a => a -> a
+
+-- | "Zero out" all components of a value. For scalar values, this should
+--   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
+--   set all components to zero, the additive identity.
+zero :: (Backprop a, Generic a, GZero (Rep a)) => a -> a
+
+-- | Add together two values of a type. To combine contributions of
+--   gradients, so should ideally be information-preserving.
+add :: (Backprop a, Generic a, GAdd (Rep a)) => a -> a -> a
+
+-- | <a>One</a> all components of a value. For scalar values, this should
+--   just be <tt><a>const</a> 1</tt>. For vectors and matrices, this should
+--   set all components to one, the multiplicative identity.
+one :: (Backprop a, Generic a, GOne (Rep a)) => a -> a
 
 -- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
 --   the function <tt>a -&gt; b</tt> that it represents, also computing its
@@ -2029,7 +2189,7 @@ one :: (One a, Num a) => a -> a
 --   orphan instances in the <a>NumInstances</a> package (in particular,
 --   <a>Data.NumInstances.Tuple</a>) if you are writing an application and
 --   do not have to worry about orphan instances.
-backprop :: forall a b. (Zero a, One b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
+backprop :: forall a b. (Backprop a, Backprop b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
 
 -- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
 --   the function <tt>a -&gt; b</tt> that it represents.
@@ -2057,7 +2217,7 @@ evalBP :: (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
 --   sensitivity.
 --   
 --   See documentation of <a>backprop</a> for more information.
-gradBP :: forall a b. (Zero a, One b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
+gradBP :: forall a b. (Backprop a, Backprop b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
 
 -- | <a>backprop</a> for a two-argument function.
 --   
@@ -2066,7 +2226,7 @@ gradBP :: forall a b. (Zero a, One b) => (forall s. Reifies s W => BVar s a -> B
 --   However, this could potentially be more performant.
 --   
 --   For 3 and more arguments, consider using <a>backpropN</a>.
-backprop2 :: forall a b c. (Zero a, Zero b, One c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c, (a, b))
+backprop2 :: forall a b c. (Backprop a, Backprop b, Backprop c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c, (a, b))
 
 -- | <a>evalBP</a> for a two-argument function. See <a>backprop2</a> for
 --   notes.
@@ -2074,7 +2234,7 @@ evalBP2 :: (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b
 
 -- | <a>gradBP</a> for a two-argument function. See <a>backprop2</a> for
 --   notes.
-gradBP2 :: (Zero a, Zero b, One c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (a, b)
+gradBP2 :: (Backprop a, Backprop b, Backprop c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (a, b)
 
 -- | <a>backprop</a> generalized to multiple inputs of different types. See
 --   the <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on
@@ -2105,7 +2265,7 @@ gradBP2 :: (Zero a, Zero b, One c) => (forall s. Reifies s W => BVar s a -> BVar
 --   If you stick to <i>concerete</i>, monomorphic usage of this (with
 --   specific types, typed into source code, known at compile-time), then
 --   <tt><a>Every</a> <a>Num</a> as</tt> should be fulfilled automatically.
-backpropN :: forall as b. (Every Zero as, Known Length as, One b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b, Tuple as)
+backpropN :: forall as b. (Every Backprop as, Known Length as, Backprop b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b, Tuple as)
 
 -- | <tt>evalBP</tt> generalized to multiple inputs of different types. See
 --   documentation for <a>backpropN</a> for more details.
@@ -2113,7 +2273,7 @@ evalBPN :: forall as b. () => (forall s. Reifies s W => Prod (BVar s) as -> BVar
 
 -- | <a>gradBP</a> generalized to multiple inputs of different types. See
 --   documentation for <a>backpropN</a> for more details.
-gradBPN :: forall as b. (Every Zero as, Known Length as, One b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> Tuple as
+gradBPN :: forall as b. (Every Backprop as, Known Length as, Backprop b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> Tuple as
 class EveryC k c as => Every k (c :: k -> Constraint) (as :: [k])
 
 -- | Lift a value into a <a>BVar</a> representing a constant value.
@@ -2153,7 +2313,7 @@ coerceVar :: Coercible a b => BVar s a -> BVar s b
 --   
 --   <b>WARNING</b>: Do not use with any lenses that operate "numerically"
 --   on the contents (like <tt>multiplying</tt>).
-(^^.) :: forall a b s. (Reifies s W, Add a, Zero a) => BVar s b -> Lens' b a -> BVar s a
+(^^.) :: forall a b s. (Reifies s W, Backprop a) => BVar s b -> Lens' b a -> BVar s a
 infixl 8 ^^.
 
 -- | An infix version of <a>setVar</a>, meant to evoke parallels to
@@ -2180,7 +2340,7 @@ infixl 8 ^^.
 --   
 --   This is the main way to set values inside <a>BVar</a>s of container
 --   types.
-(.~~) :: forall a b s. (Reifies s W, Add a, Add b, Zero a, Zero b) => Lens' b a -> BVar s a -> BVar s b -> BVar s b
+(.~~) :: forall a b s. (Reifies s W, Backprop a, Backprop b) => Lens' b a -> BVar s a -> BVar s b -> BVar s b
 infixl 8 .~~
 
 -- | An infix version of <a>previewVar</a>, meant to evoke parallels to
@@ -2228,7 +2388,7 @@ infixl 8 .~~
 --   myPrism                   :: <tt>Prism'</tt> c (a, b)
 --   myPrism . <tt>iso</tt> <tt>tupT2</tt> <tt>t2Tup</tt> :: <tt>Prism'</tt> c (<tt>T2</tt> a b)
 --   </pre>
-(^^?) :: forall b a s. (Add a, Zero a, Reifies s W) => BVar s b -> Traversal' b a -> Maybe (BVar s a)
+(^^?) :: forall b a s. (Backprop a, Reifies s W) => BVar s b -> Traversal' b a -> Maybe (BVar s a)
 
 -- | An infix version of <a>toListOfVar</a>, meant to evoke parallels to
 --   <a>^..</a> from lens.
@@ -2252,19 +2412,19 @@ infixl 8 .~~
 --   (a <a>BVar</a> holding a <tt>b</tt>), specified by <tt>myTraversal ::
 --   Traversal' b a</tt>. The result has type <tt>[<a>BVar</a> s a]</tt> (A
 --   list of <a>BVar</a>s holding <tt>a</tt>s).
-(^^..) :: forall b a s. (Add a, Zero a, Reifies s W) => BVar s b -> Traversal' b a -> [BVar s a]
+(^^..) :: forall b a s. (Backprop a, Reifies s W) => BVar s b -> Traversal' b a -> [BVar s a]
 
 -- | Using a <a>Lens'</a>, extract a value <i>inside</i> a <a>BVar</a>.
 --   Meant to evoke parallels to <tt>view</tt> from lens.
 --   
 --   See documentation for <a>^^.</a> for more information.
-viewVar :: forall a b s. (Reifies s W, Add a, Zero a) => Lens' b a -> BVar s b -> BVar s a
+viewVar :: forall a b s. (Reifies s W, Backprop a) => Lens' b a -> BVar s b -> BVar s a
 
 -- | Using a <a>Lens'</a>, set a value <i>inside</i> a <a>BVar</a>. Meant
 --   to evoke parallels to "set" from lens.
 --   
 --   See documentation for <a>.~~</a> for more information.
-setVar :: forall a b s. (Reifies s W, Add a, Add b, Zero a, Zero b) => Lens' b a -> BVar s a -> BVar s b -> BVar s b
+setVar :: forall a b s. (Reifies s W, Backprop a, Backprop b) => Lens' b a -> BVar s a -> BVar s b -> BVar s b
 
 -- | Extract all of the <a>BVar</a>s out of a <a>Traversable</a> container
 --   of <a>BVar</a>s.
@@ -2274,7 +2434,7 @@ setVar :: forall a b s. (Reifies s W, Add a, Add b, Zero a, Zero b) => Lens' b a
 --   correspond with the second item in the input, etc.; this can cause
 --   unexpected behavior in <a>Foldable</a> instances that don't have a
 --   fixed number of items.
-sequenceVar :: forall t a s. (Add a, Zero a, Reifies s W, Traversable t) => BVar s (t a) -> t (BVar s a)
+sequenceVar :: forall t a s. (Backprop a, Reifies s W, Traversable t) => BVar s (t a) -> t (BVar s a)
 
 -- | Collect all of the <a>BVar</a>s in a container into a <a>BVar</a> of
 --   that container's contents.
@@ -2289,7 +2449,7 @@ sequenceVar :: forall t a s. (Add a, Zero a, Reifies s W, Traversable t) => BVar
 --   you are using a list, I recommend using <a>vector-sized</a> instead:
 --   it's a fixed-length vector type with a very appropriate <a>Num</a>
 --   instance!
-collectVar :: forall t a s. (Add a, Zero a, Zero (t a), Reifies s W, Foldable t, Functor t) => t (BVar s a) -> BVar s (t a)
+collectVar :: forall t a s. (Backprop a, Backprop (t a), Reifies s W, Foldable t, Functor t) => t (BVar s a) -> BVar s (t a)
 
 -- | Using a <a>Traversal'</a>, extract a single value <i>inside</i> a
 --   <a>BVar</a>, if it exists. If more than one traversal target exists,
@@ -2298,13 +2458,13 @@ collectVar :: forall t a s. (Add a, Zero a, Zero (t a), Reifies s W, Foldable t,
 --   up-to-one target traversals.
 --   
 --   See documentation for <a>^^?</a> for more information.
-previewVar :: forall b a s. (Reifies s W, Add a, Zero a) => Traversal' b a -> BVar s b -> Maybe (BVar s a)
+previewVar :: forall b a s. (Reifies s W, Backprop a) => Traversal' b a -> BVar s b -> Maybe (BVar s a)
 
 -- | Using a <a>Traversal'</a>, extract all targeted values <i>inside</i> a
 --   <a>BVar</a>. Meant to evoke parallels to <a>toListOf</a> from lens.
 --   
 --   See documentation for <a>^^..</a> for more information.
-toListOfVar :: forall b a s. (Add a, Zero a, Reifies s W) => Traversal' b a -> BVar s b -> [BVar s a]
+toListOfVar :: forall b a s. (Backprop a, Reifies s W) => Traversal' b a -> BVar s b -> [BVar s a]
 
 -- | Convert the value inside a <a>BVar</a> using a given isomorphism.
 --   Useful for things like constructors.
@@ -2312,21 +2472,21 @@ toListOfVar :: forall b a s. (Add a, Zero a, Reifies s W) => Traversal' b a -> B
 --   Warning: This is unsafe! It assumes that the isomorphisms themselves
 --   have derivative 1, so will break for things like <a>exp</a> &amp;
 --   <a>log</a>. Basically, don't use this for any "numeric" isomorphisms.
-isoVar :: (Add a, Zero b, Reifies s W) => (a -> b) -> (b -> a) -> BVar s a -> BVar s b
+isoVar :: (Backprop a, Backprop b, Reifies s W) => (a -> b) -> (b -> a) -> BVar s a -> BVar s b
 
 -- | Convert the values inside two <a>BVar</a>s using a given isomorphism.
 --   Useful for things like constructors. See <a>isoVar</a> for caveats.
-isoVar2 :: (Add a, Add b, Zero c, Reifies s W) => (a -> b -> c) -> (c -> (a, b)) -> BVar s a -> BVar s b -> BVar s c
+isoVar2 :: (Backprop a, Backprop b, Backprop c, Reifies s W) => (a -> b -> c) -> (c -> (a, b)) -> BVar s a -> BVar s b -> BVar s c
 
 -- | Convert the values inside three <a>BVar</a>s using a given
 --   isomorphism. Useful for things like constructors. See <a>isoVar</a>
 --   for caveats.
-isoVar3 :: (Add a, Add b, Add c, Zero d, Reifies s W) => (a -> b -> c -> d) -> (d -> (a, b, c)) -> BVar s a -> BVar s b -> BVar s c -> BVar s d
+isoVar3 :: (Backprop a, Backprop b, Backprop c, Backprop d, Reifies s W) => (a -> b -> c -> d) -> (d -> (a, b, c)) -> BVar s a -> BVar s b -> BVar s c -> BVar s d
 
 -- | Convert the values inside a tuple of <a>BVar</a>s using a given
 --   isomorphism. Useful for things like constructors. See <a>isoVar</a>
 --   for caveats.
-isoVarN :: (Every Add as, Known Length as, Zero b, Reifies s W) => (Tuple as -> b) -> (b -> Tuple as) -> Prod (BVar s) as -> BVar s b
+isoVarN :: (Every Backprop as, Known Length as, Backprop b, Reifies s W) => (Tuple as -> b) -> (b -> Tuple as) -> Prod (BVar s) as -> BVar s b
 
 -- | Lift an <a>Op</a> with an arbitrary number of inputs to a function on
 --   the appropriate number of <a>BVar</a>s.
@@ -2338,7 +2498,7 @@ isoVarN :: (Every Add as, Known Length as, Zero b, Reifies s W) => (Tuple as -> 
 --   <a>liftOp</a> for more information, and
 --   <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on using
 --   <a>Prod</a> and <a>Tuple</a>.
-liftOp :: forall as b s. (Every Add as, Known Length as, Zero b, Reifies s W) => Op as b -> Prod (BVar s) as -> BVar s b
+liftOp :: forall as b s. (Every Backprop as, Known Length as, Backprop b, Reifies s W) => Op as b -> Prod (BVar s) as -> BVar s b
 
 -- | Lift an <a>Op</a> with a single input to be a function on a single
 --   <a>BVar</a>.
@@ -2348,7 +2508,7 @@ liftOp :: forall as b s. (Every Add as, Known Length as, Zero b, Reifies s W) =>
 --   
 --   See <a>Numeric.Backprop#liftops</a> and documentation for
 --   <a>liftOp</a> for more information.
-liftOp1 :: forall a b s. (Add a, Zero b, Reifies s W) => Op '[a] b -> BVar s a -> BVar s b
+liftOp1 :: forall a b s. (Backprop a, Backprop b, Reifies s W) => Op '[a] b -> BVar s a -> BVar s b
 
 -- | Lift an <a>Op</a> with two inputs to be a function on a two
 --   <a>BVar</a>s.
@@ -2358,7 +2518,7 @@ liftOp1 :: forall a b s. (Add a, Zero b, Reifies s W) => Op '[a] b -> BVar s a -
 --   
 --   See <a>Numeric.Backprop#liftops</a> and documentation for
 --   <a>liftOp</a> for more information.
-liftOp2 :: forall a b c s. (Add a, Add b, Zero c, Reifies s W) => Op '[a, b] c -> BVar s a -> BVar s b -> BVar s c
+liftOp2 :: forall a b c s. (Backprop a, Backprop b, Backprop c, Reifies s W) => Op '[a, b] c -> BVar s a -> BVar s b -> BVar s c
 
 -- | Lift an <a>Op</a> with three inputs to be a function on a three
 --   <a>BVar</a>s.
@@ -2368,7 +2528,7 @@ liftOp2 :: forall a b c s. (Add a, Add b, Zero c, Reifies s W) => Op '[a, b] c -
 --   
 --   See <a>Numeric.Backprop#liftops</a> and documentation for
 --   <a>liftOp</a> for more information.
-liftOp3 :: forall a b c d s. (Add a, Add b, Add c, Zero d, Reifies s W) => Op '[a, b, c] d -> BVar s a -> BVar s b -> BVar s c -> BVar s d
+liftOp3 :: forall a b c d s. (Backprop a, Backprop b, Backprop c, Backprop d, Reifies s W) => Op '[a, b, c] d -> BVar s a -> BVar s b -> BVar s c -> BVar s d
 
 -- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
 --   <tt>as</tt> to <tt>a</tt>.
