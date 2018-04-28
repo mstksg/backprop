@@ -1,7 +1,9 @@
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE EmptyCase         #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE TypeApplications  #-}
+{-# LANGUAGE TypeOperators     #-}
 
 module Numeric.Backprop.Class (
     Backprop(..)
@@ -18,6 +20,7 @@ import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Product hiding (toList)
 import           GHC.Exts
+import           GHC.Generics
 import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness
@@ -88,8 +91,15 @@ ofNums = map1 (\i -> ofNum \\ every @_ @Num i) indices
 
 class Backprop a where
     zero :: a -> a
-    one  :: a -> a
     add  :: a -> a -> a
+    one  :: a -> a
+
+    default zero :: (Generic a, GZero (Rep a)) => a -> a
+    zero = to . gzero . from
+    default add :: (Generic a, GAdd (Rep a)) => a -> a -> a
+    add x y = to $ gadd (from x) (from y)
+    default one :: (Generic a, GOne (Rep a)) => a -> a
+    one = to . gone . from
 
 zeroNum :: Num a => a -> a
 zeroNum _ = 0
@@ -156,68 +166,135 @@ addIsList x y = fromList $ go (toList x) (toList y)
 oneFunctor :: (Functor f, Backprop a) => f a -> f a
 oneFunctor = fmap one
 
--- instance Zero Float
--- instance Zero Double
 
--- instance Add Float
--- instance Add Double
 
--- instance One Float
--- instance One Double
 
--- instance Zero a => Zero (V.Vector a) where
---     zero = zeroVec
--- instance (VU.Unbox a, Zero a) => Zero (VU.Vector a) where
---     zero = zeroVec
--- instance (VS.Storable a, Zero a) => Zero (VS.Vector a) where
---     zero = zeroVec
--- instance (VP.Prim a, Zero a) => Zero (VP.Vector a) where
---     zero = zeroVec
 
--- instance Add a => Add (V.Vector a) where
---     add = addVec
--- instance (VU.Unbox a, Add a) => Add (VU.Vector a) where
---     add = addVec
--- instance (VS.Storable a, Add a) => Add (VS.Vector a) where
---     add = addVec
--- instance (VP.Prim a, Add a) => Add (VP.Vector a) where
---     add = addVec
 
--- instance One a => One (V.Vector a) where
---     one = oneVec
--- instance (VU.Unbox a, One a) => One (VU.Vector a) where
---     one = oneVec
--- instance (VS.Storable a, One a) => One (VS.Vector a) where
---     one = oneVec
--- instance (VP.Prim a, One a) => One (VP.Vector a) where
---     one = oneVec
+class GZero f where
+    gzero :: f t -> f t
 
--- instance Zero a => Zero [a] where
---     zero = zeroFunctor
--- instance Zero a => Zero (NonEmpty a) where
---     zero = zeroFunctor
+instance Backprop a => GZero (K1 i a) where
+    gzero (K1 x) = K1 (zero x)
 
--- instance Add a => Add [a] where
---     add = addIsList
--- instance Add a => Add (NonEmpty a) where
---     add = addIsList
+instance (GZero f, GZero g) => GZero (f :*: g) where
+    gzero (x :*: y) = gzero x :*: gzero y
 
--- instance One a => One [a] where
---     one = oneFunctor
--- instance One a => One (NonEmpty a) where
---     one = oneFunctor
+instance (GZero f, GZero g) => GZero (f :+: g) where
+    gzero (L1 x) = L1 (gzero x)
+    gzero (R1 x) = R1 (gzero x)
 
--- instance (Zero a, Zero b) => Zero (a, b) where
---     zero (x, y) = (zero x, zero y)
--- instance (Zero a, Zero b, Zero c) => Zero (a, b, c) where
---     zero (x, y, z) = (zero x, zero y, zero z)
+instance GZero V1 where
+    gzero = \case
 
--- instance (Add a, Add b) => Add (a, b) where
---     add (x1, y1) (x2, y2) = (add x1 x2, add y1 y2)
--- instance (Add a, Add b, Add c) => Add (a, b, c) where
---     add (x1, y1, z1) (x2, y2, z2) = (add x1 x2, add y1 y2, add z1 z2)
+instance GZero U1 where
+    gzero _ = U1
 
--- instance (One a, One b) => One (a, b) where
---     one (x, y) = (one x, one y)
--- instance (One a, One b, One c) => One (a, b, c) where
---     one (x, y, z) = (one x, one y, one z)
+instance GZero f => GZero (M1 i c f) where
+    gzero (M1 x) = M1 (gzero x)
+
+instance GZero f => GZero (f :.: g) where
+    gzero (Comp1 x) = Comp1 (gzero x)
+
+
+class GAdd f where
+    gadd :: f t -> f t -> f t
+
+instance Backprop a => GAdd (K1 i a) where
+    gadd (K1 x) (K1 y) = K1 (add x y)
+
+instance (GAdd f, GAdd g) => GAdd (f :*: g) where
+    gadd (x1 :*: y1) (x2 :*: y2) = gadd x1 x2 :*: gadd y1 y2
+
+instance GAdd V1 where
+    gadd = \case
+
+instance GAdd U1 where
+    gadd _ _ = U1
+
+instance GAdd f => GAdd (M1 i c f) where
+    gadd (M1 x) (M1 y) = M1 (gadd x y)
+
+instance GAdd f => GAdd (f :.: g) where
+    gadd (Comp1 x) (Comp1 y) = Comp1 (gadd x y)
+
+
+class GOne f where
+    gone :: f t -> f t
+
+instance Backprop a => GOne (K1 i a) where
+    gone (K1 x) = K1 (one x)
+
+instance (GOne f, GOne g) => GOne (f :*: g) where
+    gone (x :*: y) = gone x :*: gone y
+
+instance (GOne f, GOne g) => GOne (f :+: g) where
+    gone (L1 x) = L1 (gone x)
+    gone (R1 x) = R1 (gone x)
+
+instance GOne V1 where
+    gone = \case
+
+instance GOne U1 where
+    gone _ = U1
+
+instance GOne f => GOne (M1 i c f) where
+    gone (M1 x) = M1 (gone x)
+
+instance GOne f => GOne (f :.: g) where
+    gone (Comp1 x) = Comp1 (gone x)
+
+instance Backprop Float where
+    zero = zeroNum
+    add  = addNum
+    one  = oneNum
+
+instance Backprop Double where
+    zero = zeroNum
+    add  = addNum
+    one  = oneNum
+
+instance Backprop a => Backprop (V.Vector a) where
+    zero = zeroVec
+    add  = addVec
+    one  = oneVec
+
+instance (VU.Unbox a, Backprop a) => Backprop (VU.Vector a) where
+    zero = zeroVec
+    add  = addVec
+    one  = oneVec
+
+instance (VS.Storable a, Backprop a) => Backprop (VS.Vector a) where
+    zero = zeroVec
+    add  = addVec
+    one  = oneVec
+
+instance (VP.Prim a, Backprop a) => Backprop (VP.Vector a) where
+    zero = zeroVec
+    add  = addVec
+    one  = oneVec
+
+instance Backprop a => Backprop [a] where
+    zero = zeroFunctor
+    add  = addIsList
+    one  = oneFunctor
+
+instance Backprop a => Backprop (NonEmpty a) where
+    zero = zeroFunctor
+    add  = addIsList
+    one  = oneFunctor
+
+instance (Backprop a, Backprop b) => Backprop (a, b) where
+    zero (x, y) = (zero x, zero y)
+    add (x1, y1) (x2, y2) = (add x1 x2, add y1 y2)
+    one (x, y) = (one x, one y)
+
+instance (Backprop a, Backprop b, Backprop c) => Backprop (a, b, c) where
+    zero (x, y, z) = (zero x, zero y, zero z)
+    add (x1, y1, z1) (x2, y2, z2) = (add x1 x2, add y1 y2, add z1 z2)
+    one (x, y, z) = (one x, one y, one z)
+
+instance (Backprop a, Backprop b, Backprop c, Backprop d) => Backprop (a, b, c, d) where
+    zero (x, y, z, w) = (zero x, zero y, zero z, zero w)
+    add (x1, y1, z1, w1) (x2, y2, z2, w2) = (add x1 x2, add y1 y2, add z1 z2, add w1 w2)
+    one (x, y, z, w) = (one x, one y, one z, one w)

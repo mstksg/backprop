@@ -216,22 +216,6 @@ backprop
 backprop = E.backprop zeroFunc oneFunc
 {-# INLINE backprop #-}
 
----- | Turn a function @'BVar' s a -> 'BVar' s b@ into the function @a -> b@
----- that it represents.
-----
----- Benchmarks show that this should have virtually no overhead over
----- directly writing a @a -> b@. 'BVar' is, in this situation, a zero-cost
----- abstraction, performance-wise.
-----
----- Has a nice advantage over using 'backprop' in that it doesn't require
----- 'Num' constraints on the input and output.
-----
----- See documentation of 'backprop' for more information.
-----
---evalBP :: (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
---evalBP = E.evalBP
---{-# INLINE evalBP #-}
-
 -- | Take a function @'BVar' s a -> 'BVar' s b@, interpreted as a function
 -- @a -> b@, and compute its gradient with respect to its input.
 --
@@ -277,15 +261,6 @@ backprop2
     -> (c, (a, b))
 backprop2 = E.backprop2 zeroFunc zeroFunc oneFunc
 {-# INLINE backprop2 #-}
-
--- -- | 'evalBP' for a two-argument function.  See 'backprop2' for notes.
--- evalBP2
---     :: (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
---     -> a
---     -> b
---     -> c
--- evalBP2 = E.evalBP2
--- {-# INLINE evalBP2 #-}
 
 -- | 'gradBP' for a two-argument function.  See 'backprop2' for notes.
 gradBP2
