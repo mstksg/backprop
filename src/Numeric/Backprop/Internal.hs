@@ -273,15 +273,7 @@ liftOp_ afs z o !vs = case traverse1 (fmap I . bvConst) vs of
     {-# INLINE go #-}
 {-# INLINE liftOp_ #-}
 
--- | Lift an 'Op' with an arbitrary number of inputs to a function on the
--- appropriate number of 'BVar's.
---
--- Should preferably be used only by libraries to provide primitive 'BVar'
--- functions for their types for users.
---
--- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
--- information, and "Numeric.Backprop.Op#prod" for a mini-tutorial on using
--- 'Prod' and 'Tuple'.
+-- | 'Numeric.Backprop.liftOp', but with explicit 'add' and 'zero'.
 liftOp
     :: forall as b s. Reifies s W
     => Prod AddFunc as
@@ -308,13 +300,7 @@ liftOp1_ af z o v = forceBVar v `seq` insertNode tn y z (reflect (Proxy @s))
             }
 {-# INLINE liftOp1_ #-}
 
--- | Lift an 'Op' with a single input to be a function on a single 'BVar'.
---
--- Should preferably be used only by libraries to provide primitive 'BVar'
--- functions for their types for users.
---
--- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
--- information.
+-- | 'Numeric.Backprop.liftOp1', but with explicit 'add' and 'zero'.
 liftOp1
     :: forall a b s. Reifies s W
     => AddFunc a
@@ -346,13 +332,7 @@ liftOp2_ afa afb z o v u = forceBVar v
             }
 {-# INLINE liftOp2_ #-}
 
--- | Lift an 'Op' with two inputs to be a function on a two 'BVar's.
---
--- Should preferably be used only by libraries to provide primitive 'BVar'
--- functions for their types for users.
---
--- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
--- information.
+-- | 'Numeric.Backprop.liftOp2', but with explicit 'add' and 'zero'.
 liftOp2
     :: forall a b c s. Reifies s W
     => AddFunc a
@@ -392,13 +372,7 @@ liftOp3_ afa afb afc z o v u w = forceBVar v
             }
 {-# INLINE liftOp3_ #-}
 
--- | Lift an 'Op' with three inputs to be a function on a three 'BVar's.
---
--- Should preferably be used only by libraries to provide primitive 'BVar'
--- functions for their types for users.
---
--- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
--- information.
+-- | 'Numeric.Backprop.liftOp3', but with explicit 'add' and 'zero'.
 liftOp3
     :: forall a b c d s. Reifies s W
     => AddFunc a
@@ -413,7 +387,7 @@ liftOp3
 liftOp3 afa afb afc z o !v !u !w = unsafePerformIO $ liftOp3_ afa afb afc z o v u w
 {-# INLINE liftOp3 #-}
 
--- TODO: can we get the zero and scale func from the lens?
+-- TODO: can we get the zero and scale func from the bvar?
 viewVar_
     :: forall a b s. Reifies s W
     => AddFunc a
@@ -429,10 +403,7 @@ viewVar_ af z l v = forceBVar v `seq` insertNode tn y z (reflect (Proxy @s))
             }
 {-# INLINE viewVar_ #-}
 
--- | Using a 'Lens'', extract a value /inside/ a 'BVar'.  Meant to evoke
--- parallels to 'view' from lens.
---
--- See documentation for '^^.' for more information.
+-- | 'Numeric.Backprop.viewVar', but with explicit 'add' and 'zero'.
 viewVar
     :: forall a b s. Reifies s W
     => AddFunc a
@@ -465,10 +436,7 @@ setVar_ afa afb za zb l w v = forceBVar v
             }
 {-# INLINE setVar_ #-}
 
--- | Using a 'Lens'', set a value /inside/ a 'BVar'.  Meant to evoke
--- parallels to "set" from lens.
---
--- See documentation for '.~~' for more information.
+-- | 'Numeric.Backprop.setVar', but with explicit 'add' and 'zero'.
 setVar
     :: forall a b s. Reifies s W
     => AddFunc a
@@ -482,14 +450,7 @@ setVar
 setVar afa afb za zb l !w !v = unsafePerformIO $ setVar_ afa afb za zb l w v
 {-# INLINE setVar #-}
 
--- | Extract all of the 'BVar's out of a 'Traversable' container of
--- 'BVar's.
---
--- Note that this associates gradients in order of occurrence in the
--- original data structure; the second item in the gradient is assumed to
--- correspond with the second item in the input, etc.; this can cause
--- unexpected behavior in 'Foldable' instances that don't have a fixed
--- number of items.
+-- | 'Numeric.Backprop.sequenceVar', but with explicit 'add' and 'zero'.
 sequenceVar
     :: forall t a s. (Reifies s W, Traversable t)
     => AddFunc a
@@ -519,19 +480,7 @@ collectVar_ af z z' !vs = withV (toList vs) $ \(vVec :: Vec n (BVar s a)) -> do
     insertNode tn (_bvVal <$> vs) z' (reflect (Proxy @s))
 {-# INLINE collectVar_ #-}
 
--- | Collect all of the 'BVar's in a container into a 'BVar' of that
--- container's contents.
---
--- Note that this associates gradients in order of occurrence in the
--- original data structure; the second item in the total derivative and
--- gradient is assumed to correspond with the second item in the input,
--- etc.; this can cause unexpected behavior in 'Foldable' instances that
--- don't have a fixed number of items.
---
--- Note that this requires @t a@ to have a 'Num' instance.  If you are
--- using a list, I recommend using
--- <https://hackage.haskell.org/package/vector-sized vector-sized> instead:
--- it's a fixed-length vector type with a very appropriate 'Num' instance!
+-- | 'Numeric.Backprop.collectVar', but with explicit 'add' and 'zero'.
 collectVar
     :: forall t a s. (Reifies s W, Foldable t, Functor t)
     => AddFunc a
@@ -562,12 +511,7 @@ traverseVar' af z f t v = forceBVar v
     {-# INLINE go #-}
 {-# INLINE traverseVar' #-}
 
--- | Using a 'Traversal'', extract a single value /inside/ a 'BVar', if it
--- exists.  If more than one traversal target exists, returns te first.
--- Meant to evoke parallels to 'preview' from lens.  Really only intended
--- to be used wth 'Prism''s, or up-to-one target traversals.
---
--- See documentation for '^^?' for more information.
+-- | 'Numeric.Backprop.previewVar', but with explicit 'add' and 'zero'.
 previewVar
     :: forall b a s. Reifies s W
     => AddFunc a
@@ -578,10 +522,7 @@ previewVar
 previewVar af z t !v = unsafePerformIO $ traverseVar' af z (listToMaybe . toListOf t) t v
 {-# INLINE previewVar #-}
 
--- | Using a 'Traversal'', extract all targeted values /inside/ a 'BVar'.
--- Meant to evoke parallels to 'toListOf' from lens.
---
--- See documentation for '^^..' for more information.
+-- | 'Numeric.Backprop.toListOfVar', but with explicit 'add' and 'zero'.
 toListOfVar
     :: forall b a s. Reifies s W
     => AddFunc a
@@ -647,33 +588,7 @@ gradRunner o R{..} (n,stns) = do
     {-# INLINE propagate #-}
 {-# INLINE gradRunner #-}
 
--- | 'backprop' generalized to multiple inputs of different types.  See the
--- "Numeric.Backprop.Op#prod" for a mini-tutorial on heterogeneous lists.
---
--- Not strictly necessary, because you can always uncurry a function by
--- passing in all of the inputs in a data type containing all of the
--- arguments or a tuple from "Numeric.Backprop.Tuple".   You could also
--- pass in a giant tuple with
--- <https://hackage.haskell.org/package/NumInstances NumInstances>.
--- However, this can be convenient if you don't want to make a custom
--- larger tuple type or pull in orphan instances.  This could potentially
--- also be more performant.
---
--- A @'Prod' ('BVar' s) '[Double, Float, Double]@, for instance, is a tuple
--- of @'BVar' s 'Double'@, @'BVar' s 'Float'@, and @'BVar' s 'Double'@, and
--- can be pattern matched on using ':<' (cons) and 'Ø' (nil).
---
--- Tuples can be built and pattern matched on using '::<' (cons) and 'Ø'
--- (nil), as well.
---
--- The @'Every' 'Num' as@ in the constraint says that every value in the
--- type-level list @as@ must have a 'Num' instance.  This means you can
--- use, say, @'[Double, Float, Int]@, but not @'[Double, Bool, String]@.
---
--- If you stick to /concerete/, monomorphic usage of this (with specific
--- types, typed into source code, known at compile-time), then @'Every'
--- 'Num' as@ should be fulfilled automatically.
---
+-- | 'Numeric.Backprop.backpropN', but with explicit 'zero' and 'one'.
 backpropN
     :: forall as b. ()
     => Prod ZeroFunc as
@@ -700,7 +615,7 @@ backpropN zfs ofb f !xs = (y, g)
 {-# INLINE backpropN #-}
 
 -- | 'evalBP' generalized to multiple inputs of different types.  See
--- documentation for 'backpropN' for more details.
+-- documentation for 'Numeric.Backprop.backpropN' for more details.
 evalBPN
     :: forall as b. ()
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)

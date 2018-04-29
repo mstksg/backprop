@@ -148,12 +148,8 @@ import qualified Numeric.Backprop.Explicit as E
 --
 -- Not strictly necessary, because you can always uncurry a function by
 -- passing in all of the inputs in a data type containing all of the
--- arguments or a tuple from "Numeric.Backprop.Tuple".   You could also
--- pass in a giant tuple with
--- <https://hackage.haskell.org/package/NumInstances NumInstances>.
--- However, this can be convenient if you don't want to make a custom
--- larger tuple type or pull in orphan instances.  This could potentially
--- also be more performant.
+-- arguments or a giant tuple.  However, this could potentially also be
+-- more performant.
 --
 -- A @'Prod' ('BVar' s) '[Double, Float, Double]@, for instance, is a tuple
 -- of @'BVar' s 'Double'@, @'BVar' s 'Float'@, and @'BVar' s 'Double'@, and
@@ -162,14 +158,14 @@ import qualified Numeric.Backprop.Explicit as E
 -- Tuples can be built and pattern matched on using '::<' (cons) and 'Ø'
 -- (nil), as well.
 --
--- The @'Every' 'Num' as@ in the constraint says that every value in the
--- type-level list @as@ must have a 'Num' instance.  This means you can
--- use, say, @'[Double, Float, Int]@, but not @'[Double, Bool, String]@.
+-- The @'Every' 'Backprop' as@ in the constraint says that every value in
+-- the type-level list @as@ must have a 'Backprop' instance.  This means
+-- you can use, say, @'[Double, Float, Int]@, but not @'[Double, Bool,
+-- String]@.
 --
 -- If you stick to /concerete/, monomorphic usage of this (with specific
 -- types, typed into source code, known at compile-time), then @'Every'
--- 'Num' as@ should be fulfilled automatically.
---
+-- 'Backprop' as@ should be fulfilled automatically.
 backpropN
     :: forall as b. (Every Backprop as, Known Length as, Backprop b)
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
@@ -185,30 +181,6 @@ backpropN = E.backpropN E.zeroFuncs E.oneFunc
 -- that 'BVar's do not leak out of the context (similar to how it is used
 -- in "Control.Monad.ST"), and also as a reference to an ephemeral Wengert
 -- tape used to track the graph of references.
---
--- Note that every type involved has to be an instance of 'Num'.  This is
--- because gradients all need to be "summable" (which is implemented using
--- 'sum' and '+'), and we also need to able to generate gradients of 1
--- and 0.  Really, only '+' and 'fromInteger' methods are used from the
--- 'Num' typeclass.
---
--- This might change in the future, to allow easier integration with tuples
--- (which typically do not have a 'Num' instance), and potentially make
--- types easier to use (by only requiring '+', 0, and 1, and not the rest
--- of the 'Num' class).
---
--- See the <https://github.com/mstksg/backprop README> for a more detailed
--- discussion on this issue.
---
--- If you need a 'Num' instance for tuples, you can use the canonical 2-
--- and 3-tuples for the library in "Numeric.Backprop.Tuple".  If you need
--- one for larger tuples, consider making a custom product type instead
--- (making Num instances with something like
--- <https://hackage.haskell.org/package/one-liner-instances one-liner-instances>).
--- You can also use the orphan instances in the
--- <https://hackage.haskell.org/package/NumInstances NumInstances> package
--- (in particular, "Data.NumInstances.Tuple") if you are writing an
--- application and do not have to worry about orphan instances.
 backprop
     :: forall a b. (Backprop a, Backprop b)
     => (forall s. Reifies s W => BVar s a -> BVar s b)
@@ -250,8 +222,8 @@ gradBPN = E.gradBPN E.zeroFuncs E.oneFunc
 -- | 'backprop' for a two-argument function.
 --
 -- Not strictly necessary, because you can always uncurry a function by
--- passing in all of the argument inside a data type, or use 'T2'. However,
--- this could potentially be more performant.
+-- passing in all of the argument inside a data type, or just use a tuple.
+-- However, this could potentially be more performant.
 --
 -- For 3 and more arguments, consider using 'backpropN'.
 backprop2
@@ -397,22 +369,6 @@ setVar = E.setVar E.addFunc E.addFunc E.zeroFunc E.zeroFunc
 --
 -- This can be used to "pattern match" on 'BVar's, by using prisms on
 -- constructors.
---
--- Note that many automatically-generated prisms by the /lens/ package use
--- tuples, which cannot normally be backpropagated (because they do not
--- have a 'Num' instance).
---
--- If you are writing an application or don't have to worry about orphan
--- instances, you can pull in the orphan instances from
--- <https://hackage.haskell.org/package/NumInstances NumInstances>.
--- Alternatively, you can chain those prisms with conversions to the
--- anonymous canonical strict tuple types in "Numeric.Backprop.Tuple",
--- which do have 'Num' instances.
---
--- @
--- myPrism                   :: 'Prism'' c (a, b)
--- myPrism . 'iso' 'tupT2' 't2Tup' :: 'Prism'' c ('T2' a b)
--- @
 (^^?)
     :: forall b a s. (Backprop a, Reifies s W)
     => BVar s b
@@ -499,11 +455,6 @@ sequenceVar = E.sequenceVar E.addFunc E.zeroFunc
 -- gradient is assumed to correspond with the second item in the input,
 -- etc.; this can cause unexpected behavior in 'Foldable' instances that
 -- don't have a fixed number of items.
---
--- Note that this requires @t a@ to have a 'Num' instance.  If you are
--- using a list, I recommend using
--- <https://hackage.haskell.org/package/vector-sized vector-sized> instead:
--- it's a fixed-length vector type with a very appropriate 'Num' instance!
 collectVar
     :: forall t a s. (Backprop a, Backprop (t a), Reifies s W, Foldable t, Functor t)
     => t (BVar s a)
