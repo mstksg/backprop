@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- |
@@ -15,6 +16,10 @@
 --
 -- This module is intended to be a catch-all one, so feel free to suggest
 -- other functions or submit a PR if you think one would make sense.
+--
+-- See "Prelude.Backprop.Num" for a version with 'Num' constraints instead
+-- of 'Backprop' constraints, and "Prelude.Backprop.Explicit" for a version
+-- allowing you to provide 'zero', 'add', and 'one' explicitly.
 --
 -- @since 0.1.3.0
 --

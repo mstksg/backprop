@@ -137,6 +137,8 @@ backprop zfa ofb f = second (getI . head')
                    . backpropN (zfa :< Ø) ofb (f . head')
                    . only_
 {-# INLINE backprop #-}
+-- TODO: elaborate on how you can mess with 'OneFunc' input to get backprop
+-- given different final gradients.
 
 -- | Turn a function @'BVar' s a -> 'BVar' s b@ into the function @a -> b@
 -- that it represents.

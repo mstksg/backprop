@@ -49,7 +49,13 @@
 --
 -- In the original version 0.1, this module required 'Num' instances for
 -- methods instead of 'Backprop' instances.  This interface is still
--- available in "Numeric.Backprop.Num".
+-- available in "Numeric.Backprop.Num", which has the same API as this
+-- module, except with 'Num' constraints on all values instead of
+-- 'Backprop' constraints.
+--
+-- See "Prelude.Backprop.Explicit" for a version allowing you to provide
+-- 'zero', 'add', and 'one' explicitly, which can be useful when attempting
+-- to avoid orphan instances.
 --
 
 module Numeric.Backprop (
