@@ -33,6 +33,10 @@ module Numeric.Backprop.Internal (
   , liftOp, liftOp1, liftOp2, liftOp3
   , viewVar, setVar, sequenceVar, collectVar, previewVar, toListOfVar
   , coerceVar
+  -- * Func wrappers
+  , ZeroFunc(..), zfNum
+  , AddFunc(..), afNum
+  , OneFunc(..), ofNum
   -- * Debug
   , debugSTN
   , debugIR
@@ -62,13 +66,60 @@ import           Data.Typeable
 import           GHC.Exts                  (Any)
 import           GHC.Generics
 import           Lens.Micro
-import           Numeric.Backprop.Class
 import           Numeric.Backprop.Op
 import           System.IO.Unsafe
 import           Type.Class.Higher
 import           Unsafe.Coerce
 import qualified Data.Vector               as V
 import qualified Data.Vector.Mutable       as MV
+
+-- | "Zero out" all components of a value.  For scalar values, this should
+-- just be @'const' 0@.  For vectors and matrices, this should set all
+-- components to zero, the additive identity.
+--
+-- Should be idempotent: Applying the function twice is the same as
+-- applying it just once.
+--
+-- Each type should ideally only have one 'ZeroFunc'.  This coherence
+-- constraint is given by the typeclass 'Zero'.
+newtype ZeroFunc a = ZF { runZF :: a -> a }
+
+-- | Add together two values of a type.  To combine contributions of
+-- gradients, so should ideally be information-preserving.
+--
+-- See laws for 'Backprop' for the laws this should be expected to
+-- preserve.  Namely, it should be commutative and associative, with an
+-- identity for a valid 'ZeroFunc'.
+--
+-- Each type should ideally only have one 'AddFunc'.  This coherence
+-- constraint is given by the typeclass 'Add'.
+newtype AddFunc  a = AF { runAF :: a -> a -> a }
+
+-- | "One" all components of a value.  For scalar values, this should
+-- just be @'const' 1@.  For vectors and matrices, this should set all
+-- components to one, the multiplicative identity.
+--
+-- Should be idempotent: Applying the function twice is the same as
+-- applying it just once.
+--
+-- Each type should ideally only have one 'ZeroFunc'.  This coherence
+-- constraint is given by the typeclass 'One'.
+newtype OneFunc  a = OF { runOF :: a -> a }
+
+-- | If a type has a 'Num' instance, this is the canonical 'ZeroFunc'.
+zfNum :: Num a => ZeroFunc a
+zfNum = ZF (const 0)
+{-# INLINE zfNum #-}
+
+-- | If a type has a 'Num' instance, this is the canonical 'AddFunc'.
+afNum :: Num a => AddFunc a
+afNum = AF (+)
+{-# INLINE afNum #-}
+
+-- | If a type has a 'Num' instance, this is the canonical 'OneFunc'.
+ofNum :: Num a => OneFunc a
+ofNum = OF (const 1)
+{-# INLINE ofNum #-}
 
 -- | A @'BVar' s a@ is a value of type @a@ that can be "backpropagated".
 --

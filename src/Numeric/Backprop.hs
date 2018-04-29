@@ -175,7 +175,7 @@ backpropN
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> (b, Tuple as)
-backpropN = E.backpropN zeroFuncs oneFunc
+backpropN = E.backpropN E.zeroFuncs E.oneFunc
 {-# INLINE backpropN #-}
 
 -- | Turn a function @'BVar' s a -> 'BVar' s b@ into the function @a -> b@
@@ -214,7 +214,7 @@ backprop
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> (b, a)
-backprop = E.backprop zeroFunc oneFunc
+backprop = E.backprop E.zeroFunc E.oneFunc
 {-# INLINE backprop #-}
 
 -- | Take a function @'BVar' s a -> 'BVar' s b@, interpreted as a function
@@ -234,7 +234,7 @@ gradBP
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> a
-gradBP = E.gradBP zeroFunc oneFunc
+gradBP = E.gradBP E.zeroFunc E.oneFunc
 {-# INLINE gradBP #-}
 
 -- | 'gradBP' generalized to multiple inputs of different types.  See
@@ -244,7 +244,7 @@ gradBPN
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> Tuple as
-gradBPN = E.gradBPN zeroFuncs oneFunc
+gradBPN = E.gradBPN E.zeroFuncs E.oneFunc
 {-# INLINE gradBPN #-}
 
 -- | 'backprop' for a two-argument function.
@@ -260,7 +260,7 @@ backprop2
     -> a
     -> b
     -> (c, (a, b))
-backprop2 = E.backprop2 zeroFunc zeroFunc oneFunc
+backprop2 = E.backprop2 E.zeroFunc E.zeroFunc E.oneFunc
 {-# INLINE backprop2 #-}
 
 -- | 'gradBP' for a two-argument function.  See 'backprop2' for notes.
@@ -270,7 +270,7 @@ gradBP2
     -> a
     -> b
     -> (a, b)
-gradBP2 = E.gradBP2 zeroFunc zeroFunc oneFunc
+gradBP2 = E.gradBP2 E.zeroFunc E.zeroFunc E.oneFunc
 {-# INLINE gradBP2 #-}
 
 -- | An infix version of 'viewVar', meant to evoke parallels to '^.' from
@@ -317,7 +317,7 @@ viewVar
     => Lens' b a
     -> BVar s b
     -> BVar s a
-viewVar = E.viewVar addFunc zeroFunc
+viewVar = E.viewVar E.addFunc E.zeroFunc
 {-# INLINE viewVar #-}
 
 
@@ -364,7 +364,7 @@ setVar
     -> BVar s a
     -> BVar s b
     -> BVar s b
-setVar = E.setVar addFunc addFunc zeroFunc zeroFunc
+setVar = E.setVar E.addFunc E.addFunc E.zeroFunc E.zeroFunc
 {-# INLINE setVar #-}
 
 
@@ -432,7 +432,7 @@ previewVar
     => Traversal' b a
     -> BVar s b
     -> Maybe (BVar s a)
-previewVar = E.previewVar addFunc zeroFunc
+previewVar = E.previewVar E.addFunc E.zeroFunc
 {-# INLINE previewVar #-}
 
 -- | An infix version of 'toListOfVar', meant to evoke parallels to '^..'
@@ -473,7 +473,7 @@ toListOfVar
     => Traversal' b a
     -> BVar s b
     -> [BVar s a]
-toListOfVar = E.toListOfVar addFunc zeroFunc
+toListOfVar = E.toListOfVar E.addFunc E.zeroFunc
 {-# INLINE toListOfVar #-}
 
 -- | Extract all of the 'BVar's out of a 'Traversable' container of
@@ -488,7 +488,7 @@ sequenceVar
     :: forall t a s. (Backprop a, Reifies s W, Traversable t)
     => BVar s (t a)
     -> t (BVar s a)
-sequenceVar = E.sequenceVar addFunc zeroFunc
+sequenceVar = E.sequenceVar E.addFunc E.zeroFunc
 {-# INLINE sequenceVar #-}
 
 -- | Collect all of the 'BVar's in a container into a 'BVar' of that
@@ -508,7 +508,7 @@ collectVar
     :: forall t a s. (Backprop a, Backprop (t a), Reifies s W, Foldable t, Functor t)
     => t (BVar s a)
     -> BVar s (t a)
-collectVar = E.collectVar addFunc zeroFunc zeroFunc
+collectVar = E.collectVar E.addFunc E.zeroFunc E.zeroFunc
 {-# INLINE collectVar #-}
 
 -- | Lift an 'Op' with an arbitrary number of inputs to a function on the
@@ -525,7 +525,7 @@ liftOp
     => Op as b
     -> Prod (BVar s) as
     -> BVar s b
-liftOp = E.liftOp addFuncs zeroFunc
+liftOp = E.liftOp E.addFuncs E.zeroFunc
 {-# INLINE liftOp #-}
 
 -- | Lift an 'Op' with a single input to be a function on a single 'BVar'.
@@ -540,7 +540,7 @@ liftOp1
     => Op '[a] b
     -> BVar s a
     -> BVar s b
-liftOp1 = E.liftOp1 addFunc zeroFunc
+liftOp1 = E.liftOp1 E.addFunc E.zeroFunc
 {-# INLINE liftOp1 #-}
 
 -- | Lift an 'Op' with two inputs to be a function on a two 'BVar's.
@@ -556,7 +556,7 @@ liftOp2
     -> BVar s a
     -> BVar s b
     -> BVar s c
-liftOp2 = E.liftOp2 addFunc addFunc zeroFunc
+liftOp2 = E.liftOp2 E.addFunc E.addFunc E.zeroFunc
 {-# INLINE liftOp2 #-}
 
 -- | Lift an 'Op' with three inputs to be a function on a three 'BVar's.
@@ -573,7 +573,7 @@ liftOp3
     -> BVar s b
     -> BVar s c
     -> BVar s d
-liftOp3 = E.liftOp3 addFunc addFunc addFunc zeroFunc
+liftOp3 = E.liftOp3 E.addFunc E.addFunc E.addFunc E.zeroFunc
 {-# INLINE liftOp3 #-}
 
 -- | Convert the value inside a 'BVar' using a given isomorphism.  Useful

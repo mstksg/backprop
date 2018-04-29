@@ -13,40 +13,24 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- Automatic differentation and backpropagation.
+-- Provides the exact same API as "Numeric.Backprop", except requiring
+-- 'Num' instances for all types involved instead of 'Backprop' instances.
 --
--- Main idea: Write a function computing what you want, and the library
--- automatically provies the gradient of that function as well, for usage
--- with gradient descent and other training methods.
+-- This was the original API of the library (for version 0.1).
 --
--- In more detail: instead of working directly with values to produce your
--- result, you work with 'BVar's containing those values.  Working with
--- these 'BVar's is made smooth with the usage of lenses and other
--- combinators, and libraries can offer operatons on 'BVar's instead of
--- those on normal types directly.
+-- 'Num' is strictly more powerful than 'Backprop', and is a stronger
+-- constraint on types than is necessary for proper backpropagating.  In
+-- particular, 'fromInteger' is a problem for many types, preventing useful
+-- backpropagation for lists, variable-length vectors (like "Data.Vector")
+-- and variable-size matrices from linear algebra libraries like /hmatrix/
+-- and /accelerate/.
 --
--- Then, you can use:
+-- However, this module might be useful in situations where you are working
+-- with external types with 'Num' instances, and you want to avoid writing
+-- orphan instances for external types.
 --
--- @
--- 'evalBP' :: (forall s. 'Reifies' s 'W'. 'BVar' s a -> BVar s b) -> (a -> b)
--- @
---
--- to turn a 'BVar' function into the function on actual values @a -> b@.
--- This has virtually zero overhead over writing the actual function
--- directly.
---
--- Then, there's:
---
--- @
--- 'gradBP' :: (forall s. 'Reifies' s 'W'. 'BVar' s a -> BVar s b) -> (a -> a)
--- @
---
--- to automatically get the /gradient/, as well, for a given input.
---
--- See the <https://github.com/mstksg/backprop README> for more information
--- and links to demonstrations and tutorials, or dive striaght in by
--- reading the docs for 'BVar'.
---
+-- If you have external types that are not 'Num' instances, consider
+-- instead "Numeric.Backprop.External".
 
 module Numeric.Backprop.Num (
     -- * Types
@@ -92,7 +76,6 @@ import           Data.Reflection
 import           Data.Type.Index
 import           Data.Type.Length
 import           Lens.Micro
-import           Numeric.Backprop.Class
 import           Numeric.Backprop.Explicit (BVar, W)
 import           Numeric.Backprop.Op
 import           Type.Class.Known
@@ -174,7 +157,7 @@ backpropN
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> (b, Tuple as)
-backpropN = E.backpropN zfNums ofNum
+backpropN = E.backpropN E.zfNums E.ofNum
 {-# INLINE backpropN #-}
 
 -- | Turn a function @'BVar' s a -> 'BVar' s b@ into the function @a -> b@
@@ -213,7 +196,7 @@ backprop
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> (b, a)
-backprop = E.backprop zfNum ofNum
+backprop = E.backprop E.zfNum E.ofNum
 {-# INLINE backprop #-}
 
 ---- | Turn a function @'BVar' s a -> 'BVar' s b@ into the function @a -> b@
@@ -249,7 +232,7 @@ gradBP
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> a
-gradBP = E.gradBP zfNum ofNum
+gradBP = E.gradBP E.zfNum E.ofNum
 {-# INLINE gradBP #-}
 
 -- | 'gradBP' generalized to multiple inputs of different types.  See
@@ -259,7 +242,7 @@ gradBPN
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> Tuple as
-gradBPN = E.gradBPN zfNums ofNum
+gradBPN = E.gradBPN E.zfNums E.ofNum
 {-# INLINE gradBPN #-}
 
 -- | 'backprop' for a two-argument function.
@@ -275,7 +258,7 @@ backprop2
     -> a
     -> b
     -> (c, (a, b))
-backprop2 = E.backprop2 zfNum zfNum ofNum
+backprop2 = E.backprop2 E.zfNum E.zfNum E.ofNum
 {-# INLINE backprop2 #-}
 
 -- -- | 'evalBP' for a two-argument function.  See 'backprop2' for notes.
@@ -294,7 +277,7 @@ gradBP2
     -> a
     -> b
     -> (a, b)
-gradBP2 = E.gradBP2 zfNum zfNum ofNum
+gradBP2 = E.gradBP2 E.zfNum E.zfNum E.ofNum
 {-# INLINE gradBP2 #-}
 
 -- | An infix version of 'viewVar', meant to evoke parallels to '^.' from
@@ -341,7 +324,7 @@ viewVar
     => Lens' b a
     -> BVar s b
     -> BVar s a
-viewVar = E.viewVar afNum zfNum
+viewVar = E.viewVar E.afNum E.zfNum
 {-# INLINE viewVar #-}
 
 
@@ -388,7 +371,7 @@ setVar
     -> BVar s a
     -> BVar s b
     -> BVar s b
-setVar = E.setVar afNum afNum zfNum zfNum
+setVar = E.setVar E.afNum E.afNum E.zfNum E.zfNum
 {-# INLINE setVar #-}
 
 
@@ -456,7 +439,7 @@ previewVar
     => Traversal' b a
     -> BVar s b
     -> Maybe (BVar s a)
-previewVar = E.previewVar afNum zfNum
+previewVar = E.previewVar E.afNum E.zfNum
 {-# INLINE previewVar #-}
 
 -- | An infix version of 'toListOfVar', meant to evoke parallels to '^..'
@@ -497,7 +480,7 @@ toListOfVar
     => Traversal' b a
     -> BVar s b
     -> [BVar s a]
-toListOfVar = E.toListOfVar afNum zfNum
+toListOfVar = E.toListOfVar E.afNum E.zfNum
 {-# INLINE toListOfVar #-}
 
 -- | Extract all of the 'BVar's out of a 'Traversable' container of
@@ -512,7 +495,7 @@ sequenceVar
     :: forall t a s. (Num a, Reifies s W, Traversable t)
     => BVar s (t a)
     -> t (BVar s a)
-sequenceVar = E.sequenceVar afNum zfNum
+sequenceVar = E.sequenceVar E.afNum E.zfNum
 {-# INLINE sequenceVar #-}
 
 -- | Collect all of the 'BVar's in a container into a 'BVar' of that
@@ -532,7 +515,7 @@ collectVar
     :: forall t a s. (Num a, Num (t a), Reifies s W, Foldable t, Functor t)
     => t (BVar s a)
     -> BVar s (t a)
-collectVar = E.collectVar afNum zfNum zfNum
+collectVar = E.collectVar E.afNum E.zfNum E.zfNum
 {-# INLINE collectVar #-}
 
 -- | Lift an 'Op' with an arbitrary number of inputs to a function on the
@@ -549,7 +532,7 @@ liftOp
     => Op as b
     -> Prod (BVar s) as
     -> BVar s b
-liftOp = E.liftOp afNums zfNum
+liftOp = E.liftOp E.afNums E.zfNum
 {-# INLINE liftOp #-}
 
 -- | Lift an 'Op' with a single input to be a function on a single 'BVar'.
@@ -564,7 +547,7 @@ liftOp1
     => Op '[a] b
     -> BVar s a
     -> BVar s b
-liftOp1 = E.liftOp1 afNum zfNum
+liftOp1 = E.liftOp1 E.afNum E.zfNum
 {-# INLINE liftOp1 #-}
 
 -- | Lift an 'Op' with two inputs to be a function on a two 'BVar's.
@@ -580,7 +563,7 @@ liftOp2
     -> BVar s a
     -> BVar s b
     -> BVar s c
-liftOp2 = E.liftOp2 afNum afNum zfNum
+liftOp2 = E.liftOp2 E.afNum E.afNum E.zfNum
 {-# INLINE liftOp2 #-}
 
 -- | Lift an 'Op' with three inputs to be a function on a three 'BVar's.
@@ -597,7 +580,7 @@ liftOp3
     -> BVar s b
     -> BVar s c
     -> BVar s d
-liftOp3 = E.liftOp3 afNum afNum afNum zfNum
+liftOp3 = E.liftOp3 E.afNum E.afNum E.afNum E.zfNum
 {-# INLINE liftOp3 #-}
 
 -- | Convert the value inside a 'BVar' using a given isomorphism.  Useful

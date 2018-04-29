@@ -1,7 +1,25 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE GADTs             #-}
-{-# LANGUAGE PatternSynonyms   #-}
-{-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs            #-}
+{-# LANGUAGE PatternSynonyms  #-}
+{-# LANGUAGE RankNTypes       #-}
+{-# LANGUAGE TypeApplications #-}
+
+-- |
+-- Module      : Numeric.Backprop.Explicit
+-- Copyright   : (c) Justin Le 2018
+-- License     : BSD3
+--
+-- Maintainer  : justin@jle.im
+-- Stability   : experimental
+-- Portability : non-portable
+--
+-- Provides "explicit" versions of all of the functions in
+-- "Numeric.Backprop".  Instead of relying on a 'Backprop' instance, allows
+-- you to manually provide 'zero', 'add', and 'one' on a per-value basis.
+--
+-- It is recommended you use 'Numeric.Backprop' or 'Numeric.Backprop.Num'
+-- instead, unless your type has no 'Num' instance, or you else you want to
+-- avoid defining orphan 'Backprop' instances for external types.
 
 module Numeric.Backprop.Explicit (
     -- * Types
@@ -49,9 +67,14 @@ module Numeric.Backprop.Explicit (
 import           Data.Bifunctor
 import           Data.Reflection
 import           Data.Type.Index
+import           Data.Type.Length
+import           Data.Type.Product
 import           Numeric.Backprop.Class
 import           Numeric.Backprop.Internal
 import           Numeric.Backprop.Op
+import           Type.Class.Higher
+import           Type.Class.Known
+import           Type.Class.Witness
 
 -- $liftops
 --
@@ -96,6 +119,51 @@ import           Numeric.Backprop.Op
 -- operations, since it is easy to go from @'BVar' s a -> 'BVar' s b@ to @a
 -- -> b@, using 'evalBP', and this carries virtually zero overhead, so some
 -- libraries might even provide 'BVar' versions by default.
+
+-- | 'ZeroFunc's for every item in a type level list based on their
+-- 'Num' instances
+zfNums :: (Every Num as, Known Length as) => Prod ZeroFunc as
+zfNums = map1 (\i -> zfNum \\ every @_ @Num i) indices
+
+-- | 'ZeroFunc's for every item in a type level list based on their
+-- 'Num' instances
+afNums :: (Every Num as, Known Length as) => Prod AddFunc as
+afNums = map1 (\i -> afNum \\ every @_ @Num i) indices
+
+-- | 'ZeroFunc's for every item in a type level list based on their
+-- 'Num' instances
+ofNums :: (Every Num as, Known Length as) => Prod OneFunc as
+ofNums = map1 (\i -> ofNum \\ every @_ @Num i) indices
+
+-- | The canonical 'ZeroFunc' for instances of 'Backprop'.
+zeroFunc :: Backprop a => ZeroFunc a
+zeroFunc = ZF zero
+{-# INLINE zeroFunc #-}
+
+-- | The canonical 'AddFunc' for instances of 'Backprop'.
+addFunc :: Backprop a => AddFunc a
+addFunc = AF add
+{-# INLINE addFunc #-}
+
+-- | The canonical 'OneFunc' for instances of 'Backprop'.
+oneFunc :: Backprop a => OneFunc a
+oneFunc = OF one
+{-# INLINE oneFunc #-}
+
+-- | Generate an 'ZeroFunc' for every type in a type-level list, if every
+-- type has an instance of 'Backprop'.
+zeroFuncs :: (Every Backprop as, Known Length as) => Prod ZeroFunc as
+zeroFuncs = map1 (\i -> zeroFunc \\ every @_ @Backprop i) indices
+
+-- | Generate an 'AddFunc' for every type in a type-level list, if every
+-- type has an instance of 'Backprop'.
+addFuncs :: (Every Backprop as, Known Length as) => Prod AddFunc as
+addFuncs = map1 (\i -> addFunc \\ every @_ @Backprop i) indices
+
+-- | Generate an 'OneFunc' for every type in a type-level list, if every
+-- type has an instance of 'Backprop'.
+oneFuncs :: (Every Backprop as, Known Length as) => Prod OneFunc as
+oneFuncs = map1 (\i -> oneFunc \\ every @_ @Backprop i) indices
 
 -- | Turn a function @'BVar' s a -> 'BVar' s b@ into the function @a -> b@
 -- that it represents, also computing its gradient @a@ as well.
