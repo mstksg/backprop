@@ -47,11 +47,10 @@ library:
   source-dirs: src
   exposed-modules:
   - Numeric.Backprop
-  - Numeric.Backprop.Op
-  - Numeric.Backprop.Tuple
+  - Numeric.Backprop.Class
   - Numeric.Backprop.Explicit
   - Numeric.Backprop.Num
-  - Numeric.Backprop.Class
+  - Numeric.Backprop.Op
   - Prelude.Backprop
   - Prelude.Backprop.Explicit
   - Prelude.Backprop.Num
