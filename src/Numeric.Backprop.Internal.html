@@ -81,7 +81,7 @@
 </span><a name="line-81"></a><span class="hs-comment">-- applying it just once.</span><span>
 </span><a name="line-82"></a><span class="hs-comment">--</span><span>
 </span><a name="line-83"></a><span class="hs-comment">-- Each type should ideally only have one 'ZeroFunc'.  This coherence</span><span>
-</span><a name="line-84"></a><span class="hs-comment">-- constraint is given by the typeclass 'Zero'.</span><span>
+</span><a name="line-84"></a><span class="hs-comment">-- constraint is given by the typeclass 'Backprop'.</span><span>
 </span><a name="line-85"></a><span class="hs-keyword">newtype</span><span> </span><a name="ZeroFunc"><a href="Numeric.Backprop.Internal.html#ZeroFunc"><span class="hs-identifier">ZeroFunc</span></a></a><span> </span><a name="local-6989586621679082513"><a href="#local-6989586621679082513"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a name="ZF"><a href="Numeric.Backprop.Internal.html#ZF"><span class="hs-identifier">ZF</span></a></a><span> </span><span class="hs-special">{</span><span> </span><a name="runZF"><a href="Numeric.Backprop.Internal.html#runZF"><span class="hs-identifier">runZF</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><a href="#local-6989586621679082513"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679082513"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-special">}</span><span>
 </span><a name="line-86"></a><span>
 </span><a name="line-87"></a><span class="hs-comment">-- | Add together two values of a type.  To combine contributions of</span><span>
@@ -92,7 +92,7 @@
 </span><a name="line-92"></a><span class="hs-comment">-- identity for a valid 'ZeroFunc'.</span><span>
 </span><a name="line-93"></a><span class="hs-comment">--</span><span>
 </span><a name="line-94"></a><span class="hs-comment">-- Each type should ideally only have one 'AddFunc'.  This coherence</span><span>
-</span><a name="line-95"></a><span class="hs-comment">-- constraint is given by the typeclass 'Add'.</span><span>
+</span><a name="line-95"></a><span class="hs-comment">-- constraint is given by the typeclass 'Backprop'.</span><span>
 </span><a name="line-96"></a><span class="hs-keyword">newtype</span><span> </span><a name="AddFunc"><a href="Numeric.Backprop.Internal.html#AddFunc"><span class="hs-identifier">AddFunc</span></a></a><span>  </span><a name="local-6989586621679082512"><a href="#local-6989586621679082512"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a name="AF"><a href="Numeric.Backprop.Internal.html#AF"><span class="hs-identifier">AF</span></a></a><span> </span><span class="hs-special">{</span><span> </span><a name="runAF"><a href="Numeric.Backprop.Internal.html#runAF"><span class="hs-identifier">runAF</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><a href="#local-6989586621679082512"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679082512"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679082512"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-special">}</span><span>
 </span><a name="line-97"></a><span>
 </span><a name="line-98"></a><span class="hs-comment">-- | &quot;One&quot; all components of a value.  For scalar values, this should</span><span>
@@ -102,8 +102,8 @@
 </span><a name="line-102"></a><span class="hs-comment">-- Should be idempotent: Applying the function twice is the same as</span><span>
 </span><a name="line-103"></a><span class="hs-comment">-- applying it just once.</span><span>
 </span><a name="line-104"></a><span class="hs-comment">--</span><span>
-</span><a name="line-105"></a><span class="hs-comment">-- Each type should ideally only have one 'ZeroFunc'.  This coherence</span><span>
-</span><a name="line-106"></a><span class="hs-comment">-- constraint is given by the typeclass 'One'.</span><span>
+</span><a name="line-105"></a><span class="hs-comment">-- Each type should ideally only have one 'OneFunc'.  This coherence</span><span>
+</span><a name="line-106"></a><span class="hs-comment">-- constraint is given by the typeclass 'Backprop'.</span><span>
 </span><a name="line-107"></a><span class="hs-keyword">newtype</span><span> </span><a name="OneFunc"><a href="Numeric.Backprop.Internal.html#OneFunc"><span class="hs-identifier">OneFunc</span></a></a><span>  </span><a name="local-6989586621679082511"><a href="#local-6989586621679082511"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a name="OF"><a href="Numeric.Backprop.Internal.html#OF"><span class="hs-identifier">OF</span></a></a><span> </span><span class="hs-special">{</span><span> </span><a name="runOF"><a href="Numeric.Backprop.Internal.html#runOF"><span class="hs-identifier">runOF</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><a href="#local-6989586621679082511"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679082511"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-special">}</span><span>
 </span><a name="line-108"></a><span>
 </span><a name="line-109"></a><span class="hs-comment">-- | If a type has a 'Num' instance, this is the canonical 'ZeroFunc'.</span><span>

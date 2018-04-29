@@ -44,6 +44,9 @@ module Numeric.Backprop.Class
 --   <li><pre><a>add</a> (<a>zero</a> x) y = y</pre></li>
 --   </ul>
 --   
+--   Also implies preservation of information, making <tt><a>zipWith</a>
+--   (<a>+</a>)</tt> an illegal implementation for lists and vectors.
+--   
 --   <ul>
 --   <li><i><i>commutativity</i></i></li>
 --   </ul>
@@ -92,12 +95,23 @@ class Backprop a
 --   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
 --   set all components to zero, the additive identity.
 --   
+--   Should be idempotent:
+--   
+--   <ul>
+--   <li><pre><a>zero</a> <a>.</a> <a>zero</a> = <a>zero</a></pre></li>
+--   </ul>
+--   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
 zero :: Backprop a => a -> a
 
 -- | Add together two values of a type. To combine contributions of
---   gradients, so should ideally be information-preserving.
+--   gradients, so should be information-preserving:
+--   
+--   <ul>
+--   <li><pre><a>add</a> x (<a>zero</a> y) = x</pre></li>
+--   <li><pre><a>add</a> (<a>zero</a> x) y = y</pre></li>
+--   </ul>
 --   
 --   Should be as <i>strict</i> as possible. This behavior is observed for
 --   all instances provided by this library.
@@ -107,6 +121,12 @@ add :: Backprop a => a -> a -> a
 --   just be <tt><a>const</a> 1</tt>. For vectors and matrices, this should
 --   set all components to one, the multiplicative identity.
 --   
+--   Should be idempotent:
+--   
+--   <ul>
+--   <li><pre><a>one</a> <a>.</a> <a>one</a> = <a>one</a></pre></li>
+--   </ul>
+--   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
 one :: Backprop a => a -> a
@@ -115,12 +135,23 @@ one :: Backprop a => a -> a
 --   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
 --   set all components to zero, the additive identity.
 --   
+--   Should be idempotent:
+--   
+--   <ul>
+--   <li><pre><a>zero</a> <a>.</a> <a>zero</a> = <a>zero</a></pre></li>
+--   </ul>
+--   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
 zero :: (Backprop a, Generic a, GZero (Rep a)) => a -> a
 
 -- | Add together two values of a type. To combine contributions of
---   gradients, so should ideally be information-preserving.
+--   gradients, so should be information-preserving:
+--   
+--   <ul>
+--   <li><pre><a>add</a> x (<a>zero</a> y) = x</pre></li>
+--   <li><pre><a>add</a> (<a>zero</a> x) y = y</pre></li>
+--   </ul>
 --   
 --   Should be as <i>strict</i> as possible. This behavior is observed for
 --   all instances provided by this library.
@@ -129,6 +160,12 @@ add :: (Backprop a, Generic a, GAdd (Rep a)) => a -> a -> a
 -- | <a>One</a> all components of a value. For scalar values, this should
 --   just be <tt><a>const</a> 1</tt>. For vectors and matrices, this should
 --   set all components to one, the multiplicative identity.
+--   
+--   Should be idempotent:
+--   
+--   <ul>
+--   <li><pre><a>one</a> <a>.</a> <a>one</a> = <a>one</a></pre></li>
+--   </ul>
 --   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
@@ -740,6 +777,156 @@ data BVar s a
 --   backpropagation to work.
 data W
 
+-- | Class of values that can be backpropagated in general.
+--   
+--   For instances of <a>Num</a>, these methods can be given by
+--   <a>zeroNum</a>, <a>addNum</a>, and <a>oneNum</a>. There are also
+--   generic options given in <a>Numeric.Backprop.Class</a> for functors,
+--   <a>IsList</a> instances, and <a>Generic</a> instances.
+--   
+--   If you leave the body of an instance declaration blank, GHC Generics
+--   will be used to derive instances if the type has a single constructor
+--   and each field is an instance of <a>Backprop</a>.
+--   
+--   To ensure that backpropagation works in a sound way, should obey the
+--   laws:
+--   
+--   <ul>
+--   <li><i><i>identity</i></i></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><pre><a>add</a> x (<a>zero</a> y) = x</pre></li>
+--   <li><pre><a>add</a> (<a>zero</a> x) y = y</pre></li>
+--   </ul>
+--   
+--   Also implies preservation of information, making <tt><a>zipWith</a>
+--   (<a>+</a>)</tt> an illegal implementation for lists and vectors.
+--   
+--   <ul>
+--   <li><i><i>commutativity</i></i></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><pre><a>add</a> x y = <a>add</a> y x</pre></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><i><i>associativity</i></i></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><pre><a>add</a> x (<a>add</a> y z) = <a>add</a> (<a>add</a> x y)
+--   z</pre></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><i><i>idempotence</i></i></li>
+--   </ul>
+--   
+--   <ul>
+--   <li><pre><a>zero</a> <a>.</a> <a>zero</a> = <a>zero</a></pre></li>
+--   <li><pre><a>one</a> <a>.</a> <a>one</a> = <a>one</a></pre></li>
+--   </ul>
+--   
+--   Note that not all values in the backpropagation process needs all of
+--   these methods: Only the "final result" needs <a>one</a>, for example.
+--   These are all grouped under one typeclass for convenience in defining
+--   instances, and also to talk about sensible laws. For fine-grained
+--   control, use the "explicit" versions of library functions (for
+--   example, in <a>Numeric.Backprop.Explicit</a>) instead of
+--   <a>Backprop</a> based ones.
+--   
+--   This typeclass replaces the reliance on <a>Num</a> of the previous API
+--   (v0.1). <a>Num</a> is strictly more powerful than <a>Backprop</a>, and
+--   is a stronger constraint on types than is necessary for proper
+--   backpropagating. In particular, <a>fromInteger</a> is a problem for
+--   many types, preventing useful backpropagation for lists,
+--   variable-length vectors (like <a>Data.Vector</a>) and variable-size
+--   matrices from linear algebra libraries like <i>hmatrix</i> and
+--   <i>accelerate</i>.
+class Backprop a
+
+-- | "Zero out" all components of a value. For scalar values, this should
+--   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
+--   set all components to zero, the additive identity.
+--   
+--   Should be idempotent:
+--   
+--   <ul>
+--   <li><pre><a>zero</a> <a>.</a> <a>zero</a> = <a>zero</a></pre></li>
+--   </ul>
+--   
+--   Should be as <i>lazy</i> as possible. This behavior is observed for
+--   all instances provided by this library.
+zero :: Backprop a => a -> a
+
+-- | Add together two values of a type. To combine contributions of
+--   gradients, so should be information-preserving:
+--   
+--   <ul>
+--   <li><pre><a>add</a> x (<a>zero</a> y) = x</pre></li>
+--   <li><pre><a>add</a> (<a>zero</a> x) y = y</pre></li>
+--   </ul>
+--   
+--   Should be as <i>strict</i> as possible. This behavior is observed for
+--   all instances provided by this library.
+add :: Backprop a => a -> a -> a
+
+-- | <a>One</a> all components of a value. For scalar values, this should
+--   just be <tt><a>const</a> 1</tt>. For vectors and matrices, this should
+--   set all components to one, the multiplicative identity.
+--   
+--   Should be idempotent:
+--   
+--   <ul>
+--   <li><pre><a>one</a> <a>.</a> <a>one</a> = <a>one</a></pre></li>
+--   </ul>
+--   
+--   Should be as <i>lazy</i> as possible. This behavior is observed for
+--   all instances provided by this library.
+one :: Backprop a => a -> a
+
+-- | "Zero out" all components of a value. For scalar values, this should
+--   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
+--   set all components to zero, the additive identity.
+--   
+--   Should be idempotent:
+--   
+--   <ul>
+--   <li><pre><a>zero</a> <a>.</a> <a>zero</a> = <a>zero</a></pre></li>
+--   </ul>
+--   
+--   Should be as <i>lazy</i> as possible. This behavior is observed for
+--   all instances provided by this library.
+zero :: (Backprop a, Generic a, GZero (Rep a)) => a -> a
+
+-- | Add together two values of a type. To combine contributions of
+--   gradients, so should be information-preserving:
+--   
+--   <ul>
+--   <li><pre><a>add</a> x (<a>zero</a> y) = x</pre></li>
+--   <li><pre><a>add</a> (<a>zero</a> x) y = y</pre></li>
+--   </ul>
+--   
+--   Should be as <i>strict</i> as possible. This behavior is observed for
+--   all instances provided by this library.
+add :: (Backprop a, Generic a, GAdd (Rep a)) => a -> a -> a
+
+-- | <a>One</a> all components of a value. For scalar values, this should
+--   just be <tt><a>const</a> 1</tt>. For vectors and matrices, this should
+--   set all components to one, the multiplicative identity.
+--   
+--   Should be idempotent:
+--   
+--   <ul>
+--   <li><pre><a>one</a> <a>.</a> <a>one</a> = <a>one</a></pre></li>
+--   </ul>
+--   
+--   Should be as <i>lazy</i> as possible. This behavior is observed for
+--   all instances provided by this library.
+one :: (Backprop a, Generic a, GOne (Rep a)) => a -> a
+
 -- | "Zero out" all components of a value. For scalar values, this should
 --   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
 --   set all components to zero, the additive identity.
@@ -748,7 +935,7 @@ data W
 --   applying it just once.
 --   
 --   Each type should ideally only have one <a>ZeroFunc</a>. This coherence
---   constraint is given by the typeclass <tt>Zero</tt>.
+--   constraint is given by the typeclass <tt>Backprop</tt>.
 newtype ZeroFunc a
 ZF :: (a -> a) -> ZeroFunc a
 [runZF] :: ZeroFunc a -> a -> a
@@ -776,7 +963,7 @@ zeroFuncs :: (Every Backprop as, Known Length as) => Prod ZeroFunc as
 --   identity for a valid <a>ZeroFunc</a>.
 --   
 --   Each type should ideally only have one <a>AddFunc</a>. This coherence
---   constraint is given by the typeclass <tt>Add</tt>.
+--   constraint is given by the typeclass <tt>Backprop</tt>.
 newtype AddFunc a
 AF :: (a -> a -> a) -> AddFunc a
 [runAF] :: AddFunc a -> a -> a -> a
@@ -803,8 +990,8 @@ addFuncs :: (Every Backprop as, Known Length as) => Prod AddFunc as
 --   Should be idempotent: Applying the function twice is the same as
 --   applying it just once.
 --   
---   Each type should ideally only have one <a>ZeroFunc</a>. This coherence
---   constraint is given by the typeclass <tt>One</tt>.
+--   Each type should ideally only have one <a>OneFunc</a>. This coherence
+--   constraint is given by the typeclass <tt>Backprop</tt>.
 newtype OneFunc a
 OF :: (a -> a) -> OneFunc a
 [runOF] :: OneFunc a -> a -> a
@@ -1707,6 +1894,10 @@ class Reifies k (s :: k) a | s -> a
 --   See the <a>README</a> for more information and links to demonstrations
 --   and tutorials, or dive striaght in by reading the docs for
 --   <a>BVar</a>.
+--   
+--   In the original version 0.1, this module required <a>Num</a> instances
+--   for methods instead of <a>Backprop</a> instances. This interface is
+--   still available in <a>Numeric.Backprop.Num</a>.
 module Numeric.Backprop
 
 -- | A <tt><a>BVar</a> s a</tt> is a value of type <tt>a</tt> that can be
@@ -1783,6 +1974,9 @@ data W
 --   <li><pre><a>add</a> (<a>zero</a> x) y = y</pre></li>
 --   </ul>
 --   
+--   Also implies preservation of information, making <tt><a>zipWith</a>
+--   (<a>+</a>)</tt> an illegal implementation for lists and vectors.
+--   
 --   <ul>
 --   <li><i><i>commutativity</i></i></li>
 --   </ul>
@@ -1831,12 +2025,23 @@ class Backprop a
 --   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
 --   set all components to zero, the additive identity.
 --   
+--   Should be idempotent:
+--   
+--   <ul>
+--   <li><pre><a>zero</a> <a>.</a> <a>zero</a> = <a>zero</a></pre></li>
+--   </ul>
+--   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
 zero :: Backprop a => a -> a
 
 -- | Add together two values of a type. To combine contributions of
---   gradients, so should ideally be information-preserving.
+--   gradients, so should be information-preserving:
+--   
+--   <ul>
+--   <li><pre><a>add</a> x (<a>zero</a> y) = x</pre></li>
+--   <li><pre><a>add</a> (<a>zero</a> x) y = y</pre></li>
+--   </ul>
 --   
 --   Should be as <i>strict</i> as possible. This behavior is observed for
 --   all instances provided by this library.
@@ -1846,6 +2051,12 @@ add :: Backprop a => a -> a -> a
 --   just be <tt><a>const</a> 1</tt>. For vectors and matrices, this should
 --   set all components to one, the multiplicative identity.
 --   
+--   Should be idempotent:
+--   
+--   <ul>
+--   <li><pre><a>one</a> <a>.</a> <a>one</a> = <a>one</a></pre></li>
+--   </ul>
+--   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
 one :: Backprop a => a -> a
@@ -1854,12 +2065,23 @@ one :: Backprop a => a -> a
 --   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
 --   set all components to zero, the additive identity.
 --   
+--   Should be idempotent:
+--   
+--   <ul>
+--   <li><pre><a>zero</a> <a>.</a> <a>zero</a> = <a>zero</a></pre></li>
+--   </ul>
+--   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
 zero :: (Backprop a, Generic a, GZero (Rep a)) => a -> a
 
 -- | Add together two values of a type. To combine contributions of
---   gradients, so should ideally be information-preserving.
+--   gradients, so should be information-preserving:
+--   
+--   <ul>
+--   <li><pre><a>add</a> x (<a>zero</a> y) = x</pre></li>
+--   <li><pre><a>add</a> (<a>zero</a> x) y = y</pre></li>
+--   </ul>
 --   
 --   Should be as <i>strict</i> as possible. This behavior is observed for
 --   all instances provided by this library.
@@ -1868,6 +2090,12 @@ add :: (Backprop a, Generic a, GAdd (Rep a)) => a -> a -> a
 -- | <a>One</a> all components of a value. For scalar values, this should
 --   just be <tt><a>const</a> 1</tt>. For vectors and matrices, this should
 --   set all components to one, the multiplicative identity.
+--   
+--   Should be idempotent:
+--   
+--   <ul>
+--   <li><pre><a>one</a> <a>.</a> <a>one</a> = <a>one</a></pre></li>
+--   </ul>
 --   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
@@ -2699,6 +2927,7 @@ instance Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint D
 instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint Data.Semigroup.Semigroup as), Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint GHC.Base.Monoid as)) => GHC.Base.Monoid (Numeric.Backprop.Tuple.T as)
 instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint Data.Binary.Class.Binary as)) => Data.Binary.Class.Binary (Numeric.Backprop.Tuple.T as)
 instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint System.Random.Random as)) => System.Random.Random (Numeric.Backprop.Tuple.T as)
+instance Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint Numeric.Backprop.Class.Backprop as) => Numeric.Backprop.Class.Backprop (Numeric.Backprop.Tuple.T as)
 instance (Control.DeepSeq.NFData a, Control.DeepSeq.NFData b, Control.DeepSeq.NFData c) => Control.DeepSeq.NFData (Numeric.Backprop.Tuple.T3 a b c)
 instance (System.Random.Random a, System.Random.Random b, System.Random.Random c) => System.Random.Random (Numeric.Backprop.Tuple.T3 a b c)
 instance (Data.Binary.Class.Binary a, Data.Binary.Class.Binary b, Data.Binary.Class.Binary c) => Data.Binary.Class.Binary (Numeric.Backprop.Tuple.T3 a b c)
@@ -2711,6 +2940,7 @@ instance (GHC.Real.Fractional a, GHC.Real.Fractional b, GHC.Real.Fractional c) =
 instance (GHC.Float.Floating a, GHC.Float.Floating b, GHC.Float.Floating c) => GHC.Float.Floating (Numeric.Backprop.Tuple.T3 a b c)
 instance (Data.Semigroup.Semigroup a, Data.Semigroup.Semigroup b, Data.Semigroup.Semigroup c) => Data.Semigroup.Semigroup (Numeric.Backprop.Tuple.T3 a b c)
 instance (Data.Semigroup.Semigroup a, Data.Semigroup.Semigroup b, Data.Semigroup.Semigroup c, GHC.Base.Monoid a, GHC.Base.Monoid b, GHC.Base.Monoid c) => GHC.Base.Monoid (Numeric.Backprop.Tuple.T3 a b c)
+instance (Numeric.Backprop.Class.Backprop a, Numeric.Backprop.Class.Backprop b, Numeric.Backprop.Class.Backprop c) => Numeric.Backprop.Class.Backprop (Numeric.Backprop.Tuple.T3 a b c)
 instance (Control.DeepSeq.NFData a, Control.DeepSeq.NFData b) => Control.DeepSeq.NFData (Numeric.Backprop.Tuple.T2 a b)
 instance (System.Random.Random a, System.Random.Random b) => System.Random.Random (Numeric.Backprop.Tuple.T2 a b)
 instance (Data.Binary.Class.Binary a, Data.Binary.Class.Binary b) => Data.Binary.Class.Binary (Numeric.Backprop.Tuple.T2 a b)
@@ -2722,6 +2952,7 @@ instance (GHC.Real.Fractional a, GHC.Real.Fractional b) => GHC.Real.Fractional (
 instance (GHC.Float.Floating a, GHC.Float.Floating b) => GHC.Float.Floating (Numeric.Backprop.Tuple.T2 a b)
 instance (Data.Semigroup.Semigroup a, Data.Semigroup.Semigroup b) => Data.Semigroup.Semigroup (Numeric.Backprop.Tuple.T2 a b)
 instance (Data.Semigroup.Semigroup a, Data.Semigroup.Semigroup b, GHC.Base.Monoid a, GHC.Base.Monoid b) => GHC.Base.Monoid (Numeric.Backprop.Tuple.T2 a b)
+instance (Numeric.Backprop.Class.Backprop a, Numeric.Backprop.Class.Backprop b) => Numeric.Backprop.Class.Backprop (Numeric.Backprop.Tuple.T2 a b)
 instance Control.DeepSeq.NFData Numeric.Backprop.Tuple.T0
 instance System.Random.Random Numeric.Backprop.Tuple.T0
 instance Data.Binary.Class.Binary Numeric.Backprop.Tuple.T0
@@ -2730,6 +2961,7 @@ instance GHC.Real.Fractional Numeric.Backprop.Tuple.T0
 instance GHC.Float.Floating Numeric.Backprop.Tuple.T0
 instance Data.Semigroup.Semigroup Numeric.Backprop.Tuple.T0
 instance GHC.Base.Monoid Numeric.Backprop.Tuple.T0
+instance Numeric.Backprop.Class.Backprop Numeric.Backprop.Tuple.T0
 
 
 -- | Some lifted versions of common functions found in <tt>Prelude</tt> (or
@@ -2777,6 +3009,52 @@ liftA2 :: forall f a b c s. (Traversable f, Applicative f, Backprop a, Backprop 
 -- | Lifted <a>liftA3</a>. Lifts backpropagatable functions to be
 --   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
 liftA3 :: forall f a b c d s. (Traversable f, Applicative f, Backprop a, Backprop b, Backprop c, Backprop d, Backprop (f d), Reifies s W) => (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
+
+-- | Coerce items inside a <a>BVar</a>.
+coerce :: forall a b s. Coercible a b => BVar s a -> BVar s b
+
+
+-- | Provides "explicit" versions of all of the functions in
+--   <a>Prelude.Backprop</a>. Instead of relying on a <a>Backprop</a>
+--   instance, allows you to manually provide <a>zero</a>, <a>add</a>, and
+--   <a>one</a> on a per-value basis.
+module Prelude.Backprop.Explicit
+
+-- | Lifted <a>sum</a>
+sum :: forall t a s. (Foldable t, Functor t, Num a, Reifies s W) => AddFunc (t a) -> ZeroFunc a -> BVar s (t a) -> BVar s a
+
+-- | Lifted <a>product</a>
+product :: forall t a s. (Foldable t, Functor t, Fractional a, Reifies s W) => AddFunc (t a) -> ZeroFunc a -> BVar s (t a) -> BVar s a
+
+-- | Lifted <a>length</a>.
+length :: forall t a b s. (Foldable t, Num b, Reifies s W) => AddFunc (t a) -> ZeroFunc (t a) -> ZeroFunc b -> BVar s (t a) -> BVar s b
+
+-- | Lifted <a>minimum</a>. Undefined for situations where <a>minimum</a>
+--   would be undefined.
+minimum :: forall t a s. (Foldable t, Functor t, Ord a, Reifies s W) => AddFunc (t a) -> ZeroFunc a -> BVar s (t a) -> BVar s a
+
+-- | Lifted <a>maximum</a>. Undefined for situations where <a>maximum</a>
+--   would be undefined.
+maximum :: forall t a s. (Foldable t, Functor t, Ord a, Reifies s W) => AddFunc (t a) -> ZeroFunc a -> BVar s (t a) -> BVar s a
+
+-- | Lifted <a>traverse</a>. Lifts backpropagatable functions to be
+--   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
+traverse :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Reifies s W) => AddFunc a -> AddFunc b -> AddFunc (t b) -> ZeroFunc a -> ZeroFunc b -> ZeroFunc (t b) -> ZeroFunc (f (t b)) -> (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
+
+-- | Lifted <a>fmap</a>. Lifts backpropagatable functions to be
+--   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
+fmap :: forall f a b s. (Traversable f, Reifies s W) => AddFunc a -> AddFunc b -> ZeroFunc a -> ZeroFunc b -> ZeroFunc (f b) -> (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
+
+-- | Lifted <a>pure</a>.
+pure :: forall t a s. (Foldable t, Applicative t, Reifies s W) => AddFunc a -> ZeroFunc a -> ZeroFunc (t a) -> BVar s a -> BVar s (t a)
+
+-- | Lifted <a>liftA2</a>. Lifts backpropagatable functions to be
+--   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
+liftA2 :: forall f a b c s. (Traversable f, Applicative f, Reifies s W) => AddFunc a -> AddFunc b -> AddFunc c -> ZeroFunc a -> ZeroFunc b -> ZeroFunc c -> ZeroFunc (f c) -> (BVar s a -> BVar s b -> BVar s c) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c)
+
+-- | Lifted <a>liftA3</a>. Lifts backpropagatable functions to be
+--   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
+liftA3 :: forall f a b c d s. (Traversable f, Applicative f, Reifies s W) => AddFunc a -> AddFunc b -> AddFunc c -> AddFunc d -> ZeroFunc a -> ZeroFunc b -> ZeroFunc c -> ZeroFunc d -> ZeroFunc (f d) -> (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
 
 -- | Coerce items inside a <a>BVar</a>.
 coerce :: forall a b s. Coercible a b => BVar s a -> BVar s b
