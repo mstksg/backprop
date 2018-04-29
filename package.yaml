@@ -1,5 +1,5 @@
 name:                backprop
-version:             0.1.5.2
+version:             0.2.0.0
 github:              mstksg/backprop
 license:             BSD3
 author:              Justin Le
@@ -47,9 +47,13 @@ library:
   source-dirs: src
   exposed-modules:
   - Numeric.Backprop
+  - Numeric.Backprop.Class
+  - Numeric.Backprop.Explicit
+  - Numeric.Backprop.Num
   - Numeric.Backprop.Op
-  - Numeric.Backprop.Tuple
   - Prelude.Backprop
+  - Prelude.Backprop.Explicit
+  - Prelude.Backprop.Num
   other-modules:
   - Numeric.Backprop.Internal
   - Data.Type.Util

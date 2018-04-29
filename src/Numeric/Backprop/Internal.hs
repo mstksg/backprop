@@ -10,6 +10,7 @@
 {-# LANGUAGE TupleSections       #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeInType          #-}
+{-# LANGUAGE TypeOperators       #-}
 {-# LANGUAGE ViewPatterns        #-}
 
 -- |
@@ -32,6 +33,10 @@ module Numeric.Backprop.Internal (
   , liftOp, liftOp1, liftOp2, liftOp3
   , viewVar, setVar, sequenceVar, collectVar, previewVar, toListOfVar
   , coerceVar
+  -- * Func wrappers
+  , ZeroFunc(..), zfNum
+  , AddFunc(..), afNum
+  , OneFunc(..), ofNum
   -- * Debug
   , debugSTN
   , debugIR
@@ -53,7 +58,7 @@ import           Data.Maybe
 import           Data.Monoid hiding        (Any(..))
 import           Data.Proxy
 import           Data.Reflection
-import           Data.Type.Index
+import           Data.Type.Conjunction
 import           Data.Type.Product hiding  (toList)
 import           Data.Type.Util
 import           Data.Type.Vector hiding   (itraverse)
@@ -64,10 +69,57 @@ import           Lens.Micro
 import           Numeric.Backprop.Op
 import           System.IO.Unsafe
 import           Type.Class.Higher
-import           Type.Class.Witness
 import           Unsafe.Coerce
 import qualified Data.Vector               as V
 import qualified Data.Vector.Mutable       as MV
+
+-- | "Zero out" all components of a value.  For scalar values, this should
+-- just be @'const' 0@.  For vectors and matrices, this should set all
+-- components to zero, the additive identity.
+--
+-- Should be idempotent: Applying the function twice is the same as
+-- applying it just once.
+--
+-- Each type should ideally only have one 'ZeroFunc'.  This coherence
+-- constraint is given by the typeclass 'Backprop'.
+newtype ZeroFunc a = ZF { runZF :: a -> a }
+
+-- | Add together two values of a type.  To combine contributions of
+-- gradients, so should ideally be information-preserving.
+--
+-- See laws for 'Backprop' for the laws this should be expected to
+-- preserve.  Namely, it should be commutative and associative, with an
+-- identity for a valid 'ZeroFunc'.
+--
+-- Each type should ideally only have one 'AddFunc'.  This coherence
+-- constraint is given by the typeclass 'Backprop'.
+newtype AddFunc  a = AF { runAF :: a -> a -> a }
+
+-- | "One" all components of a value.  For scalar values, this should
+-- just be @'const' 1@.  For vectors and matrices, this should set all
+-- components to one, the multiplicative identity.
+--
+-- Should be idempotent: Applying the function twice is the same as
+-- applying it just once.
+--
+-- Each type should ideally only have one 'OneFunc'.  This coherence
+-- constraint is given by the typeclass 'Backprop'.
+newtype OneFunc  a = OF { runOF :: a -> a }
+
+-- | If a type has a 'Num' instance, this is the canonical 'ZeroFunc'.
+zfNum :: Num a => ZeroFunc a
+zfNum = ZF (const 0)
+{-# INLINE zfNum #-}
+
+-- | If a type has a 'Num' instance, this is the canonical 'AddFunc'.
+afNum :: Num a => AddFunc a
+afNum = AF (+)
+{-# INLINE afNum #-}
+
+-- | If a type has a 'Num' instance, this is the canonical 'OneFunc'.
+ofNum :: Num a => OneFunc a
+ofNum = OF (const 1)
+{-# INLINE ofNum #-}
 
 -- | A @'BVar' s a@ is a value of type @a@ that can be "backpropagated".
 --
@@ -138,13 +190,12 @@ forceBVar (BV r !_) = force r `seq` ()
 
 data InpRef :: Type -> Type where
     IR :: { _irIx  :: !(BVar s b)
-          , _irUpd :: !(Lens' b a)
-          , _irAdd :: !(a -> a -> a)
+          , _irAdd :: !(a -> b -> b)
           }
        -> InpRef a
 
 forceInpRef :: InpRef a -> ()
-forceInpRef (IR v !_ !_) = forceBVar v `seq` ()
+forceInpRef (IR v !_) = forceBVar v `seq` ()
 {-# INLINE forceInpRef #-}
 
 -- | Debugging string for an 'InpRef'.
@@ -183,14 +234,14 @@ initWengert = W <$> newIORef (0,[])
 {-# INLINE initWengert #-}
 
 insertNode
-    :: Num a
-    => TapeNode a
-    -> a
+    :: TapeNode a
+    -> a                    -- ^ val
+    -> ZeroFunc a
     -> W
     -> IO (BVar s a)
-insertNode tn !x !w = fmap ((`BV` x) . BRIx) . atomicModifyIORef' (wRef w) $ \(!n,!t) ->
+insertNode tn !x zf !w = fmap ((`BV` x) . BRIx) . atomicModifyIORef' (wRef w) $ \(!n,!t) ->
     let n' = n + 1
-        t' = STN 0 tn:t
+        t' = STN (runZF zf x) tn : t
     in  forceTapeNode tn `seq` n' `seq` t' `seq` ((n', t'), n)
 {-# INLINE insertNode #-}
 
@@ -203,286 +254,283 @@ constVar = BV BRC
 {-# INLINE constVar #-}
 
 liftOp_
-    :: forall s as b. (Reifies s W, Num b, Every Num as)
-    => Op as b
+    :: forall s as b. Reifies s W
+    => Prod AddFunc as
+    -> ZeroFunc b
+    -> Op as b
     -> Prod (BVar s) as
     -> IO (BVar s b)
-liftOp_ o !vs = case traverse1 (fmap I . bvConst) vs of
-                   Just xs -> return $ constVar (evalOp o xs)
-                   Nothing -> insertNode tn y (reflect (Proxy @s))
+liftOp_ afs z o !vs = case traverse1 (fmap I . bvConst) vs of
+    Just xs -> return $ constVar (evalOp o xs)
+    Nothing -> insertNode tn y z (reflect (Proxy @s))
   where
     (y,g) = runOpWith o (map1 (I . _bvVal) vs)
-    tn = TN { _tnInputs = imap1 go vs
+    tn = TN { _tnInputs = map1 go (zipP afs vs)
             , _tnGrad   = g
             }
-    go :: forall a. Index as a -> BVar s a -> InpRef a
-    go i !v = forceBVar v `seq` (IR v id (+) \\ every @_ @Num i)
+    go :: forall a. (AddFunc :&: BVar s) a -> InpRef a
+    go (af :&: (!v)) = forceBVar v `seq` IR v (runAF af)
     {-# INLINE go #-}
 {-# INLINE liftOp_ #-}
 
--- | Lift an 'Op' with an arbitrary number of inputs to a function on the
--- appropriate number of 'BVar's.
---
--- Should preferably be used only by libraries to provide primitive 'BVar'
--- functions for their types for users.
---
--- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
--- information, and "Numeric.Backprop.Op#prod" for a mini-tutorial on using
--- 'Prod' and 'Tuple'.
+-- | 'Numeric.Backprop.liftOp', but with explicit 'add' and 'zero'.
 liftOp
-    :: forall as b s. (Reifies s W, Num b, Every Num as)
-    => Op as b
+    :: forall as b s. Reifies s W
+    => Prod AddFunc as
+    -> ZeroFunc b
+    -> Op as b
     -> Prod (BVar s) as
     -> BVar s b
-liftOp o !vs = unsafePerformIO $ liftOp_ o vs
+liftOp afs z o !vs = unsafePerformIO $ liftOp_ afs z o vs
 {-# INLINE liftOp #-}
 
 liftOp1_
-    :: forall a b s. (Reifies s W, Num a, Num b)
-    => Op '[a] b
+    :: forall a b s. Reifies s W
+    => AddFunc a
+    -> ZeroFunc b
+    -> Op '[a] b
     -> BVar s a
     -> IO (BVar s b)
-liftOp1_ o (bvConst->Just x) = return . constVar . evalOp o $ (x ::< Ø)
-liftOp1_ o v = forceBVar v `seq` insertNode tn y (reflect (Proxy @s))
+liftOp1_ _  _ o (bvConst->Just x) = return . constVar . evalOp o $ (x ::< Ø)
+liftOp1_ af z o v = forceBVar v `seq` insertNode tn y z (reflect (Proxy @s))
   where
     (y,g) = runOpWith o (_bvVal v ::< Ø)
-    tn = TN { _tnInputs = IR v id (+) :< Ø
+    tn = TN { _tnInputs = IR v (runAF af) :< Ø
             , _tnGrad   = g
             }
 {-# INLINE liftOp1_ #-}
 
--- | Lift an 'Op' with a single input to be a function on a single 'BVar'.
---
--- Should preferably be used only by libraries to provide primitive 'BVar'
--- functions for their types for users.
---
--- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
--- information.
+-- | 'Numeric.Backprop.liftOp1', but with explicit 'add' and 'zero'.
 liftOp1
-    :: forall a b s. (Reifies s W, Num a, Num b)
-    => Op '[a] b
+    :: forall a b s. Reifies s W
+    => AddFunc a
+    -> ZeroFunc b
+    -> Op '[a] b
     -> BVar s a
     -> BVar s b
-liftOp1 o !v = unsafePerformIO $ liftOp1_ o v
+liftOp1 af z o !v = unsafePerformIO $ liftOp1_ af z o v
 {-# INLINE liftOp1 #-}
 
 liftOp2_
-    :: forall a b c s. (Reifies s W, Num a, Num b, Num c)
-    => Op '[a,b] c
+    :: forall a b c s. Reifies s W
+    => AddFunc a
+    -> AddFunc b
+    -> ZeroFunc c
+    -> Op '[a,b] c
     -> BVar s a
     -> BVar s b
     -> IO (BVar s c)
-liftOp2_ o (bvConst->Just x) (bvConst->Just y) = return . constVar . evalOp o $ x ::< y ::< Ø
-liftOp2_ o v u = forceBVar v
-           `seq` forceBVar u
-           `seq` insertNode tn y (reflect (Proxy @s))
+liftOp2_ _ _ _ o (bvConst->Just x) (bvConst->Just y)
+    = return . constVar . evalOp o $ x ::< y ::< Ø
+liftOp2_ afa afb z o v u = forceBVar v
+                     `seq` forceBVar u
+                     `seq` insertNode tn y z (reflect (Proxy @s))
   where
     (y,g) = runOpWith o (_bvVal v ::< _bvVal u ::< Ø)
-    tn = TN { _tnInputs = IR v id (+) :< IR u id (+) :< Ø
+    tn = TN { _tnInputs = IR v (runAF afa) :< IR u (runAF afb) :< Ø
             , _tnGrad   = g
             }
 {-# INLINE liftOp2_ #-}
 
--- | Lift an 'Op' with two inputs to be a function on a two 'BVar's.
---
--- Should preferably be used only by libraries to provide primitive 'BVar'
--- functions for their types for users.
---
--- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
--- information.
+-- | 'Numeric.Backprop.liftOp2', but with explicit 'add' and 'zero'.
 liftOp2
-    :: forall a b c s. (Reifies s W, Num a, Num b, Num c)
-    => Op '[a,b] c
+    :: forall a b c s. Reifies s W
+    => AddFunc a
+    -> AddFunc b
+    -> ZeroFunc c
+    -> Op '[a,b] c
     -> BVar s a
     -> BVar s b
     -> BVar s c
-liftOp2 o !v !u = unsafePerformIO $ liftOp2_ o v u
+liftOp2 afa afb z o !v !u = unsafePerformIO $ liftOp2_ afa afb z o v u
 {-# INLINE liftOp2 #-}
 
 liftOp3_
-    :: forall a b c d s. (Reifies s W, Num a, Num b, Num c, Num d)
-    => Op '[a,b,c] d
+    :: forall a b c d s. Reifies s W
+    => AddFunc a
+    -> AddFunc b
+    -> AddFunc c
+    -> ZeroFunc d
+    -> Op '[a,b,c] d
     -> BVar s a
     -> BVar s b
     -> BVar s c
     -> IO (BVar s d)
-liftOp3_ o (bvConst->Just x) (bvConst->Just y) (bvConst->Just z)
+liftOp3_ _ _ _ _ o (bvConst->Just x) (bvConst->Just y) (bvConst->Just z)
     = return . constVar . evalOp o $ x ::< y ::< z ::< Ø
-liftOp3_ o v u w = forceBVar v
-             `seq` forceBVar u
-             `seq` forceBVar w
-             `seq` insertNode tn y (reflect (Proxy @s))
+liftOp3_ afa afb afc z o v u w = forceBVar v
+                           `seq` forceBVar u
+                           `seq` forceBVar w
+                           `seq` insertNode tn y z (reflect (Proxy @s))
   where
     (y, g) = runOpWith o (_bvVal v ::< _bvVal u ::< _bvVal w ::< Ø)
-    tn = TN { _tnInputs = IR v id (+) :< IR u id (+) :< IR w id (+) :< Ø
+    tn = TN { _tnInputs = IR v (runAF afa)
+                       :< IR u (runAF afb)
+                       :< IR w (runAF afc)
+                       :< Ø
             , _tnGrad   = g
             }
 {-# INLINE liftOp3_ #-}
 
--- | Lift an 'Op' with three inputs to be a function on a three 'BVar's.
---
--- Should preferably be used only by libraries to provide primitive 'BVar'
--- functions for their types for users.
---
--- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
--- information.
+-- | 'Numeric.Backprop.liftOp3', but with explicit 'add' and 'zero'.
 liftOp3
-    :: forall a b c d s. (Reifies s W, Num a, Num b, Num c, Num d)
-    => Op '[a,b,c] d
+    :: forall a b c d s. Reifies s W
+    => AddFunc a
+    -> AddFunc b
+    -> AddFunc c
+    -> ZeroFunc d
+    -> Op '[a,b,c] d
     -> BVar s a
     -> BVar s b
     -> BVar s c
     -> BVar s d
-liftOp3 o !v !u !w = unsafePerformIO $ liftOp3_ o v u w
+liftOp3 afa afb afc z o !v !u !w = unsafePerformIO $ liftOp3_ afa afb afc z o v u w
 {-# INLINE liftOp3 #-}
 
+-- TODO: can we get the zero and scale func from the bvar?
 viewVar_
-    :: forall a b s. (Reifies s W, Num a)
-    => Lens' b a
+    :: forall a b s. Reifies s W
+    => AddFunc a
+    -> ZeroFunc a
+    -> Lens' b a
     -> BVar s b
     -> IO (BVar s a)
-viewVar_ l v = forceBVar v `seq` insertNode tn y (reflect (Proxy @s))
+viewVar_ af z l v = forceBVar v `seq` insertNode tn y z (reflect (Proxy @s))
   where
     y = _bvVal v ^. l
-    tn = TN { _tnInputs = IR v l (+) :< Ø
+    tn = TN { _tnInputs = IR v (over l . runAF af) :< Ø
             , _tnGrad   = only_
             }
 {-# INLINE viewVar_ #-}
 
--- | Using a 'Lens'', extract a value /inside/ a 'BVar'.  Meant to evoke
--- parallels to 'view' from lens.
---
--- See documentation for '^^.' for more information.
+-- | 'Numeric.Backprop.viewVar', but with explicit 'add' and 'zero'.
 viewVar
-    :: forall a b s. (Reifies s W, Num a)
-    => Lens' b a
+    :: forall a b s. Reifies s W
+    => AddFunc a
+    -> ZeroFunc a
+    -> Lens' b a
     -> BVar s b
     -> BVar s a
-viewVar l !v = unsafePerformIO $ viewVar_ l v
+viewVar af z l !v = unsafePerformIO $ viewVar_ af z l v
 {-# INLINE viewVar #-}
 
+-- TODO: can zero and scale func be gotten from the input bvars?
 setVar_
-    :: forall a b s. (Reifies s W, Num a, Num b)
-    => Lens' b a
+    :: forall a b s. Reifies s W
+    => AddFunc a
+    -> AddFunc b
+    -> ZeroFunc a
+    -> ZeroFunc b
+    -> Lens' b a
     -> BVar s a
     -> BVar s b
     -> IO (BVar s b)
-setVar_ l w v = forceBVar v
-          `seq` forceBVar w
-          `seq` insertNode tn y (reflect (Proxy @s))
+setVar_ afa afb za zb l w v = forceBVar v
+                        `seq` forceBVar w
+                        `seq` insertNode tn y zb (reflect (Proxy @s))
   where
     y = _bvVal v & l .~ _bvVal w
-    tn = TN { _tnInputs = IR w id (+) :< IR v id (+) :< Ø
-            , _tnGrad   = \d -> let (dw,dv) = l (,0) d
+    tn = TN { _tnInputs = IR w (runAF afa) :< IR v (runAF afb) :< Ø
+            , _tnGrad   = \d -> let (dw,dv) = l (\x -> (x, runZF za x)) d
                                 in  dw ::< dv ::< Ø
             }
 {-# INLINE setVar_ #-}
 
--- | Using a 'Lens'', set a value /inside/ a 'BVar'.  Meant to evoke
--- parallels to "set" from lens.
---
--- See documentation for '.~~' for more information.
+-- | 'Numeric.Backprop.setVar', but with explicit 'add' and 'zero'.
 setVar
-    :: forall a b s. (Reifies s W, Num a, Num b)
-    => Lens' b a
+    :: forall a b s. Reifies s W
+    => AddFunc a
+    -> AddFunc b
+    -> ZeroFunc a
+    -> ZeroFunc b
+    -> Lens' b a
     -> BVar s a
     -> BVar s b
     -> BVar s b
-setVar l !w !v = unsafePerformIO $ setVar_ l w v
+setVar afa afb za zb l !w !v = unsafePerformIO $ setVar_ afa afb za zb l w v
 {-# INLINE setVar #-}
 
--- | Extract all of the 'BVar's out of a 'Traversable' container of
--- 'BVar's.
---
--- Note that this associates gradients in order of occurrence in the
--- original data structure; the second item in the gradient is assumed to
--- correspond with the second item in the input, etc.; this can cause
--- unexpected behavior in 'Foldable' instances that don't have a fixed
--- number of items.
+-- | 'Numeric.Backprop.sequenceVar', but with explicit 'add' and 'zero'.
 sequenceVar
-    :: forall t a s. (Reifies s W, Traversable t, Num a)
-    => BVar s (t a)
+    :: forall t a s. (Reifies s W, Traversable t)
+    => AddFunc a
+    -> ZeroFunc a
+    -> BVar s (t a)
     -> t (BVar s a)
-sequenceVar !v = unsafePerformIO $ traverseVar' id traverse v
+sequenceVar af z !v = unsafePerformIO $ traverseVar' af z id traverse v
 {-# INLINE sequenceVar #-}
 
+-- TODO: can scale funcs and zeros be had from bvars and Functor instance?
 collectVar_
-    :: forall t a s. (Reifies s W, Foldable t, Functor t, Num (t a), Num a)
-    => t (BVar s a)
+    :: forall t a s. (Reifies s W, Foldable t, Functor t)
+    => AddFunc a
+    -> ZeroFunc a
+    -> ZeroFunc (t a)
+    -> t (BVar s a)
     -> IO (BVar s (t a))
-collectVar_ !vs = withV (toList vs) $ \(vVec :: Vec n (BVar s a)) -> do
+collectVar_ af z z' !vs = withV (toList vs) $ \(vVec :: Vec n (BVar s a)) -> do
     let tn :: TapeNode (t a)
-        tn = TN { _tnInputs = vecToProd (vmap ((\v -> IR v id (+)) . getI) vVec)
-                , _tnGrad   = vecToProd
-                            . listToVecDef 0 (vecLen vVec)
-                            . map I . toList
-                }
+        tn = TN
+          { _tnInputs = vecToProd (vmap ((`IR` runAF af) . getI) vVec)
+          , _tnGrad   = vecToProd
+                      . zipVecList (\(I v) -> I . fromMaybe (runZF z (_bvVal v))) vVec
+                      . toList
+          }
     traverse_ (evaluate . forceBVar) vs
-    insertNode tn (_bvVal <$> vs) (reflect (Proxy @s))
+    insertNode tn (_bvVal <$> vs) z' (reflect (Proxy @s))
 {-# INLINE collectVar_ #-}
 
--- | Collect all of the 'BVar's in a container into a 'BVar' of that
--- container's contents.
---
--- Note that this associates gradients in order of occurrence in the
--- original data structure; the second item in the total derivative and
--- gradient is assumed to correspond with the second item in the input,
--- etc.; this can cause unexpected behavior in 'Foldable' instances that
--- don't have a fixed number of items.
---
--- Note that this requires @t a@ to have a 'Num' instance.  If you are
--- using a list, I recommend using
--- <https://hackage.haskell.org/package/vector-sized vector-sized> instead:
--- it's a fixed-length vector type with a very appropriate 'Num' instance!
+-- | 'Numeric.Backprop.collectVar', but with explicit 'add' and 'zero'.
 collectVar
-    :: forall t a s. (Reifies s W, Foldable t, Functor t, Num (t a), Num a)
-    => t (BVar s a)
+    :: forall t a s. (Reifies s W, Foldable t, Functor t)
+    => AddFunc a
+    -> ZeroFunc a
+    -> ZeroFunc (t a)
+    -> t (BVar s a)
     -> BVar s (t a)
-collectVar !vs = unsafePerformIO $ collectVar_ vs
+collectVar af z z' !vs = unsafePerformIO $ collectVar_ af z z' vs
 {-# INLINE collectVar #-}
 
 traverseVar'
-    :: forall b a f s. (Num a, Reifies s W, Traversable f)
-    => (b -> f a)
+    :: forall b a f s. (Reifies s W, Traversable f)
+    => AddFunc a
+    -> ZeroFunc a
+    -> (b -> f a)
     -> Traversal' b a
     -> BVar s b
     -> IO (f (BVar s a))
-traverseVar' f t v = forceBVar v
-               `seq` itraverse go (f (_bvVal v))
+traverseVar' af z f t v = forceBVar v
+                    `seq` itraverse go (f (_bvVal v))
   where
     go :: Int -> a -> IO (BVar s a)
-    go i y = insertNode tn y (reflect (Proxy @s))
+    go i y = insertNode tn y z (reflect (Proxy @s))
       where
-        tn = TN { _tnInputs = IR v (ixt t i) (+) :< Ø
+        tn = TN { _tnInputs = IR v (over (ixt t i) . runAF af) :< Ø
                 , _tnGrad   = only_
                 }
     {-# INLINE go #-}
 {-# INLINE traverseVar' #-}
 
--- | Using a 'Traversal'', extract a single value /inside/ a 'BVar', if it
--- exists.  If more than one traversal target exists, returns te first.
--- Meant to evoke parallels to 'preview' from lens.  Really only intended
--- to be used wth 'Prism''s, or up-to-one target traversals.
---
--- See documentation for '^^?' for more information.
+-- | 'Numeric.Backprop.previewVar', but with explicit 'add' and 'zero'.
 previewVar
-    :: forall b a s. (Num a, Reifies s W)
-    => Traversal' b a
+    :: forall b a s. Reifies s W
+    => AddFunc a
+    -> ZeroFunc a
+    -> Traversal' b a
     -> BVar s b
     -> Maybe (BVar s a)
-previewVar t !v = unsafePerformIO $ traverseVar' (listToMaybe . toListOf t) t v
+previewVar af z t !v = unsafePerformIO $ traverseVar' af z (listToMaybe . toListOf t) t v
 {-# INLINE previewVar #-}
 
--- | Using a 'Traversal'', extract all targeted values /inside/ a 'BVar'.
--- Meant to evoke parallels to 'toListOf' from lens.
---
--- See documentation for '^^..' for more information.
+-- | 'Numeric.Backprop.toListOfVar', but with explicit 'add' and 'zero'.
 toListOfVar
-    :: forall b a s. (Num a, Reifies s W)
-    => Traversal' b a
+    :: forall b a s. Reifies s W
+    => AddFunc a
+    -> ZeroFunc a
+    -> Traversal' b a
     -> BVar s b
     -> [BVar s a]
-toListOfVar t !v = unsafePerformIO $ traverseVar' (toListOf t) t v
+toListOfVar af z t !v = unsafePerformIO $ traverseVar' af z (toListOf t) t v
 {-# INLINE toListOfVar #-}
 
 -- | Coerce a 'BVar' contents.  Useful for things like newtype wrappers.
@@ -501,27 +549,27 @@ data Runner s = R { _rDelta  :: !(MV.MVector s Any)
 initRunner
     :: (PrimMonad m, PrimState m ~ s)
     => (Int, [SomeTapeNode])
-    -> (Int, [Some (Wit1 Num)])
+    -> (Int, [Any])
     -> m (Runner s)
 initRunner (n, stns) (nx,xs) = do
     delts <- MV.new n
     for_ (zip [n-1,n-2..] stns) $ \(i, STN z (TN{..} :: TapeNode c)) ->
       MV.write delts i $ unsafeCoerce z
     inps <- MV.new nx
-    for_ (zip [0..] xs) $ \(i, Some (Wit1 :: Wit1 Num c)) ->
-      MV.write inps i $ unsafeCoerce @c 0
+    for_ (zip [0..] xs) . uncurry $ \i z ->
+      MV.write inps i z
     return $ R delts inps
 {-# INLINE initRunner #-}
 
 gradRunner
-    :: forall m b s p. (PrimMonad m, PrimState m ~ s, Num b)
-    => p b
+    :: forall m b s. (PrimMonad m, PrimState m ~ s)
+    => b                        -- ^ one
     -> Runner s
     -> (Int, [SomeTapeNode])
     -> m ()
-gradRunner _ R{..} (n,stns) = do
+gradRunner o R{..} (n,stns) = do
     when (n > 0) $
-      MV.write _rDelta (n - 1) (unsafeCoerce @b 1)
+      MV.write _rDelta (n - 1) (unsafeCoerce o)
     zipWithM_ go [n-1,n-2..] stns
   where
     go :: Int -> SomeTapeNode -> m ()
@@ -531,65 +579,43 @@ gradRunner _ R{..} (n,stns) = do
       zipWithPM_ propagate _tnInputs gs
     {-# INLINE go #-}
     propagate :: forall x. InpRef x -> I x -> m ()
-    propagate (IR v ln (+*)) (I d) = case _bvRef v of
+    propagate (IR v (+*)) (I d) = case _bvRef v of
       BRInp i -> flip (MV.modify _rInputs) i $
-        unsafeCoerce . (ln %~ (+* d)) . unsafeCoerce
+        unsafeCoerce . (d +*) . unsafeCoerce
       BRIx i -> flip (MV.modify _rDelta) i $
-        unsafeCoerce . (ln %~ (+* d)) . unsafeCoerce
+        unsafeCoerce . (d +*) . unsafeCoerce
       BRC     -> return ()
     {-# INLINE propagate #-}
 {-# INLINE gradRunner #-}
 
--- | 'backprop' generalized to multiple inputs of different types.  See the
--- "Numeric.Backprop.Op#prod" for a mini-tutorial on heterogeneous lists.
---
--- Not strictly necessary, because you can always uncurry a function by
--- passing in all of the inputs in a data type containing all of the
--- arguments or a tuple from "Numeric.Backprop.Tuple".   You could also
--- pass in a giant tuple with
--- <https://hackage.haskell.org/package/NumInstances NumInstances>.
--- However, this can be convenient if you don't want to make a custom
--- larger tuple type or pull in orphan instances.  This could potentially
--- also be more performant.
---
--- A @'Prod' ('BVar' s) '[Double, Float, Double]@, for instance, is a tuple
--- of @'BVar' s 'Double'@, @'BVar' s 'Float'@, and @'BVar' s 'Double'@, and
--- can be pattern matched on using ':<' (cons) and 'Ø' (nil).
---
--- Tuples can be built and pattern matched on using '::<' (cons) and 'Ø'
--- (nil), as well.
---
--- The @'Every' 'Num' as@ in the constraint says that every value in the
--- type-level list @as@ must have a 'Num' instance.  This means you can
--- use, say, @'[Double, Float, Int]@, but not @'[Double, Bool, String]@.
---
--- If you stick to /concerete/, monomorphic usage of this (with specific
--- types, typed into source code, known at compile-time), then @'Every'
--- 'Num' as@ should be fulfilled automatically.
---
+-- | 'Numeric.Backprop.backpropN', but with explicit 'zero' and 'one'.
 backpropN
-    :: forall as b. (Every Num as, Num b)
-    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
+    :: forall as b. ()
+    => Prod ZeroFunc as
+    -> OneFunc b
+    -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> (b, Tuple as)
-backpropN f !xs = (y, g)
+backpropN zfs ofb f !xs = (y, g)
   where
     !(!tp@(!_,!_),!y) = unsafePerformIO $ fillWengert f xs
     g :: Tuple as
     g = runST $ do
-        r <- initRunner tp (getSum `first` ifoldMap1 go xs)
-        gradRunner (Proxy @b) r tp
+        r <- initRunner tp $ bimap getSum (`appEndo` [])
+                           . fst
+                           $ zipWithPM_ go zfs xs
+        gradRunner (runOF ofb y) r tp
         delts <- toList <$> V.freeze (_rInputs r)
         return . fromMaybe (error "backpropN") $
           fillProd (\_ d -> I (unsafeCoerce d)) xs delts
       where
-        go :: forall a. Index as a -> I a -> (Sum Int, [Some (Wit1 Num)])
-        go i (I _) = (1, [Some (Wit1 :: Wit1 Num a)]) \\ every @_ @Num i
+        go :: forall a. ZeroFunc a -> I a -> ((Sum Int, Endo [Any]),())
+        go zf (I x) = ((1, Endo (unsafeCoerce (runZF zf x) :)), ())
         {-# INLINE go #-}
 {-# INLINE backpropN #-}
 
 -- | 'evalBP' generalized to multiple inputs of different types.  See
--- documentation for 'backpropN' for more details.
+-- documentation for 'Numeric.Backprop.backpropN' for more details.
 evalBPN
     :: forall as b. ()
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
@@ -623,25 +649,25 @@ fillWengert f xs = do
 
 
 instance (Num a, Reifies s W) => Num (BVar s a) where
-    (+)         = liftOp2 (+.)
+    (+)         = liftOp2 afNum afNum zfNum (+.)
     {-# INLINE (+) #-}
-    (-)         = liftOp2 (-.)
+    (-)         = liftOp2 afNum afNum zfNum (-.)
     {-# INLINE (-) #-}
-    (*)         = liftOp2 (*.)
+    (*)         = liftOp2 afNum afNum zfNum (*.)
     {-# INLINE (*) #-}
-    negate      = liftOp1 negateOp
+    negate      = liftOp1 afNum zfNum negateOp
     {-# INLINE negate #-}
-    signum      = liftOp1 signumOp
+    signum      = liftOp1 afNum zfNum signumOp
     {-# INLINE signum #-}
-    abs         = liftOp1 absOp
+    abs         = liftOp1 afNum zfNum absOp
     {-# INLINE abs #-}
     fromInteger = constVar . fromInteger
     {-# INLINE fromInteger #-}
 
 instance (Fractional a, Reifies s W) => Fractional (BVar s a) where
-    (/)          = liftOp2 (/.)
+    (/)          = liftOp2 afNum afNum zfNum (/.)
     {-# INLINE (/) #-}
-    recip        = liftOp1 recipOp
+    recip        = liftOp1 afNum zfNum recipOp
     {-# INLINE recip #-}
     fromRational = constVar . fromRational
     {-# INLINE fromRational #-}
@@ -649,39 +675,39 @@ instance (Fractional a, Reifies s W) => Fractional (BVar s a) where
 instance (Floating a, Reifies s W) => Floating (BVar s a) where
     pi      = constVar pi
     {-# INLINE pi #-}
-    exp     = liftOp1 expOp
+    exp     = liftOp1 afNum zfNum expOp
     {-# INLINE exp #-}
-    log     = liftOp1 logOp
+    log     = liftOp1 afNum zfNum logOp
     {-# INLINE log #-}
-    sqrt    = liftOp1 sqrtOp
+    sqrt    = liftOp1 afNum zfNum sqrtOp
     {-# INLINE sqrt #-}
-    (**)    = liftOp2 (**.)
+    (**)    = liftOp2 afNum afNum zfNum (**.)
     {-# INLINE (**) #-}
-    logBase = liftOp2 logBaseOp
+    logBase = liftOp2 afNum afNum zfNum logBaseOp
     {-# INLINE logBase #-}
-    sin     = liftOp1 sinOp
+    sin     = liftOp1 afNum zfNum sinOp
     {-# INLINE sin #-}
-    cos     = liftOp1 cosOp
+    cos     = liftOp1 afNum zfNum cosOp
     {-# INLINE cos #-}
-    tan     =  liftOp1 tanOp
+    tan     = liftOp1 afNum zfNum tanOp
     {-# INLINE tan  #-}
-    asin    = liftOp1 asinOp
+    asin    = liftOp1 afNum zfNum asinOp
     {-# INLINE asin #-}
-    acos    = liftOp1 acosOp
+    acos    = liftOp1 afNum zfNum acosOp
     {-# INLINE acos #-}
-    atan    = liftOp1 atanOp
+    atan    = liftOp1 afNum zfNum atanOp
     {-# INLINE atan #-}
-    sinh    = liftOp1 sinhOp
+    sinh    = liftOp1 afNum zfNum sinhOp
     {-# INLINE sinh #-}
-    cosh    = liftOp1 coshOp
+    cosh    = liftOp1 afNum zfNum coshOp
     {-# INLINE cosh #-}
-    tanh    = liftOp1 tanhOp
+    tanh    = liftOp1 afNum zfNum tanhOp
     {-# INLINE tanh #-}
-    asinh   = liftOp1 asinhOp
+    asinh   = liftOp1 afNum zfNum asinhOp
     {-# INLINE asinh #-}
-    acosh   = liftOp1 acoshOp
+    acosh   = liftOp1 afNum zfNum acoshOp
     {-# INLINE acosh #-}
-    atanh   = liftOp1 atanhOp
+    atanh   = liftOp1 afNum zfNum atanhOp
     {-# INLINE atanh #-}
 
 -- | Compares the values inside the 'BVar'.
@@ -727,4 +753,3 @@ ixt t i f xs = stuff <$> ixi i f contents
         go []     = error "asList"
         go (y:ys) = (y, ys)
 {-# INLINE ixt #-}
-
