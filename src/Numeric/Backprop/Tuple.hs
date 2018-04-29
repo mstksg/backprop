@@ -114,6 +114,7 @@ import           Data.Type.Product
 import           GHC.Generics               (Generic)
 import           Lens.Micro
 import           Lens.Micro.Internal hiding (Index)
+import           Numeric.Backprop.Class
 import           System.Random
 import           Type.Class.Known
 import           Type.Family.List
@@ -710,3 +711,41 @@ randomT = \case
 -- @
 -- 'iso' 'onlyT' 'tOnly' :: 'Iso'' a (T '[a])
 -- @
+
+-- | 'add' is strict, but 'zero' and 'one' are lazy in their arguments.
+instance Backprop T0 where
+    zero _ = T0
+    {-# INLINE zero #-}
+    add T0 T0 = T0
+    {-# INLINE add #-}
+    one _ = T0
+    {-# INLINE one #-}
+
+instance (Backprop a, Backprop b) => Backprop (T2 a b) where
+    zero (T2 x y) = T2 (zero x) (zero y)
+    {-# INLINE zero #-}
+    add (T2 x1 y1) (T2 x2 y2) = T2 (add x1 x2) (add y1 y2)
+    {-# INLINE add #-}
+    one (T2 x y) = T2 (one x) (one y)
+    {-# INLINE one #-}
+
+instance (Backprop a, Backprop b, Backprop c) => Backprop (T3 a b c) where
+    zero (T3 x y z) = T3 (zero x) (zero y) (zero z)
+    {-# INLINE zero #-}
+    add (T3 x1 y1 z1) (T3 x2 y2 z2) = T3 (add x1 x2) (add y1 y2) (add z1 z2)
+    {-# INLINE add #-}
+    one (T3 x y z) = T3 (one x) (one y) (one z)
+    {-# INLINE one #-}
+
+instance ListC (Backprop <$> as) => Backprop (T as) where
+    zero = \case
+      TNil    -> TNil
+      x :& xs -> zero x :& zero xs
+    add = \case
+      TNil -> \case
+        TNil -> TNil
+      x :& xs -> \case
+        y :& ys -> add x y :& add xs ys
+    one = \case
+      TNil -> TNil
+      x :& xs -> one x :& one xs

@@ -53,6 +53,8 @@ library:
   - Numeric.Backprop.Num
   - Numeric.Backprop.Class
   - Prelude.Backprop
+  - Prelude.Backprop.Explicit
+  - Prelude.Backprop.Num
   other-modules:
   - Numeric.Backprop.Internal
   - Data.Type.Util

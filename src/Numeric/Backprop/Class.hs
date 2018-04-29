@@ -3,7 +3,6 @@
 {-# LANGUAGE EmptyCase         #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE TypeApplications  #-}
 {-# LANGUAGE TypeOperators     #-}
 
 -- |
@@ -19,6 +18,8 @@
 -- for backpropagation.
 --
 -- This class replaces the old (version 0.1) API relying on 'Num'.
+--
+-- @since 0.2.0.0
 
 module Numeric.Backprop.Class (
   -- * Backpropagatable types
@@ -30,10 +31,6 @@ module Numeric.Backprop.Class (
   , genericZero, genericAdd, genericOne
   -- * Generics
   , GZero(..), GAdd(..), GOne(..)
-  -- -- * Usable by "Numeric.Backprop.Explicit"
-  -- , ZeroFunc(..), zeroFunc, zeroFuncs, zfNum, zfNums
-  -- , AddFunc(..), addFunc, addFuncs, afNum, afNums
-  -- , OneFunc(..), oneFunc, oneFuncs, ofNum, ofNums
   ) where
 
 import           Data.Complex
@@ -67,6 +64,9 @@ import qualified Data.Vector.Unboxed         as VU
 --   * @'add' x ('zero' y) = x@
 --
 --   * @'add' ('zero' x) y = y@
+--
+-- Also implies preservation of information, making @'zipWith' ('+')@ an
+-- illegal implementation for lists and vectors.
 --
 -- [/commutativity/]
 --
@@ -102,11 +102,19 @@ class Backprop a where
     -- should just be @'const' 0@.  For vectors and matrices, this should
     -- set all components to zero, the additive identity.
     --
+    -- Should be idempotent:
+    --
+    --   * @'zero' '.' 'zero' = 'zero'@
+    --
     -- Should be as /lazy/ as possible.  This behavior is observed for
     -- all instances provided by this library.
     zero :: a -> a
     -- | Add together two values of a type.  To combine contributions of
-    -- gradients, so should ideally be information-preserving.
+    -- gradients, so should be information-preserving:
+    --
+    --   * @'add' x ('zero' y) = x@
+    --
+    --   * @'add' ('zero' x) y = y@
     --
     -- Should be as /strict/ as possible.  This behavior is observed for
     -- all instances provided by this library.
@@ -114,6 +122,10 @@ class Backprop a where
     -- | "One" all components of a value.  For scalar values, this should
     -- just be @'const' 1@.  For vectors and matrices, this should set all
     -- components to one, the multiplicative identity.
+    --
+    -- Should be idempotent:
+    --
+    --   * @'one' '.' 'one' = 'one'@
     --
     -- Should be as /lazy/ as possible.  This behavior is observed for
     -- all instances provided by this library.

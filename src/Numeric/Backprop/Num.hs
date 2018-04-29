@@ -44,6 +44,8 @@
 --
 -- See "Numeric.Backprop" for fuller documentation on using these
 -- functions.
+--
+-- @since 0.2.0.0
 
 module Numeric.Backprop.Num (
     -- * Types

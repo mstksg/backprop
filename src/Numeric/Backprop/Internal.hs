@@ -81,7 +81,7 @@ import qualified Data.Vector.Mutable       as MV
 -- applying it just once.
 --
 -- Each type should ideally only have one 'ZeroFunc'.  This coherence
--- constraint is given by the typeclass 'Zero'.
+-- constraint is given by the typeclass 'Backprop'.
 newtype ZeroFunc a = ZF { runZF :: a -> a }
 
 -- | Add together two values of a type.  To combine contributions of
@@ -92,7 +92,7 @@ newtype ZeroFunc a = ZF { runZF :: a -> a }
 -- identity for a valid 'ZeroFunc'.
 --
 -- Each type should ideally only have one 'AddFunc'.  This coherence
--- constraint is given by the typeclass 'Add'.
+-- constraint is given by the typeclass 'Backprop'.
 newtype AddFunc  a = AF { runAF :: a -> a -> a }
 
 -- | "One" all components of a value.  For scalar values, this should
@@ -102,8 +102,8 @@ newtype AddFunc  a = AF { runAF :: a -> a -> a }
 -- Should be idempotent: Applying the function twice is the same as
 -- applying it just once.
 --
--- Each type should ideally only have one 'ZeroFunc'.  This coherence
--- constraint is given by the typeclass 'One'.
+-- Each type should ideally only have one 'OneFunc'.  This coherence
+-- constraint is given by the typeclass 'Backprop'.
 newtype OneFunc  a = OF { runOF :: a -> a }
 
 -- | If a type has a 'Num' instance, this is the canonical 'ZeroFunc'.

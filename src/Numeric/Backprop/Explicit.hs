@@ -23,12 +23,15 @@
 --
 -- See "Numeric.Backprop" for fuller documentation on using these
 -- functions.
+--
+-- @since 0.2.0.0
 
 module Numeric.Backprop.Explicit (
     -- * Types
-    BVar, W
-  , AddFunc(..), afNum, afNums, addFunc, addFuncs
+    BVar, W, Backprop(..)
+    -- * Explicit 'zero', 'add', and 'one'
   , ZeroFunc(..), zfNum, zfNums, zeroFunc, zeroFuncs
+  , AddFunc(..), afNum, afNums, addFunc, addFuncs
   , OneFunc(..), ofNum, ofNums, oneFunc, oneFuncs
     -- * Running
   , backprop, evalBP, gradBP

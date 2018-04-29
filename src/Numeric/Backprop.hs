@@ -47,6 +47,10 @@
 -- and links to demonstrations and tutorials, or dive striaght in by
 -- reading the docs for 'BVar'.
 --
+-- In the original version 0.1, this module required 'Num' instances for
+-- methods instead of 'Backprop' instances.  This interface is still
+-- available in "Numeric.Backprop.Num".
+--
 
 module Numeric.Backprop (
     -- * Types
