@@ -3058,3 +3058,51 @@ liftA3 :: forall f a b c d s. (Traversable f, Applicative f, Reifies s W) => Add
 
 -- | Coerce items inside a <a>BVar</a>.
 coerce :: forall a b s. Coercible a b => BVar s a -> BVar s b
+
+
+-- | Provides the exact same API as <a>Prelude.Backprop</a>, except
+--   requiring <a>Num</a> instances for all types involved instead of
+--   <tt>Backprop</tt> instances.
+module Prelude.Backprop.Num
+
+-- | Lifted <a>sum</a>
+sum :: forall t a s. (Foldable t, Functor t, Num (t a), Num a, Reifies s W) => BVar s (t a) -> BVar s a
+
+-- | Lifted <a>product</a>
+product :: forall t a s. (Foldable t, Functor t, Num (t a), Fractional a, Reifies s W) => BVar s (t a) -> BVar s a
+
+-- | Lifted <a>length</a>.
+length :: forall t a b s. (Foldable t, Num (t a), Num b, Reifies s W) => BVar s (t a) -> BVar s b
+
+-- | Lifted <a>minimum</a>. Undefined for situations where <a>minimum</a>
+--   would be undefined.
+minimum :: forall t a s. (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W) => BVar s (t a) -> BVar s a
+
+-- | Lifted <a>maximum</a>. Undefined for situations where <a>maximum</a>
+--   would be undefined.
+maximum :: forall t a s. (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W) => BVar s (t a) -> BVar s a
+
+-- | Lifted <a>traverse</a>. Lifts backpropagatable functions to be
+--   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
+traverse :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Num a, Num b, Num (f (t b)), Num (t b), Reifies s W) => (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
+
+-- | Lifted <a>fmap</a>. Lifts backpropagatable functions to be
+--   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
+fmap :: forall f a b s. (Traversable f, Num a, Num b, Num (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
+
+-- | Alias for <a>fmap</a>.
+(<$>) :: forall f a b s. (Traversable f, Num a, Num b, Num (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
+
+-- | Lifted <a>pure</a>.
+pure :: forall t a s. (Foldable t, Applicative t, Num (t a), Num a, Reifies s W) => BVar s a -> BVar s (t a)
+
+-- | Lifted <a>liftA2</a>. Lifts backpropagatable functions to be
+--   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
+liftA2 :: forall f a b c s. (Traversable f, Applicative f, Num a, Num b, Num c, Num (f c), Reifies s W) => (BVar s a -> BVar s b -> BVar s c) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c)
+
+-- | Lifted <a>liftA3</a>. Lifts backpropagatable functions to be
+--   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
+liftA3 :: forall f a b c d s. (Traversable f, Applicative f, Num a, Num b, Num c, Num d, Num (f d), Reifies s W) => (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
+
+-- | Coerce items inside a <a>BVar</a>.
+coerce :: forall a b s. Coercible a b => BVar s a -> BVar s b
