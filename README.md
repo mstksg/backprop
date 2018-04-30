@@ -246,53 +246,6 @@ Todo
 
 2.  Write tests!
 
-3.  Explore potentially ditching `Num` for another typeclass that only has `+`,
-    `0`, and `1`.  Currently, `Num` is required for all backpropagated types,
-    but only `+`, `fromInteger 0`, and `fromInteger 1` are ever used.
-
-    The main upside to using `Num` is that it integrates well with the rest of
-    the Haskell ecosystem, and many things already have useful `Num` instances.
-
-    There are two downsides -- one minor and one major.
-
-    *   It requires more work to make a type backpropagatable.  Instead of
-        writing only `+`, `0` and `1`, users must also define `*`, `-` or
-        `negate`, `abs`, `signum`, and all of `fromInteger`.  However, I don't
-        see this being a big issue in practice, since most values that will be
-        used with *backprop* would presumably also benefit from having a full
-        `Num` instance even without the need to backprop.
-
-    *   Automatically generated prisms (used with `^^?`) work with tuples, and
-        so cannot work out-of-the-box without a `Num` instance for tuples.  In
-        addition, it's often useful to have anonymous products and tuples in
-        general.
-
-        This is bandaided-over by having *backprop* provide canonical
-        tuple-with-`Num` types for different libraries to use, but it's not a
-        perfect solution.
-
-        This can be resolved by using the orphan instances in the
-        *[NumInstances][]* package.  Still, there might be some headache for
-        application developers if different libraries using *backprop*
-        accidentally pull in their orphan instances from different places.
-
-        [NumInstances]: https://hackage.haskell.org/package/NumInstances
-
-        Alternatively, one day we can get `Num` instances for tuples into
-        *base*!
-
-    The extra complexity that would come from adding a custom typeclass just
-    for `+` / `0` / `1`, though, I feel, might not be worth the benefit.  The
-    entire numeric Haskell ecosystem, at the time, revolves around `Num`.
-
-    However, it is worth noting that it wouldn't be too hard to add "Additive
-    Typeclass" instances for any custom types -- one would just need to define
-    `(<+>) = (+)`, `zero = fromInteger 0`, and `one = fromInteger 1` (a
-    three-liner), so it might not be too bad.
-
-    But really, a lot of this would all resolve itself if we got `Num`
-    instances for tuples in base :)
-
 3.  Explore opportunities for parallelization.  There are some naive ways of
     directly parallelizing right now, but potential overhead should be
     investigated.

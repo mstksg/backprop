@@ -82,6 +82,8 @@ import qualified Data.Vector.Mutable       as MV
 --
 -- Each type should ideally only have one 'ZeroFunc'.  This coherence
 -- constraint is given by the typeclass 'Backprop'.
+--
+-- @since 0.2.0.0
 newtype ZeroFunc a = ZF { runZF :: a -> a }
 
 -- | Add together two values of a type.  To combine contributions of
@@ -93,6 +95,8 @@ newtype ZeroFunc a = ZF { runZF :: a -> a }
 --
 -- Each type should ideally only have one 'AddFunc'.  This coherence
 -- constraint is given by the typeclass 'Backprop'.
+--
+-- @since 0.2.0.0
 newtype AddFunc  a = AF { runAF :: a -> a -> a }
 
 -- | "One" all components of a value.  For scalar values, this should
@@ -104,19 +108,27 @@ newtype AddFunc  a = AF { runAF :: a -> a -> a }
 --
 -- Each type should ideally only have one 'OneFunc'.  This coherence
 -- constraint is given by the typeclass 'Backprop'.
+--
+-- @since 0.2.0.0
 newtype OneFunc  a = OF { runOF :: a -> a }
 
 -- | If a type has a 'Num' instance, this is the canonical 'ZeroFunc'.
+--
+-- @since 0.2.0.0
 zfNum :: Num a => ZeroFunc a
 zfNum = ZF (const 0)
 {-# INLINE zfNum #-}
 
 -- | If a type has a 'Num' instance, this is the canonical 'AddFunc'.
+--
+-- @since 0.2.0.0
 afNum :: Num a => AddFunc a
 afNum = AF (+)
 {-# INLINE afNum #-}
 
 -- | If a type has a 'Num' instance, this is the canonical 'OneFunc'.
+--
+-- @since 0.2.0.0
 ofNum :: Num a => OneFunc a
 ofNum = OF (const 1)
 {-# INLINE ofNum #-}

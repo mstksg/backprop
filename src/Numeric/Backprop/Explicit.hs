@@ -19,7 +19,8 @@
 --
 -- It is recommended you use 'Numeric.Backprop' or 'Numeric.Backprop.Num'
 -- instead, unless your type has no 'Num' instance, or you else you want to
--- avoid defining orphan 'Backprop' instances for external types.
+-- avoid defining orphan 'Backprop' instances for external types.  Can also
+-- be useful if mixing and matching styles.
 --
 -- See "Numeric.Backprop" for fuller documentation on using these
 -- functions.
@@ -83,50 +84,70 @@ import           Type.Class.Witness
 
 -- | 'ZeroFunc's for every item in a type level list based on their
 -- 'Num' instances
+--
+-- @since 0.2.0.0
 zfNums :: (Every Num as, Known Length as) => Prod ZeroFunc as
 zfNums = map1 (\i -> zfNum \\ every @_ @Num i) indices
 
 -- | 'ZeroFunc's for every item in a type level list based on their
 -- 'Num' instances
+--
+-- @since 0.2.0.0
 afNums :: (Every Num as, Known Length as) => Prod AddFunc as
 afNums = map1 (\i -> afNum \\ every @_ @Num i) indices
 
 -- | 'ZeroFunc's for every item in a type level list based on their
 -- 'Num' instances
+--
+-- @since 0.2.0.0
 ofNums :: (Every Num as, Known Length as) => Prod OneFunc as
 ofNums = map1 (\i -> ofNum \\ every @_ @Num i) indices
 
 -- | The canonical 'ZeroFunc' for instances of 'Backprop'.
+--
+-- @since 0.2.0.0
 zeroFunc :: Backprop a => ZeroFunc a
 zeroFunc = ZF zero
 {-# INLINE zeroFunc #-}
 
 -- | The canonical 'AddFunc' for instances of 'Backprop'.
+--
+-- @since 0.2.0.0
 addFunc :: Backprop a => AddFunc a
 addFunc = AF add
 {-# INLINE addFunc #-}
 
 -- | The canonical 'OneFunc' for instances of 'Backprop'.
+--
+-- @since 0.2.0.0
 oneFunc :: Backprop a => OneFunc a
 oneFunc = OF one
 {-# INLINE oneFunc #-}
 
 -- | Generate an 'ZeroFunc' for every type in a type-level list, if every
 -- type has an instance of 'Backprop'.
+--
+-- @since 0.2.0.0
 zeroFuncs :: (Every Backprop as, Known Length as) => Prod ZeroFunc as
 zeroFuncs = map1 (\i -> zeroFunc \\ every @_ @Backprop i) indices
 
 -- | Generate an 'AddFunc' for every type in a type-level list, if every
 -- type has an instance of 'Backprop'.
+--
+-- @since 0.2.0.0
 addFuncs :: (Every Backprop as, Known Length as) => Prod AddFunc as
 addFuncs = map1 (\i -> addFunc \\ every @_ @Backprop i) indices
 
 -- | Generate an 'OneFunc' for every type in a type-level list, if every
 -- type has an instance of 'Backprop'.
+--
+-- @since 0.2.0.0
 oneFuncs :: (Every Backprop as, Known Length as) => Prod OneFunc as
 oneFuncs = map1 (\i -> oneFunc \\ every @_ @Backprop i) indices
 
 -- | Shorter alias for 'constVar', inspired by the /ad/ library.
+--
+-- @since 0.2.0.0
 auto :: a -> BVar s a
 auto = constVar
 {-# INLINE auto #-}

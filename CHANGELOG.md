@@ -1,6 +1,36 @@
 Changelog
 =========
 
+Version 0.2.0.0
+---------------
+
+*Apr 30, 2018*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.2.0.0>
+
+*   Added `Backprop` class in *Numeric.Backprop.Class*, which is a typeclass
+    specifically for "backpropagatable" values.  This will replace `Num`.
+*   API of *Numeric.Backprop* completely re-written to require values be
+    instances of `Backprop` instead of `Num`.  This closes some outstanding
+    issues with the reliance of `Num`, and allows backpropagation to work with
+    non-Num instances like variable-length vectors, matrices, lists, tuples,
+    etc. (including types from *accelerate*)
+*   *Numeric.Backprop.Num* and *Prelude.Backprop.Num* modules added, providing
+    the old interface that uses `Num` instances instead of `Backprop`
+    instances, for those who wish to avoid writing orphan instances when
+    working with external types.
+*   *Numeric.Backprop.Explicit* and *Prelude.Backprop.Explicit* modules added,
+    providing an interface that allows users to manually specify how zeroing,
+    addition, and one-ing works on a per-value basis.  Useful for those who
+    wish to avoid writing orphan instances of `Backprop` for types with no
+    `Num` instances, or if you are mixing and matching styles.
+*   `backpropWith` variants added, allowing you to specify a "final gradient",
+    instead of assuming it to be 1.
+*   Added `auto`, a shorter alias for `constVar` inspired by the *ad* library.
+*   *Numeric.Backprop.Tuple* module removed.  I couldn't find a significant
+    reason to keep it now that `Num` is no longer required for backpropagation.
+
+
 Version 0.1.5.2
 ---------------
 

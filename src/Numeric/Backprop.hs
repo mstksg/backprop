@@ -55,7 +55,8 @@
 --
 -- See "Prelude.Backprop.Explicit" for a version allowing you to provide
 -- 'zero', 'add', and 'one' explicitly, which can be useful when attempting
--- to avoid orphan instances.
+-- to avoid orphan instances or when mixing both 'Backprop' and 'Num'
+-- styles.
 --
 
 module Numeric.Backprop (
@@ -186,6 +187,8 @@ backpropN = E.backpropN E.zeroFuncs E.oneFunc
 -- | 'backpropN', but allows you to provide the gradient of the "final
 -- result" with respect to the output of your function.  See 'backpropWith'
 -- for more details.
+--
+-- @since 0.2.0.0
 backpropWithN
     :: (Every Backprop as, Known Length as)
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
@@ -223,6 +226,8 @@ backprop = E.backprop E.zeroFunc E.oneFunc
 --
 -- 'backprop' is essentially 'backpropWith' with @'const' 1@ for scalars
 -- and 'Num' instances.
+--
+-- @since 0.2.0.0
 backpropWith
     :: Backprop a
     => (forall s. Reifies s W => BVar s a -> BVar s b)
@@ -283,6 +288,8 @@ backprop2 = E.backprop2 E.zeroFunc E.zeroFunc E.oneFunc
 -- | 'backprop2', but allows you to provide the gradient of the "final
 -- result" with respect to the output of your function.  See 'backpropWith'
 -- for more details.
+--
+-- @since 0.2.0.0
 backpropWith2
     :: (Backprop a, Backprop b)
     => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)

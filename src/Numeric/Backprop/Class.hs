@@ -65,6 +65,13 @@ import qualified Type.Family.Maybe           as M
 -- "Numeric.Backprop.Class" for functors, 'IsList' instances, and 'Generic'
 -- instances.
 --
+-- @
+-- instance 'Backprop' 'Double' where
+--     'zero' = 'zeroNum'
+--     'add' = 'addNum'
+--     'one' = 'oneNum'
+-- @
+--
 -- If you leave the body of an instance declaration blank, GHC Generics
 -- will be used to derive instances if the type has a single constructor
 -- and each field is an instance of 'Backprop'.
@@ -113,6 +120,7 @@ import qualified Type.Family.Maybe           as M
 -- vectors (like "Data.Vector") and variable-size matrices from linear
 -- algebra libraries like /hmatrix/ and /accelerate/.
 --
+-- @since 0.2.0.0
 class Backprop a where
     -- | "Zero out" all components of a value.  For scalar values, this
     -- should just be @'const' 0@.  For vectors and matrices, this should
@@ -124,6 +132,12 @@ class Backprop a where
     --
     -- Should be as /lazy/ as possible.  This behavior is observed for
     -- all instances provided by this library.
+    --
+    -- See 'zeroNum' for a pre-built definition for instances of 'Num' and
+    -- 'zeroFunctor' for a definition for instances of 'Functor'.  If left
+    -- blank, will automatically be 'genericZero', a pre-built definition
+    -- for instances of 'GHC.Generic' whose fields are all themselves
+    -- instances of 'Backprop'.
     zero :: a -> a
     -- | Add together two values of a type.  To combine contributions of
     -- gradients, so should be information-preserving:
@@ -134,6 +148,12 @@ class Backprop a where
     --
     -- Should be as /strict/ as possible.  This behavior is observed for
     -- all instances provided by this library.
+    --
+    -- See 'addNum' for a pre-built definition for instances of 'Num' and
+    -- 'addFunctor' for a definition for instances of 'Functor'.  If left
+    -- blank, will automatically be 'genericAdd', a pre-built definition
+    -- for instances of 'GHC.Generic' with one constructor whose fields are
+    -- all themselves instances of 'Backprop'.
     add  :: a -> a -> a
     -- | "One" all components of a value.  For scalar values, this should
     -- just be @'const' 1@.  For vectors and matrices, this should set all
@@ -145,6 +165,12 @@ class Backprop a where
     --
     -- Should be as /lazy/ as possible.  This behavior is observed for
     -- all instances provided by this library.
+    --
+    -- See 'oneNum' for a pre-built definition for instances of 'Num' and
+    -- 'oneFunctor' for a definition for instances of 'Functor'.  If left
+    -- blank, will automatically be 'genericOne', a pre-built definition
+    -- for instances of 'GHC.Generic' whose fields are all themselves
+    -- instances of 'Backprop'.
     one  :: a -> a
 
     default zero :: (Generic a, GZero (Rep a)) => a -> a
