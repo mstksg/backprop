@@ -39,7 +39,7 @@ module Numeric.Backprop.Explicit (
   , backprop2, evalBP2, gradBP2, backpropWith2
   , backpropN, evalBPN, gradBPN, backpropWithN, Every
     -- * Manipulating 'BVar'
-  , constVar, coerceVar
+  , constVar, auto, coerceVar
   -- , (^^.), (.~~), (^^?), (^^..)
   , viewVar, setVar
   , sequenceVar, collectVar
@@ -125,6 +125,10 @@ addFuncs = map1 (\i -> addFunc \\ every @_ @Backprop i) indices
 -- type has an instance of 'Backprop'.
 oneFuncs :: (Every Backprop as, Known Length as) => Prod OneFunc as
 oneFuncs = map1 (\i -> oneFunc \\ every @_ @Backprop i) indices
+
+-- | Shorter alias for 'constVar', inspired by the /ad/ library.
+auto :: a -> BVar s a
+auto = constVar
 
 -- | 'Numeric.Backprop.backpropWithN', but with explicit 'zero'.
 backpropWithN
