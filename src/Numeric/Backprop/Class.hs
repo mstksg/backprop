@@ -1,9 +1,11 @@
-{-# LANGUAGE BangPatterns      #-}
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE EmptyCase         #-}
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE BangPatterns         #-}
+{-# LANGUAGE DefaultSignatures    #-}
+{-# LANGUAGE EmptyCase            #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE LambdaCase           #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- |
 -- Module      : Numeric.Backprop.Class
@@ -40,9 +42,12 @@ import           Data.Maybe
 import           Data.Proxy
 import           Data.Ratio
 import           Data.Type.Combinator hiding ((:.:), Comp1)
+import           Data.Type.Option
+import           Data.Type.Product hiding    (toList)
 import           Data.Void
 import           GHC.Exts
 import           GHC.Generics
+import           Type.Family.List
 import qualified Data.IntMap                 as IM
 import qualified Data.Map                    as M
 import qualified Data.Sequence               as Seq
@@ -51,6 +56,7 @@ import qualified Data.Vector.Generic         as VG
 import qualified Data.Vector.Primitive       as VP
 import qualified Data.Vector.Storable        as VS
 import qualified Data.Vector.Unboxed         as VU
+import qualified Type.Family.Maybe           as M
 
 -- | Class of values that can be backpropagated in general.
 --
@@ -74,6 +80,9 @@ import qualified Data.Vector.Unboxed         as VU
 --
 -- Also implies preservation of information, making @'zipWith' ('+')@ an
 -- illegal implementation for lists and vectors.
+--
+-- This is only expected to be true up to potential "extra zeroes" in @x@
+-- and @y@ in the result.
 --
 -- [/commutativity/]
 --
@@ -558,3 +567,30 @@ instance (Backprop a) => Backprop (IM.IntMap a) where
     zero = zeroFunctor
     add  = IM.unionWith add
     one  = oneFunctor
+
+instance ListC (Backprop <$> (f <$> as)) => Backprop (Prod f as) where
+    zero = \case
+      Ø -> Ø
+      x :< xs -> zero x :< zero xs
+    add = \case
+      Ø -> \case
+        Ø -> Ø
+      x :< xs -> \case
+        y :< ys -> add x y :< add xs ys
+    one = \case
+      Ø       -> Ø
+      x :< xs -> one x :< one xs
+
+instance M.MaybeC (Backprop M.<$> (f M.<$> a)) => Backprop (Option f a) where
+    zero = \case
+      Nothing_ -> Nothing_
+      Just_ x  -> Just_ (zero x)
+    add = \case
+      Nothing_ -> \case
+        Nothing_ -> Nothing_
+      Just_ x -> \case
+        Just_ y -> Just_ (add x y)
+    one = \case
+      Nothing_ -> Nothing_
+      Just_ x  -> Just_ (one x)
+
