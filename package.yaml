@@ -58,10 +58,8 @@ library:
   - Numeric.Backprop.Internal
   - Data.Type.Util
   dependencies:
-  - binary
   - microlens
   - primitive
-  - random
   - reflection
   - type-combinators
 

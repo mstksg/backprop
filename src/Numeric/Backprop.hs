@@ -63,10 +63,10 @@ module Numeric.Backprop (
     BVar, W, Backprop(..)
   , module Numeric.Backprop.Class
     -- * Running
-  , backprop, E.evalBP, gradBP
+  , backprop, E.evalBP, gradBP, backpropWith
     -- ** Multiple inputs
-  , backprop2, E.evalBP2, gradBP2
-  , backpropN, E.evalBPN, gradBPN, Every
+  , backprop2, E.evalBP2, gradBP2, backpropWith2
+  , backpropN, E.evalBPN, gradBPN, backpropWithN, Every
     -- * Manipulating 'BVar'
   , E.constVar, E.coerceVar
   , (^^.), (.~~), (^^?), (^^..)
@@ -177,12 +177,24 @@ import qualified Numeric.Backprop.Explicit as E
 -- types, typed into source code, known at compile-time), then @'Every'
 -- 'Backprop' as@ should be fulfilled automatically.
 backpropN
-    :: forall as b. (Every Backprop as, Known Length as, Backprop b)
+    :: (Every Backprop as, Known Length as, Backprop b)
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> (b, Tuple as)
 backpropN = E.backpropN E.zeroFuncs E.oneFunc
 {-# INLINE backpropN #-}
+
+-- | 'backpropN', but allows you to provide the gradient of the "final
+-- result" with respect to the output of your function.  See 'backpropWith'
+-- for more details.
+backpropWithN
+    :: (Every Backprop as, Known Length as)
+    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
+    -> Tuple as
+    -> (b -> b)                 -- ^ Gradient of final result with respect to output of function
+    -> (b, Tuple as)
+backpropWithN = E.backpropWithN E.zeroFuncs
+{-# INLINE backpropWithN #-}
 
 -- | Turn a function @'BVar' s a -> 'BVar' s b@ into the function @a -> b@
 -- that it represents, also computing its gradient @a@ as well.
@@ -192,12 +204,34 @@ backpropN = E.backpropN E.zeroFuncs E.oneFunc
 -- in "Control.Monad.ST"), and also as a reference to an ephemeral Wengert
 -- tape used to track the graph of references.
 backprop
-    :: forall a b. (Backprop a, Backprop b)
+    :: (Backprop a, Backprop b)
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> (b, a)
 backprop = E.backprop E.zeroFunc E.oneFunc
 {-# INLINE backprop #-}
+
+-- | A version of 'backprop' that allows you to specify the gradent of your
+-- "final result" in with respect to the output of your function.
+--
+-- Typically, this is just the scalar 1, or a value of components that are
+-- all 1.
+--
+-- Instead of taking the @b@ gradient, the you may provide a @b -> b@,
+-- which 'backpropWith' calls with the result of your function as the
+-- argument.  This allows you to return something with the correct "shape",
+-- if not a scalar.
+--
+-- 'backprop' is essentially 'backpropWith' with @'const' 1@ for scalars
+-- and 'Num' instances.
+backpropWith
+    :: Backprop a
+    => (forall s. Reifies s W => BVar s a -> BVar s b)
+    -> a
+    -> (b -> b)                 -- ^ Gradient of final result with respect to output of function
+    -> (b, a)
+backpropWith = E.backpropWith E.zeroFunc
+{-# INLINE backpropWith #-}
 
 -- | Take a function @'BVar' s a -> 'BVar' s b@, interpreted as a function
 -- @a -> b@, and compute its gradient with respect to its input.
@@ -211,8 +245,10 @@ backprop = E.backprop E.zeroFunc E.oneFunc
 --
 -- See documentation of 'backprop' for more information.
 --
+-- If you want to provide an explicit "final gradient" for the end, see
+-- 'backpropWith'.
 gradBP
-    :: forall a b. (Backprop a, Backprop b)
+    :: (Backprop a, Backprop b)
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> a
@@ -222,7 +258,7 @@ gradBP = E.gradBP E.zeroFunc E.oneFunc
 -- | 'gradBP' generalized to multiple inputs of different types.  See
 -- documentation for 'backpropN' for more details.
 gradBPN
-    :: forall as b. (Every Backprop as, Known Length as, Backprop b)
+    :: (Every Backprop as, Known Length as, Backprop b)
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> Tuple as
@@ -237,13 +273,26 @@ gradBPN = E.gradBPN E.zeroFuncs E.oneFunc
 --
 -- For 3 and more arguments, consider using 'backpropN'.
 backprop2
-    :: forall a b c. (Backprop a, Backprop b, Backprop c)
+    :: (Backprop a, Backprop b, Backprop c)
     => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
     -> a
     -> b
     -> (c, (a, b))
 backprop2 = E.backprop2 E.zeroFunc E.zeroFunc E.oneFunc
 {-# INLINE backprop2 #-}
+
+-- | 'backprop2', but allows you to provide the gradient of the "final
+-- result" with respect to the output of your function.  See 'backpropWith'
+-- for more details.
+backpropWith2
+    :: (Backprop a, Backprop b)
+    => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
+    -> a
+    -> b
+    -> (c -> c)                 -- ^ Gradient of final result with respect to output of function
+    -> (c, (a, b))
+backpropWith2 = E.backpropWith2 E.zeroFunc E.zeroFunc
+{-# INLINE backpropWith2 #-}
 
 -- | 'gradBP' for a two-argument function.  See 'backprop2' for notes.
 gradBP2

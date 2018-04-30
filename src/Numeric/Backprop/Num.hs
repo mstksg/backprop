@@ -51,10 +51,10 @@ module Numeric.Backprop.Num (
     -- * Types
     BVar, W
     -- * Running
-  , backprop, E.evalBP, gradBP
+  , backprop, E.evalBP, gradBP, backpropWith
     -- ** Multiple inputs
-  , backprop2, E.evalBP2, gradBP2
-  , backpropN, E.evalBPN, gradBPN, Every
+  , backprop2, E.evalBP2, gradBP2, backpropWith2
+  , backpropN, E.evalBPN, gradBPN, backpropWithN, Every
     -- * Manipulating 'BVar'
   , E.constVar, E.coerceVar
   , (^^.), (.~~), (^^?), (^^..)
@@ -108,12 +108,25 @@ import qualified Numeric.Backprop.Explicit as E
 -- 'Num' as@ should be fulfilled automatically.
 --
 backpropN
-    :: forall as b. (Every Num as, Known Length as, Num b)
+    :: (Every Num as, Known Length as, Num b)
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> (b, Tuple as)
 backpropN = E.backpropN E.zfNums E.ofNum
 {-# INLINE backpropN #-}
+
+-- | 'Numeric.Backprop.backpropWithN', but with 'Num' constraints instead
+-- of 'Backprop' constraints.
+--
+-- See 'backpropN' for information on the 'Every' constraint.
+backpropWithN
+    :: (Every Num as, Known Length as)
+    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
+    -> Tuple as
+    -> (b -> b)                 -- ^ Gradient of final result with respect to output of function
+    -> (b, Tuple as)
+backpropWithN = E.backpropWithN E.zfNums
+{-# INLINE backpropWithN #-}
 
 -- | 'Numeric.Backprop.backprop', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
@@ -121,17 +134,31 @@ backpropN = E.backpropN E.zfNums E.ofNum
 -- See module documentation for "Numeric.Backprop.Num" for information on
 -- using this with tuples.
 backprop
-    :: forall a b. (Num a, Num b)
+    :: (Num a, Num b)
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> (b, a)
 backprop = E.backprop E.zfNum E.ofNum
 {-# INLINE backprop #-}
 
+-- | 'Numeric.Backprop.backpropWith', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
+--
+-- See module documentation for "Numeric.Backprop.Num" for information on
+-- using this with tuples.
+backpropWith
+    :: Num a
+    => (forall s. Reifies s W => BVar s a -> BVar s b)
+    -> a
+    -> (b -> b)                 -- ^ Gradient of final result with respect to output of function
+    -> (b, a)
+backpropWith = E.backpropWith E.zfNum
+{-# INLINE backpropWith #-}
+
 -- | 'Numeric.Backprop.gradBP', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 gradBP
-    :: forall a b. (Num a, Num b)
+    :: (Num a, Num b)
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> a
@@ -141,7 +168,7 @@ gradBP = E.gradBP E.zfNum E.ofNum
 -- | 'Numeric.Backprop.gradBPN', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 gradBPN
-    :: forall as b. (Every Num as, Known Length as, Num b)
+    :: (Every Num as, Known Length as, Num b)
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> Tuple as
@@ -151,13 +178,25 @@ gradBPN = E.gradBPN E.zfNums E.ofNum
 -- | 'Numeric.Backprop.backprop2', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 backprop2
-    :: forall a b c. (Num a, Num b, Num c)
+    :: (Num a, Num b, Num c)
     => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
     -> a
     -> b
     -> (c, (a, b))
 backprop2 = E.backprop2 E.zfNum E.zfNum E.ofNum
 {-# INLINE backprop2 #-}
+
+-- | 'Numeric.Backprop.backpropWith2', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
+backpropWith2
+    :: (Num a, Num b)
+    => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
+    -> a
+    -> b
+    -> (c -> c)                 -- ^ Gradient of final result with respect to output of function
+    -> (c, (a, b))
+backpropWith2 = E.backpropWith2 E.zfNum E.zfNum
+{-# INLINE backpropWith2 #-}
 
 -- | 'Numeric.Backprop.gradBP2', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
