@@ -34,11 +34,18 @@ module Numeric.Backprop.Class (
   ) where
 
 import           Data.Complex
+import           Data.Functor.Identity
 import           Data.List.NonEmpty          (NonEmpty(..))
 import           Data.Maybe
+import           Data.Proxy
 import           Data.Ratio
+import           Data.Type.Combinator hiding ((:.:), Comp1)
+import           Data.Void
 import           GHC.Exts
 import           GHC.Generics
+import qualified Data.IntMap                 as IM
+import qualified Data.Map                    as M
+import qualified Data.Sequence               as Seq
 import qualified Data.Vector                 as V
 import qualified Data.Vector.Generic         as VG
 import qualified Data.Vector.Primitive       as VP
@@ -281,7 +288,10 @@ instance Backprop a => GAdd (K1 i a) where
     {-# INLINE gadd #-}
 
 instance (GAdd f, GAdd g) => GAdd (f :*: g) where
-    gadd (x1 :*: y1) (x2 :*: y2) = gadd x1 x2 :*: gadd y1 y2
+    gadd (x1 :*: y1) (x2 :*: y2) = x3 :*: y3
+      where
+        !x3 = gadd x1 x2
+        !y3 = gadd y1 y2
     {-# INLINE gadd #-}
 
 instance GAdd V1 where
@@ -434,6 +444,16 @@ instance Backprop a => Backprop (NonEmpty a) where
     one  = oneFunctor
     {-# INLINE one #-}
 
+-- | 'add' assumes the shorter sequence has trailing zeroes, and the result
+-- has the length of the longest input.
+instance Backprop a => Backprop (Seq.Seq a) where
+    zero = zeroFunctor
+    {-# INLINE zero #-}
+    add  = addIsList
+    {-# INLINE add #-}
+    one  = oneFunctor
+    {-# INLINE one #-}
+
 -- | 'Nothing' is treated the same as @'Just' 0@.  However, 'zero', 'add',
 -- and 'one' preserves 'Nothing' if all inputs are also 'Nothing'.
 instance Backprop a => Backprop (Maybe a) where
@@ -454,7 +474,10 @@ instance Backprop () where
 instance (Backprop a, Backprop b) => Backprop (a, b) where
     zero (x, y) = (zero x, zero y)
     {-# INLINE zero #-}
-    add (!x1, !y1) (!x2, !y2) = (add x1 x2, add y1 y2)
+    add (x1, y1) (x2, y2) = (x3, y3)
+      where
+        !x3 = add x1 x2
+        !y3 = add y1 y2
     {-# INLINE add #-}
     one (x, y) = (one x, one y)
     {-# INLINE one #-}
@@ -463,7 +486,11 @@ instance (Backprop a, Backprop b) => Backprop (a, b) where
 instance (Backprop a, Backprop b, Backprop c) => Backprop (a, b, c) where
     zero (x, y, z) = (zero x, zero y, zero z)
     {-# INLINE zero #-}
-    add (!x1, !y1, !z1) (!x2, !y2, !z2) = (add x1 x2, add y1 y2, add z1 z2)
+    add (x1, y1, z1) (x2, y2, z2) = (x3, y3, z3)
+      where
+        !x3 = add x1 x2
+        !y3 = add y1 y2
+        !z3 = add z1 z2
     {-# INLINE add #-}
     one (x, y, z) = (one x, one y, one z)
     {-# INLINE one #-}
@@ -472,7 +499,12 @@ instance (Backprop a, Backprop b, Backprop c) => Backprop (a, b, c) where
 instance (Backprop a, Backprop b, Backprop c, Backprop d) => Backprop (a, b, c, d) where
     zero (x, y, z, w) = (zero x, zero y, zero z, zero w)
     {-# INLINE zero #-}
-    add (!x1, !y1, !z1, !w1) (!x2, !y2, !z2, !w2) = (add x1 x2, add y1 y2, add z1 z2, add w1 w2)
+    add (x1, y1, z1, w1) (x2, y2, z2, w2) = (x3, y3, z3, w3)
+      where
+        !x3 = add x1 x2
+        !y3 = add y1 y2
+        !z3 = add z1 z2
+        !w3 = add w1 w2
     {-# INLINE add #-}
     one (x, y, z, w) = (one x, one y, one z, one w)
     {-# INLINE one #-}
@@ -481,7 +513,48 @@ instance (Backprop a, Backprop b, Backprop c, Backprop d) => Backprop (a, b, c, 
 instance (Backprop a, Backprop b, Backprop c, Backprop d, Backprop e) => Backprop (a, b, c, d, e) where
     zero (x, y, z, w, v) = (zero x, zero y, zero z, zero w, zero v)
     {-# INLINE zero #-}
-    add (!x1, !y1, !z1, !w1, !v1) (!x2, !y2, !z2, !w2, !v2) = (add x1 x2, add y1 y2, add z1 z2, add w1 w2, add v1 v2)
+    add (x1, y1, z1, w1, v1) (x2, y2, z2, w2, v2) = (x3, y3, z3, w3, v3)
+      where
+        !x3 = add x1 x2
+        !y3 = add y1 y2
+        !z3 = add z1 z2
+        !w3 = add w1 w2
+        !v3 = add v1 v2
     {-# INLINE add #-}
     one (x, y, z, w, v) = (one x, one y, one z, one w, one v)
     {-# INLINE one #-}
+
+instance Backprop a => Backprop (Identity a) where
+    zero (Identity x) = Identity (zero x)
+    add (Identity x) (Identity y) = Identity (add x y)
+    one (Identity x) = Identity (one x)
+
+instance Backprop a => Backprop (I a) where
+    zero (I x) = I (zero x)
+    add (I x) (I y) = I (add x y)
+    one (I x) = I (one x)
+
+-- | 'add' is strict, but 'zero' and 'one' are lazy in their arguments.
+instance Backprop (Proxy a) where
+    zero _ = Proxy
+    add Proxy Proxy = Proxy
+    one _ = Proxy
+
+instance Backprop Void where
+    zero = \case {}
+    add = \case {}
+    one = \case {}
+
+-- | 'zero' and 'add' replaces all current values, and 'add' merges keys
+-- from both maps, adding in the case of double-occurrences.
+instance (Backprop a, Ord k) => Backprop (M.Map k a) where
+    zero = zeroFunctor
+    add  = M.unionWith add
+    one  = oneFunctor
+
+-- | 'zero' and 'add' replaces all current values, and 'add' merges keys
+-- from both maps, adding in the case of double-occurrences.
+instance (Backprop a) => Backprop (IM.IntMap a) where
+    zero = zeroFunctor
+    add  = IM.unionWith add
+    one  = oneFunctor

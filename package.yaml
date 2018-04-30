@@ -62,6 +62,7 @@ library:
   - primitive
   - reflection
   - type-combinators
+  - containers
 
 benchmarks:
   backprop-mnist-bench:
