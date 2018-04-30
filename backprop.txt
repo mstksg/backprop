@@ -1064,6 +1064,9 @@ class EveryC k c as => Every k (c :: k -> Constraint) (as :: [k])
 --   be backpropagated.
 constVar :: a -> BVar s a
 
+-- | Shorter alias for <a>constVar</a>, inspired by the <i>ad</i> library.
+auto :: a -> BVar s a
+
 -- | Coerce a <a>BVar</a> contents. Useful for things like newtype
 --   wrappers.
 coerceVar :: Coercible a b => BVar s a -> BVar s b
@@ -1530,6 +1533,9 @@ class EveryC k c as => Every k (c :: k -> Constraint) (as :: [k])
 --   This value will not be considered an input, and its gradients will not
 --   be backpropagated.
 constVar :: a -> BVar s a
+
+-- | Shorter alias for <a>constVar</a>, inspired by the <i>ad</i> library.
+auto :: a -> BVar s a
 
 -- | Coerce a <a>BVar</a> contents. Useful for things like newtype
 --   wrappers.
@@ -2257,6 +2263,9 @@ class EveryC k c as => Every k (c :: k -> Constraint) (as :: [k])
 --   This value will not be considered an input, and its gradients will not
 --   be backpropagated.
 constVar :: a -> BVar s a
+
+-- | Shorter alias for <a>constVar</a>, inspired by the <i>ad</i> library.
+auto :: a -> BVar s a
 
 -- | Coerce a <a>BVar</a> contents. Useful for things like newtype
 --   wrappers.
