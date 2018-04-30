@@ -25,6 +25,7 @@ import           Data.Tuple
 import           GHC.Generics                 (Generic)
 import           GHC.TypeLits
 import           Numeric.Backprop
+import           Numeric.Backprop.Class
 import           Numeric.LinearAlgebra.Static
 import           System.Directory
 import qualified Data.Vector.Generic          as VG
@@ -313,14 +314,6 @@ instance (KnownNat i, KnownNat o) => MWC.Variate (Layer i o) where
 instance (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o) => MWC.Variate (Network i h1 h2 o) where
     uniform g = Net <$> MWC.uniform g <*> MWC.uniform g <*> MWC.uniform g
     uniformR (l, h) g = (\x -> x * (h - l) + l) <$> MWC.uniform g
-
-instance (Num a, Num b) => Num (a, b) where
-    (x1,y1) + (x2,y2) = (x1 + x2, y1 + y2)
-    (x1,y1) * (x2,y2) = (x1 * x2, y1 * y2)
-    (x1,y1) - (x2,y2) = (x1 - x2, y1 - y2)
-    abs (x, y)        = (abs x, abs y)
-    signum (x, y)     = (signum x, signum y)
-    fromInteger x     = (fromInteger x, fromInteger x)
 
 instance Backprop (R n) where
     zero = zeroNum

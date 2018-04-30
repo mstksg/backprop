@@ -129,6 +129,7 @@ oneFuncs = map1 (\i -> oneFunc \\ every @_ @Backprop i) indices
 -- | Shorter alias for 'constVar', inspired by the /ad/ library.
 auto :: a -> BVar s a
 auto = constVar
+{-# INLINE auto #-}
 
 -- | 'Numeric.Backprop.backpropWithN', but with explicit 'zero'.
 backpropWithN
