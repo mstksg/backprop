@@ -1027,6 +1027,9 @@ evalBP :: (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
 -- | <a>gradBP</a>, but with explicit <a>zero</a> and <a>one</a>.
 gradBP :: ZeroFunc a -> OneFunc b -> (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
 
+-- | <a>backpropWith</a>, but with explicit <a>zero</a>.
+backpropWith :: ZeroFunc a -> (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b -> b) -> (b, a)
+
 -- | <a>backprop2</a>, but with explicit <a>zero</a> and <a>one</a>.
 backprop2 :: ZeroFunc a -> ZeroFunc b -> OneFunc c -> (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c, (a, b))
 
@@ -1038,6 +1041,9 @@ evalBP2 :: (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b
 --   notes.
 gradBP2 :: ZeroFunc a -> ZeroFunc b -> OneFunc c -> (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (a, b)
 
+-- | <a>backpropWith2</a>, but with explicit <a>zero</a>.
+backpropWith2 :: ZeroFunc a -> ZeroFunc b -> (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c -> c) -> (c, (a, b))
+
 -- | <a>backpropN</a>, but with explicit <tt>zero</tt> and <tt>one</tt>.
 backpropN :: forall as b. () => Prod ZeroFunc as -> OneFunc b -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b, Tuple as)
 
@@ -1047,6 +1053,9 @@ evalBPN :: forall as b. () => (forall s. Reifies s W => Prod (BVar s) as -> BVar
 
 -- | <a>gradBP</a>, Nbut with explicit <a>zero</a> and <a>one</a>.
 gradBPN :: Prod ZeroFunc as -> OneFunc b -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> Tuple as
+
+-- | <a>backpropWithN</a>, but with explicit <a>zero</a>.
+backpropWithN :: Prod ZeroFunc as -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b -> b) -> (b, Tuple as)
 class EveryC k c as => Every k (c :: k -> Constraint) (as :: [k])
 
 -- | Lift a value into a <a>BVar</a> representing a constant value.
@@ -1449,7 +1458,7 @@ data W
 --   
 --   See module documentation for <a>Numeric.Backprop.Num</a> for
 --   information on using this with tuples.
-backprop :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
+backprop :: (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
 
 -- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
 --   the function <tt>a -&gt; b</tt> that it represents.
@@ -1463,11 +1472,18 @@ evalBP :: (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
 
 -- | <a>gradBP</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
-gradBP :: forall a b. (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
+gradBP :: (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
+
+-- | <a>backpropWith</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
+--   
+--   See module documentation for <a>Numeric.Backprop.Num</a> for
+--   information on using this with tuples.
+backpropWith :: Num a => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b -> b) -> (b, a)
 
 -- | <a>backprop2</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
-backprop2 :: forall a b c. (Num a, Num b, Num c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c, (a, b))
+backprop2 :: (Num a, Num b, Num c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c, (a, b))
 
 -- | <a>evalBP</a> for a two-argument function. See <a>backprop2</a> for
 --   notes.
@@ -1476,6 +1492,10 @@ evalBP2 :: (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b
 -- | <a>gradBP2</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
 gradBP2 :: (Num a, Num b, Num c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (a, b)
+
+-- | <a>backpropWith2</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
+backpropWith2 :: (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c -> c) -> (c, (a, b))
 
 -- | <a>backpropN</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
@@ -1488,7 +1508,7 @@ gradBP2 :: (Num a, Num b, Num c) => (forall s. Reifies s W => BVar s a -> BVar s
 --   If you stick to <i>concerete</i>, monomorphic usage of this (with
 --   specific types, typed into source code, known at compile-time), then
 --   <tt><a>Every</a> <a>Num</a> as</tt> should be fulfilled automatically.
-backpropN :: forall as b. (Every Num as, Known Length as, Num b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b, Tuple as)
+backpropN :: (Every Num as, Known Length as, Num b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b, Tuple as)
 
 -- | <tt>evalBP</tt> generalized to multiple inputs of different types. See
 --   documentation for <a>backpropN</a> for more details.
@@ -1496,7 +1516,13 @@ evalBPN :: forall as b. () => (forall s. Reifies s W => Prod (BVar s) as -> BVar
 
 -- | <a>gradBPN</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
-gradBPN :: forall as b. (Every Num as, Known Length as, Num b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> Tuple as
+gradBPN :: (Every Num as, Known Length as, Num b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> Tuple as
+
+-- | <a>backpropWithN</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
+--   
+--   See <a>backpropN</a> for information on the <a>Every</a> constraint.
+backpropWithN :: (Every Num as, Known Length as) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b -> b) -> (b, Tuple as)
 class EveryC k c as => Every k (c :: k -> Constraint) (as :: [k])
 
 -- | Lift a value into a <a>BVar</a> representing a constant value.
@@ -2116,7 +2142,7 @@ one :: (Backprop a, Generic a, GOne (Rep a)) => a -> a
 --   (similar to how it is used in <a>Control.Monad.ST</a>), and also as a
 --   reference to an ephemeral Wengert tape used to track the graph of
 --   references.
-backprop :: forall a b. (Backprop a, Backprop b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
+backprop :: (Backprop a, Backprop b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
 
 -- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
 --   the function <tt>a -&gt; b</tt> that it represents.
@@ -2141,7 +2167,25 @@ evalBP :: (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
 --   sensitivity.
 --   
 --   See documentation of <a>backprop</a> for more information.
-gradBP :: forall a b. (Backprop a, Backprop b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
+--   
+--   If you want to provide an explicit "final gradient" for the end, see
+--   <a>backpropWith</a>.
+gradBP :: (Backprop a, Backprop b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> a
+
+-- | A version of <a>backprop</a> that allows you to specify the gradent of
+--   your "final result" in with respect to the output of your function.
+--   
+--   Typically, this is just the scalar 1, or a value of components that
+--   are all 1.
+--   
+--   Instead of taking the <tt>b</tt> gradient, the you may provide a <tt>b
+--   -&gt; b</tt>, which <a>backpropWith</a> calls with the result of your
+--   function as the argument. This allows you to return something with the
+--   correct "shape", if not a scalar.
+--   
+--   <a>backprop</a> is essentially <a>backpropWith</a> with
+--   <tt><a>const</a> 1</tt> for scalars and <a>Num</a> instances.
+backpropWith :: Backprop a => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b -> b) -> (b, a)
 
 -- | <a>backprop</a> for a two-argument function.
 --   
@@ -2150,7 +2194,7 @@ gradBP :: forall a b. (Backprop a, Backprop b) => (forall s. Reifies s W => BVar
 --   tuple. However, this could potentially be more performant.
 --   
 --   For 3 and more arguments, consider using <a>backpropN</a>.
-backprop2 :: forall a b c. (Backprop a, Backprop b, Backprop c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c, (a, b))
+backprop2 :: (Backprop a, Backprop b, Backprop c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c, (a, b))
 
 -- | <a>evalBP</a> for a two-argument function. See <a>backprop2</a> for
 --   notes.
@@ -2159,6 +2203,11 @@ evalBP2 :: (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b
 -- | <a>gradBP</a> for a two-argument function. See <a>backprop2</a> for
 --   notes.
 gradBP2 :: (Backprop a, Backprop b, Backprop c) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (a, b)
+
+-- | <a>backprop2</a>, but allows you to provide the gradient of the "final
+--   result" with respect to the output of your function. See
+--   <a>backpropWith</a> for more details.
+backpropWith2 :: (Backprop a, Backprop b) => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c -> c) -> (c, (a, b))
 
 -- | <a>backprop</a> generalized to multiple inputs of different types. See
 --   the <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on
@@ -2187,7 +2236,7 @@ gradBP2 :: (Backprop a, Backprop b, Backprop c) => (forall s. Reifies s W => BVa
 --   specific types, typed into source code, known at compile-time), then
 --   <tt><a>Every</a> <a>Backprop</a> as</tt> should be fulfilled
 --   automatically.
-backpropN :: forall as b. (Every Backprop as, Known Length as, Backprop b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b, Tuple as)
+backpropN :: (Every Backprop as, Known Length as, Backprop b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b, Tuple as)
 
 -- | <tt>evalBP</tt> generalized to multiple inputs of different types. See
 --   documentation for <a>backpropN</a> for more details.
@@ -2195,7 +2244,12 @@ evalBPN :: forall as b. () => (forall s. Reifies s W => Prod (BVar s) as -> BVar
 
 -- | <a>gradBP</a> generalized to multiple inputs of different types. See
 --   documentation for <a>backpropN</a> for more details.
-gradBPN :: forall as b. (Every Backprop as, Known Length as, Backprop b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> Tuple as
+gradBPN :: (Every Backprop as, Known Length as, Backprop b) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> Tuple as
+
+-- | <a>backpropN</a>, but allows you to provide the gradient of the "final
+--   result" with respect to the output of your function. See
+--   <a>backpropWith</a> for more details.
+backpropWithN :: (Every Backprop as, Known Length as) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b -> b) -> (b, Tuple as)
 class EveryC k c as => Every k (c :: k -> Constraint) (as :: [k])
 
 -- | Lift a value into a <a>BVar</a> representing a constant value.
