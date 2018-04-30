@@ -59,6 +59,7 @@ The (extra) packages involved are:
 > import           Data.Tuple
 > import           GHC.Generics                    (Generic)
 > import           Numeric.Backprop
+> import           Numeric.Backprop.Class
 > import           Numeric.LinearAlgebra.Static
 > import           Numeric.OneLiner
 > import           Text.Printf
@@ -414,6 +415,8 @@ Instances
 >     recip        = gRecip
 >     fromRational = gFromRational
 >
+> instance (KnownNat i, KnownNat o) => Backprop (Layer i o)
+>
 >
 > liftNet0
 >     :: forall i hs o. (KnownNat i, KnownNat o)
@@ -496,6 +499,11 @@ Instances
 >     recip          = liftNet1 negate sing
 >     fromRational x = liftNet0 (fromRational x) sing
 >
+> instance (KnownNat i, KnownNat o, SingI hs) => Backprop (Net i hs o) where
+>     zero = liftNet1 zero sing
+>     add  = liftNet2 add sing
+>     one  = liftNet1 one sing
+>
 > instance KnownNat n => MWC.Variate (R n) where
 >     uniform g = randomVector <$> MWC.uniform g <*> pure Uniform
 >     uniformR (l, h) g = (\x -> x * (h - l) + l) <$> MWC.uniform g
@@ -526,3 +534,15 @@ Instances
 >     rnf = \case
 >       NO l    -> rnf l
 >       x :~ xs -> rnf x `seq` rnf xs
+>
+> instance Backprop (R n) where
+>     zero = zeroNum
+>     add  = addNum
+>     one  = oneNum
+>
+> instance (KnownNat n, KnownNat m) => Backprop (L m n) where
+>     zero = zeroNum
+>     add  = addNum
+>     one  = oneNum
+
+[hmatrix-backprop]: http://hackage.haskell.org/package/hmatrix-backprop

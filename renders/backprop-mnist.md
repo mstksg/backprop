@@ -67,6 +67,7 @@ import           Data.Tuple
 import           GHC.Generics                        (Generic)
 import           GHC.TypeLits
 import           Numeric.Backprop
+import           Numeric.Backprop.Class
 import           Numeric.LinearAlgebra.Static
 import           Numeric.OneLiner
 import           Text.Printf
@@ -205,6 +206,15 @@ instance ( KnownNat i
 `KnownNat` comes from *base*; it's a typeclass that *hmatrix* uses to
 refer to the numbers in its type and use it to go about its normal
 hmatrixy business.
+
+Now we need instances of `Backprop` for our types in order to use them
+for automatic differentiation. Luckily, these can be generated
+automatically using GHC Generics:
+
+``` {.sourceCode .literate .haskell}
+instance (KnownNat i, KnownNat o) => Backprop (Layer i o)
+instance (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o) => Backprop (Network i h1 h2 o)
+```
 
 Ops
 ===
@@ -688,4 +698,21 @@ instance ( KnownNat i
       => MWC.Variate (Network i h1 h2 o) where
     uniform g = Net <$> MWC.uniform g <*> MWC.uniform g <*> MWC.uniform g
     uniformR (l, h) g = (\x -> x * (h - l) + l) <$> MWC.uniform g
+```
+
+Also, some orphan instances of `Backprop` for vector and matrix types.
+These are provided by the [hmatrix-backprop] library normally:
+
+  [hmatrix-backprop]: http://hackage.haskell.org/package/hmatrix-backprop
+
+``` {.sourceCode .literate .haskell}
+instance Backprop (R n) where
+    zero = zeroNum
+    add  = addNum
+    one  = oneNum
+
+instance (KnownNat n, KnownNat m) => Backprop (L m n) where
+    zero = zeroNum
+    add  = addNum
+    one  = oneNum
 ```
