@@ -535,62 +535,86 @@ instance (Backprop a, Backprop b, Backprop c, Backprop d, Backprop e) => Backpro
 
 instance Backprop a => Backprop (Identity a) where
     zero (Identity x) = Identity (zero x)
+    {-# INLINE zero #-}
     add (Identity x) (Identity y) = Identity (add x y)
+    {-# INLINE add #-}
     one (Identity x) = Identity (one x)
+    {-# INLINE one #-}
 
 instance Backprop a => Backprop (I a) where
     zero (I x) = I (zero x)
+    {-# INLINE zero #-}
     add (I x) (I y) = I (add x y)
+    {-# INLINE add #-}
     one (I x) = I (one x)
+    {-# INLINE one #-}
 
 -- | 'add' is strict, but 'zero' and 'one' are lazy in their arguments.
 instance Backprop (Proxy a) where
     zero _ = Proxy
+    {-# INLINE zero #-}
     add Proxy Proxy = Proxy
+    {-# INLINE add #-}
     one _ = Proxy
+    {-# INLINE one #-}
 
 instance Backprop Void where
     zero = \case {}
+    {-# INLINE zero #-}
     add = \case {}
+    {-# INLINE add #-}
     one = \case {}
+    {-# INLINE one #-}
 
 -- | 'zero' and 'add' replaces all current values, and 'add' merges keys
 -- from both maps, adding in the case of double-occurrences.
 instance (Backprop a, Ord k) => Backprop (M.Map k a) where
     zero = zeroFunctor
+    {-# INLINE zero #-}
     add  = M.unionWith add
+    {-# INLINE add #-}
     one  = oneFunctor
+    {-# INLINE one #-}
 
 -- | 'zero' and 'add' replaces all current values, and 'add' merges keys
 -- from both maps, adding in the case of double-occurrences.
 instance (Backprop a) => Backprop (IM.IntMap a) where
     zero = zeroFunctor
+    {-# INLINE zero #-}
     add  = IM.unionWith add
+    {-# INLINE add #-}
     one  = oneFunctor
+    {-# INLINE one #-}
 
 instance ListC (Backprop <$> (f <$> as)) => Backprop (Prod f as) where
     zero = \case
       Ø -> Ø
       x :< xs -> zero x :< zero xs
+    {-# INLINE zero #-}
     add = \case
       Ø -> \case
         Ø -> Ø
       x :< xs -> \case
         y :< ys -> add x y :< add xs ys
+    {-# INLINE add #-}
     one = \case
       Ø       -> Ø
       x :< xs -> one x :< one xs
+    {-# INLINE one #-}
 
 instance M.MaybeC (Backprop M.<$> (f M.<$> a)) => Backprop (Option f a) where
     zero = \case
       Nothing_ -> Nothing_
       Just_ x  -> Just_ (zero x)
+    {-# INLINE zero #-}
     add = \case
       Nothing_ -> \case
         Nothing_ -> Nothing_
       Just_ x -> \case
         Just_ y -> Just_ (add x y)
+    {-# INLINE add #-}
     one = \case
       Nothing_ -> Nothing_
       Just_ x  -> Just_ (one x)
+    {-# INLINE one #-}
 
