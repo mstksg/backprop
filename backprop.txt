@@ -28,6 +28,13 @@ module Numeric.Backprop.Class
 --   generic options given in <a>Numeric.Backprop.Class</a> for functors,
 --   <a>IsList</a> instances, and <a>Generic</a> instances.
 --   
+--   <pre>
+--   instance <a>Backprop</a> <a>Double</a> where
+--       <a>zero</a> = <a>zeroNum</a>
+--       <a>add</a> = <a>addNum</a>
+--       <a>one</a> = <a>oneNum</a>
+--   </pre>
+--   
 --   If you leave the body of an instance declaration blank, GHC Generics
 --   will be used to derive instances if the type has a single constructor
 --   and each field is an instance of <a>Backprop</a>.
@@ -106,6 +113,13 @@ class Backprop a
 --   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>zeroNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <a>zeroFunctor</a> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericZero</a>, a pre-built definition for instances of
+--   <a>Generic</a> whose fields are all themselves instances of
+--   <a>Backprop</a>.
 zero :: Backprop a => a -> a
 
 -- | Add together two values of a type. To combine contributions of
@@ -118,6 +132,13 @@ zero :: Backprop a => a -> a
 --   
 --   Should be as <i>strict</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>addNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <tt>addFunctor</tt> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericAdd</a>, a pre-built definition for instances of
+--   <a>Generic</a> with one constructor whose fields are all themselves
+--   instances of <a>Backprop</a>.
 add :: Backprop a => a -> a -> a
 
 -- | <a>One</a> all components of a value. For scalar values, this should
@@ -132,6 +153,13 @@ add :: Backprop a => a -> a -> a
 --   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>oneNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <a>oneFunctor</a> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericOne</a>, a pre-built definition for instances of
+--   <a>Generic</a> whose fields are all themselves instances of
+--   <a>Backprop</a>.
 one :: Backprop a => a -> a
 
 -- | "Zero out" all components of a value. For scalar values, this should
@@ -146,6 +174,13 @@ one :: Backprop a => a -> a
 --   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>zeroNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <a>zeroFunctor</a> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericZero</a>, a pre-built definition for instances of
+--   <a>Generic</a> whose fields are all themselves instances of
+--   <a>Backprop</a>.
 zero :: (Backprop a, Generic a, GZero (Rep a)) => a -> a
 
 -- | Add together two values of a type. To combine contributions of
@@ -158,6 +193,13 @@ zero :: (Backprop a, Generic a, GZero (Rep a)) => a -> a
 --   
 --   Should be as <i>strict</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>addNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <tt>addFunctor</tt> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericAdd</a>, a pre-built definition for instances of
+--   <a>Generic</a> with one constructor whose fields are all themselves
+--   instances of <a>Backprop</a>.
 add :: (Backprop a, Generic a, GAdd (Rep a)) => a -> a -> a
 
 -- | <a>One</a> all components of a value. For scalar values, this should
@@ -172,6 +214,13 @@ add :: (Backprop a, Generic a, GAdd (Rep a)) => a -> a -> a
 --   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>oneNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <a>oneFunctor</a> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericOne</a>, a pre-built definition for instances of
+--   <a>Generic</a> whose fields are all themselves instances of
+--   <a>Backprop</a>.
 one :: (Backprop a, Generic a, GOne (Rep a)) => a -> a
 
 -- | <a>zero</a> for instances of <a>Num</a>.
@@ -733,6 +782,7 @@ instance (Type.Class.Known.Known [*] (Data.Type.Length.Length *) as, Data.Type.I
 --   It is recommended you use <a>Backprop</a> or <a>Num</a> instead,
 --   unless your type has no <a>Num</a> instance, or you else you want to
 --   avoid defining orphan <a>Backprop</a> instances for external types.
+--   Can also be useful if mixing and matching styles.
 --   
 --   See <a>Numeric.Backprop</a> for fuller documentation on using these
 --   functions.
@@ -795,6 +845,13 @@ data W
 --   <a>zeroNum</a>, <a>addNum</a>, and <a>oneNum</a>. There are also
 --   generic options given in <a>Numeric.Backprop.Class</a> for functors,
 --   <a>IsList</a> instances, and <a>Generic</a> instances.
+--   
+--   <pre>
+--   instance <a>Backprop</a> <a>Double</a> where
+--       <a>zero</a> = <a>zeroNum</a>
+--       <a>add</a> = <a>addNum</a>
+--       <a>one</a> = <a>oneNum</a>
+--   </pre>
 --   
 --   If you leave the body of an instance declaration blank, GHC Generics
 --   will be used to derive instances if the type has a single constructor
@@ -874,6 +931,13 @@ class Backprop a
 --   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>zeroNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <a>zeroFunctor</a> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericZero</a>, a pre-built definition for instances of
+--   <a>Generic</a> whose fields are all themselves instances of
+--   <a>Backprop</a>.
 zero :: Backprop a => a -> a
 
 -- | Add together two values of a type. To combine contributions of
@@ -886,6 +950,13 @@ zero :: Backprop a => a -> a
 --   
 --   Should be as <i>strict</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>addNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <tt>addFunctor</tt> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericAdd</a>, a pre-built definition for instances of
+--   <a>Generic</a> with one constructor whose fields are all themselves
+--   instances of <a>Backprop</a>.
 add :: Backprop a => a -> a -> a
 
 -- | <a>One</a> all components of a value. For scalar values, this should
@@ -900,6 +971,13 @@ add :: Backprop a => a -> a -> a
 --   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>oneNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <a>oneFunctor</a> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericOne</a>, a pre-built definition for instances of
+--   <a>Generic</a> whose fields are all themselves instances of
+--   <a>Backprop</a>.
 one :: Backprop a => a -> a
 
 -- | "Zero out" all components of a value. For scalar values, this should
@@ -914,6 +992,13 @@ one :: Backprop a => a -> a
 --   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>zeroNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <a>zeroFunctor</a> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericZero</a>, a pre-built definition for instances of
+--   <a>Generic</a> whose fields are all themselves instances of
+--   <a>Backprop</a>.
 zero :: (Backprop a, Generic a, GZero (Rep a)) => a -> a
 
 -- | Add together two values of a type. To combine contributions of
@@ -926,6 +1011,13 @@ zero :: (Backprop a, Generic a, GZero (Rep a)) => a -> a
 --   
 --   Should be as <i>strict</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>addNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <tt>addFunctor</tt> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericAdd</a>, a pre-built definition for instances of
+--   <a>Generic</a> with one constructor whose fields are all themselves
+--   instances of <a>Backprop</a>.
 add :: (Backprop a, Generic a, GAdd (Rep a)) => a -> a -> a
 
 -- | <a>One</a> all components of a value. For scalar values, this should
@@ -940,6 +1032,13 @@ add :: (Backprop a, Generic a, GAdd (Rep a)) => a -> a -> a
 --   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>oneNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <a>oneFunctor</a> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericOne</a>, a pre-built definition for instances of
+--   <a>Generic</a> whose fields are all themselves instances of
+--   <a>Backprop</a>.
 one :: (Backprop a, Generic a, GOne (Rep a)) => a -> a
 
 -- | "Zero out" all components of a value. For scalar values, this should
@@ -1950,7 +2049,8 @@ class Reifies k (s :: k) a | s -> a
 --   
 --   See <a>Prelude.Backprop.Explicit</a> for a version allowing you to
 --   provide <a>zero</a>, <a>add</a>, and <a>one</a> explicitly, which can
---   be useful when attempting to avoid orphan instances.
+--   be useful when attempting to avoid orphan instances or when mixing
+--   both <a>Backprop</a> and <a>Num</a> styles.
 module Numeric.Backprop
 
 -- | A <tt><a>BVar</a> s a</tt> is a value of type <tt>a</tt> that can be
@@ -2010,6 +2110,13 @@ data W
 --   <a>zeroNum</a>, <a>addNum</a>, and <a>oneNum</a>. There are also
 --   generic options given in <a>Numeric.Backprop.Class</a> for functors,
 --   <a>IsList</a> instances, and <a>Generic</a> instances.
+--   
+--   <pre>
+--   instance <a>Backprop</a> <a>Double</a> where
+--       <a>zero</a> = <a>zeroNum</a>
+--       <a>add</a> = <a>addNum</a>
+--       <a>one</a> = <a>oneNum</a>
+--   </pre>
 --   
 --   If you leave the body of an instance declaration blank, GHC Generics
 --   will be used to derive instances if the type has a single constructor
@@ -2089,6 +2196,13 @@ class Backprop a
 --   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>zeroNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <a>zeroFunctor</a> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericZero</a>, a pre-built definition for instances of
+--   <a>Generic</a> whose fields are all themselves instances of
+--   <a>Backprop</a>.
 zero :: Backprop a => a -> a
 
 -- | Add together two values of a type. To combine contributions of
@@ -2101,6 +2215,13 @@ zero :: Backprop a => a -> a
 --   
 --   Should be as <i>strict</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>addNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <tt>addFunctor</tt> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericAdd</a>, a pre-built definition for instances of
+--   <a>Generic</a> with one constructor whose fields are all themselves
+--   instances of <a>Backprop</a>.
 add :: Backprop a => a -> a -> a
 
 -- | <a>One</a> all components of a value. For scalar values, this should
@@ -2115,6 +2236,13 @@ add :: Backprop a => a -> a -> a
 --   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>oneNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <a>oneFunctor</a> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericOne</a>, a pre-built definition for instances of
+--   <a>Generic</a> whose fields are all themselves instances of
+--   <a>Backprop</a>.
 one :: Backprop a => a -> a
 
 -- | "Zero out" all components of a value. For scalar values, this should
@@ -2129,6 +2257,13 @@ one :: Backprop a => a -> a
 --   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>zeroNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <a>zeroFunctor</a> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericZero</a>, a pre-built definition for instances of
+--   <a>Generic</a> whose fields are all themselves instances of
+--   <a>Backprop</a>.
 zero :: (Backprop a, Generic a, GZero (Rep a)) => a -> a
 
 -- | Add together two values of a type. To combine contributions of
@@ -2141,6 +2276,13 @@ zero :: (Backprop a, Generic a, GZero (Rep a)) => a -> a
 --   
 --   Should be as <i>strict</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>addNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <tt>addFunctor</tt> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericAdd</a>, a pre-built definition for instances of
+--   <a>Generic</a> with one constructor whose fields are all themselves
+--   instances of <a>Backprop</a>.
 add :: (Backprop a, Generic a, GAdd (Rep a)) => a -> a -> a
 
 -- | <a>One</a> all components of a value. For scalar values, this should
@@ -2155,6 +2297,13 @@ add :: (Backprop a, Generic a, GAdd (Rep a)) => a -> a -> a
 --   
 --   Should be as <i>lazy</i> as possible. This behavior is observed for
 --   all instances provided by this library.
+--   
+--   See <a>oneNum</a> for a pre-built definition for instances of
+--   <a>Num</a> and <a>oneFunctor</a> for a definition for instances of
+--   <a>Functor</a>. If left blank, will automatically be
+--   <a>genericOne</a>, a pre-built definition for instances of
+--   <a>Generic</a> whose fields are all themselves instances of
+--   <a>Backprop</a>.
 one :: (Backprop a, Generic a, GOne (Rep a)) => a -> a
 
 -- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
