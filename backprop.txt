@@ -47,6 +47,9 @@ module Numeric.Backprop.Class
 --   Also implies preservation of information, making <tt><a>zipWith</a>
 --   (<a>+</a>)</tt> an illegal implementation for lists and vectors.
 --   
+--   This is only expected to be true up to potential "extra zeroes" in
+--   <tt>x</tt> and <tt>y</tt> in the result.
+--   
 --   <ul>
 --   <li><i><i>commutativity</i></i></li>
 --   </ul>
@@ -260,6 +263,8 @@ instance Numeric.Backprop.Class.Backprop (Data.Proxy.Proxy * a)
 instance Numeric.Backprop.Class.Backprop Data.Void.Void
 instance (Numeric.Backprop.Class.Backprop a, GHC.Classes.Ord k) => Numeric.Backprop.Class.Backprop (Data.Map.Internal.Map k a)
 instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (Data.IntMap.Internal.IntMap a)
+instance Type.Family.List.ListC ((Type.Family.List.<$>) * GHC.Types.Constraint Numeric.Backprop.Class.Backprop ((Type.Family.List.<$>) * * f as)) => Numeric.Backprop.Class.Backprop (Data.Type.Product.Prod * f as)
+instance Type.Family.Maybe.MaybeC ((Type.Family.Maybe.<$>) * GHC.Types.Constraint Numeric.Backprop.Class.Backprop ((Type.Family.Maybe.<$>) * * f a)) => Numeric.Backprop.Class.Backprop (Data.Type.Option.Option * f a)
 instance (Numeric.Backprop.Class.GOne f, Numeric.Backprop.Class.GOne g) => Numeric.Backprop.Class.GOne ((GHC.Generics.:*:) * f g)
 instance (Numeric.Backprop.Class.GOne f, Numeric.Backprop.Class.GOne g) => Numeric.Backprop.Class.GOne ((GHC.Generics.:+:) * f g)
 instance Numeric.Backprop.Class.GOne (GHC.Generics.V1 *)
@@ -809,6 +814,9 @@ data W
 --   
 --   Also implies preservation of information, making <tt><a>zipWith</a>
 --   (<a>+</a>)</tt> an illegal implementation for lists and vectors.
+--   
+--   This is only expected to be true up to potential "extra zeroes" in
+--   <tt>x</tt> and <tt>y</tt> in the result.
 --   
 --   <ul>
 --   <li><i><i>commutativity</i></i></li>
@@ -2021,6 +2029,9 @@ data W
 --   
 --   Also implies preservation of information, making <tt><a>zipWith</a>
 --   (<a>+</a>)</tt> an illegal implementation for lists and vectors.
+--   
+--   This is only expected to be true up to potential "extra zeroes" in
+--   <tt>x</tt> and <tt>y</tt> in the result.
 --   
 --   <ul>
 --   <li><i><i>commutativity</i></i></li>
