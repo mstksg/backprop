@@ -348,6 +348,10 @@ instance Numeric.Backprop.Class.GZero f => Numeric.Backprop.Class.GZero ((GHC.Ge
 --   composition of functions, <a>Op</a> and its utility functions alone
 --   are sufficient to differentiate/backprop. However, this happens rarely
 --   in practice.
+--   
+--   To use these <a>Op</a>s with the backprop library, they can be made to
+--   work with <tt>BVar</tt>s using <tt>liftOp</tt>, <tt>liftOp1</tt>,
+--   <tt>liftOp2</tt>, and <tt>liftOp3</tt>.
 module Numeric.Backprop.Op
 
 -- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
@@ -376,6 +380,10 @@ module Numeric.Backprop.Op
 --   
 --   See <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on using
 --   <a>Prod</a> and <a>Tuple</a>.
+--   
+--   To <i>use</i> an <a>Op</a> with the backprop library, see
+--   <tt>liftOp</tt>, <tt>liftOp1</tt>, <tt>liftOp2</tt>, and
+--   <tt>liftOp3</tt>.
 newtype Op as a
 
 -- | Construct an <a>Op</a> by giving a function creating the result, and
@@ -1253,6 +1261,10 @@ liftOp3 :: forall a b c d s. Reifies s W => AddFunc a -> AddFunc b -> AddFunc c 
 --   
 --   See <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on using
 --   <a>Prod</a> and <a>Tuple</a>.
+--   
+--   To <i>use</i> an <a>Op</a> with the backprop library, see
+--   <tt>liftOp</tt>, <tt>liftOp1</tt>, <tt>liftOp2</tt>, and
+--   <tt>liftOp3</tt>.
 newtype Op as a
 
 -- | Construct an <a>Op</a> by giving a function creating the result, and
@@ -1777,6 +1789,10 @@ liftOp3 :: forall a b c d s. (Num a, Num b, Num c, Num d, Reifies s W) => Op '[a
 --   
 --   See <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on using
 --   <a>Prod</a> and <a>Tuple</a>.
+--   
+--   To <i>use</i> an <a>Op</a> with the backprop library, see
+--   <tt>liftOp</tt>, <tt>liftOp1</tt>, <tt>liftOp2</tt>, and
+--   <tt>liftOp3</tt>.
 newtype Op as a
 
 -- | Construct an <a>Op</a> by giving a function creating the result, and
@@ -2688,6 +2704,10 @@ liftOp3 :: forall a b c d s. (Backprop a, Backprop b, Backprop c, Backprop d, Re
 --   
 --   See <a>Numeric.Backprop.Op#prod</a> for a mini-tutorial on using
 --   <a>Prod</a> and <a>Tuple</a>.
+--   
+--   To <i>use</i> an <a>Op</a> with the backprop library, see
+--   <tt>liftOp</tt>, <tt>liftOp1</tt>, <tt>liftOp2</tt>, and
+--   <tt>liftOp3</tt>.
 newtype Op as a
 
 -- | Construct an <a>Op</a> by giving a function creating the result, and
