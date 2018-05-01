@@ -36,9 +36,9 @@ module Numeric.Backprop.Class (
   ) where
 
 import           Data.Complex
+import           Data.Foldable hiding        (toList)
 import           Data.Functor.Identity
 import           Data.List.NonEmpty          (NonEmpty(..))
-import           Data.Maybe
 import           Data.Proxy
 import           Data.Ratio
 import           Data.Type.Combinator hiding ((:.:), Comp1)
@@ -490,11 +490,14 @@ instance Backprop a => Backprop (Seq.Seq a) where
     {-# INLINE one #-}
 
 -- | 'Nothing' is treated the same as @'Just' 0@.  However, 'zero', 'add',
--- and 'one' preserves 'Nothing' if all inputs are also 'Nothing'.
+-- and 'one' preserve 'Nothing' if all inputs are also 'Nothing'.
 instance Backprop a => Backprop (Maybe a) where
     zero = zeroFunctor
     {-# INLINE zero #-}
-    add  = addAsList maybeToList listToMaybe
+    add x y = asum [ add <$> x <*> y
+                   , x
+                   , y
+                   ]
     {-# INLINE add #-}
     one  = oneFunctor
     {-# INLINE one #-}
@@ -592,7 +595,7 @@ instance Backprop Void where
     one = \case {}
     {-# INLINE one #-}
 
--- | 'zero' and 'add' replaces all current values, and 'add' merges keys
+-- | 'zero' and 'one' replace all current values, and 'add' merges keys
 -- from both maps, adding in the case of double-occurrences.
 instance (Backprop a, Ord k) => Backprop (M.Map k a) where
     zero = zeroFunctor
@@ -602,7 +605,7 @@ instance (Backprop a, Ord k) => Backprop (M.Map k a) where
     one  = oneFunctor
     {-# INLINE one #-}
 
--- | 'zero' and 'add' replaces all current values, and 'add' merges keys
+-- | 'zero' and 'one' replace all current values, and 'add' merges keys
 -- from both maps, adding in the case of double-occurrences.
 instance (Backprop a) => Backprop (IM.IntMap a) where
     zero = zeroFunctor

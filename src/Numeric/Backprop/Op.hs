@@ -32,6 +32,9 @@
 -- of functions, 'Op' and its utility functions alone are sufficient to
 -- differentiate/backprop.  However, this happens rarely in practice.
 --
+-- To use these 'Op's with the backprop library, they can be made to work
+-- with 'BVar's using 'liftOp', 'liftOp1', 'liftOp2', and 'liftOp3'.
+--
 
 module Numeric.Backprop.Op (
   -- * Implementation
@@ -170,6 +173,9 @@ import           Type.Class.Witness
 --
 -- See "Numeric.Backprop.Op#prod" for a mini-tutorial on using 'Prod' and
 -- 'Tuple'.
+--
+-- To /use/ an 'Op' with the backprop library, see 'liftOp', 'liftOp1',
+-- 'liftOp2', and 'liftOp3'.
 newtype Op as a =
     -- | Construct an 'Op' by giving a function creating the
     -- result, and also a continuation on how to create the gradient, given
