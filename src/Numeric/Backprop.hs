@@ -61,7 +61,7 @@
 
 module Numeric.Backprop (
     -- * Types
-    BVar, W, Backprop(..)
+    BVar, W, Backprop(..), ApBP(..)
     -- * Running
   , backprop, E.evalBP, gradBP, backpropWith
     -- ** Multiple inputs

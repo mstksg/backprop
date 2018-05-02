@@ -1,5 +1,10 @@
 {-# LANGUAGE BangPatterns         #-}
 {-# LANGUAGE DefaultSignatures    #-}
+{-# LANGUAGE DeriveDataTypeable   #-}
+{-# LANGUAGE DeriveFoldable       #-}
+{-# LANGUAGE DeriveFunctor        #-}
+{-# LANGUAGE DeriveGeneric        #-}
+{-# LANGUAGE DeriveTraversable    #-}
 {-# LANGUAGE EmptyCase            #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE GADTs                #-}
@@ -31,15 +36,19 @@ module Numeric.Backprop.Class (
   , zeroVec, addVec, oneVec
   , zeroFunctor, addIsList, addAsList, oneFunctor
   , genericZero, genericAdd, genericOne
+  -- * Newtype
+  , ApBP(..)
   -- * Generics
   , GZero(..), GAdd(..), GOne(..)
   ) where
 
+import           Control.Applicative
+import           Control.DeepSeq
 import           Data.Complex
+import           Data.Data
 import           Data.Foldable hiding        (toList)
 import           Data.Functor.Identity
 import           Data.List.NonEmpty          (NonEmpty(..))
-import           Data.Proxy
 import           Data.Ratio
 import           Data.Type.Combinator hiding ((:.:), Comp1)
 import           Data.Type.Option
@@ -277,7 +286,95 @@ oneFunctor = fmap one
 {-# INLINE oneFunctor #-}
 
 
+-- | A newtype wrapper over an @f a@ for @'Applicative' f@ that gives
+-- a free 'Backprop' instance (as well as 'Num' etc. instances).
+--
+-- Useful for performing backpropagation over functions that require some
+-- monadic context (like 'IO') to perform.
+newtype ApBP f a = ApBP { runApBP :: f a }
+  deriving (Show, Read, Eq, Ord, Typeable, Data, Generic, Functor, Foldable, Traversable)
 
+instance NFData (f a) => NFData (ApBP f a)
+
+instance Applicative f => Applicative (ApBP f) where
+    pure = ApBP . pure
+    f <*> x = ApBP $ ($) <$> runApBP f <*> runApBP x
+
+instance Monad m => Monad (ApBP m) where
+    return = ApBP . return
+    x >>= f = ApBP $ do
+      x' <- runApBP x
+      runApBP $ f x'
+
+instance (Applicative f, Backprop a) => Backprop (ApBP f a) where
+    zero = fmap zero
+    {-# INLINE zero #-}
+    add  = liftA2 add
+    {-# INLINE add #-}
+    one  = fmap one
+    {-# INLINE one #-}
+
+instance (Applicative f, Num a) => Num (ApBP f a) where
+    (+) = liftA2 (+)
+    {-# INLINE (+) #-}
+    (-) = liftA2 (-)
+    {-# INLINE (-) #-}
+    (*) = liftA2 (*)
+    {-# INLINE (*) #-}
+    negate = fmap negate
+    {-# INLINE negate #-}
+    abs = fmap abs
+    {-# INLINE abs #-}
+    signum = fmap signum
+    {-# INLINE signum #-}
+    fromInteger = pure . fromInteger
+    {-# INLINE fromInteger #-}
+
+instance (Applicative f, Fractional a) => Fractional (ApBP f a) where
+    (/) = liftA2 (/)
+    {-# INLINE (/) #-}
+    recip = fmap recip
+    {-# INLINE recip #-}
+    fromRational = pure . fromRational
+    {-# INLINE fromRational #-}
+
+instance (Applicative f, Floating a) => Floating (ApBP f a) where
+    pi  = pure pi
+    {-# INLINE pi #-}
+    exp = fmap exp
+    {-# INLINE exp #-}
+    log = fmap log
+    {-# INLINE log #-}
+    sqrt = fmap sqrt
+    {-# INLINE sqrt #-}
+    (**) = liftA2 (**)
+    {-# INLINE (**) #-}
+    logBase = liftA2 logBase
+    {-# INLINE logBase #-}
+    sin = fmap sin
+    {-# INLINE sin #-}
+    cos = fmap cos
+    {-# INLINE cos #-}
+    tan = fmap tan
+    {-# INLINE tan #-}
+    asin = fmap asin
+    {-# INLINE asin #-}
+    acos = fmap acos
+    {-# INLINE acos #-}
+    atan = fmap atan
+    {-# INLINE atan #-}
+    sinh = fmap sinh
+    {-# INLINE sinh #-}
+    cosh = fmap cosh
+    {-# INLINE cosh #-}
+    tanh = fmap tanh
+    {-# INLINE tanh #-}
+    asinh = fmap asinh
+    {-# INLINE asinh #-}
+    acosh = fmap acosh
+    {-# INLINE acosh #-}
+    atanh = fmap atanh
+    {-# INLINE atanh #-}
 
 
 -- | Helper class for automatically deriving 'zero' using GHC Generics.
