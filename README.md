@@ -252,4 +252,7 @@ Todo
 
 4.  Some open questions:
 
-    a. Is it possible to support constructors with existential types?
+    a.  Is it possible to support constructors with existential types?
+
+    b.  How to support "monadic" operations that depend on results of previous
+        operations? (`ApBP` already exists for situations that don't)

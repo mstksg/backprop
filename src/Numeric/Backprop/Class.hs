@@ -291,6 +291,8 @@ oneFunctor = fmap one
 --
 -- Useful for performing backpropagation over functions that require some
 -- monadic context (like 'IO') to perform.
+--
+-- @since 0.2.1.0
 newtype ApBP f a = ApBP { runApBP :: f a }
   deriving (Show, Read, Eq, Ord, Typeable, Data, Generic, Functor, Foldable, Traversable)
 

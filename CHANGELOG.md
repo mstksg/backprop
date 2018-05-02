@@ -8,6 +8,9 @@ Version 0.2.1.0
 
 <https://github.com/mstksg/backprop/releases/tag/v0.2.1.0>
 
+*   Added `ApBP` newtype wrapper to *Numeric.Backprop.Class* (re-exported from
+    *Numeric.Backprop* and *Numeric.Backprop.Explicit*) to give free `Backprop`
+    instances for Applicative actions.
 *   Added `^^?!` (unsafe access) to *Numeric.Backprop* and
     *Numeric.Backprop.Num*.
 
