@@ -1700,6 +1700,12 @@ infixl 8 .~~
 --   <tt>Backprop</tt> constraints.
 (^^..) :: forall b a s. (Num a, Reifies s W) => BVar s b -> Traversal' b a -> [BVar s a]
 
+-- | <a>^^?!</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
+--   
+--   Like <a>^^?!</a>, is *UNSAFE*.
+(^^?!) :: forall b a s. (Num a, Reifies s W) => BVar s b -> Traversal' b a -> BVar s a
+
 -- | <a>viewVar</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
 viewVar :: forall a b s. (Reifies s W, Num a) => Lens' b a -> BVar s b -> BVar s a
@@ -2566,6 +2572,14 @@ infixl 8 .~~
 --   Traversal' b a</tt>. The result has type <tt>[<a>BVar</a> s a]</tt> (A
 --   list of <a>BVar</a>s holding <tt>a</tt>s).
 (^^..) :: forall b a s. (Backprop a, Reifies s W) => BVar s b -> Traversal' b a -> [BVar s a]
+
+-- | An *UNSAFE* version of <a>previewVar</a> assuming that it is there.
+--   
+--   Is undefined if the <a>Traversal</a> hits no targets.
+--   
+--   Is essentially <a>^^?</a> with <tt>fromJust</tt>, or <a>^^..</a> with
+--   <a>head</a>.
+(^^?!) :: forall b a s. (Backprop a, Reifies s W) => BVar s b -> Traversal' b a -> BVar s a
 
 -- | Using a <a>Lens'</a>, extract a value <i>inside</i> a <a>BVar</a>.
 --   Meant to evoke parallels to <tt>view</tt> from lens.
