@@ -12,7 +12,7 @@
 --   
 --   See <a>README.md</a>
 @package backprop
-@version 0.2.0.0
+@version 0.2.1.0
 
 
 -- | Provides the <a>Backprop</a> typeclass, a class for values that can be
@@ -1074,6 +1074,16 @@ add :: (Backprop a, Generic a, GAdd (Rep a)) => a -> a -> a
 --   <a>Generic</a> whose fields are all themselves instances of
 --   <a>Backprop</a>.
 one :: (Backprop a, Generic a, GOne (Rep a)) => a -> a
+
+-- | A newtype wrapper over an <tt>f a</tt> for <tt><a>Applicative</a>
+--   f</tt> that gives a free <a>Backprop</a> instance (as well as
+--   <a>Num</a> etc. instances).
+--   
+--   Useful for performing backpropagation over functions that require some
+--   monadic context (like <a>IO</a>) to perform.
+newtype ApBP f a
+ApBP :: f a -> ApBP f a
+[runApBP] :: ApBP f a -> f a
 
 -- | "Zero out" all components of a value. For scalar values, this should
 --   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
