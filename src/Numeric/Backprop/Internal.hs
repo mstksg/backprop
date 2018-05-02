@@ -762,6 +762,6 @@ ixt t i f xs = stuff <$> ixi i f contents
     stuff    = evalState (traverseOf t (state . const go) xs)
       where
         go :: [a] -> (a,  [a])
-        go []     = error "asList"
+        go []     = error "Numeric.Backprop.Internal: unexpected shape involved in gradient computation"
         go (y:ys) = (y, ys)
 {-# INLINE ixt #-}

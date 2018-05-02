@@ -69,7 +69,7 @@ module Numeric.Backprop (
   , backpropN, E.evalBPN, gradBPN, backpropWithN, Every
     -- * Manipulating 'BVar'
   , E.constVar, E.auto, E.coerceVar
-  , (^^.), (.~~), (^^?), (^^..)
+  , (^^.), (.~~), (^^?), (^^..), (^^?!)
   , viewVar, setVar
   , sequenceVar, collectVar
   , previewVar, toListOfVar
@@ -441,6 +441,23 @@ setVar = E.setVar E.addFunc E.addFunc E.zeroFunc E.zeroFunc
     -> Maybe (BVar s a)
 v ^^? t = previewVar t v
 {-# INLINE (^^?) #-}
+
+-- | An *UNSAFE* version of 'previewVar' assuming that it is there.
+--
+-- Is undefined if the 'Traversal' hits no targets.
+--
+-- Is essentially '^^?' with 'fromJust', or '^^..' with 'head'.
+--
+-- @since 0.2.1.0
+(^^?!)
+    :: forall b a s. (Backprop a, Reifies s W)
+    => BVar s b
+    -> Traversal' b a
+    -> BVar s a
+v ^^?! t = case previewVar t v of
+    Nothing -> error "Numeric.Backprop.^^?!: Empty traversal"
+    Just v' -> v'
+{-# INLINE (^^?!) #-}
 
 -- | Using a 'Traversal'', extract a single value /inside/ a 'BVar', if it
 -- exists.  If more than one traversal target exists, returns te first.

@@ -57,7 +57,7 @@ module Numeric.Backprop.Num (
   , backpropN, E.evalBPN, gradBPN, backpropWithN, Every
     -- * Manipulating 'BVar'
   , E.constVar, E.auto, E.coerceVar
-  , (^^.), (.~~), (^^?), (^^..)
+  , (^^.), (.~~), (^^?), (^^..), (^^?!)
   , viewVar, setVar
   , sequenceVar, collectVar
   , previewVar, toListOfVar
@@ -279,6 +279,22 @@ setVar = E.setVar E.afNum E.afNum E.zfNum E.zfNum
     -> Maybe (BVar s a)
 v ^^? t = previewVar t v
 {-# INLINE (^^?) #-}
+
+-- | 'Numeric.Backprop.^^?!', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
+--
+-- Like 'Numeric.Backprop.^^?!', is *UNSAFE*.
+--
+-- @since 0.2.1.0
+(^^?!)
+    :: forall b a s. (Num a, Reifies s W)
+    => BVar s b
+    -> Traversal' b a
+    -> BVar s a
+v ^^?! t = case previewVar t v of
+    Nothing -> error "Numeric.Backprop.Num.^^?!: Empty traversal"
+    Just v' -> v'
+{-# INLINE (^^?!) #-}
 
 -- | 'Numeric.Backprop.previewVar', but with 'Num' constraints instead of
 -- 'Backprop' constraints.

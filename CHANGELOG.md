@@ -1,6 +1,16 @@
 Changelog
 =========
 
+Version 0.2.1.0
+---------------
+
+*Unreleased*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.2.1.0>
+
+*   Added `^^?!` (unsafe access) to *Numeric.Backprop* and
+    *Numeric.Backprop.Num*.
+
 Version 0.2.0.0
 ---------------
 
