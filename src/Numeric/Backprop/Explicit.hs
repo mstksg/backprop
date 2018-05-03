@@ -29,7 +29,7 @@
 
 module Numeric.Backprop.Explicit (
     -- * Types
-    BVar, W, Backprop(..), ApBP(..)
+    BVar, W, Backprop(..), ABP(..), NumBP(..)
     -- * Explicit 'zero', 'add', and 'one'
   , ZeroFunc(..), zfNum, zfNums, zeroFunc, zeroFuncs
   , AddFunc(..), afNum, afNums, addFunc, addFuncs

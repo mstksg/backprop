@@ -25,6 +25,11 @@ up-to-date documentation is currently rendered [on github pages][docs]!
 [hackage]: http://hackage.haskell.org/package/backprop
 [docs]: https://mstksg.github.io/backprop
 
+If you want to provide *backprop* for users of your library, see this **[guide
+to equipping your library with backprop][library]**.
+
+[library]: https://github.com/mstksg/backprop/wiki/Equipping-your-Library-with-Backprop
+
 MNIST Digit Classifier Example
 ------------------------------
 

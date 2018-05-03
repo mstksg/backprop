@@ -1,16 +1,18 @@
-{-# LANGUAGE BangPatterns         #-}
-{-# LANGUAGE DefaultSignatures    #-}
-{-# LANGUAGE DeriveDataTypeable   #-}
-{-# LANGUAGE DeriveFoldable       #-}
-{-# LANGUAGE DeriveFunctor        #-}
-{-# LANGUAGE DeriveGeneric        #-}
-{-# LANGUAGE DeriveTraversable    #-}
-{-# LANGUAGE EmptyCase            #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE GADTs                #-}
-{-# LANGUAGE LambdaCase           #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE BangPatterns               #-}
+{-# LANGUAGE DefaultSignatures          #-}
+{-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE DeriveFoldable             #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DeriveTraversable          #-}
+{-# LANGUAGE EmptyCase                  #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
 -- |
 -- Module      : Numeric.Backprop.Class
@@ -37,13 +39,14 @@ module Numeric.Backprop.Class (
   , zeroFunctor, addIsList, addAsList, oneFunctor
   , genericZero, genericAdd, genericOne
   -- * Newtype
-  , ApBP(..)
+  , ABP(..), NumBP(..)
   -- * Generics
   , GZero(..), GAdd(..), GOne(..)
   ) where
 
 import           Control.Applicative
 import           Control.DeepSeq
+import           Data.Coerce
 import           Data.Complex
 import           Data.Data
 import           Data.Foldable hiding        (toList)
@@ -285,6 +288,29 @@ oneFunctor :: (Functor f, Backprop a) => f a -> f a
 oneFunctor = fmap one
 {-# INLINE oneFunctor #-}
 
+-- | A newtype wrapper over an instance of 'Num' that gives a free
+-- 'Backprop' instance.
+--
+-- Useful for things like /DerivingVia/, or for avoiding orphan instances.
+--
+-- @since 0.2.1.0
+newtype NumBP a = NumBP { runNumBP :: a }
+  deriving (Show, Read, Eq, Ord, Typeable, Data, Generic, Functor, Foldable, Traversable, Num, Fractional, Floating)
+
+instance NFData a => NFData (NumBP a)
+
+instance Applicative NumBP where
+    pure    = NumBP
+    f <*> x = NumBP $ (runNumBP f) (runNumBP x)
+
+instance Monad NumBP where
+    return = NumBP
+    x >>= f = f (runNumBP x)
+
+instance Num a => Backprop (NumBP a) where
+    zero = coerce (zeroNum :: a -> a)
+    add = coerce (addNum :: a -> a -> a)
+    one = coerce (oneNum :: a -> a)
 
 -- | A newtype wrapper over an @f a@ for @'Applicative' f@ that gives
 -- a free 'Backprop' instance (as well as 'Num' etc. instances).
@@ -293,22 +319,22 @@ oneFunctor = fmap one
 -- monadic context (like 'IO') to perform.
 --
 -- @since 0.2.1.0
-newtype ApBP f a = ApBP { runApBP :: f a }
+newtype ABP f a = ABP { runABP :: f a }
   deriving (Show, Read, Eq, Ord, Typeable, Data, Generic, Functor, Foldable, Traversable)
 
-instance NFData (f a) => NFData (ApBP f a)
+instance NFData (f a) => NFData (ABP f a)
 
-instance Applicative f => Applicative (ApBP f) where
-    pure = ApBP . pure
-    f <*> x = ApBP $ ($) <$> runApBP f <*> runApBP x
+instance Applicative f => Applicative (ABP f) where
+    pure = ABP . pure
+    f <*> x = ABP $ ($) <$> runABP f <*> runABP x
 
-instance Monad m => Monad (ApBP m) where
-    return = ApBP . return
-    x >>= f = ApBP $ do
-      x' <- runApBP x
-      runApBP $ f x'
+instance Monad m => Monad (ABP m) where
+    return = ABP . return
+    x >>= f = ABP $ do
+      x' <- runABP x
+      runABP $ f x'
 
-instance (Applicative f, Backprop a) => Backprop (ApBP f a) where
+instance (Applicative f, Backprop a) => Backprop (ABP f a) where
     zero = fmap zero
     {-# INLINE zero #-}
     add  = liftA2 add
@@ -316,7 +342,7 @@ instance (Applicative f, Backprop a) => Backprop (ApBP f a) where
     one  = fmap one
     {-# INLINE one #-}
 
-instance (Applicative f, Num a) => Num (ApBP f a) where
+instance (Applicative f, Num a) => Num (ABP f a) where
     (+) = liftA2 (+)
     {-# INLINE (+) #-}
     (-) = liftA2 (-)
@@ -332,7 +358,7 @@ instance (Applicative f, Num a) => Num (ApBP f a) where
     fromInteger = pure . fromInteger
     {-# INLINE fromInteger #-}
 
-instance (Applicative f, Fractional a) => Fractional (ApBP f a) where
+instance (Applicative f, Fractional a) => Fractional (ABP f a) where
     (/) = liftA2 (/)
     {-# INLINE (/) #-}
     recip = fmap recip
@@ -340,7 +366,7 @@ instance (Applicative f, Fractional a) => Fractional (ApBP f a) where
     fromRational = pure . fromRational
     {-# INLINE fromRational #-}
 
-instance (Applicative f, Floating a) => Floating (ApBP f a) where
+instance (Applicative f, Floating a) => Floating (ABP f a) where
     pi  = pure pi
     {-# INLINE pi #-}
     exp = fmap exp
