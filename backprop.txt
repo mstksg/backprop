@@ -278,9 +278,18 @@ genericOne :: (Generic a, GOne (Rep a)) => a -> a
 --   
 --   Useful for performing backpropagation over functions that require some
 --   monadic context (like <a>IO</a>) to perform.
-newtype ApBP f a
-ApBP :: f a -> ApBP f a
-[runApBP] :: ApBP f a -> f a
+newtype ABP f a
+ABP :: f a -> ABP f a
+[runABP] :: ABP f a -> f a
+
+-- | A newtype wrapper over an instance of <a>Num</a> that gives a free
+--   <a>Backprop</a> instance.
+--   
+--   Useful for things like <i>DerivingVia</i>, or for avoiding orphan
+--   instances.
+newtype NumBP a
+NumBP :: a -> NumBP a
+[runNumBP] :: NumBP a -> a
 
 -- | Helper class for automatically deriving <a>zero</a> using GHC
 --   Generics.
@@ -294,16 +303,29 @@ gadd :: GAdd f => f t -> f t -> f t
 -- | Helper class for automatically deriving <a>one</a> using GHC Generics.
 class GOne f
 gone :: GOne f => f t -> f t
-instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Numeric.Backprop.Class.ApBP f)
-instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Numeric.Backprop.Class.ApBP f)
-instance GHC.Base.Functor f => GHC.Base.Functor (Numeric.Backprop.Class.ApBP f)
-instance GHC.Generics.Generic (Numeric.Backprop.Class.ApBP f a)
-instance (Data.Data.Data (f a), Data.Typeable.Internal.Typeable * a, Data.Typeable.Internal.Typeable (* -> *) f) => Data.Data.Data (Numeric.Backprop.Class.ApBP f a)
-instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Numeric.Backprop.Class.ApBP f a)
-instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Numeric.Backprop.Class.ApBP f a)
-instance GHC.Read.Read (f a) => GHC.Read.Read (Numeric.Backprop.Class.ApBP f a)
-instance GHC.Show.Show (f a) => GHC.Show.Show (Numeric.Backprop.Class.ApBP f a)
-instance (GHC.Base.Applicative f, Numeric.Backprop.Class.Backprop a) => Numeric.Backprop.Class.Backprop (Numeric.Backprop.Class.ApBP f a)
+instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Numeric.Backprop.Class.ABP f)
+instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Numeric.Backprop.Class.ABP f)
+instance GHC.Base.Functor f => GHC.Base.Functor (Numeric.Backprop.Class.ABP f)
+instance GHC.Generics.Generic (Numeric.Backprop.Class.ABP f a)
+instance (Data.Data.Data (f a), Data.Typeable.Internal.Typeable * a, Data.Typeable.Internal.Typeable (* -> *) f) => Data.Data.Data (Numeric.Backprop.Class.ABP f a)
+instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Numeric.Backprop.Class.ABP f a)
+instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Numeric.Backprop.Class.ABP f a)
+instance GHC.Read.Read (f a) => GHC.Read.Read (Numeric.Backprop.Class.ABP f a)
+instance GHC.Show.Show (f a) => GHC.Show.Show (Numeric.Backprop.Class.ABP f a)
+instance GHC.Float.Floating a => GHC.Float.Floating (Numeric.Backprop.Class.NumBP a)
+instance GHC.Real.Fractional a => GHC.Real.Fractional (Numeric.Backprop.Class.NumBP a)
+instance GHC.Num.Num a => GHC.Num.Num (Numeric.Backprop.Class.NumBP a)
+instance Data.Traversable.Traversable Numeric.Backprop.Class.NumBP
+instance Data.Foldable.Foldable Numeric.Backprop.Class.NumBP
+instance GHC.Base.Functor Numeric.Backprop.Class.NumBP
+instance GHC.Generics.Generic (Numeric.Backprop.Class.NumBP a)
+instance Data.Data.Data a => Data.Data.Data (Numeric.Backprop.Class.NumBP a)
+instance GHC.Classes.Ord a => GHC.Classes.Ord (Numeric.Backprop.Class.NumBP a)
+instance GHC.Classes.Eq a => GHC.Classes.Eq (Numeric.Backprop.Class.NumBP a)
+instance GHC.Read.Read a => GHC.Read.Read (Numeric.Backprop.Class.NumBP a)
+instance GHC.Show.Show a => GHC.Show.Show (Numeric.Backprop.Class.NumBP a)
+instance GHC.Num.Num a => Numeric.Backprop.Class.Backprop (Numeric.Backprop.Class.NumBP a)
+instance (GHC.Base.Applicative f, Numeric.Backprop.Class.Backprop a) => Numeric.Backprop.Class.Backprop (Numeric.Backprop.Class.ABP f a)
 instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.GZero (GHC.Generics.K1 * i a)
 instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.GAdd (GHC.Generics.K1 * i a)
 instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.GOne (GHC.Generics.K1 * i a)
@@ -351,12 +373,15 @@ instance Numeric.Backprop.Class.GZero (GHC.Generics.V1 *)
 instance Numeric.Backprop.Class.GZero (GHC.Generics.U1 *)
 instance Numeric.Backprop.Class.GZero f => Numeric.Backprop.Class.GZero (GHC.Generics.M1 * i c f)
 instance Numeric.Backprop.Class.GZero f => Numeric.Backprop.Class.GZero ((GHC.Generics.:.:) * * f g)
-instance Control.DeepSeq.NFData (f a) => Control.DeepSeq.NFData (Numeric.Backprop.Class.ApBP f a)
-instance GHC.Base.Applicative f => GHC.Base.Applicative (Numeric.Backprop.Class.ApBP f)
-instance GHC.Base.Monad m => GHC.Base.Monad (Numeric.Backprop.Class.ApBP m)
-instance (GHC.Base.Applicative f, GHC.Num.Num a) => GHC.Num.Num (Numeric.Backprop.Class.ApBP f a)
-instance (GHC.Base.Applicative f, GHC.Real.Fractional a) => GHC.Real.Fractional (Numeric.Backprop.Class.ApBP f a)
-instance (GHC.Base.Applicative f, GHC.Float.Floating a) => GHC.Float.Floating (Numeric.Backprop.Class.ApBP f a)
+instance Control.DeepSeq.NFData (f a) => Control.DeepSeq.NFData (Numeric.Backprop.Class.ABP f a)
+instance GHC.Base.Applicative f => GHC.Base.Applicative (Numeric.Backprop.Class.ABP f)
+instance GHC.Base.Monad m => GHC.Base.Monad (Numeric.Backprop.Class.ABP m)
+instance (GHC.Base.Applicative f, GHC.Num.Num a) => GHC.Num.Num (Numeric.Backprop.Class.ABP f a)
+instance (GHC.Base.Applicative f, GHC.Real.Fractional a) => GHC.Real.Fractional (Numeric.Backprop.Class.ABP f a)
+instance (GHC.Base.Applicative f, GHC.Float.Floating a) => GHC.Float.Floating (Numeric.Backprop.Class.ABP f a)
+instance Control.DeepSeq.NFData a => Control.DeepSeq.NFData (Numeric.Backprop.Class.NumBP a)
+instance GHC.Base.Applicative Numeric.Backprop.Class.NumBP
+instance GHC.Base.Monad Numeric.Backprop.Class.NumBP
 
 
 -- | Provides the <a>Op</a> type and combinators, which represent
@@ -1081,9 +1106,18 @@ one :: (Backprop a, Generic a, GOne (Rep a)) => a -> a
 --   
 --   Useful for performing backpropagation over functions that require some
 --   monadic context (like <a>IO</a>) to perform.
-newtype ApBP f a
-ApBP :: f a -> ApBP f a
-[runApBP] :: ApBP f a -> f a
+newtype ABP f a
+ABP :: f a -> ABP f a
+[runABP] :: ABP f a -> f a
+
+-- | A newtype wrapper over an instance of <a>Num</a> that gives a free
+--   <a>Backprop</a> instance.
+--   
+--   Useful for things like <i>DerivingVia</i>, or for avoiding orphan
+--   instances.
+newtype NumBP a
+NumBP :: a -> NumBP a
+[runNumBP] :: NumBP a -> a
 
 -- | "Zero out" all components of a value. For scalar values, this should
 --   just be <tt><a>const</a> 0</tt>. For vectors and matrices, this should
@@ -2370,9 +2404,18 @@ one :: (Backprop a, Generic a, GOne (Rep a)) => a -> a
 --   
 --   Useful for performing backpropagation over functions that require some
 --   monadic context (like <a>IO</a>) to perform.
-newtype ApBP f a
-ApBP :: f a -> ApBP f a
-[runApBP] :: ApBP f a -> f a
+newtype ABP f a
+ABP :: f a -> ABP f a
+[runABP] :: ABP f a -> f a
+
+-- | A newtype wrapper over an instance of <a>Num</a> that gives a free
+--   <a>Backprop</a> instance.
+--   
+--   Useful for things like <i>DerivingVia</i>, or for avoiding orphan
+--   instances.
+newtype NumBP a
+NumBP :: a -> NumBP a
+[runNumBP] :: NumBP a -> a
 
 -- | Turn a function <tt><a>BVar</a> s a -&gt; <a>BVar</a> s b</tt> into
 --   the function <tt>a -&gt; b</tt> that it represents, also computing its
