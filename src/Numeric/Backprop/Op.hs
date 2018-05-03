@@ -355,7 +355,7 @@ opCoerce = opIso coerce coerce
 --
 -- @since 0.1.3.0
 noGrad1 :: (a -> b) -> Op '[a] b
-noGrad1 f = op1 (\x -> (f x, error "noGrad: no gradient defined"))
+noGrad1 f = op1 (\x -> (f x, \_ -> error "noGrad1: no gradient defined"))
 {-# INLINE noGrad1 #-}
 
 -- | Create an 'Op' with no gradient.  Can be evaluated with 'evalOp',  but
@@ -372,7 +372,7 @@ noGrad1 f = op1 (\x -> (f x, error "noGrad: no gradient defined"))
 --
 -- @since 0.1.3.0
 noGrad :: (Tuple as -> b) -> Op as b
-noGrad f = Op (\xs -> (f xs, error "noGrads: no gradient defined"))
+noGrad f = Op (\xs -> (f xs, \_ -> error "noGrad: no gradient defined"))
 {-# INLINE noGrad #-}
 
 -- | An 'Op' that just returns whatever it receives.  The identity
