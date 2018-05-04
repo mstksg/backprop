@@ -331,6 +331,7 @@ instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.GAdd (GHC.G
 instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.GOne (GHC.Generics.K1 * i a)
 instance Numeric.Backprop.Class.Backprop GHC.Types.Int
 instance Numeric.Backprop.Class.Backprop GHC.Integer.Type.Integer
+instance Numeric.Backprop.Class.Backprop GHC.Natural.Natural
 instance GHC.Real.Integral a => Numeric.Backprop.Class.Backprop (GHC.Real.Ratio a)
 instance GHC.Float.RealFloat a => Numeric.Backprop.Class.Backprop (Data.Complex.Complex a)
 instance Numeric.Backprop.Class.Backprop GHC.Types.Float
