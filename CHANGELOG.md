@@ -11,8 +11,13 @@ Version 0.2.1.0
 *   Added `ApBP` newtype wrapper to *Numeric.Backprop.Class* (re-exported from
     *Numeric.Backprop* and *Numeric.Backprop.Explicit*) to give free `Backprop`
     instances for Applicative actions.
+*   Added `NumBP` newtype wrapper to *Numeric.Backprop.Class* (re-exported in
+    the same places as `ApBP`) to give free `Backprop` instances for `Num`
+    instances.
 *   Added `^^?!` (unsafe access) to *Numeric.Backprop* and
     *Numeric.Backprop.Num*.
+*   `Backprop` instance for `Natural` from *Numeric.Natural*.  Should actually
+    be safe, unlike its `Num` instance!
 
 Version 0.2.0.0
 ---------------

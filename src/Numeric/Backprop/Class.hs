@@ -59,6 +59,7 @@ import           Data.Type.Product hiding    (toList)
 import           Data.Void
 import           GHC.Exts
 import           GHC.Generics
+import           Numeric.Natural
 import           Type.Family.List
 import qualified Data.IntMap                 as IM
 import qualified Data.Map                    as M
@@ -513,6 +514,15 @@ instance Backprop Int where
     {-# INLINE one #-}
 
 instance Backprop Integer where
+    zero = zeroNum
+    {-# INLINE zero #-}
+    add  = addNum
+    {-# INLINE add #-}
+    one  = oneNum
+    {-# INLINE one #-}
+
+-- | @since 0.2.1.0
+instance Backprop Natural where
     zero = zeroNum
     {-# INLINE zero #-}
     add  = addNum
