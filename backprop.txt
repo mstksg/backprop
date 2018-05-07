@@ -1148,6 +1148,9 @@ zeroFunc :: Backprop a => ZeroFunc a
 --   every type has an instance of <a>Backprop</a>.
 zeroFuncs :: (Every Backprop as, Known Length as) => Prod ZeroFunc as
 
+-- | <a>zeroFunc</a> for instances of <a>Functor</a>
+zfFunctor :: (Backprop a, Functor f) => ZeroFunc (f a)
+
 -- | Add together two values of a type. To combine contributions of
 --   gradients, so should ideally be information-preserving.
 --   
@@ -1203,6 +1206,9 @@ oneFunc :: Backprop a => OneFunc a
 -- | Generate an <a>OneFunc</a> for every type in a type-level list, if
 --   every type has an instance of <a>Backprop</a>.
 oneFuncs :: (Every Backprop as, Known Length as) => Prod OneFunc as
+
+-- | <a>OneFunc</a> for instances of <a>Functor</a>
+ofFunctor :: (Backprop a, Functor f) => OneFunc (f a)
 
 -- | <a>backprop</a>, but with explicit <a>zero</a> and <a>one</a>.
 backprop :: ZeroFunc a -> OneFunc b -> (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b, a)
