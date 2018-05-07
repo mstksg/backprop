@@ -18,6 +18,9 @@ Version 0.2.1.0
     *Numeric.Backprop.Num*.
 *   `Backprop` instance for `Natural` from *Numeric.Natural*.  Should actually
     be safe, unlike its `Num` instance!
+*   `zfFunctor` and `ofFunctor` for instances of `Functor` for
+    *Numeric.Backprop.Explicit*.
+*   `realToFracVar` and `fromIntegralVar`, for convenience
 
 Version 0.2.0.0
 ---------------

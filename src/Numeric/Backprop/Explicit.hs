@@ -31,9 +31,9 @@ module Numeric.Backprop.Explicit (
     -- * Types
     BVar, W, Backprop(..), ABP(..), NumBP(..)
     -- * Explicit 'zero', 'add', and 'one'
-  , ZeroFunc(..), zfNum, zfNums, zeroFunc, zeroFuncs
+  , ZeroFunc(..), zfNum, zfNums, zeroFunc, zeroFuncs, zfFunctor
   , AddFunc(..), afNum, afNums, addFunc, addFuncs
-  , OneFunc(..), ofNum, ofNums, oneFunc, oneFuncs
+  , OneFunc(..), ofNum, ofNums, oneFunc, oneFuncs, ofFunctor
     -- * Running
   , backprop, evalBP, gradBP, backpropWith
     -- ** Multiple inputs
@@ -41,7 +41,6 @@ module Numeric.Backprop.Explicit (
   , backpropN, evalBPN, gradBPN, backpropWithN, Every
     -- * Manipulating 'BVar'
   , constVar, auto, coerceVar
-  -- , (^^.), (.~~), (^^?), (^^..)
   , viewVar, setVar
   , sequenceVar, collectVar
   , previewVar, toListOfVar
@@ -89,6 +88,13 @@ import           Type.Class.Witness
 zfNums :: (Every Num as, Known Length as) => Prod ZeroFunc as
 zfNums = map1 (\i -> zfNum \\ every @_ @Num i) indices
 
+-- | 'zeroFunc' for instances of 'Functor'
+--
+-- @since 0.2.1.0
+zfFunctor :: (Backprop a, Functor f) => ZeroFunc (f a)
+zfFunctor = ZF zeroFunctor
+{-# INLINE zfFunctor #-}
+
 -- | 'ZeroFunc's for every item in a type level list based on their
 -- 'Num' instances
 --
@@ -102,6 +108,13 @@ afNums = map1 (\i -> afNum \\ every @_ @Num i) indices
 -- @since 0.2.0.0
 ofNums :: (Every Num as, Known Length as) => Prod OneFunc as
 ofNums = map1 (\i -> ofNum \\ every @_ @Num i) indices
+
+-- | 'OneFunc' for instances of 'Functor'
+--
+-- @since 0.2.1.0
+ofFunctor :: (Backprop a, Functor f) => OneFunc (f a)
+ofFunctor = OF oneFunctor
+{-# INLINE ofFunctor #-}
 
 -- | The canonical 'ZeroFunc' for instances of 'Backprop'.
 --
