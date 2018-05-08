@@ -21,6 +21,8 @@ Version 0.2.1.0
 *   `zfFunctor` and `ofFunctor` for instances of `Functor` for
     *Numeric.Backprop.Explicit*.
 *   `realToFracVar` and `fromIntegralVar`, for convenience
+*   `T2` and `T3` patterns for *Numeric.Backprop*, for conveniently
+    constructing and deconstructing tuples.
 
 Version 0.2.0.0
 ---------------

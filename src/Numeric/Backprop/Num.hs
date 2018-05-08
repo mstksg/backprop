@@ -1,8 +1,8 @@
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE GADTs             #-}
-{-# LANGUAGE PatternSynonyms   #-}
-{-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs            #-}
+{-# LANGUAGE PatternSynonyms  #-}
+{-# LANGUAGE RankNTypes       #-}
 
 -- |
 -- Module      : Numeric.Backprop.Num
@@ -87,6 +87,7 @@ module Numeric.Backprop.Num (
   , Reifies
   ) where
 
+import           Data.Maybe
 import           Data.Reflection
 import           Data.Type.Index
 import           Data.Type.Length
@@ -291,9 +292,9 @@ v ^^? t = previewVar t v
     => BVar s b
     -> Traversal' b a
     -> BVar s a
-v ^^?! t = case previewVar t v of
-    Nothing -> error "Numeric.Backprop.Num.^^?!: Empty traversal"
-    Just v' -> v'
+v ^^?! t = fromMaybe (error e) (previewVar t v)
+  where
+    e = "Numeric.Backprop.Num.^^?!: Empty traversal"
 {-# INLINE (^^?!) #-}
 
 -- | 'Numeric.Backprop.previewVar', but with 'Num' constraints instead of
@@ -401,7 +402,7 @@ isoVar
     -> (b -> a)
     -> BVar s a
     -> BVar s b
-isoVar f g = liftOp1 (opIso f g)
+isoVar = E.isoVar E.afNum E.zfNum
 {-# INLINE isoVar #-}
 
 -- | 'Numeric.Backprop.isoVar', but with 'Num' constraints instead of
@@ -413,7 +414,7 @@ isoVar2
     -> BVar s a
     -> BVar s b
     -> BVar s c
-isoVar2 f g = liftOp2 (opIso2 f g)
+isoVar2 = E.isoVar2 E.afNum E.afNum E.zfNum
 {-# INLINE isoVar2 #-}
 
 -- | 'Numeric.Backprop.isoVar3', but with 'Num' constraints instead of
@@ -426,7 +427,7 @@ isoVar3
     -> BVar s b
     -> BVar s c
     -> BVar s d
-isoVar3 f g = liftOp3 (opIso3 f g)
+isoVar3 = E.isoVar3 E.afNum E.afNum E.afNum E.zfNum
 {-# INLINE isoVar3 #-}
 
 -- | 'Numeric.Backprop.isoVarN', but with 'Num' constraints instead of
@@ -437,6 +438,5 @@ isoVarN
     -> (b -> Tuple as)
     -> Prod (BVar s) as
     -> BVar s b
-isoVarN f g = liftOp (opIsoN f g)
+isoVarN = E.isoVarN E.afNums E.zfNum
 {-# INLINE isoVarN #-}
-

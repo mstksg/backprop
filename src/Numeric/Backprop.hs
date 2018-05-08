@@ -1,8 +1,9 @@
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE GADTs             #-}
-{-# LANGUAGE PatternSynonyms   #-}
-{-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs            #-}
+{-# LANGUAGE PatternSynonyms  #-}
+{-# LANGUAGE RankNTypes       #-}
+{-# LANGUAGE ViewPatterns     #-}
 
 -- |
 -- Module      : Numeric.Backprop
@@ -73,6 +74,7 @@ module Numeric.Backprop (
   , viewVar, setVar
   , sequenceVar, collectVar
   , previewVar, toListOfVar
+  , pattern T2, pattern T3
     -- ** With Isomorphisms
   , isoVar, isoVar2, isoVar3, isoVarN
     -- ** With 'Op's#liftops#
@@ -99,6 +101,7 @@ module Numeric.Backprop (
   , Reifies
   ) where
 
+import           Data.Maybe
 import           Data.Reflection
 import           Data.Type.Index
 import           Data.Type.Length
@@ -454,9 +457,9 @@ v ^^? t = previewVar t v
     => BVar s b
     -> Traversal' b a
     -> BVar s a
-v ^^?! t = case previewVar t v of
-    Nothing -> error "Numeric.Backprop.^^?!: Empty traversal"
-    Just v' -> v'
+v ^^?! t = fromMaybe (error e) (previewVar t v)
+  where
+    e = "Numeric.Backprop.^^?!: Empty traversal"
 {-# INLINE (^^?!) #-}
 
 -- | Using a 'Traversal'', extract a single value /inside/ a 'BVar', if it
@@ -623,7 +626,7 @@ isoVar
     -> (b -> a)
     -> BVar s a
     -> BVar s b
-isoVar f g = liftOp1 (opIso f g)
+isoVar = E.isoVar E.addFunc E.zeroFunc
 {-# INLINE isoVar #-}
 
 -- | Convert the values inside two 'BVar's using a given isomorphism.
@@ -637,7 +640,7 @@ isoVar2
     -> BVar s a
     -> BVar s b
     -> BVar s c
-isoVar2 f g = liftOp2 (opIso2 f g)
+isoVar2 = E.isoVar2 E.addFunc E.addFunc E.zeroFunc
 {-# INLINE isoVar2 #-}
 
 -- | Convert the values inside three 'BVar's using a given isomorphism.
@@ -652,7 +655,7 @@ isoVar3
     -> BVar s b
     -> BVar s c
     -> BVar s d
-isoVar3 f g = liftOp3 (opIso3 f g)
+isoVar3 = E.isoVar3 E.addFunc E.addFunc E.addFunc E.zeroFunc
 {-# INLINE isoVar3 #-}
 
 -- | Convert the values inside a tuple of 'BVar's using a given
@@ -666,5 +669,28 @@ isoVarN
     -> (b -> Tuple as)
     -> Prod (BVar s) as
     -> BVar s b
-isoVarN f g = liftOp (opIsoN f g)
+isoVarN = E.isoVarN E.addFuncs E.zeroFunc
 {-# INLINE isoVarN #-}
+
+-- | Useful pattern for constructing and deconstructing 'BVar's of
+-- two-tuples.
+pattern T2
+    :: (Backprop a, Backprop b, Reifies s W)
+    => BVar s a
+    -> BVar s b
+    -> BVar s (a, b)
+pattern T2 x y <- (\xy -> (xy ^^. _1, xy ^^. _2) -> (x, y))
+  where
+    T2 = isoVar2 (,) id
+
+-- | Useful pattern for constructing and deconstructing 'BVar's
+-- three-tuples.
+pattern T3
+    :: (Backprop a, Backprop b, Backprop c, Reifies s W)
+    => BVar s a
+    -> BVar s b
+    -> BVar s c
+    -> BVar s (a, b, c)
+pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
+  where
+    T3 = isoVar3 (,,) id

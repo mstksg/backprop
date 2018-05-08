@@ -327,13 +327,17 @@ instance NFData (f a) => NFData (ABP f a)
 
 instance Applicative f => Applicative (ABP f) where
     pure = ABP . pure
+    {-# INLINE pure #-}
     f <*> x = ABP $ ($) <$> runABP f <*> runABP x
+    {-# INLINE (<*>) #-}
 
 instance Monad m => Monad (ABP m) where
     return = ABP . return
+    {-# INLINE return #-}
     x >>= f = ABP $ do
       x' <- runABP x
       runABP $ f x'
+    {-# INLINE (>>=) #-}
 
 instance (Applicative f, Backprop a) => Backprop (ABP f a) where
     zero = fmap zero
