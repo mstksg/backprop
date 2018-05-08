@@ -30,6 +30,8 @@ module Prelude.Backprop.Explicit (
   , liftA2
   , liftA3
   -- * Misc
+  , fromIntegral
+  , realToFrac
   , coerce
   ) where
 
@@ -222,4 +224,28 @@ coerce
 coerce = coerceVar
 {-# INLINE coerce #-}
 
+-- | Lifted conversion between two 'P.Integral' instances.
+--
+-- @since 0.2.1.0
+fromIntegral
+    :: (P.Integral a, P.Integral b, Reifies s W)
+    => AddFunc a
+    -> ZeroFunc b
+    -> BVar s a
+    -> BVar s b
+fromIntegral af zf = liftOp1 af zf . op1 $ \x ->
+    (P.fromIntegral x, P.fromIntegral)
+{-# INLINE fromIntegral #-}
 
+-- | Lifted conversion between two 'Fractional' and 'P.Real' instances.
+--
+-- @since 0.2.1.0
+realToFrac
+    :: (Fractional a, P.Real a, Fractional b, P.Real b, Reifies s W)
+    => AddFunc a
+    -> ZeroFunc b
+    -> BVar s a
+    -> BVar s b
+realToFrac af zf = liftOp1 af zf . op1 $ \x ->
+    (P.realToFrac x, P.realToFrac)
+{-# INLINE realToFrac #-}

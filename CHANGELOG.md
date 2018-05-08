@@ -8,11 +8,11 @@ Version 0.2.1.0
 
 <https://github.com/mstksg/backprop/releases/tag/v0.2.1.0>
 
-*   Added `ApBP` newtype wrapper to *Numeric.Backprop.Class* (re-exported from
+*   Added `ABP` newtype wrapper to *Numeric.Backprop.Class* (re-exported from
     *Numeric.Backprop* and *Numeric.Backprop.Explicit*) to give free `Backprop`
     instances for Applicative actions.
 *   Added `NumBP` newtype wrapper to *Numeric.Backprop.Class* (re-exported in
-    the same places as `ApBP`) to give free `Backprop` instances for `Num`
+    the same places as `ABP`) to give free `Backprop` instances for `Num`
     instances.
 *   Added `^^?!` (unsafe access) to *Numeric.Backprop* and
     *Numeric.Backprop.Num*.
@@ -20,7 +20,7 @@ Version 0.2.1.0
     be safe, unlike its `Num` instance!
 *   `zfFunctor` and `ofFunctor` for instances of `Functor` for
     *Numeric.Backprop.Explicit*.
-*   `realToFracVar` and `fromIntegralVar`, for convenience
+*   `realToFrac` and `fromIntegral` to *Prelude* modules
 *   `T2` and `T3` patterns for *Numeric.Backprop*, for conveniently
     constructing and deconstructing tuples.
 
@@ -108,7 +108,7 @@ Version 0.1.4.0
     applying isomorphisms to `BVar`s.  Helpful for use with constructors and
     deconstructors.
 *   `opIso2` and `opIso3` added to *Numeric.Backprop.Op*, for convenience.
-*   `T0` (Unit with numeric instances) added to *Numeric.Backprop.Tuple".
+*   `T0` (Unit with numeric instances) added to *Numeric.Backprop.Tuple*.
 
 *Internal*
 

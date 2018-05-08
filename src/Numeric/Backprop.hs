@@ -674,6 +674,8 @@ isoVarN = E.isoVarN E.addFuncs E.zeroFunc
 
 -- | Useful pattern for constructing and deconstructing 'BVar's of
 -- two-tuples.
+--
+-- @since 0.2.1.0
 pattern T2
     :: (Backprop a, Backprop b, Reifies s W)
     => BVar s a
@@ -685,6 +687,8 @@ pattern T2 x y <- (\xy -> (xy ^^. _1, xy ^^. _2) -> (x, y))
 
 -- | Useful pattern for constructing and deconstructing 'BVar's
 -- three-tuples.
+--
+-- @since 0.2.1.0
 pattern T3
     :: (Backprop a, Backprop b, Backprop c, Reifies s W)
     => BVar s a
@@ -694,3 +698,4 @@ pattern T3
 pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
   where
     T3 = isoVar3 (,,) id
+
