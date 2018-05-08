@@ -2673,7 +2673,7 @@ infixl 8 .~~
 --   
 --   Is undefined if the <a>Traversal</a> hits no targets.
 --   
---   Is essentially <a>^^?</a> with <tt>fromJust</tt>, or <a>^^..</a> with
+--   Is essentially <a>^^?</a> with <a>fromJust</a>, or <a>^^..</a> with
 --   <a>head</a>.
 (^^?!) :: forall b a s. (Backprop a, Reifies s W) => BVar s b -> Traversal' b a -> BVar s a
 
@@ -2723,6 +2723,12 @@ previewVar :: forall b a s. (Reifies s W, Backprop a) => Traversal' b a -> BVar 
 --   
 --   See documentation for <a>^^..</a> for more information.
 toListOfVar :: forall b a s. (Backprop a, Reifies s W) => Traversal' b a -> BVar s b -> [BVar s a]
+
+-- | Useful pattern for constructing and deconstructing <a>BVar</a>s of
+--   two-tuples.
+
+-- | Useful pattern for constructing and deconstructing <a>BVar</a>s
+--   three-tuples.
 
 -- | Convert the value inside a <a>BVar</a> using a given isomorphism.
 --   Useful for things like constructors.
