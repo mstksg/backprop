@@ -3105,6 +3105,13 @@ liftA2 :: forall f a b c s. (Traversable f, Applicative f, Backprop a, Backprop 
 --   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
 liftA3 :: forall f a b c d s. (Traversable f, Applicative f, Backprop a, Backprop b, Backprop c, Backprop d, Backprop (f d), Reifies s W) => (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
 
+-- | Lifted conversion between two <a>Integral</a> instances.
+fromIntegral :: (Backprop a, Integral a, Backprop b, Integral b, Reifies s W) => BVar s a -> BVar s b
+
+-- | Lifted conversion between two <a>Fractional</a> and <a>Real</a>
+--   instances.
+realToFrac :: (Backprop a, Fractional a, Real a, Backprop b, Fractional b, Real b, Reifies s W) => BVar s a -> BVar s b
+
 -- | Coerce items inside a <a>BVar</a>.
 coerce :: forall a b s. Coercible a b => BVar s a -> BVar s b
 
@@ -3150,6 +3157,13 @@ liftA2 :: forall f a b c s. (Traversable f, Applicative f, Reifies s W) => AddFu
 -- | Lifted <a>liftA3</a>. Lifts backpropagatable functions to be
 --   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
 liftA3 :: forall f a b c d s. (Traversable f, Applicative f, Reifies s W) => AddFunc a -> AddFunc b -> AddFunc c -> AddFunc d -> ZeroFunc a -> ZeroFunc b -> ZeroFunc c -> ZeroFunc d -> ZeroFunc (f d) -> (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
+
+-- | Lifted conversion between two <a>Integral</a> instances.
+fromIntegral :: (Integral a, Integral b, Reifies s W) => AddFunc a -> ZeroFunc b -> BVar s a -> BVar s b
+
+-- | Lifted conversion between two <a>Fractional</a> and <a>Real</a>
+--   instances.
+realToFrac :: (Fractional a, Real a, Fractional b, Real b, Reifies s W) => AddFunc a -> ZeroFunc b -> BVar s a -> BVar s b
 
 -- | Coerce items inside a <a>BVar</a>.
 coerce :: forall a b s. Coercible a b => BVar s a -> BVar s b
@@ -3198,6 +3212,13 @@ liftA2 :: forall f a b c s. (Traversable f, Applicative f, Num a, Num b, Num c, 
 -- | Lifted <a>liftA3</a>. Lifts backpropagatable functions to be
 --   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
 liftA3 :: forall f a b c d s. (Traversable f, Applicative f, Num a, Num b, Num c, Num d, Num (f d), Reifies s W) => (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
+
+-- | Lifted conversion between two <a>Integral</a> instances.
+fromIntegral :: (Integral a, Integral b, Reifies s W) => BVar s a -> BVar s b
+
+-- | Lifted conversion between two <a>Fractional</a> and <a>Real</a>
+--   instances.
+realToFrac :: (Fractional a, Real a, Fractional b, Real b, Reifies s W) => BVar s a -> BVar s b
 
 -- | Coerce items inside a <a>BVar</a>.
 coerce :: forall a b s. Coercible a b => BVar s a -> BVar s b
