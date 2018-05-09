@@ -1128,7 +1128,7 @@ NumBP :: a -> NumBP a
 --   applying it just once.
 --   
 --   Each type should ideally only have one <a>ZeroFunc</a>. This coherence
---   constraint is given by the typeclass <tt>Backprop</tt>.
+--   constraint is given by the typeclass <a>Backprop</a>.
 newtype ZeroFunc a
 ZF :: (a -> a) -> ZeroFunc a
 [runZF] :: ZeroFunc a -> a -> a
@@ -1154,12 +1154,12 @@ zfFunctor :: (Backprop a, Functor f) => ZeroFunc (f a)
 -- | Add together two values of a type. To combine contributions of
 --   gradients, so should ideally be information-preserving.
 --   
---   See laws for <tt>Backprop</tt> for the laws this should be expected to
+--   See laws for <a>Backprop</a> for the laws this should be expected to
 --   preserve. Namely, it should be commutative and associative, with an
 --   identity for a valid <a>ZeroFunc</a>.
 --   
 --   Each type should ideally only have one <a>AddFunc</a>. This coherence
---   constraint is given by the typeclass <tt>Backprop</tt>.
+--   constraint is given by the typeclass <a>Backprop</a>.
 newtype AddFunc a
 AF :: (a -> a -> a) -> AddFunc a
 [runAF] :: AddFunc a -> a -> a -> a
@@ -1187,7 +1187,7 @@ addFuncs :: (Every Backprop as, Known Length as) => Prod AddFunc as
 --   applying it just once.
 --   
 --   Each type should ideally only have one <a>OneFunc</a>. This coherence
---   constraint is given by the typeclass <tt>Backprop</tt>.
+--   constraint is given by the typeclass <a>Backprop</a>.
 newtype OneFunc a
 OF :: (a -> a) -> OneFunc a
 [runOF] :: OneFunc a -> a -> a
@@ -1243,7 +1243,7 @@ gradBP2 :: ZeroFunc a -> ZeroFunc b -> OneFunc c -> (forall s. Reifies s W => BV
 -- | <a>backpropWith2</a>, but with explicit <a>zero</a>.
 backpropWith2 :: ZeroFunc a -> ZeroFunc b -> (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c -> c) -> (c, (a, b))
 
--- | <a>backpropN</a>, but with explicit <tt>zero</tt> and <tt>one</tt>.
+-- | <a>backpropN</a>, but with explicit <a>zero</a> and <a>one</a>.
 backpropN :: forall as b. () => Prod ZeroFunc as -> OneFunc b -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b, Tuple as)
 
 -- | <tt>evalBP</tt> generalized to multiple inputs of different types. See
@@ -1270,22 +1270,22 @@ auto :: a -> BVar s a
 --   wrappers.
 coerceVar :: Coercible a b => BVar s a -> BVar s b
 
--- | <a>viewVar</a>, but with explicit <tt>add</tt> and <tt>zero</tt>.
+-- | <a>viewVar</a>, but with explicit <a>add</a> and <a>zero</a>.
 viewVar :: forall a b s. Reifies s W => AddFunc a -> ZeroFunc a -> Lens' b a -> BVar s b -> BVar s a
 
--- | <a>setVar</a>, but with explicit <tt>add</tt> and <tt>zero</tt>.
+-- | <a>setVar</a>, but with explicit <a>add</a> and <a>zero</a>.
 setVar :: forall a b s. Reifies s W => AddFunc a -> AddFunc b -> ZeroFunc a -> ZeroFunc b -> Lens' b a -> BVar s a -> BVar s b -> BVar s b
 
--- | <a>sequenceVar</a>, but with explicit <tt>add</tt> and <tt>zero</tt>.
+-- | <a>sequenceVar</a>, but with explicit <a>add</a> and <a>zero</a>.
 sequenceVar :: forall t a s. (Reifies s W, Traversable t) => AddFunc a -> ZeroFunc a -> BVar s (t a) -> t (BVar s a)
 
--- | <a>collectVar</a>, but with explicit <tt>add</tt> and <tt>zero</tt>.
+-- | <a>collectVar</a>, but with explicit <a>add</a> and <a>zero</a>.
 collectVar :: forall t a s. (Reifies s W, Foldable t, Functor t) => AddFunc a -> ZeroFunc a -> ZeroFunc (t a) -> t (BVar s a) -> BVar s (t a)
 
--- | <a>previewVar</a>, but with explicit <tt>add</tt> and <tt>zero</tt>.
+-- | <a>previewVar</a>, but with explicit <a>add</a> and <a>zero</a>.
 previewVar :: forall b a s. Reifies s W => AddFunc a -> ZeroFunc a -> Traversal' b a -> BVar s b -> Maybe (BVar s a)
 
--- | <a>toListOfVar</a>, but with explicit <tt>add</tt> and <tt>zero</tt>.
+-- | <a>toListOfVar</a>, but with explicit <a>add</a> and <a>zero</a>.
 toListOfVar :: forall b a s. Reifies s W => AddFunc a -> ZeroFunc a -> Traversal' b a -> BVar s b -> [BVar s a]
 
 -- | <a>isoVar</a> with explicit <a>add</a> and <a>zero</a>.
@@ -1300,16 +1300,16 @@ isoVar3 :: Reifies s W => AddFunc a -> AddFunc b -> AddFunc c -> ZeroFunc d -> (
 -- | <a>isoVarN</a> with explicit <a>add</a> and <a>zero</a>.
 isoVarN :: Reifies s W => Prod AddFunc as -> ZeroFunc b -> (Tuple as -> b) -> (b -> Tuple as) -> Prod (BVar s) as -> BVar s b
 
--- | <a>liftOp</a>, but with explicit <tt>add</tt> and <tt>zero</tt>.
+-- | <a>liftOp</a>, but with explicit <a>add</a> and <a>zero</a>.
 liftOp :: forall as b s. Reifies s W => Prod AddFunc as -> ZeroFunc b -> Op as b -> Prod (BVar s) as -> BVar s b
 
--- | <a>liftOp1</a>, but with explicit <tt>add</tt> and <tt>zero</tt>.
+-- | <a>liftOp1</a>, but with explicit <a>add</a> and <a>zero</a>.
 liftOp1 :: forall a b s. Reifies s W => AddFunc a -> ZeroFunc b -> Op '[a] b -> BVar s a -> BVar s b
 
--- | <a>liftOp2</a>, but with explicit <tt>add</tt> and <tt>zero</tt>.
+-- | <a>liftOp2</a>, but with explicit <a>add</a> and <a>zero</a>.
 liftOp2 :: forall a b c s. Reifies s W => AddFunc a -> AddFunc b -> ZeroFunc c -> Op '[a, b] c -> BVar s a -> BVar s b -> BVar s c
 
--- | <a>liftOp3</a>, but with explicit <tt>add</tt> and <tt>zero</tt>.
+-- | <a>liftOp3</a>, but with explicit <a>add</a> and <a>zero</a>.
 liftOp3 :: forall a b c d s. Reifies s W => AddFunc a -> AddFunc b -> AddFunc c -> ZeroFunc d -> Op '[a, b, c] d -> BVar s a -> BVar s b -> BVar s c -> BVar s d
 
 -- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
