@@ -36,7 +36,7 @@ ghc-options:
 - -Wcompat
 - -Wincomplete-record-updates
 - -Wredundant-constraints
-- -fprint-explicit-kinds
+# - -fprint-explicit-kinds
 dependencies:
 - base >=4.7 && <5
 - deepseq

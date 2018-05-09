@@ -3,6 +3,7 @@
 {-# LANGUAGE PolyKinds              #-}
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TupleSections          #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators          #-}
 
@@ -18,6 +19,7 @@ module Data.Type.Util (
   , listToVecDef
   , fillProd
   , zipVecList
+  , splitProd
   ) where
 
 import           Data.Bifunctor
@@ -27,6 +29,7 @@ import           Data.Type.Nat
 import           Data.Type.Product
 import           Data.Type.Vector
 import           Type.Class.Witness
+import           Type.Family.List
 import           Type.Family.Nat
 
 -- | @'Replicate' n a@ is a list of @a@s repeated @n@ times.
@@ -156,3 +159,13 @@ zipVecList f = go
       x :* xs -> \case
         []   -> f x Nothing  :* go xs []
         y:ys -> f x (Just y) :* go xs ys
+
+splitProd
+    :: Length as
+    -> Prod f (as ++ bs)
+    -> (Prod f as, Prod f bs)
+splitProd = \case
+    LZ   -> (Ø,)
+    LS l -> \case
+      x :< xs -> first (x :<) $ splitProd l xs
+{-# INLINE splitProd #-}

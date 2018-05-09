@@ -1,17 +1,22 @@
-{-# LANGUAGE BangPatterns        #-}
-{-# LANGUAGE DeriveDataTypeable  #-}
-{-# LANGUAGE DeriveGeneric       #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving  #-}
-{-# LANGUAGE TupleSections       #-}
-{-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeInType          #-}
-{-# LANGUAGE TypeOperators       #-}
-{-# LANGUAGE ViewPatterns        #-}
+{-# LANGUAGE BangPatterns           #-}
+{-# LANGUAGE DeriveDataTypeable     #-}
+{-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE LambdaCase             #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE StandaloneDeriving     #-}
+{-# LANGUAGE TupleSections          #-}
+{-# LANGUAGE TypeApplications       #-}
+{-# LANGUAGE TypeInType             #-}
+{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE ViewPatterns           #-}
 
 -- |
 -- Module      : Numeric.Backprop.Internal
@@ -52,27 +57,31 @@ import           Data.Bifunctor
 import           Data.Coerce
 import           Data.Foldable
 import           Data.Function
+import           Data.Functor.Identity
 import           Data.IORef
 import           Data.Kind
 import           Data.Maybe
-import           Data.Monoid hiding        (Any(..))
+import           Data.Monoid hiding           (Any(..))
 import           Data.Proxy
 import           Data.Reflection
-import           Data.Type.Conjunction
-import           Data.Type.Product hiding  (toList)
+import           Data.Type.Conjunction hiding ((:*:))
+import           Data.Type.Length
+import           Data.Type.Product hiding     (toList)
 import           Data.Type.Util
-import           Data.Type.Vector hiding   (itraverse)
+import           Data.Type.Vector hiding      (itraverse)
 import           Data.Typeable
-import           GHC.Exts                  (Any)
-import           GHC.Generics
+import           GHC.Exts                     (Any)
+import           GHC.Generics                 as G
 import           Lens.Micro
+import           Numeric.Backprop.Class
 import           Numeric.Backprop.Op
 import           System.IO.Unsafe
 import           Type.Class.Higher
-import           Numeric.Backprop.Class
+import           Type.Class.Known
+import           Type.Family.List
 import           Unsafe.Coerce
-import qualified Data.Vector               as V
-import qualified Data.Vector.Mutable       as MV
+import qualified Data.Vector                  as V
+import qualified Data.Vector.Mutable          as MV
 
 -- | "Zero out" all components of a value.  For scalar values, this should
 -- just be @'const' 0@.  For vectors and matrices, this should set all
@@ -799,4 +808,79 @@ addFunc = AF add
 oneFunc :: Backprop a => OneFunc a
 oneFunc = OF one
 {-# INLINE oneFunc #-}
+
+p1 :: Lens' ((f :*: g) a) (f a)
+p1 f (x :*: y) = (:*: y) <$> f x
+{-# INLINE p1 #-}
+
+p2 :: Lens' ((f :*: g) a) (g a)
+p2 f (x :*: y) = (x :*:) <$> f y
+{-# INLINE p2 #-}
+
+s1 :: Traversal' ((f :+: g) a) (f a)
+s1 f (L1 x) = L1 <$> f x
+s1 _ (R1 y) = pure (R1 y)
+{-# INLINE s1 #-}
+
+s2 :: Traversal' ((f :+: g) a) (g a)
+s2 _ (L1 x) = pure (L1 x)
+s2 f (R1 y) = R1 <$> f y
+{-# INLINE s2 #-}
+
+class BVGroup s as i o | i o -> as where
+    gsplitBV :: Prod AddFunc as -> Prod ZeroFunc as -> BVar s (i ()) -> o ()
+
+instance Reifies s W => BVGroup s '[a] (K1 i a) (K1 i (BVar s a)) where
+    gsplitBV (af :< Ø) (zf :< Ø) = K1 . viewVar af zf (lens unK1 (const K1))
+    {-# INLINE gsplitBV #-}
+
+instance ( Reifies s W
+         , BVGroup s as (f a) (f (BVar s a))
+         , BVGroup s bs (g b) (g (BVar s b))
+         , cs ~ (as ++ bs)
+         , Known Length as
+         ) => BVGroup s (f a () ': g b () ': cs) (f a :*: g b) (f (BVar s a) :*: g (BVar s b)) where
+    gsplitBV (afa :< afb :< afs) (zfa :< zfb :< zfs) xy = x :*: y
+      where
+        (afas, afbs) = splitProd known afs
+        (zfas, zfbs) = splitProd known zfs
+        x = gsplitBV afas zfas . viewVar afa zfa p1 $ xy
+        y = gsplitBV afbs zfbs . viewVar afb zfb p2 $ xy
+    {-# INLINE gsplitBV #-}
+
+instance ( Reifies s W
+         , BVGroup s as (f a) (f (BVar s a))
+         , BVGroup s bs (g b) (g (BVar s b))
+         , cs ~ (as ++ bs)
+         , Known Length as
+         ) => BVGroup s (f a () ': g b () ': cs) (f a :+: g b) (f (BVar s a) :+: g (BVar s b)) where
+    gsplitBV (afa :< afb :< afs) (zfa :< zfb :< zfs) xy =
+        case previewVar afa zfa s1 xy of
+          Just x -> L1 $ gsplitBV afas zfas x
+          Nothing -> case previewVar afb zfb s2 xy of
+            Just y -> R1 $ gsplitBV afbs zfbs y
+            Nothing -> error "Numeric.Backprop.gsplitBV: Internal error occurred"
+      where
+        (afas, afbs) = splitProd known afs
+        (zfas, zfbs) = splitProd known zfs
+    {-# INLINE gsplitBV #-}
+
+splitBV
+    :: forall z as s.
+       ( Generic (z Identity)
+       , Generic (z (BVar s))
+       , BVGroup s as (Rep (z Identity)) (Rep (z (BVar s)))
+       , Reifies s W
+       )
+    => AddFunc (Rep (z Identity) ())
+    -> Prod AddFunc as
+    -> ZeroFunc (Rep (z Identity) ())
+    -> Prod ZeroFunc as
+    -> BVar s (z Identity)
+    -> z (BVar s)
+splitBV af afs zf zfs =
+        G.to
+      . gsplitBV afs zfs
+      . viewVar af zf (lens (from @(z Identity) @()) (const G.to))
+{-# INLINE splitBV #-}
 
