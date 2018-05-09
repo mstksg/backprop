@@ -3052,9 +3052,6 @@ newtype I a :: * -> *
 I :: a -> I a
 [getI] :: I a -> a
 class Reifies k (s :: k) a | s -> a
-instance (Numeric.Backprop.Class.Backprop a, Data.Reflection.Reifies s Numeric.Backprop.Internal.W) => Numeric.Backprop.BVGroup s p (GHC.Generics.K1 i a) (GHC.Generics.K1 i (Numeric.Backprop.Internal.BVar s a))
-instance (Numeric.Backprop.Class.Backprop (f a p), Numeric.Backprop.Class.Backprop (g b p), Numeric.Backprop.BVGroup s p (f a) (f (Numeric.Backprop.Internal.BVar s a)), Numeric.Backprop.BVGroup s p (g b) (g (Numeric.Backprop.Internal.BVar s b)), Data.Reflection.Reifies s Numeric.Backprop.Internal.W) => Numeric.Backprop.BVGroup s p (f a GHC.Generics.:*: g b) (f (Numeric.Backprop.Internal.BVar s a) GHC.Generics.:*: g (Numeric.Backprop.Internal.BVar s b))
-instance (Numeric.Backprop.Class.Backprop (f a p), Numeric.Backprop.Class.Backprop (g b p), Numeric.Backprop.BVGroup s p (f a) (f (Numeric.Backprop.Internal.BVar s a)), Numeric.Backprop.BVGroup s p (g b) (g (Numeric.Backprop.Internal.BVar s b)), Data.Reflection.Reifies s Numeric.Backprop.Internal.W) => Numeric.Backprop.BVGroup s p (f a GHC.Generics.:+: g b) (f (Numeric.Backprop.Internal.BVar s a) GHC.Generics.:+: g (Numeric.Backprop.Internal.BVar s b))
 
 
 -- | Some lifted versions of common functions found in <tt>Prelude</tt> (or
