@@ -116,27 +116,6 @@ ofFunctor :: (Backprop a, Functor f) => OneFunc (f a)
 ofFunctor = OF oneFunctor
 {-# INLINE ofFunctor #-}
 
--- | The canonical 'ZeroFunc' for instances of 'Backprop'.
---
--- @since 0.2.0.0
-zeroFunc :: Backprop a => ZeroFunc a
-zeroFunc = ZF zero
-{-# INLINE zeroFunc #-}
-
--- | The canonical 'AddFunc' for instances of 'Backprop'.
---
--- @since 0.2.0.0
-addFunc :: Backprop a => AddFunc a
-addFunc = AF add
-{-# INLINE addFunc #-}
-
--- | The canonical 'OneFunc' for instances of 'Backprop'.
---
--- @since 0.2.0.0
-oneFunc :: Backprop a => OneFunc a
-oneFunc = OF one
-{-# INLINE oneFunc #-}
-
 -- | Generate an 'ZeroFunc' for every type in a type-level list, if every
 -- type has an instance of 'Backprop'.
 --

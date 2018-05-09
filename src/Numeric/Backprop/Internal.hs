@@ -34,9 +34,9 @@ module Numeric.Backprop.Internal (
   , viewVar, setVar, sequenceVar, collectVar, previewVar, toListOfVar
   , coerceVar
   -- * Func wrappers
-  , ZeroFunc(..), zfNum
-  , AddFunc(..), afNum
-  , OneFunc(..), ofNum
+  , ZeroFunc(..), zfNum, zeroFunc
+  , AddFunc(..), afNum, addFunc
+  , OneFunc(..), ofNum, oneFunc
   -- * Debug
   , debugSTN
   , debugIR
@@ -69,6 +69,7 @@ import           Lens.Micro
 import           Numeric.Backprop.Op
 import           System.IO.Unsafe
 import           Type.Class.Higher
+import           Numeric.Backprop.Class
 import           Unsafe.Coerce
 import qualified Data.Vector               as V
 import qualified Data.Vector.Mutable       as MV
@@ -765,3 +766,37 @@ ixt t i f xs = stuff <$> ixi i f contents
         go []     = error "Numeric.Backprop.Internal: unexpected shape involved in gradient computation"
         go (y:ys) = (y, ys)
 {-# INLINE ixt #-}
+
+-- | @since 0.2.2.0
+instance (Backprop a, Reifies s W) => Backprop (BVar s a) where
+    zero = liftOp1 addFunc zeroFunc . op1 $ \x -> (zero x, zero)
+    {-# INLINE zero #-}
+    add  = liftOp2 addFunc addFunc zeroFunc . op2 $ \x y ->
+        ( add x y
+        , \d -> (d, d)
+        )
+    {-# INLINE add #-}
+    one  = liftOp1 addFunc zeroFunc . op1 $ \x -> (one  x, zero)
+    {-# INLINE one #-}
+
+-- | The canonical 'ZeroFunc' for instances of 'Backprop'.
+--
+-- @since 0.2.0.0
+zeroFunc :: Backprop a => ZeroFunc a
+zeroFunc = ZF zero
+{-# INLINE zeroFunc #-}
+
+-- | The canonical 'AddFunc' for instances of 'Backprop'.
+--
+-- @since 0.2.0.0
+addFunc :: Backprop a => AddFunc a
+addFunc = AF add
+{-# INLINE addFunc #-}
+
+-- | The canonical 'OneFunc' for instances of 'Backprop'.
+--
+-- @since 0.2.0.0
+oneFunc :: Backprop a => OneFunc a
+oneFunc = OF one
+{-# INLINE oneFunc #-}
+
