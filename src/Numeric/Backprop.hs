@@ -684,6 +684,7 @@ pattern T2
 pattern T2 x y <- (\xy -> (xy ^^. _1, xy ^^. _2) -> (x, y))
   where
     T2 = isoVar2 (,) id
+{-# COMPLETE T2 #-}
 
 -- | Useful pattern for constructing and deconstructing 'BVar's
 -- three-tuples.
@@ -698,4 +699,5 @@ pattern T3
 pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
   where
     T3 = isoVar3 (,,) id
+{-# COMPLETE T3 #-}
 
