@@ -12,7 +12,7 @@
 --   
 --   See <a>README.md</a>
 @package backprop
-@version 0.2.1.0
+@version 0.2.2.0
 
 
 -- | Provides the <a>Backprop</a> typeclass, a class for values that can be
@@ -3087,6 +3087,11 @@ maximum :: forall t a s. (Foldable t, Functor t, Backprop a, Ord a, Backprop (t 
 --   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
 traverse :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Backprop a, Backprop b, Backprop (f (t b)), Backprop (t b), Reifies s W) => (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
 
+-- | Lifted version of <a>toList</a>. Takes a <a>BVar</a> of a
+--   <a>Traversable</a> of items and returns a list of <a>BVar</a>s for
+--   each item.
+toList :: (Traversable t, Backprop a, Reifies s W) => BVar s (t a) -> [BVar s a]
+
 -- | Lifted <a>fmap</a>. Lifts backpropagatable functions to be
 --   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
 fmap :: forall f a b s. (Traversable f, Backprop a, Backprop b, Backprop (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
@@ -3143,6 +3148,11 @@ maximum :: forall t a s. (Foldable t, Functor t, Ord a, Reifies s W) => AddFunc 
 --   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
 traverse :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Reifies s W) => AddFunc a -> AddFunc b -> AddFunc (t b) -> ZeroFunc a -> ZeroFunc b -> ZeroFunc (t b) -> ZeroFunc (f (t b)) -> (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
 
+-- | Lifted version of <a>toList</a>. Takes a <a>BVar</a> of a
+--   <a>Traversable</a> of items and returns a list of <a>BVar</a>s for
+--   each item.
+toList :: (Traversable t, Reifies s W) => AddFunc a -> ZeroFunc a -> BVar s (t a) -> [BVar s a]
+
 -- | Lifted <a>fmap</a>. Lifts backpropagatable functions to be
 --   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
 fmap :: forall f a b s. (Traversable f, Reifies s W) => AddFunc a -> AddFunc b -> ZeroFunc a -> ZeroFunc b -> ZeroFunc (f b) -> (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
@@ -3194,6 +3204,11 @@ maximum :: forall t a s. (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifie
 -- | Lifted <a>traverse</a>. Lifts backpropagatable functions to be
 --   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
 traverse :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Num a, Num b, Num (f (t b)), Num (t b), Reifies s W) => (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
+
+-- | Lifted version of <a>toList</a>. Takes a <a>BVar</a> of a
+--   <a>Traversable</a> of items and returns a list of <a>BVar</a>s for
+--   each item.
+toList :: (Traversable t, Num a, Reifies s W) => BVar s (t a) -> [BVar s a]
 
 -- | Lifted <a>fmap</a>. Lifts backpropagatable functions to be
 --   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
