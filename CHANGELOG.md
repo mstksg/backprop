@@ -8,6 +8,7 @@ Version 0.2.2.0
 
 <https://github.com/mstksg/backprop/releases/tag/v0.2.2.0>
 
+*   `toList` for *Prelude.Backprop* modules
 *   `Backprop` instance for `BVar`
 
 Version 0.2.1.0

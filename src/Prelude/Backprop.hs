@@ -32,6 +32,7 @@ module Prelude.Backprop (
   , minimum
   , maximum
   , traverse
+  , toList
   -- * Functor and Applicative
   , fmap
   , (<$>)
@@ -219,3 +220,14 @@ realToFrac
 realToFrac = liftOp1 . op1 $ \x ->
     (P.realToFrac x, P.realToFrac)
 {-# INLINE realToFrac #-}
+
+-- | Lifted version of 'P.toList'.  Takes a 'BVar' of a 'Traversable' of
+-- items and returns a list of 'BVar's for each item.
+--
+-- @since 0.2.2.0
+toList
+    :: (Traversable t, Backprop a, Reifies s W)
+    => BVar s (t a)
+    -> [BVar s a]
+toList = toListOfVar P.traverse
+{-# INLINE toList #-}
