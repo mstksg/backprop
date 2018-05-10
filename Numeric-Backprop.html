@@ -293,8 +293,9 @@ instance <code><a href="Numeric-Backprop.html#t:Backprop">Backprop</a></code> My
 </pre><p>So you can use it lke:</p><pre>myFunction :: <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> s MyType -&gt; BVar s Double
 myFunction (<code><a href="Numeric-Backprop.html#v:splitBV">splitBV</a></code> -&gt; MT x y) =  x + <code><a href="Prelude-Backprop.html#v:sum">sum</a></code> y
 </pre><p>If you use <code><a href="Numeric-Backprop.html#v:splitBV">splitBV</a></code>, the contents will be a <code>BVar s Double</code> and a <code>BVar
- s [Double]</code>.  Basically, it lets you &quot;extract&quot; the fields, because your
- <code>MyType</code> now contains <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code>s.</p><p>Now, <code><a href="Numeric-Backprop.html#v:joinBV">joinBV</a></code> can be used, with the type:</p><pre><code><a href="Numeric-Backprop.html#v:joinBV">joinBV</a></code> :: MyType' (BVar s) -&gt; BVar s MyType
+ s [Double]</code>.  It lets you &quot;extract&quot; the fields, because your <code>MyType'</code>
+ constructor now holds a <code><code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> s Double</code> and a <code>BVar s [Double]</code>,
+ instead of just a normal <code><a href="../base-4.10.1.0/Prelude.html#t:Double">Double</a></code> and <code>[Double]</code>.</p><p>With this trick, <code><a href="Numeric-Backprop.html#v:joinBV">joinBV</a></code> can also be used, with the type:</p><pre><code><a href="Numeric-Backprop.html#v:joinBV">joinBV</a></code> :: MyType' (BVar s) -&gt; BVar s MyType
 </pre><p>So you can take a bunch of <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code>s and turn them into a <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> of
  a <code>MyType</code>:</p><pre>myOtherFunction :: <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> s Double -&gt; BVar s [Double] -&gt; BVar s MyType
 myOtherFunction x y = <code><a href="Numeric-Backprop.html#v:joinBV">joinBV</a></code> $ MT x y
