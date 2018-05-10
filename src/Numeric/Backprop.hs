@@ -786,10 +786,11 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
 -- @
 --
 -- If you use 'splitBV', the contents will be a @BVar s Double@ and a @BVar
--- s [Double]@.  Basically, it lets you "extract" the fields, because your
--- 'MyType' now contains 'BVar's.
+-- s [Double]@.  It lets you "extract" the fields, because your 'MyType''
+-- constructor now holds a @'BVar' s Double@ and a @BVar s [Double]@,
+-- instead of just a normal 'Double' and @[Double]@.
 --
--- Now, 'joinBV' can be used, with the type:
+-- With this trick, 'joinBV' can also be used, with the type:
 --
 -- @
 -- 'joinBV' :: MyType' (BVar s) -> BVar s MyType
