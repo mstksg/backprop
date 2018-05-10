@@ -12,6 +12,7 @@
 {-# LANGUAGE TypeApplications       #-}
 {-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE UndecidableInstances   #-}
+{-# OPTIONS_HADDOCK not-home        #-}
 
 -- |
 -- Module      : Numeric.Backprop.Explicit
@@ -331,7 +332,8 @@ isoVarN afs z f g = liftOp afs z (opIsoN f g)
 {-# INLINE isoVarN #-}
 
 -- | Helper class for generically "splitting" and "joining" 'BVar's into
--- constructors.  See 'splitBV' and 'joinBV'.
+-- constructors.  See 'Numeric.Backprop.splitBV' and
+-- 'Numeric.Backprop.joinBV'.
 --
 -- See "Numeric.Backprop#hkd" for a tutorial on how to use this.
 --

@@ -13,6 +13,7 @@
 {-# LANGUAGE TypeInType          #-}
 {-# LANGUAGE TypeOperators       #-}
 {-# LANGUAGE ViewPatterns        #-}
+{-# OPTIONS_HADDOCK not-home     #-}
 
 -- |
 -- Module      : Numeric.Backprop.Internal
@@ -146,23 +147,32 @@ ofNum = OF (const 1)
 --
 -- If @a@ contains items, the items can be accessed and extracted using
 -- lenses. A @'Lens'' b a@ can be used to access an @a@ inside a @b@, using
--- '^^.' ('viewVar'):
+-- '^^.' ('Numeric.Backprop.viewVar'):
 --
 -- @
 -- ('^.')  ::        a -> 'Lens'' a b ->        b
 -- ('^^.') :: 'BVar' s a -> 'Lens'' a b -> 'BVar' s b
 -- @
 --
--- There is also '^^?' ('previewVar'), to use a 'Prism'' or 'Traversal'' to
--- extract a target that may or may not be present (which can implement
--- pattern matching), '^^..' ('toListOfVar') to use a 'Traversal'' to
--- extract /all/ targets inside a 'BVar', and '.~~' ('setVar') to set and
--- update values inside a 'BVar'.
+-- There is also '^^?' ('Numeric.Backprop.previewVar'), to use a 'Prism''
+-- or 'Traversal'' to extract a target that may or may not be present
+-- (which can implement pattern matching), '^^..'
+-- ('Numeric.Backprop.toListOfVar') to use a 'Traversal'' to extract /all/
+-- targets inside a 'BVar', and '.~~' ('setVar') to set and update values
+-- inside a 'BVar'.
+--
+-- If you have control over your data type definitions, you can also use
+-- 'Numeric.Backprop.splitBV' and 'Numeric.Backprop.joinBV' to manipulate
+-- data types by easily extracting fields out of a 'BVar' of data types and
+-- creating 'BVar's of data types out of 'BVar's of their fields.  See
+-- "Numeric.Backprop#hkd" for a tutorial on this use pattern.
 --
 -- For more complex operations, libraries can provide functions on 'BVar's
--- using 'liftOp' and related functions.  This is how you can create
--- primitive functions that users can use to manipulate your library's
--- values.
+-- using 'Numeric.Backprop.liftOp' and related functions.  This is how you
+-- can create primitive functions that users can use to manipulate your
+-- library's values.  See
+-- <https://github.com/mstksg/backprop/wiki/Equipping-your-Library-with-Backprop>
+-- for a detailed guide.
 --
 -- For example, the /hmatrix/ library has a matrix-vector multiplication
 -- function, @#> :: L m n -> R n -> L m@.
@@ -171,8 +181,8 @@ ofNum = OF (const 1)
 -- (R n) -> BVar (R m)@, which the user can then use to manipulate their
 -- 'BVar's of @L m n@s and @R n@s, etc.
 --
--- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
--- information.
+-- See "Numeric.Backprop#liftops" and documentation for
+-- 'Numeric.Backprop.liftOp' for more information.
 --
 data BVar s a = BV { _bvRef :: !(BRef s)
                    , _bvVal :: !a

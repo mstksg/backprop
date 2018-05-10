@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs            #-}
 {-# LANGUAGE PatternSynonyms  #-}
 {-# LANGUAGE RankNTypes       #-}
+{-# OPTIONS_HADDOCK not-home  #-}
 
 -- |
 -- Module      : Numeric.Backprop.Num
@@ -63,8 +64,7 @@ module Numeric.Backprop.Num (
   , previewVar, toListOfVar
     -- ** With Isomorphisms
   , isoVar, isoVar2, isoVar3, isoVarN
-    -- ** With 'Op's#liftops#
-    -- $liftops
+    -- ** With 'Op's
   , liftOp
   , liftOp1, liftOp2, liftOp3
     -- * 'Op'

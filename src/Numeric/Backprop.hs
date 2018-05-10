@@ -85,7 +85,7 @@ module Numeric.Backprop (
     -- $liftops
   , liftOp
   , liftOp1, liftOp2, liftOp3
-    -- ** Generics
+    -- ** Generics#hkd#
     -- $hkd
   , splitBV
   , joinBV
@@ -758,7 +758,7 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
 -- @
 -- -- | Can be re-used for every data type you use this trick with
 -- type family HKD f a where
---     HKD Identity a = a
+--     HKD 'Identity' a = a
 --     HKD f        a =  f a
 --
 -- data MyType' f = MT { mtX :: HKD f Double, mtY :: HKD f [Double] }
@@ -766,10 +766,10 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
 --
 -- -- | This is the original data type, which can be used the same way as
 -- -- before
--- type MyType = MyType' Identity
+-- type MyType = MyType' 'Identity'
 --
 -- -- | Automatic instance
--- instance Backprop MyType
+-- instance 'Backprop' MyType
 -- @
 --
 -- Now, 'splitBV' can be used, with type:
@@ -781,8 +781,8 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
 -- So you can use it lke:
 --
 -- @
--- myFunction :: BVar s MyType -> BVar s Double
--- myFunction (splitBV -> MT x y) =  x + 'Prelude.Backprop.sum' y
+-- myFunction :: 'BVar' s MyType -> BVar s Double
+-- myFunction ('splitBV' -> MT x y) =  x + 'Prelude.Backprop.sum' y
 -- @
 --
 -- If you use 'splitBV', the contents will be a @BVar s Double@ and a @BVar
@@ -799,8 +799,8 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
 -- a 'MyType':
 --
 -- @
--- myOtherFunction :: BVar s Double -> BVar s [Double] -> BVar s MyType
--- myOtherFunction x y = joinBV $ MT x y
+-- myOtherFunction :: 'BVar' s Double -> BVar s [Double] -> BVar s MyType
+-- myOtherFunction x y = 'joinBV' $ MT x y
 -- @
 --
 -- This will work with all data types made with a single constructor, whose
