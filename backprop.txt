@@ -406,6 +406,11 @@ instance GHC.Base.Monad Numeric.Backprop.Class.NumBP
 --   To use these <a>Op</a>s with the backprop library, they can be made to
 --   work with <tt>BVar</tt>s using <tt>liftOp</tt>, <tt>liftOp1</tt>,
 --   <tt>liftOp2</tt>, and <tt>liftOp3</tt>.
+--   
+--   If you are writing a library, see
+--   <a>https://github.com/mstksg/backprop/wiki/Equipping-your-Library-with-Backprop</a>
+--   for a guide for equipping your library with backpropatable operations
+--   using <a>Op</a>s.
 module Numeric.Backprop.Op
 
 -- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
@@ -2164,6 +2169,10 @@ class Reifies k (s :: k) a | s -> a
 --   and tutorials, or dive striaght in by reading the docs for
 --   <a>BVar</a>.
 --   
+--   If you are writing a library, see
+--   <a>https://github.com/mstksg/backprop/wiki/Equipping-your-Library-with-Backprop</a>
+--   for a guide for equipping your library with backpropatable operations.
+--   
 --   In the original version 0.1, this module required <a>Num</a> instances
 --   for methods instead of <a>Backprop</a> instances. This interface is
 --   still available in <a>Numeric.Backprop.Num</a>, which has the same API
@@ -2605,6 +2614,11 @@ coerceVar :: Coercible a b => BVar s a -> BVar s b
 --   This is the main way to pull out values from <a>BVar</a> of container
 --   types.
 --   
+--   If you have control of your data type definitions, consider using
+--   <a>splitBV</a>, which lets you break out <a>BVar</a>s of values into
+--   <a>BVar</a>s of their individual fields automatically without
+--   requiring lenses.
+--   
 --   <b>WARNING</b>: Do not use with any lenses that operate "numerically"
 --   on the contents (like <tt>multiplying</tt>).
 (^^.) :: forall a b s. (Reifies s W, Backprop a) => BVar s b -> Lens' b a -> BVar s a
@@ -2704,6 +2718,11 @@ infixl 8 .~~
 -- | Using a <a>Lens'</a>, extract a value <i>inside</i> a <a>BVar</a>.
 --   Meant to evoke parallels to <tt>view</tt> from lens.
 --   
+--   If you have control of your data type definitions, consider using
+--   <a>splitBV</a>, which lets you break out <a>BVar</a>s of values into
+--   <a>BVar</a>s of their individual fields automatically without
+--   requiring lenses.
+--   
 --   See documentation for <a>^^.</a> for more information.
 viewVar :: forall a b s. (Reifies s W, Backprop a) => Lens' b a -> BVar s b -> BVar s a
 
@@ -2757,6 +2776,10 @@ toListOfVar :: forall b a s. (Backprop a, Reifies s W) => Traversal' b a -> BVar
 -- | Convert the value inside a <a>BVar</a> using a given isomorphism.
 --   Useful for things like constructors.
 --   
+--   If you have control of your data type definitions, consider using
+--   <a>joinBV</a>, which lets you use your data type constructors
+--   themselves to join together <a>BVar</a>s as their fields.
+--   
 --   Warning: This is unsafe! It assumes that the isomorphisms themselves
 --   have derivative 1, so will break for things like <a>exp</a> &amp;
 --   <a>log</a>. Basically, don't use this for any "numeric" isomorphisms.
@@ -2764,6 +2787,10 @@ isoVar :: (Backprop a, Backprop b, Reifies s W) => (a -> b) -> (b -> a) -> BVar 
 
 -- | Convert the values inside two <a>BVar</a>s using a given isomorphism.
 --   Useful for things like constructors. See <a>isoVar</a> for caveats.
+--   
+--   If you have control of your data type definitions, consider using
+--   <a>joinBV</a>, which lets you use your data type constructors
+--   themselves to join together <a>BVar</a>s as their fields.
 isoVar2 :: (Backprop a, Backprop b, Backprop c, Reifies s W) => (a -> b -> c) -> (c -> (a, b)) -> BVar s a -> BVar s b -> BVar s c
 
 -- | Convert the values inside three <a>BVar</a>s using a given
@@ -2774,6 +2801,10 @@ isoVar3 :: (Backprop a, Backprop b, Backprop c, Backprop d, Reifies s W) => (a -
 -- | Convert the values inside a tuple of <a>BVar</a>s using a given
 --   isomorphism. Useful for things like constructors. See <a>isoVar</a>
 --   for caveats.
+--   
+--   If you have control of your data type definitions, consider using
+--   <a>joinBV</a>, which lets you use your data type constructors
+--   themselves to join together <a>BVar</a>s as their fields.
 isoVarN :: (Every Backprop as, Known Length as, Backprop b, Reifies s W) => (Tuple as -> b) -> (b -> Tuple as) -> Prod (BVar s) as -> BVar s b
 
 -- | Lift an <a>Op</a> with an arbitrary number of inputs to a function on
