@@ -48,6 +48,10 @@
 -- and links to demonstrations and tutorials, or dive striaght in by
 -- reading the docs for 'BVar'.
 --
+-- If you are writing a library, see
+-- <https://github.com/mstksg/backprop/wiki/Equipping-your-Library-with-Backprop>
+-- for a guide for equipping your library with backpropatable operations.
+--
 -- In the original version 0.1, this module required 'Num' instances for
 -- methods instead of 'Backprop' instances.  This interface is still
 -- available in "Numeric.Backprop.Num", which has the same API as this
@@ -342,6 +346,10 @@ gradBP2 = E.gradBP2 E.zeroFunc E.zeroFunc E.oneFunc
 --
 -- This is the main way to pull out values from 'BVar' of container types.
 --
+-- If you have control of your data type definitions, consider using
+-- 'splitBV', which lets you break out 'BVar's of values into 'BVar's of
+-- their individual fields automatically without requiring lenses.
+--
 -- __WARNING__: Do not use with any lenses that operate "numerically" on
 -- the contents (like 'multiplying').
 --
@@ -356,6 +364,10 @@ infixl 8 ^^.
 
 -- | Using a 'Lens'', extract a value /inside/ a 'BVar'.  Meant to evoke
 -- parallels to 'view' from lens.
+--
+-- If you have control of your data type definitions, consider using
+-- 'splitBV', which lets you break out 'BVar's of values into 'BVar's of
+-- their individual fields automatically without requiring lenses.
 --
 -- See documentation for '^^.' for more information.
 viewVar
@@ -621,6 +633,10 @@ liftOp3 = E.liftOp3 E.addFunc E.addFunc E.addFunc E.zeroFunc
 -- | Convert the value inside a 'BVar' using a given isomorphism.  Useful
 -- for things like constructors.
 --
+-- If you have control of your data type definitions, consider using
+-- 'joinBV', which lets you use your data type constructors themselves to
+-- join together 'BVar's as their fields.
+--
 -- Warning: This is unsafe!  It assumes that the isomorphisms themselves
 -- have derivative 1, so will break for things like 'exp' & 'log'.
 -- Basically, don't use this for any "numeric" isomorphisms.
@@ -637,6 +653,10 @@ isoVar = E.isoVar E.addFunc E.zeroFunc
 
 -- | Convert the values inside two 'BVar's using a given isomorphism.
 -- Useful for things like constructors.  See 'isoVar' for caveats.
+--
+-- If you have control of your data type definitions, consider using
+-- 'joinBV', which lets you use your data type constructors themselves to
+-- join together 'BVar's as their fields.
 --
 -- @since 0.1.4.0
 isoVar2
@@ -667,6 +687,10 @@ isoVar3 = E.isoVar3 E.addFunc E.addFunc E.addFunc E.zeroFunc
 -- | Convert the values inside a tuple of 'BVar's using a given
 -- isomorphism. Useful for things like constructors.  See 'isoVar' for
 -- caveats.
+--
+-- If you have control of your data type definitions, consider using
+-- 'joinBV', which lets you use your data type constructors themselves to
+-- join together 'BVar's as their fields.
 --
 -- @since 0.1.4.0
 isoVarN
@@ -723,7 +747,7 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
 -- instance Backprop MyType
 -- @
 --
--- And automatically let make a @'BVar' s MyType@ into a @'BVar'
+-- And automatically let you turn a @'BVar' s MyType@ into a @'BVar'
 -- s 'Double'@ and @BVar s [Double]@, without munging around with lenses
 -- and 'viewVar'.  It'll also let you take a @BVar s Double@ and a @BVar
 -- s [Double]@ and turn it into a @BVar s MyType@ without messing around
@@ -737,10 +761,11 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
 --     HKD Identity a = a
 --     HKD f        a =  f a
 --
--- data MyType' f = MT { mtX :: f Double, mtY :: f [Double] }
+-- data MyType' f = MT { mtX :: HKD f Double, mtY :: HKD f [Double] }
 --   deriving Generic
 --
--- -- | This is the original data type
+-- -- | This is the original data type, which can be used the same way as
+-- -- before
 -- type MyType = MyType' Identity
 --
 -- -- | Automatic instance

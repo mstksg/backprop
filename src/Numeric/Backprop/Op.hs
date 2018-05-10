@@ -35,6 +35,11 @@
 -- To use these 'Op's with the backprop library, they can be made to work
 -- with 'BVar's using 'liftOp', 'liftOp1', 'liftOp2', and 'liftOp3'.
 --
+-- If you are writing a library, see
+-- <https://github.com/mstksg/backprop/wiki/Equipping-your-Library-with-Backprop>
+-- for a guide for equipping your library with backpropatable operations
+-- using 'Op's.
+--
 
 module Numeric.Backprop.Op (
   -- * Implementation

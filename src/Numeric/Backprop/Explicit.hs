@@ -386,7 +386,7 @@ instance ( Reifies s W
         y = gsplitBV afbs zfbs . viewVar afb zfb p2 $ xy
     {-# INLINE gsplitBV #-}
     gjoinBV (afa :< afb :< afs) (zfa :< zfb :< zfs) (x :*: y)
-        = liftOp2 afa afb zfab (opIso2 (:*:) unP)
+        = isoVar2 afa afb zfab (:*:) unP
             (gjoinBV afas zfas x)
             (gjoinBV afbs zfbs y)
       where
