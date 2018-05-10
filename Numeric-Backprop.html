@@ -275,7 +275,7 @@ instance Backprop MyType
  s [Double]</code> and turn it into a <code>BVar s MyType</code> without messing around
  with manually lifting ops or <code><a href="Numeric-Backprop.html#v:isoVar">isoVar</a></code>.</p><p>To do this, rewrite <code>MyType</code> to take a <code><a href="../base-4.10.1.0/Data-Functor.html#t:Functor">Functor</a></code> argument:</p><pre>-- | Can be re-used for every data type you use this trick with
 type family HKD f a where
-    HKD Identity a = a
+    HKD <code>Identity</code> a = a
     HKD f        a =  f a
 
 data MyType' f = MT { mtX :: HKD f Double, mtY :: HKD f [Double] }
@@ -283,19 +283,19 @@ data MyType' f = MT { mtX :: HKD f Double, mtY :: HKD f [Double] }
 
 -- | This is the original data type, which can be used the same way as
 -- before
-type MyType = MyType' Identity
+type MyType = MyType' <code>Identity</code>
 
 -- | Automatic instance
-instance Backprop MyType
+instance <code><a href="Numeric-Backprop.html#t:Backprop">Backprop</a></code> MyType
 </pre><p>Now, <code><a href="Numeric-Backprop.html#v:splitBV">splitBV</a></code> can be used, with type:</p><pre><code><a href="Numeric-Backprop.html#v:splitBV">splitBV</a></code> :: BVar s MyType -&gt; MyType' (BVar s)
-</pre><p>So you can use it lke:</p><pre>myFunction :: BVar s MyType -&gt; BVar s Double
-myFunction (splitBV -&gt; MT x y) =  x + <code><a href="Prelude-Backprop.html#v:sum">sum</a></code> y
+</pre><p>So you can use it lke:</p><pre>myFunction :: <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> s MyType -&gt; BVar s Double
+myFunction (<code><a href="Numeric-Backprop.html#v:splitBV">splitBV</a></code> -&gt; MT x y) =  x + <code><a href="Prelude-Backprop.html#v:sum">sum</a></code> y
 </pre><p>If you use <code><a href="Numeric-Backprop.html#v:splitBV">splitBV</a></code>, the contents will be a <code>BVar s Double</code> and a <code>BVar
  s [Double]</code>.  Basically, it lets you &quot;extract&quot; the fields, because your
  <code>MyType</code> now contains <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code>s.</p><p>Now, <code><a href="Numeric-Backprop.html#v:joinBV">joinBV</a></code> can be used, with the type:</p><pre><code><a href="Numeric-Backprop.html#v:joinBV">joinBV</a></code> :: MyType' (BVar s) -&gt; BVar s MyType
 </pre><p>So you can take a bunch of <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code>s and turn them into a <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> of
- a <code>MyType</code>:</p><pre>myOtherFunction :: BVar s Double -&gt; BVar s [Double] -&gt; BVar s MyType
-myOtherFunction x y = joinBV $ MT x y
+ a <code>MyType</code>:</p><pre>myOtherFunction :: <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> s Double -&gt; BVar s [Double] -&gt; BVar s MyType
+myOtherFunction x y = <code><a href="Numeric-Backprop.html#v:joinBV">joinBV</a></code> $ MT x y
 </pre><p>This will work with all data types made with a single constructor, whose
  fields are all instances of <code><a href="Numeric-Backprop.html#t:Backprop">Backprop</a></code>, where the type itself has an
  instance of <code><a href="Numeric-Backprop.html#t:Backprop">Backprop</a></code>.</p></div><div class="top"><p class="src"><a id="v:splitBV" class="def">splitBV</a> <a href="src/Numeric.Backprop.html#splitBV" class="link">Source</a> <a href="#v:splitBV" class="selflink">#</a></p><div class="subs arguments"><p class="caption">Arguments</p><table><tr><td class="src">:: (<a href="../base-4.10.1.0/GHC-Generics.html#t:Generic">Generic</a> (z f), <a href="../base-4.10.1.0/GHC-Generics.html#t:Generic">Generic</a> (z (<a href="Numeric-Backprop.html#t:BVar">BVar</a> s)), <a href="Numeric-Backprop.html#t:BVGroup">BVGroup</a> s as (<a href="../base-4.10.1.0/GHC-Generics.html#t:Rep">Rep</a> (z f)) (<a href="../base-4.10.1.0/GHC-Generics.html#t:Rep">Rep</a> (z (<a href="Numeric-Backprop.html#t:BVar">BVar</a> s))), <a href="Numeric-Backprop.html#t:Backprop">Backprop</a> (<a href="../base-4.10.1.0/GHC-Generics.html#t:Rep">Rep</a> (z f) ()), <a href="Numeric-Backprop.html#t:Every">Every</a> <a href="Numeric-Backprop.html#t:Backprop">Backprop</a> as, <a href="../type-combinators-0.2.4.3/Type-Class-Known.html#t:Known">Known</a> <a href="../type-combinators-0.2.4.3/Data-Type-Length.html#t:Length">Length</a> as, <a href="Numeric-Backprop.html#t:Reifies">Reifies</a> s <a href="Numeric-Backprop.html#t:W">W</a>)</td><td class="doc empty">&nbsp;</td></tr><tr><td class="src">=&gt; <a href="Numeric-Backprop.html#t:BVar">BVar</a> s (z f)</td><td class="doc"><p><code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> of value</p></td></tr><tr><td class="src">-&gt; z (<a href="Numeric-Backprop.html#t:BVar">BVar</a> s)</td><td class="doc"><p><code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code>s of fields</p></td></tr></table></div><div class="doc"><p>Split out a <code><a href="Numeric-Backprop.html#t:BVar">BVar</a></code> of &quot;higher-kinded data type&quot;, a la

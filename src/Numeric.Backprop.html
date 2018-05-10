@@ -758,7 +758,7 @@
 </span><a name="line-758"></a><span class="hs-comment">-- @</span><span>
 </span><a name="line-759"></a><span class="hs-comment">-- -- | Can be re-used for every data type you use this trick with</span><span>
 </span><a name="line-760"></a><span class="hs-comment">-- type family HKD f a where</span><span>
-</span><a name="line-761"></a><span class="hs-comment">--     HKD Identity a = a</span><span>
+</span><a name="line-761"></a><span class="hs-comment">--     HKD 'Identity' a = a</span><span>
 </span><a name="line-762"></a><span class="hs-comment">--     HKD f        a =  f a</span><span>
 </span><a name="line-763"></a><span class="hs-comment">--</span><span>
 </span><a name="line-764"></a><span class="hs-comment">-- data MyType' f = MT { mtX :: HKD f Double, mtY :: HKD f [Double] }</span><span>
@@ -766,10 +766,10 @@
 </span><a name="line-766"></a><span class="hs-comment">--</span><span>
 </span><a name="line-767"></a><span class="hs-comment">-- -- | This is the original data type, which can be used the same way as</span><span>
 </span><a name="line-768"></a><span class="hs-comment">-- -- before</span><span>
-</span><a name="line-769"></a><span class="hs-comment">-- type MyType = MyType' Identity</span><span>
+</span><a name="line-769"></a><span class="hs-comment">-- type MyType = MyType' 'Identity'</span><span>
 </span><a name="line-770"></a><span class="hs-comment">--</span><span>
 </span><a name="line-771"></a><span class="hs-comment">-- -- | Automatic instance</span><span>
-</span><a name="line-772"></a><span class="hs-comment">-- instance Backprop MyType</span><span>
+</span><a name="line-772"></a><span class="hs-comment">-- instance 'Backprop' MyType</span><span>
 </span><a name="line-773"></a><span class="hs-comment">-- @</span><span>
 </span><a name="line-774"></a><span class="hs-comment">--</span><span>
 </span><a name="line-775"></a><span class="hs-comment">-- Now, 'splitBV' can be used, with type:</span><span>
@@ -781,8 +781,8 @@
 </span><a name="line-781"></a><span class="hs-comment">-- So you can use it lke:</span><span>
 </span><a name="line-782"></a><span class="hs-comment">--</span><span>
 </span><a name="line-783"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-784"></a><span class="hs-comment">-- myFunction :: BVar s MyType -&gt; BVar s Double</span><span>
-</span><a name="line-785"></a><span class="hs-comment">-- myFunction (splitBV -&gt; MT x y) =  x + 'Prelude.Backprop.sum' y</span><span>
+</span><a name="line-784"></a><span class="hs-comment">-- myFunction :: 'BVar' s MyType -&gt; BVar s Double</span><span>
+</span><a name="line-785"></a><span class="hs-comment">-- myFunction ('splitBV' -&gt; MT x y) =  x + 'Prelude.Backprop.sum' y</span><span>
 </span><a name="line-786"></a><span class="hs-comment">-- @</span><span>
 </span><a name="line-787"></a><span class="hs-comment">--</span><span>
 </span><a name="line-788"></a><span class="hs-comment">-- If you use 'splitBV', the contents will be a @BVar s Double@ and a @BVar</span><span>
@@ -799,8 +799,8 @@
 </span><a name="line-799"></a><span class="hs-comment">-- a 'MyType':</span><span>
 </span><a name="line-800"></a><span class="hs-comment">--</span><span>
 </span><a name="line-801"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-802"></a><span class="hs-comment">-- myOtherFunction :: BVar s Double -&gt; BVar s [Double] -&gt; BVar s MyType</span><span>
-</span><a name="line-803"></a><span class="hs-comment">-- myOtherFunction x y = joinBV $ MT x y</span><span>
+</span><a name="line-802"></a><span class="hs-comment">-- myOtherFunction :: 'BVar' s Double -&gt; BVar s [Double] -&gt; BVar s MyType</span><span>
+</span><a name="line-803"></a><span class="hs-comment">-- myOtherFunction x y = 'joinBV' $ MT x y</span><span>
 </span><a name="line-804"></a><span class="hs-comment">-- @</span><span>
 </span><a name="line-805"></a><span class="hs-comment">--</span><span>
 </span><a name="line-806"></a><span class="hs-comment">-- This will work with all data types made with a single constructor, whose</span><span>
