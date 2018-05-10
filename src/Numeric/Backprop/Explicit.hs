@@ -335,9 +335,11 @@ isoVarN afs z f g = liftOp afs z (opIsoN f g)
 --
 -- See "Numeric.Backprop#hkd" for a tutorial on how to use this.
 --
--- Instances should be available for types made with one constructor with
--- 'Generic' instances.
-class BVGroup s as i o | i -> as, o -> i where
+-- Instances should be available for types made with one constructor whose
+-- fields are all instances of 'Backprop', with a 'Generic' instance.
+--
+-- @since 0.2.2.0
+class BVGroup s as i o | o -> i, i -> as where
     -- | Helper method for generically "splitting" 'BVar's out of
     -- constructors inside a 'BVar'.  See 'splitBV'.
     gsplitBV :: Prod AddFunc as -> Prod ZeroFunc as -> BVar s (i ()) -> o ()
@@ -394,7 +396,39 @@ instance ( Reifies s W
         unP (xx :*: yy) = (xx, yy)
     {-# INLINE gjoinBV #-}
 
+-- | This instance is possible but it is not clear when it would be useful
+instance ( Reifies s W
+         , BVGroup s as i1 o1
+         , BVGroup s bs i2 o2
+         , cs ~ (as ++ bs)
+         , Known Length as
+         ) => BVGroup s (i1 () ': i2 () ': cs) (i1 :+: i2) (o1 :+: o2) where
+    gsplitBV (afa :< afb :< afs) (zfa :< zfb :< zfs) xy =
+        case previewVar afa zfa s1 xy of
+          Just x -> L1 $ gsplitBV afas zfas x
+          Nothing -> case previewVar afb zfb s2 xy of
+            Just y -> R1 $ gsplitBV afbs zfbs y
+            Nothing -> error "Numeric.Backprop.gsplitBV: Internal error occurred"
+      where
+        (afas, afbs) = splitProd known afs
+        (zfas, zfbs) = splitProd known zfs
+    {-# INLINE gsplitBV #-}
+    gjoinBV (afa :< afb :< afs) (zfa :< zfb :< zfs) = \case
+        L1 x -> liftOp1 afa zf (op1 (\xx -> (L1 xx, \case L1 d -> d; R1 _ -> runZF zfa xx)))
+                    (gjoinBV afas zfas x)
+        R1 y -> liftOp1 afb zf (op1 (\yy -> (R1 yy, \case L1 _ -> runZF zfb yy; R1 d -> d)))
+                    (gjoinBV afbs zfbs y)
+      where
+        (afas, afbs) = splitProd known afs
+        (zfas, zfbs) = splitProd known zfs
+        zf = ZF $ \case
+            L1 xx -> L1 $ runZF zfa xx
+            R1 yy -> R1 $ runZF zfb yy
+    {-# INLINE gjoinBV #-}
+
 -- | 'Numeric.Backprop.splitBV' with explicit 'add' and 'zero'.
+--
+-- @since 0.2.2.0
 splitBV
     :: forall z f as s.
        ( Generic (z f)
@@ -406,8 +440,8 @@ splitBV
     -> Prod AddFunc as
     -> ZeroFunc (Rep (z f) ())
     -> Prod ZeroFunc as
-    -> BVar s (z f)
-    -> z (BVar s)
+    -> BVar s (z f)             -- ^ 'BVar' of value
+    -> z (BVar s)               -- ^ 'BVar's of fields
 splitBV af afs zf zfs =
         G.to
       . gsplitBV afs zfs
@@ -415,6 +449,8 @@ splitBV af afs zf zfs =
 {-# INLINE splitBV #-}
 
 -- | 'Numeric.Backprop.joinBV' with explicit 'add' and 'zero'.
+--
+-- @since 0.2.2.0
 joinBV
     :: forall z f as s.
        ( Generic (z f)
@@ -426,8 +462,8 @@ joinBV
     -> Prod AddFunc as
     -> ZeroFunc (z f)
     -> Prod ZeroFunc as
-    -> z (BVar s)
-    -> BVar s (z f)
+    -> z (BVar s)           -- ^ 'BVar's of fields
+    -> BVar s (z f)         -- ^ 'BVar' of combined value
 joinBV af afs zf zfs =
         viewVar af zf (lens G.to (const from))
       . gjoinBV afs zfs

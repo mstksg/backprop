@@ -738,6 +738,7 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
 --     HKD f        a =  f a
 --
 -- data MyType' f = MT { mtX :: f Double, mtY :: f [Double] }
+--   deriving Generic
 --
 -- -- | This is the original data type
 -- type MyType = MyType' Identity
@@ -791,7 +792,9 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
 --
 -- This will work with all data types made with a single constructor, whose
 -- fields are all instances of 'Backprop', where the type itself has an
--- instance of 'Backprop'.
+-- instance of 'Backprop'.  The type also must derive 'Generic'.
+--
+-- @since 0.2.2.0
 splitBV
     :: forall z f as s.
        ( Generic (z f)
@@ -802,8 +805,8 @@ splitBV
        , Known Length as
        , Reifies s W
        )
-    => BVar s (z f)
-    -> z (BVar s)
+    => BVar s (z f)             -- ^ 'BVar' of value
+    -> z (BVar s)               -- ^ 'BVar's of fields
 splitBV = E.splitBV E.addFunc E.addFuncs E.zeroFunc E.zeroFuncs
 {-# INLINE splitBV #-}
 
@@ -818,6 +821,8 @@ splitBV = E.splitBV E.addFunc E.addFuncs E.zeroFunc E.zeroFuncs
 -- This will work with all data types made with a single constructor, whose
 -- fields are all instances of 'Backprop', where the type itself has an
 -- instance of 'Backprop'.
+--
+-- @since 0.2.2.0
 joinBV
     :: forall z f as s.
        ( Generic (z f)
@@ -828,7 +833,7 @@ joinBV
        , Known Length as
        , Reifies s W
        )
-    => z (BVar s)
-    -> BVar s (z f)
+    => z (BVar s)           -- ^ 'BVar's of fields
+    -> BVar s (z f)         -- ^ 'BVar' of combined value
 joinBV = E.joinBV E.addFunc E.addFuncs E.zeroFunc E.zeroFuncs
 {-# INLINE joinBV #-}

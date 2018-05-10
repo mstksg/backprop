@@ -8,6 +8,7 @@ Version 0.2.2.0
 
 <https://github.com/mstksg/backprop/releases/tag/v0.2.2.0>
 
+*   `splitBV` and `joinBV` for "higher-kinded data" style `BVar` manipulation.
 *   `toList` for *Prelude.Backprop* modules
 *   `Backprop` instance for `BVar`
 *   *COMPLETE* pragmas for `T2` and `T3`
