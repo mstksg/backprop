@@ -81,6 +81,10 @@ module Numeric.Backprop (
     -- $liftops
   , liftOp
   , liftOp1, liftOp2, liftOp3
+    -- ** Generics
+  , E.BVGroup(..)
+  , splitBV
+  , joinBV
     -- * 'Op'
   , Op(..)
     -- ** Creation
@@ -105,6 +109,7 @@ import           Data.Maybe
 import           Data.Reflection
 import           Data.Type.Index
 import           Data.Type.Length
+import           GHC.Generics
 import           Lens.Micro
 import           Numeric.Backprop.Class
 import           Numeric.Backprop.Explicit (BVar, W)
@@ -701,3 +706,32 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
     T3 = isoVar3 (,,) id
 {-# COMPLETE T3 #-}
 
+splitBV
+    :: forall z f as s.
+       ( Generic (z f)
+       , Generic (z (BVar s))
+       , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
+       , Backprop (Rep (z f) ())
+       , Every Backprop as
+       , Known Length as
+       , Reifies s W
+       )
+    => BVar s (z f)
+    -> z (BVar s)
+splitBV = E.splitBV E.addFunc E.addFuncs E.zeroFunc E.zeroFuncs
+{-# INLINE splitBV #-}
+
+joinBV
+    :: forall z f as s.
+       ( Generic (z f)
+       , Generic (z (BVar s))
+       , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
+       , Backprop (z f)
+       , Every Backprop as
+       , Known Length as
+       , Reifies s W
+       )
+    => z (BVar s)
+    -> BVar s (z f)
+joinBV = E.joinBV E.addFunc E.addFuncs E.zeroFunc E.zeroFuncs
+{-# INLINE joinBV #-}

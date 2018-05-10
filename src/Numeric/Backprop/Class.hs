@@ -7,6 +7,7 @@
 {-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE EmptyCase                  #-}
 {-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
@@ -786,3 +787,8 @@ instance M.MaybeC (Backprop M.<$> (f M.<$> a)) => Backprop (Option f a) where
       Just_ x  -> Just_ (one x)
     {-# INLINE one #-}
 
+instance Backprop a => Backprop (K1 i a p)
+instance Backprop (f p) => Backprop (M1 i c f p)
+instance (Backprop (f p), Backprop (g p)) => Backprop ((f :*: g) p)
+instance Backprop (V1 p)
+instance Backprop (U1 p)

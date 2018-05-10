@@ -20,14 +20,17 @@ module Data.Type.Util (
   , fillProd
   , zipVecList
   , splitProd
+  , p1, p2, s1, s2
   ) where
 
 import           Data.Bifunctor
-import           Data.Type.Conjunction
+import           Data.Type.Conjunction hiding ((:*:))
 import           Data.Type.Length
 import           Data.Type.Nat
 import           Data.Type.Product
 import           Data.Type.Vector
+import           GHC.Generics
+import           Lens.Micro
 import           Type.Class.Witness
 import           Type.Family.List
 import           Type.Family.Nat
@@ -169,3 +172,21 @@ splitProd = \case
     LS l -> \case
       x :< xs -> first (x :<) $ splitProd l xs
 {-# INLINE splitProd #-}
+
+p1 :: Lens' ((f :*: g) a) (f a)
+p1 f (x :*: y) = (:*: y) <$> f x
+{-# INLINE p1 #-}
+
+p2 :: Lens' ((f :*: g) a) (g a)
+p2 f (x :*: y) = (x :*:) <$> f y
+{-# INLINE p2 #-}
+
+s1 :: Traversal' ((f :+: g) a) (f a)
+s1 f (L1 x) = L1 <$> f x
+s1 _ (R1 y) = pure (R1 y)
+{-# INLINE s1 #-}
+
+s2 :: Traversal' ((f :+: g) a) (g a)
+s2 _ (L1 x) = pure (L1 x)
+s2 f (R1 y) = R1 <$> f y
+{-# INLINE s2 #-}

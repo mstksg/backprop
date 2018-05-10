@@ -1,8 +1,17 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs            #-}
-{-# LANGUAGE PatternSynonyms  #-}
-{-# LANGUAGE RankNTypes       #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE EmptyCase              #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE LambdaCase             #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE PatternSynonyms        #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeApplications       #-}
+{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE UndecidableInstances   #-}
 
 -- |
 -- Module      : Numeric.Backprop.Explicit
@@ -49,6 +58,10 @@ module Numeric.Backprop.Explicit (
     -- ** With 'Op's
   , liftOp
   , liftOp1, liftOp2, liftOp3
+    -- ** Generics
+  , BVGroup(..)
+  , splitBV
+  , joinBV
     -- * 'Op'
   , Op(..)
     -- ** Creation
@@ -74,12 +87,17 @@ import           Data.Reflection
 import           Data.Type.Index
 import           Data.Type.Length
 import           Data.Type.Product
+import           Data.Type.Util
+import           GHC.Generics              as G
+import           Lens.Micro
 import           Numeric.Backprop.Class
 import           Numeric.Backprop.Internal
 import           Numeric.Backprop.Op
 import           Type.Class.Higher
 import           Type.Class.Known
 import           Type.Class.Witness
+import           Type.Family.List
+import           Unsafe.Coerce
 
 -- | 'ZeroFunc's for every item in a type level list based on their
 -- 'Num' instances
@@ -311,3 +329,129 @@ isoVarN
     -> BVar s b
 isoVarN afs z f g = liftOp afs z (opIsoN f g)
 {-# INLINE isoVarN #-}
+
+-- | Helper class for generically "splitting" and "joining" 'BVar's into
+-- constructors.  See 'splitBV' and 'joinBV'.
+class BVGroup s as i o | i -> as, o -> i where
+    -- | Helper method for generically "splitting" 'BVar's out of
+    -- constructors inside a 'BVar'.  See 'splitBV'.
+    gsplitBV :: Prod AddFunc as -> Prod ZeroFunc as -> BVar s (i ()) -> o ()
+    -- | Helper method for generically "joining" 'BVar's inside
+    -- a constructor into a 'BVar'.  See 'joinBV'.
+    gjoinBV  :: Prod AddFunc as -> Prod ZeroFunc as -> o () -> BVar s (i ())
+
+instance BVGroup s '[] (K1 i a) (K1 i (BVar s a)) where
+    gsplitBV _ _ = K1 . coerceVar
+    {-# INLINE gsplitBV #-}
+    gjoinBV  _ _ = coerceVar . unK1
+    {-# INLINE gjoinBV #-}
+
+instance BVGroup s as i o
+        => BVGroup s as (M1 p c i) (M1 p c o) where
+    gsplitBV afs zfs = M1 . gsplitBV afs zfs . coerceVar @_ @(i ())
+    {-# INLINE gsplitBV #-}
+    gjoinBV afs zfs = coerceVar @(i ()) . gjoinBV afs zfs . unM1
+    {-# INLINE gjoinBV #-}
+
+instance BVGroup s '[] V1 V1 where
+    gsplitBV _ _ = unsafeCoerce
+    {-# INLINE gsplitBV #-}
+    gjoinBV _ _ = \case
+    {-# INLINE gjoinBV #-}
+
+instance BVGroup s '[] U1 U1 where
+    gsplitBV _ _ _ = U1
+    {-# INLINE gsplitBV #-}
+    gjoinBV _ _ _ = constVar U1
+    {-# INLINE gjoinBV #-}
+
+instance ( Reifies s W
+         , BVGroup s as i1 o1
+         , BVGroup s bs i2 o2
+         , cs ~ (as ++ bs)
+         , Known Length as
+         ) => BVGroup s (i1 () ': i2 () ': cs) (i1 :*: i2) (o1 :*: o2) where
+    gsplitBV (afa :< afb :< afs) (zfa :< zfb :< zfs) xy = x :*: y
+      where
+        (afas, afbs) = splitProd known afs
+        (zfas, zfbs) = splitProd known zfs
+        x = gsplitBV afas zfas . viewVar afa zfa p1 $ xy
+        y = gsplitBV afbs zfbs . viewVar afb zfb p2 $ xy
+    {-# INLINE gsplitBV #-}
+    gjoinBV (afa :< afb :< afs) (zfa :< zfb :< zfs) (x :*: y)
+        = liftOp2 afa afb zfab (opIso2 (:*:) unP)
+            (gjoinBV afas zfas x)
+            (gjoinBV afbs zfbs y)
+      where
+        zfab = ZF $ \(xx :*: yy) -> runZF zfa xx :*: runZF zfb yy
+        (afas, afbs) = splitProd known afs
+        (zfas, zfbs) = splitProd known zfs
+        unP (xx :*: yy) = (xx, yy)
+    {-# INLINE gjoinBV #-}
+
+instance ( Reifies s W
+         , BVGroup s as i1 o1
+         , BVGroup s bs i2 o2
+         , cs ~ (as ++ bs)
+         , Known Length as
+         ) => BVGroup s (i1 () ': i2 () ': cs) (i1 :+: i2) (o1 :+: o2) where
+    gsplitBV (afa :< afb :< afs) (zfa :< zfb :< zfs) xy =
+        case previewVar afa zfa s1 xy of
+          Just x -> L1 $ gsplitBV afas zfas x
+          Nothing -> case previewVar afb zfb s2 xy of
+            Just y -> R1 $ gsplitBV afbs zfbs y
+            Nothing -> error "Numeric.Backprop.gsplitBV: Internal error occurred"
+      where
+        (afas, afbs) = splitProd known afs
+        (zfas, zfbs) = splitProd known zfs
+    {-# INLINE gsplitBV #-}
+    gjoinBV (afa :< afb :< afs) (zfa :< zfb :< zfs) = \case
+        L1 x -> liftOp1 afa zf (op1 (\xx -> (L1 xx, \case L1 d -> d; R1 _ -> runZF zfa xx)))
+                    (gjoinBV afas zfas x)
+        R1 y -> liftOp1 afb zf (op1 (\yy -> (R1 yy, \case L1 _ -> runZF zfb yy; R1 d -> d)))
+                    (gjoinBV afbs zfbs y)
+      where
+        (afas, afbs) = splitProd known afs
+        (zfas, zfbs) = splitProd known zfs
+        zf = ZF $ \case
+            L1 xx -> L1 $ runZF zfa xx
+            R1 yy -> R1 $ runZF zfb yy
+    {-# INLINE gjoinBV #-}
+
+splitBV
+    :: forall z f as s.
+       ( Generic (z f)
+       , Generic (z (BVar s))
+       , BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
+       , Reifies s W
+       )
+    => AddFunc (Rep (z f) ())
+    -> Prod AddFunc as
+    -> ZeroFunc (Rep (z f) ())
+    -> Prod ZeroFunc as
+    -> BVar s (z f)
+    -> z (BVar s)
+splitBV af afs zf zfs =
+        G.to
+      . gsplitBV afs zfs
+      . viewVar af zf (lens (from @(z f) @()) (const G.to))
+{-# INLINE splitBV #-}
+
+joinBV
+    :: forall z f as s.
+       ( Generic (z f)
+       , Generic (z (BVar s))
+       , BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
+       , Reifies s W
+       )
+    => AddFunc (z f)
+    -> Prod AddFunc as
+    -> ZeroFunc (z f)
+    -> Prod ZeroFunc as
+    -> z (BVar s)
+    -> BVar s (z f)
+joinBV af afs zf zfs =
+        viewVar af zf (lens G.to (const from))
+      . gjoinBV afs zfs
+      . from @(z (BVar s)) @()
+{-# INLINE joinBV #-}

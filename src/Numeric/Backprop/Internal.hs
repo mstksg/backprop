@@ -1,23 +1,18 @@
-{-# LANGUAGE BangPatterns           #-}
-{-# LANGUAGE DeriveDataTypeable     #-}
-{-# LANGUAGE DeriveGeneric          #-}
-{-# LANGUAGE EmptyCase              #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE LambdaCase             #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE RankNTypes             #-}
-{-# LANGUAGE RecordWildCards        #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE StandaloneDeriving     #-}
-{-# LANGUAGE TupleSections          #-}
-{-# LANGUAGE TypeApplications       #-}
-{-# LANGUAGE TypeInType             #-}
-{-# LANGUAGE TypeOperators          #-}
-{-# LANGUAGE UndecidableInstances   #-}
-{-# LANGUAGE ViewPatterns           #-}
+{-# LANGUAGE BangPatterns        #-}
+{-# LANGUAGE DeriveDataTypeable  #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE EmptyCase           #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving  #-}
+{-# LANGUAGE TupleSections       #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeInType          #-}
+{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE ViewPatterns        #-}
 
 -- |
 -- Module      : Numeric.Backprop.Internal
@@ -46,9 +41,6 @@ module Numeric.Backprop.Internal (
   -- * Debug
   , debugSTN
   , debugIR
-  -- * Generics
-  , BVGroup(..)
-  , splitBV, joinBV
   ) where
 
 import           Control.DeepSeq
@@ -61,7 +53,6 @@ import           Data.Bifunctor
 import           Data.Coerce
 import           Data.Foldable
 import           Data.Function
-import           Data.Functor.Identity
 import           Data.IORef
 import           Data.Kind
 import           Data.Maybe
@@ -69,7 +60,6 @@ import           Data.Monoid hiding           (Any(..))
 import           Data.Proxy
 import           Data.Reflection
 import           Data.Type.Conjunction hiding ((:*:))
-import           Data.Type.Length
 import           Data.Type.Product hiding     (toList)
 import           Data.Type.Util
 import           Data.Type.Vector hiding      (itraverse)
@@ -81,8 +71,6 @@ import           Numeric.Backprop.Class
 import           Numeric.Backprop.Op
 import           System.IO.Unsafe
 import           Type.Class.Higher
-import           Type.Class.Known
-import           Type.Family.List
 import           Unsafe.Coerce
 import qualified Data.Vector                  as V
 import qualified Data.Vector.Mutable          as MV
@@ -813,140 +801,3 @@ oneFunc :: Backprop a => OneFunc a
 oneFunc = OF one
 {-# INLINE oneFunc #-}
 
-p1 :: Lens' ((f :*: g) a) (f a)
-p1 f (x :*: y) = (:*: y) <$> f x
-{-# INLINE p1 #-}
-
-p2 :: Lens' ((f :*: g) a) (g a)
-p2 f (x :*: y) = (x :*:) <$> f y
-{-# INLINE p2 #-}
-
-s1 :: Traversal' ((f :+: g) a) (f a)
-s1 f (L1 x) = L1 <$> f x
-s1 _ (R1 y) = pure (R1 y)
-{-# INLINE s1 #-}
-
-s2 :: Traversal' ((f :+: g) a) (g a)
-s2 _ (L1 x) = pure (L1 x)
-s2 f (R1 y) = R1 <$> f y
-{-# INLINE s2 #-}
-
-class BVGroup s as i o | i o -> as where
-    gsplitBV :: Prod AddFunc as -> Prod ZeroFunc as -> BVar s (i ()) -> o ()
-    gjoinBV  :: Prod AddFunc as -> Prod ZeroFunc as -> o () -> BVar s (i ())
-
-instance BVGroup s '[] (K1 i a) (K1 i (BVar s a)) where
-    gsplitBV _ _ = K1 . coerceVar
-    {-# INLINE gsplitBV #-}
-    gjoinBV  _ _ = coerceVar . unK1
-    {-# INLINE gjoinBV #-}
-
-instance BVGroup s as (f a) (f (BVar s a))
-        => BVGroup s as (M1 i c (f a)) (M1 i c (f (BVar s a))) where
-    gsplitBV afs zfs = M1 . gsplitBV afs zfs . coerceVar @_ @(f a ())
-    {-# INLINE gsplitBV #-}
-    gjoinBV afs zfs = coerceVar @(f a ()) . gjoinBV afs zfs . unM1
-    {-# INLINE gjoinBV #-}
-
-instance BVGroup s '[] V1 V1 where
-    gsplitBV _ _ v = case _bvVal v of
-    {-# INLINE gsplitBV #-}
-    gjoinBV _ _ = \case
-    {-# INLINE gjoinBV #-}
-
-instance BVGroup s '[] U1 U1 where
-    gsplitBV _ _ _ = U1
-    {-# INLINE gsplitBV #-}
-    gjoinBV _ _ _ = constVar U1
-    {-# INLINE gjoinBV #-}
-
-instance ( Reifies s W
-         , BVGroup s as (f a) (f (BVar s a))
-         , BVGroup s bs (g b) (g (BVar s b))
-         , cs ~ (as ++ bs)
-         , Known Length as
-         ) => BVGroup s (f a () ': g b () ': cs) (f a :*: g b) (f (BVar s a) :*: g (BVar s b)) where
-    gsplitBV (afa :< afb :< afs) (zfa :< zfb :< zfs) xy = x :*: y
-      where
-        (afas, afbs) = splitProd known afs
-        (zfas, zfbs) = splitProd known zfs
-        x = gsplitBV afas zfas . viewVar afa zfa p1 $ xy
-        y = gsplitBV afbs zfbs . viewVar afb zfb p2 $ xy
-    {-# INLINE gsplitBV #-}
-    gjoinBV (afa :< afb :< afs) (zfa :< zfb :< zfs) (x :*: y)
-        = liftOp2 afa afb zfab (opIso2 (:*:) unP)
-            (gjoinBV afas zfas x)
-            (gjoinBV afbs zfbs y)
-      where
-        zfab = ZF $ \(xx :*: yy) -> runZF zfa xx :*: runZF zfb yy
-        (afas, afbs) = splitProd known afs
-        (zfas, zfbs) = splitProd known zfs
-        unP (xx :*: yy) = (xx, yy)
-    {-# INLINE gjoinBV #-}
-
-instance ( Reifies s W
-         , BVGroup s as (f a) (f (BVar s a))
-         , BVGroup s bs (g b) (g (BVar s b))
-         , cs ~ (as ++ bs)
-         , Known Length as
-         ) => BVGroup s (f a () ': g b () ': cs) (f a :+: g b) (f (BVar s a) :+: g (BVar s b)) where
-    gsplitBV (afa :< afb :< afs) (zfa :< zfb :< zfs) xy =
-        case previewVar afa zfa s1 xy of
-          Just x -> L1 $ gsplitBV afas zfas x
-          Nothing -> case previewVar afb zfb s2 xy of
-            Just y -> R1 $ gsplitBV afbs zfbs y
-            Nothing -> error "Numeric.Backprop.gsplitBV: Internal error occurred"
-      where
-        (afas, afbs) = splitProd known afs
-        (zfas, zfbs) = splitProd known zfs
-    {-# INLINE gsplitBV #-}
-    gjoinBV (afa :< afb :< afs) (zfa :< zfb :< zfs) = \case
-        L1 x -> liftOp1 afa zf (op1 (\xx -> (L1 xx, \case L1 d -> d; R1 _ -> runZF zfa xx)))
-                    (gjoinBV afas zfas x)
-        R1 y -> liftOp1 afb zf (op1 (\yy -> (R1 yy, \case L1 _ -> runZF zfb yy; R1 d -> d)))
-                    (gjoinBV afbs zfbs y)
-      where
-        (afas, afbs) = splitProd known afs
-        (zfas, zfbs) = splitProd known zfs
-        zf = ZF $ \case
-            L1 xx -> L1 $ runZF zfa xx
-            R1 yy -> R1 $ runZF zfb yy
-    {-# INLINE gjoinBV #-}
-
-splitBV
-    :: forall z as s.
-       ( Generic (z Identity)
-       , Generic (z (BVar s))
-       , BVGroup s as (Rep (z Identity)) (Rep (z (BVar s)))
-       , Reifies s W
-       )
-    => AddFunc (Rep (z Identity) ())
-    -> Prod AddFunc as
-    -> ZeroFunc (Rep (z Identity) ())
-    -> Prod ZeroFunc as
-    -> BVar s (z Identity)
-    -> z (BVar s)
-splitBV af afs zf zfs =
-        G.to
-      . gsplitBV afs zfs
-      . viewVar af zf (lens (from @(z Identity) @()) (const G.to))
-{-# INLINE splitBV #-}
-
-joinBV
-    :: forall z as s.
-       ( Generic (z Identity)
-       , Generic (z (BVar s))
-       , BVGroup s as (Rep (z Identity)) (Rep (z (BVar s)))
-       , Reifies s W
-       )
-    => AddFunc (z Identity)
-    -> Prod AddFunc as
-    -> ZeroFunc (z Identity)
-    -> Prod ZeroFunc as
-    -> z (BVar s)
-    -> BVar s (z Identity)
-joinBV af afs zf zfs =
-        viewVar af zf (lens G.to (const G.from))
-      . gjoinBV afs zfs
-      . from @(z (BVar s)) @()
-{-# INLINE joinBV #-}
