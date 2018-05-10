@@ -882,10 +882,10 @@ module Numeric.Backprop.Explicit
 --   (<a>setVar</a>) to set and update values inside a <a>BVar</a>.
 --   
 --   If you have control over your data type definitions, you can also use
---   <tt>splitBV</tt> and <tt>joinBV</tt> to manipulate data types by
---   easily extracting fields out of a <a>BVar</a> of data types and
---   creating <a>BVar</a>s of data types out of <a>BVar</a>s of their
---   fields.
+--   <a>splitBV</a> and <a>joinBV</a> to manipulate data types by easily
+--   extracting fields out of a <a>BVar</a> of data types and creating
+--   <a>BVar</a>s of data types out of <a>BVar</a>s of their fields. See
+--   <a>Numeric.Backprop#hkd</a> for a tutorial on this use pattern.
 --   
 --   For more complex operations, libraries can provide functions on
 --   <a>BVar</a>s using <a>liftOp</a> and related functions. This is how
@@ -1672,10 +1672,10 @@ module Numeric.Backprop.Num
 --   (<a>setVar</a>) to set and update values inside a <a>BVar</a>.
 --   
 --   If you have control over your data type definitions, you can also use
---   <tt>splitBV</tt> and <tt>joinBV</tt> to manipulate data types by
---   easily extracting fields out of a <a>BVar</a> of data types and
---   creating <a>BVar</a>s of data types out of <a>BVar</a>s of their
---   fields.
+--   <a>splitBV</a> and <a>joinBV</a> to manipulate data types by easily
+--   extracting fields out of a <a>BVar</a> of data types and creating
+--   <a>BVar</a>s of data types out of <a>BVar</a>s of their fields. See
+--   <a>Numeric.Backprop#hkd</a> for a tutorial on this use pattern.
 --   
 --   For more complex operations, libraries can provide functions on
 --   <a>BVar</a>s using <a>liftOp</a> and related functions. This is how
@@ -2228,10 +2228,10 @@ module Numeric.Backprop
 --   (<a>setVar</a>) to set and update values inside a <a>BVar</a>.
 --   
 --   If you have control over your data type definitions, you can also use
---   <tt>splitBV</tt> and <tt>joinBV</tt> to manipulate data types by
---   easily extracting fields out of a <a>BVar</a> of data types and
---   creating <a>BVar</a>s of data types out of <a>BVar</a>s of their
---   fields.
+--   <a>splitBV</a> and <a>joinBV</a> to manipulate data types by easily
+--   extracting fields out of a <a>BVar</a> of data types and creating
+--   <a>BVar</a>s of data types out of <a>BVar</a>s of their fields. See
+--   <a>Numeric.Backprop#hkd</a> for a tutorial on this use pattern.
 --   
 --   For more complex operations, libraries can provide functions on
 --   <a>BVar</a>s using <a>liftOp</a> and related functions. This is how
