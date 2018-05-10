@@ -881,10 +881,18 @@ module Numeric.Backprop.Explicit
 --   extract <i>all</i> targets inside a <a>BVar</a>, and <tt>.~~</tt>
 --   (<a>setVar</a>) to set and update values inside a <a>BVar</a>.
 --   
+--   If you have control over your data type definitions, you can also use
+--   <tt>splitBV</tt> and <tt>joinBV</tt> to manipulate data types by
+--   easily extracting fields out of a <a>BVar</a> of data types and
+--   creating <a>BVar</a>s of data types out of <a>BVar</a>s of their
+--   fields.
+--   
 --   For more complex operations, libraries can provide functions on
 --   <a>BVar</a>s using <a>liftOp</a> and related functions. This is how
 --   you can create primitive functions that users can use to manipulate
---   your library's values.
+--   your library's values. See
+--   <a>https://github.com/mstksg/backprop/wiki/Equipping-your-Library-with-Backprop</a>
+--   for a detailed guide.
 --   
 --   For example, the <i>hmatrix</i> library has a matrix-vector
 --   multiplication function, <tt>#&gt; :: L m n -&gt; R n -&gt; L m</tt>.
@@ -1663,10 +1671,18 @@ module Numeric.Backprop.Num
 --   extract <i>all</i> targets inside a <a>BVar</a>, and <tt>.~~</tt>
 --   (<a>setVar</a>) to set and update values inside a <a>BVar</a>.
 --   
+--   If you have control over your data type definitions, you can also use
+--   <tt>splitBV</tt> and <tt>joinBV</tt> to manipulate data types by
+--   easily extracting fields out of a <a>BVar</a> of data types and
+--   creating <a>BVar</a>s of data types out of <a>BVar</a>s of their
+--   fields.
+--   
 --   For more complex operations, libraries can provide functions on
 --   <a>BVar</a>s using <a>liftOp</a> and related functions. This is how
 --   you can create primitive functions that users can use to manipulate
---   your library's values.
+--   your library's values. See
+--   <a>https://github.com/mstksg/backprop/wiki/Equipping-your-Library-with-Backprop</a>
+--   for a detailed guide.
 --   
 --   For example, the <i>hmatrix</i> library has a matrix-vector
 --   multiplication function, <tt>#&gt; :: L m n -&gt; R n -&gt; L m</tt>.
@@ -2211,10 +2227,18 @@ module Numeric.Backprop
 --   extract <i>all</i> targets inside a <a>BVar</a>, and <tt>.~~</tt>
 --   (<a>setVar</a>) to set and update values inside a <a>BVar</a>.
 --   
+--   If you have control over your data type definitions, you can also use
+--   <tt>splitBV</tt> and <tt>joinBV</tt> to manipulate data types by
+--   easily extracting fields out of a <a>BVar</a> of data types and
+--   creating <a>BVar</a>s of data types out of <a>BVar</a>s of their
+--   fields.
+--   
 --   For more complex operations, libraries can provide functions on
 --   <a>BVar</a>s using <a>liftOp</a> and related functions. This is how
 --   you can create primitive functions that users can use to manipulate
---   your library's values.
+--   your library's values. See
+--   <a>https://github.com/mstksg/backprop/wiki/Equipping-your-Library-with-Backprop</a>
+--   for a detailed guide.
 --   
 --   For example, the <i>hmatrix</i> library has a matrix-vector
 --   multiplication function, <tt>#&gt; :: L m n -&gt; R n -&gt; L m</tt>.
