@@ -294,15 +294,12 @@ NumBP :: a -> NumBP a
 -- | Helper class for automatically deriving <a>zero</a> using GHC
 --   Generics.
 class GZero f
-gzero :: GZero f => f t -> f t
 
 -- | Helper class for automatically deriving <a>add</a> using GHC Generics.
 class GAdd f
-gadd :: GAdd f => f t -> f t -> f t
 
 -- | Helper class for automatically deriving <a>one</a> using GHC Generics.
 class GOne f
-gone :: GOne f => f t -> f t
 instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Numeric.Backprop.Class.ABP f)
 instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Numeric.Backprop.Class.ABP f)
 instance GHC.Base.Functor f => GHC.Base.Functor (Numeric.Backprop.Class.ABP f)
@@ -1317,19 +1314,20 @@ liftOp2 :: forall a b c s. Reifies s W => AddFunc a -> AddFunc b -> ZeroFunc c -
 -- | <a>liftOp3</a>, but with explicit <a>add</a> and <a>zero</a>.
 liftOp3 :: forall a b c d s. Reifies s W => AddFunc a -> AddFunc b -> AddFunc c -> ZeroFunc d -> Op '[a, b, c] d -> BVar s a -> BVar s b -> BVar s c -> BVar s d
 
+-- | <a>splitBV</a> with explicit <a>add</a> and <a>zero</a>.
+splitBV :: forall z f as s. (Generic (z f), Generic (z (BVar s)), BVGroup s as (Rep (z f)) (Rep (z (BVar s))), Reifies s W) => AddFunc (Rep (z f) ()) -> Prod AddFunc as -> ZeroFunc (Rep (z f) ()) -> Prod ZeroFunc as -> BVar s (z f) -> z (BVar s)
+
+-- | <a>joinBV</a> with explicit <a>add</a> and <a>zero</a>.
+joinBV :: forall z f as s. (Generic (z f), Generic (z (BVar s)), BVGroup s as (Rep (z f)) (Rep (z (BVar s))), Reifies s W) => AddFunc (z f) -> Prod AddFunc as -> ZeroFunc (z f) -> Prod ZeroFunc as -> z (BVar s) -> BVar s (z f)
+
 -- | Helper class for generically "splitting" and "joining" <a>BVar</a>s
 --   into constructors. See <a>splitBV</a> and <a>joinBV</a>.
+--   
+--   See <a>Numeric.Backprop#hkd</a> for a tutorial on how to use this.
+--   
+--   Instances should be available for types made with one constructor with
+--   <a>Generic</a> instances.
 class BVGroup s as i o | i -> as, o -> i
-
--- | Helper method for generically "splitting" <a>BVar</a>s out of
---   constructors inside a <a>BVar</a>. See <a>splitBV</a>.
-gsplitBV :: BVGroup s as i o => Prod AddFunc as -> Prod ZeroFunc as -> BVar s (i ()) -> o ()
-
--- | Helper method for generically "joining" <a>BVar</a>s inside a
---   constructor into a <a>BVar</a>. See <a>joinBV</a>.
-gjoinBV :: BVGroup s as i o => Prod AddFunc as -> Prod ZeroFunc as -> o () -> BVar s (i ())
-splitBV :: forall z f as s. (Generic (z f), Generic (z (BVar s)), BVGroup s as (Rep (z f)) (Rep (z (BVar s))), Reifies s W) => AddFunc (Rep (z f) ()) -> Prod AddFunc as -> ZeroFunc (Rep (z f) ()) -> Prod ZeroFunc as -> BVar s (z f) -> z (BVar s)
-joinBV :: forall z f as s. (Generic (z f), Generic (z (BVar s)), BVGroup s as (Rep (z f)) (Rep (z (BVar s))), Reifies s W) => AddFunc (z f) -> Prod AddFunc as -> ZeroFunc (z f) -> Prod ZeroFunc as -> z (BVar s) -> BVar s (z f)
 
 -- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
 --   <tt>as</tt> to <tt>a</tt>.
@@ -1594,7 +1592,6 @@ instance Numeric.Backprop.Explicit.BVGroup s as i o => Numeric.Backprop.Explicit
 instance Numeric.Backprop.Explicit.BVGroup s '[] GHC.Generics.V1 GHC.Generics.V1
 instance Numeric.Backprop.Explicit.BVGroup s '[] GHC.Generics.U1 GHC.Generics.U1
 instance (Data.Reflection.Reifies s Numeric.Backprop.Internal.W, Numeric.Backprop.Explicit.BVGroup s as i1 o1, Numeric.Backprop.Explicit.BVGroup s bs i2 o2, cs ~ (as Type.Family.List.++ bs), Type.Class.Known.Known Data.Type.Length.Length as) => Numeric.Backprop.Explicit.BVGroup s (i1 () : i2 () : cs) (i1 GHC.Generics.:*: i2) (o1 GHC.Generics.:*: o2)
-instance (Data.Reflection.Reifies s Numeric.Backprop.Internal.W, Numeric.Backprop.Explicit.BVGroup s as i1 o1, Numeric.Backprop.Explicit.BVGroup s bs i2 o2, cs ~ (as Type.Family.List.++ bs), Type.Class.Known.Known Data.Type.Length.Length as) => Numeric.Backprop.Explicit.BVGroup s (i1 () : i2 () : cs) (i1 GHC.Generics.:+: i2) (o1 GHC.Generics.:+: o2)
 
 
 -- | Provides the exact same API as <a>Numeric.Backprop</a>, except
@@ -2819,19 +2816,40 @@ liftOp2 :: forall a b c s. (Backprop a, Backprop b, Backprop c, Reifies s W) => 
 --   <a>liftOp</a> for more information.
 liftOp3 :: forall a b c d s. (Backprop a, Backprop b, Backprop c, Backprop d, Reifies s W) => Op '[a, b, c] d -> BVar s a -> BVar s b -> BVar s c -> BVar s d
 
+-- | Split out a <a>BVar</a> of "higher-kinded data type", a la
+--   <a>http://reasonablypolymorphic.com/blog/higher-kinded-data/</a>
+--   
+--   Lets you take <a>BVar</a> of a value into a separate <a>BVar</a> of
+--   every field of that value.
+--   
+--   See <a>Numeric.Backprop#hkd</a> for a tutorial on usage.
+--   
+--   This will work with all data types made with a single constructor,
+--   whose fields are all instances of <a>Backprop</a>, where the type
+--   itself has an instance of <a>Backprop</a>.
+splitBV :: forall z f as s. (Generic (z f), Generic (z (BVar s)), BVGroup s as (Rep (z f)) (Rep (z (BVar s))), Backprop (Rep (z f) ()), Every Backprop as, Known Length as, Reifies s W) => BVar s (z f) -> z (BVar s)
+
+-- | Split out a <a>BVar</a> of "higher-kinded data type", a la
+--   <a>http://reasonablypolymorphic.com/blog/higher-kinded-data/</a>
+--   
+--   It lets you take a <a>BVar</a> of every field of a value, and join
+--   them into a <a>BVar</a> of that value.
+--   
+--   See <a>Numeric.Backprop#hkd</a> for a tutorial on usage.
+--   
+--   This will work with all data types made with a single constructor,
+--   whose fields are all instances of <a>Backprop</a>, where the type
+--   itself has an instance of <a>Backprop</a>.
+joinBV :: forall z f as s. (Generic (z f), Generic (z (BVar s)), BVGroup s as (Rep (z f)) (Rep (z (BVar s))), Backprop (z f), Every Backprop as, Known Length as, Reifies s W) => z (BVar s) -> BVar s (z f)
+
 -- | Helper class for generically "splitting" and "joining" <a>BVar</a>s
 --   into constructors. See <a>splitBV</a> and <a>joinBV</a>.
+--   
+--   See <a>Numeric.Backprop#hkd</a> for a tutorial on how to use this.
+--   
+--   Instances should be available for types made with one constructor with
+--   <a>Generic</a> instances.
 class BVGroup s as i o | i -> as, o -> i
-
--- | Helper method for generically "splitting" <a>BVar</a>s out of
---   constructors inside a <a>BVar</a>. See <a>splitBV</a>.
-gsplitBV :: BVGroup s as i o => Prod AddFunc as -> Prod ZeroFunc as -> BVar s (i ()) -> o ()
-
--- | Helper method for generically "joining" <a>BVar</a>s inside a
---   constructor into a <a>BVar</a>. See <a>joinBV</a>.
-gjoinBV :: BVGroup s as i o => Prod AddFunc as -> Prod ZeroFunc as -> o () -> BVar s (i ())
-splitBV :: forall z f as s. (Generic (z f), Generic (z (BVar s)), BVGroup s as (Rep (z f)) (Rep (z (BVar s))), Backprop (Rep (z f) ()), Every Backprop as, Known Length as, Reifies s W) => BVar s (z f) -> z (BVar s)
-joinBV :: forall z f as s. (Generic (z f), Generic (z (BVar s)), BVGroup s as (Rep (z f)) (Rep (z (BVar s))), Backprop (z f), Every Backprop as, Known Length as, Reifies s W) => z (BVar s) -> BVar s (z f)
 
 -- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
 --   <tt>as</tt> to <tt>a</tt>.
