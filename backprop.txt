@@ -329,6 +329,11 @@ instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.GOne (GHC.G
 instance Numeric.Backprop.Class.Backprop GHC.Types.Int
 instance Numeric.Backprop.Class.Backprop GHC.Integer.Type.Integer
 instance Numeric.Backprop.Class.Backprop GHC.Natural.Natural
+instance Numeric.Backprop.Class.Backprop GHC.Word.Word8
+instance Numeric.Backprop.Class.Backprop GHC.Types.Word
+instance Numeric.Backprop.Class.Backprop GHC.Word.Word16
+instance Numeric.Backprop.Class.Backprop GHC.Word.Word32
+instance Numeric.Backprop.Class.Backprop GHC.Word.Word64
 instance GHC.Real.Integral a => Numeric.Backprop.Class.Backprop (GHC.Real.Ratio a)
 instance GHC.Float.RealFloat a => Numeric.Backprop.Class.Backprop (Data.Complex.Complex a)
 instance Numeric.Backprop.Class.Backprop GHC.Types.Float
@@ -349,16 +354,44 @@ instance (Numeric.Backprop.Class.Backprop a, Numeric.Backprop.Class.Backprop b, 
 instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (Data.Functor.Identity.Identity a)
 instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (Data.Type.Combinator.I a)
 instance Numeric.Backprop.Class.Backprop (Data.Proxy.Proxy a)
+instance Numeric.Backprop.Class.Backprop w => Numeric.Backprop.Class.Backprop (Data.Functor.Const.Const w a)
 instance Numeric.Backprop.Class.Backprop Data.Void.Void
 instance (Numeric.Backprop.Class.Backprop a, GHC.Classes.Ord k) => Numeric.Backprop.Class.Backprop (Data.Map.Internal.Map k a)
 instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (Data.IntMap.Internal.IntMap a)
 instance Type.Family.List.ListC (Numeric.Backprop.Class.Backprop Type.Family.List.<$> (f Type.Family.List.<$> as)) => Numeric.Backprop.Class.Backprop (Data.Type.Product.Prod f as)
 instance Type.Family.Maybe.MaybeC (Numeric.Backprop.Class.Backprop Type.Family.Maybe.<$> (f Type.Family.Maybe.<$> a)) => Numeric.Backprop.Class.Backprop (Data.Type.Option.Option f a)
+instance (Numeric.Backprop.Class.Backprop (f a), Numeric.Backprop.Class.Backprop (g a)) => Numeric.Backprop.Class.Backprop ((Data.Type.Conjunction.:&:) f g a)
+instance (Numeric.Backprop.Class.Backprop (f a), Numeric.Backprop.Class.Backprop (g b)) => Numeric.Backprop.Class.Backprop ((Data.Type.Conjunction.:*:) f g '(a, b))
+instance Numeric.Backprop.Class.Backprop (f (g h) a) => Numeric.Backprop.Class.Backprop (Data.Type.Combinator.Comp1 f g h a)
+instance Numeric.Backprop.Class.Backprop (f (g a)) => Numeric.Backprop.Class.Backprop ((Data.Type.Combinator.:.:) f g a)
+instance Numeric.Backprop.Class.Backprop w => Numeric.Backprop.Class.Backprop (Data.Type.Combinator.C w a)
+instance Numeric.Backprop.Class.Backprop (p a b) => Numeric.Backprop.Class.Backprop (Data.Type.Combinator.Flip p b a)
+instance Numeric.Backprop.Class.Backprop (p '(a, b)) => Numeric.Backprop.Class.Backprop (Data.Type.Combinator.Cur p a b)
+instance Numeric.Backprop.Class.Backprop (p a b) => Numeric.Backprop.Class.Backprop (Data.Type.Combinator.Uncur p '(a, b))
+instance Numeric.Backprop.Class.Backprop (p '(a, b, c)) => Numeric.Backprop.Class.Backprop (Data.Type.Combinator.Cur3 p a b c)
+instance Numeric.Backprop.Class.Backprop (p a b c) => Numeric.Backprop.Class.Backprop (Data.Type.Combinator.Uncur3 p '(a, b, c))
+instance Numeric.Backprop.Class.Backprop (f a a) => Numeric.Backprop.Class.Backprop (Data.Type.Combinator.Join f a)
+instance Numeric.Backprop.Class.Backprop (t (Data.Type.Combinator.Flip f b) a) => Numeric.Backprop.Class.Backprop (Data.Type.Combinator.Conj t f a b)
+instance Numeric.Backprop.Class.Backprop (c (f a)) => Numeric.Backprop.Class.Backprop (Data.Type.Combinator.LL c a f)
+instance Numeric.Backprop.Class.Backprop (c (f a)) => Numeric.Backprop.Class.Backprop (Data.Type.Combinator.RR c f a)
 instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (GHC.Generics.K1 i a p)
 instance Numeric.Backprop.Class.Backprop (f p) => Numeric.Backprop.Class.Backprop (GHC.Generics.M1 i c f p)
 instance (Numeric.Backprop.Class.Backprop (f p), Numeric.Backprop.Class.Backprop (g p)) => Numeric.Backprop.Class.Backprop ((GHC.Generics.:*:) f g p)
 instance Numeric.Backprop.Class.Backprop (GHC.Generics.V1 p)
 instance Numeric.Backprop.Class.Backprop (GHC.Generics.U1 p)
+instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (Data.Monoid.Sum a)
+instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (Data.Monoid.Product a)
+instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (Data.Semigroup.Option a)
+instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (Data.Semigroup.First a)
+instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (Data.Semigroup.Last a)
+instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (Data.Monoid.First a)
+instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (Data.Monoid.Last a)
+instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (Data.Monoid.Dual a)
+instance (Numeric.Backprop.Class.Backprop a, Numeric.Backprop.Class.Backprop b) => Numeric.Backprop.Class.Backprop (Data.Semigroup.Arg a b)
+instance (Numeric.Backprop.Class.Backprop (f a), Numeric.Backprop.Class.Backprop (g a)) => Numeric.Backprop.Class.Backprop (Data.Functor.Product.Product f g a)
+instance Numeric.Backprop.Class.Backprop (f (g a)) => Numeric.Backprop.Class.Backprop (Data.Functor.Compose.Compose f g a)
+instance Numeric.Backprop.Class.Backprop a => Numeric.Backprop.Class.Backprop (r -> a)
+instance (Numeric.Backprop.Class.Backprop a, GHC.Base.Applicative m) => Numeric.Backprop.Class.Backprop (Control.Arrow.Kleisli m r a)
 instance (Numeric.Backprop.Class.GOne f, Numeric.Backprop.Class.GOne g) => Numeric.Backprop.Class.GOne (f GHC.Generics.:*: g)
 instance (Numeric.Backprop.Class.GOne f, Numeric.Backprop.Class.GOne g) => Numeric.Backprop.Class.GOne (f GHC.Generics.:+: g)
 instance Numeric.Backprop.Class.GOne GHC.Generics.V1
