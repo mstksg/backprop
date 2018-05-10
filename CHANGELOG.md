@@ -11,6 +11,7 @@ Version 0.2.2.0
 *   `toList` for *Prelude.Backprop* modules
 *   `Backprop` instance for `BVar`
 *   *COMPLETE* pragmas for `T2` and `T3`
+*   Un-exported `gzero`, `gadd`, and `gone` from *Numeric.Backprop.Class*.
 
 Version 0.2.1.0
 ---------------

@@ -42,7 +42,7 @@ module Numeric.Backprop.Class (
   -- * Newtype
   , ABP(..), NumBP(..)
   -- * Generics
-  , GZero(..), GAdd(..), GOne(..)
+  , GZero, GAdd, GOne
   ) where
 
 import           Control.Applicative

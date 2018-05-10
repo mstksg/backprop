@@ -82,9 +82,10 @@ module Numeric.Backprop (
   , liftOp
   , liftOp1, liftOp2, liftOp3
     -- ** Generics
-  , E.BVGroup(..)
+    -- $hkd
   , splitBV
   , joinBV
+  , E.BVGroup
     -- * 'Op'
   , Op(..)
     -- ** Creation
@@ -706,6 +707,91 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
     T3 = isoVar3 (,,) id
 {-# COMPLETE T3 #-}
 
+-- $hkd
+--
+-- 'splitBV' and 'joinBV' let you split out a 'BVar' of a data type and
+-- join together a data type of 'BVar's using the "higher-kinded data type"
+-- technique, a la
+-- <http://reasonablypolymorphic.com/blog/higher-kinded-data/>.
+--
+-- It will let you take a data type like
+--
+-- @
+-- data MyType = MT { mtX :: 'Double', mtY :: [Double] }
+--
+-- -- | Automatic instance
+-- instance Backprop MyType
+-- @
+--
+-- And automatically let make a @'BVar' s MyType@ into a @'BVar'
+-- s 'Double'@ and @BVar s [Double]@, without munging around with lenses
+-- and 'viewVar'.  It'll also let you take a @BVar s Double@ and a @BVar
+-- s [Double]@ and turn it into a @BVar s MyType@ without messing around
+-- with manually lifting ops or 'isoVar'.
+--
+-- To do this, rewrite 'MyType' to take a 'Functor' argument:
+--
+-- @
+-- -- | Can be re-used for every data type you use this trick with
+-- type family HKD f a where
+--     HKD Identity a = a
+--     HKD f        a =  f a
+--
+-- data MyType' f = MT { mtX :: f Double, mtY :: f [Double] }
+--
+-- -- | This is the original data type
+-- type MyType = MyType' Identity
+--
+-- -- | Automatic instance
+-- instance Backprop MyType
+-- @
+--
+-- Now, 'splitBV' can be used, with type:
+--
+-- @
+-- 'splitBV' :: BVar s MyType -> MyType' (BVar s)
+-- @
+--
+-- So you can use it lke:
+--
+-- @
+-- myFunction :: BVar s MyType -> BVar s Double
+-- myFunction (splitBV -> MT x y) =  x + 'Prelude.Backprop.sum' y
+-- @
+--
+-- If you use 'splitBV', the contents will be a @BVar s Double@ and a @BVar
+-- s [Double]@.  Basically, it lets you "extract" the fields, because your
+-- 'MyType' now contains 'BVar's.
+--
+-- Now, 'joinBV' can be used, with the type:
+--
+-- @
+-- 'joinBV' :: MyType' (BVar s) -> BVar s MyType
+-- @
+--
+-- So you can take a bunch of 'BVar's and turn them into a 'BVar' of
+-- a 'MyType':
+--
+-- @
+-- myOtherFunction :: BVar s Double -> BVar s [Double] -> BVar s MyType
+-- myOtherFunction x y = joinBV $ MT x y
+-- @
+--
+-- This will work with all data types made with a single constructor, whose
+-- fields are all instances of 'Backprop', where the type itself has an
+-- instance of 'Backprop'.
+
+-- | Split out a 'BVar' of "higher-kinded data type", a la
+-- <http://reasonablypolymorphic.com/blog/higher-kinded-data/>
+--
+-- Lets you take 'BVar' of a value into a separate 'BVar' of every field of
+-- that value.
+--
+-- See "Numeric.Backprop#hkd" for a tutorial on usage.
+--
+-- This will work with all data types made with a single constructor, whose
+-- fields are all instances of 'Backprop', where the type itself has an
+-- instance of 'Backprop'.
 splitBV
     :: forall z f as s.
        ( Generic (z f)
@@ -721,6 +807,17 @@ splitBV
 splitBV = E.splitBV E.addFunc E.addFuncs E.zeroFunc E.zeroFuncs
 {-# INLINE splitBV #-}
 
+-- | Split out a 'BVar' of "higher-kinded data type", a la
+-- <http://reasonablypolymorphic.com/blog/higher-kinded-data/>
+--
+-- It lets you take a 'BVar' of every field of a value, and join them into
+-- a 'BVar' of that value.
+--
+-- See "Numeric.Backprop#hkd" for a tutorial on usage.
+--
+-- This will work with all data types made with a single constructor, whose
+-- fields are all instances of 'Backprop', where the type itself has an
+-- instance of 'Backprop'.
 joinBV
     :: forall z f as s.
        ( Generic (z f)
