@@ -1325,9 +1325,10 @@ joinBV :: forall z f as s. (Generic (z f), Generic (z (BVar s)), BVGroup s as (R
 --   
 --   See <a>Numeric.Backprop#hkd</a> for a tutorial on how to use this.
 --   
---   Instances should be available for types made with one constructor with
---   <a>Generic</a> instances.
-class BVGroup s as i o | i -> as, o -> i
+--   Instances should be available for types made with one constructor
+--   whose fields are all instances of <a>Backprop</a>, with a
+--   <a>Generic</a> instance.
+class BVGroup s as i o | o -> i, i -> as
 
 -- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
 --   <tt>as</tt> to <tt>a</tt>.
@@ -1592,6 +1593,7 @@ instance Numeric.Backprop.Explicit.BVGroup s as i o => Numeric.Backprop.Explicit
 instance Numeric.Backprop.Explicit.BVGroup s '[] GHC.Generics.V1 GHC.Generics.V1
 instance Numeric.Backprop.Explicit.BVGroup s '[] GHC.Generics.U1 GHC.Generics.U1
 instance (Data.Reflection.Reifies s Numeric.Backprop.Internal.W, Numeric.Backprop.Explicit.BVGroup s as i1 o1, Numeric.Backprop.Explicit.BVGroup s bs i2 o2, cs ~ (as Type.Family.List.++ bs), Type.Class.Known.Known Data.Type.Length.Length as) => Numeric.Backprop.Explicit.BVGroup s (i1 () : i2 () : cs) (i1 GHC.Generics.:*: i2) (o1 GHC.Generics.:*: o2)
+instance (Data.Reflection.Reifies s Numeric.Backprop.Internal.W, Numeric.Backprop.Explicit.BVGroup s as i1 o1, Numeric.Backprop.Explicit.BVGroup s bs i2 o2, cs ~ (as Type.Family.List.++ bs), Type.Class.Known.Known Data.Type.Length.Length as) => Numeric.Backprop.Explicit.BVGroup s (i1 () : i2 () : cs) (i1 GHC.Generics.:+: i2) (o1 GHC.Generics.:+: o2)
 
 
 -- | Provides the exact same API as <a>Numeric.Backprop</a>, except
@@ -2826,7 +2828,8 @@ liftOp3 :: forall a b c d s. (Backprop a, Backprop b, Backprop c, Backprop d, Re
 --   
 --   This will work with all data types made with a single constructor,
 --   whose fields are all instances of <a>Backprop</a>, where the type
---   itself has an instance of <a>Backprop</a>.
+--   itself has an instance of <a>Backprop</a>. The type also must derive
+--   <a>Generic</a>.
 splitBV :: forall z f as s. (Generic (z f), Generic (z (BVar s)), BVGroup s as (Rep (z f)) (Rep (z (BVar s))), Backprop (Rep (z f) ()), Every Backprop as, Known Length as, Reifies s W) => BVar s (z f) -> z (BVar s)
 
 -- | Split out a <a>BVar</a> of "higher-kinded data type", a la
@@ -2847,9 +2850,10 @@ joinBV :: forall z f as s. (Generic (z f), Generic (z (BVar s)), BVGroup s as (R
 --   
 --   See <a>Numeric.Backprop#hkd</a> for a tutorial on how to use this.
 --   
---   Instances should be available for types made with one constructor with
---   <a>Generic</a> instances.
-class BVGroup s as i o | i -> as, o -> i
+--   Instances should be available for types made with one constructor
+--   whose fields are all instances of <a>Backprop</a>, with a
+--   <a>Generic</a> instance.
+class BVGroup s as i o | o -> i, i -> as
 
 -- | An <tt><a>Op</a> as a</tt> describes a differentiable function from
 --   <tt>as</tt> to <tt>a</tt>.
