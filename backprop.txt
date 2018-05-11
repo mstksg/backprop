@@ -1277,6 +1277,10 @@ gradBP :: ZeroFunc a -> OneFunc b -> (forall s. Reifies s W => BVar s a -> BVar 
 -- | <a>backpropWith</a>, but with explicit <a>zero</a>.
 backpropWith :: ZeroFunc a -> (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b -> b) -> (b, a)
 
+-- | <a>evalBP</a> but with no arguments. Useful when everything is just
+--   given through <a>constVar</a>.
+evalBP0 :: forall a. () => (forall s. Reifies s W => BVar s a) -> a
+
 -- | <a>backprop2</a>, but with explicit <a>zero</a> and <a>one</a>.
 backprop2 :: ZeroFunc a -> ZeroFunc b -> OneFunc c -> (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) -> a -> b -> (c, (a, b))
 
@@ -1764,6 +1768,10 @@ gradBP :: (Num a, Num b) => (forall s. Reifies s W => BVar s a -> BVar s b) -> a
 --   See module documentation for <a>Numeric.Backprop.Num</a> for
 --   information on using this with tuples.
 backpropWith :: Num a => (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> (b -> b) -> (b, a)
+
+-- | <a>evalBP</a> but with no arguments. Useful when everything is just
+--   given through <a>constVar</a>.
+evalBP0 :: forall a. () => (forall s. Reifies s W => BVar s a) -> a
 
 -- | <a>backprop2</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
@@ -2632,6 +2640,10 @@ gradBPN :: (Every Backprop as, Known Length as, Backprop b) => (forall s. Reifie
 --   <a>backpropWith</a> for more details.
 backpropWithN :: (Every Backprop as, Known Length as) => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b) -> Tuple as -> (b -> b) -> (b, Tuple as)
 class EveryC k c as => Every k (c :: k -> Constraint) (as :: [k])
+
+-- | <a>evalBP</a> but with no arguments. Useful when everything is just
+--   given through <a>constVar</a>.
+evalBP0 :: forall a. () => (forall s. Reifies s W => BVar s a) -> a
 
 -- | Lift a value into a <a>BVar</a> representing a constant value.
 --   
