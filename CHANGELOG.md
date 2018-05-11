@@ -8,6 +8,8 @@ Version 0.2.2.0
 
 <https://github.com/mstksg/backprop/releases/tag/v0.2.2.0>
 
+*   `evalBP0` added, for convenience for no-argument values that need to be
+    evaluated without backpropagation.
 *   `splitBV` and `joinBV` for "higher-kinded data" style `BVar` manipulation,
     via the `BVGroup` helper typeclass.
 *   `toList`, `mapAccumL`, and `mapAccumR` for *Prelude.Backprop* modules

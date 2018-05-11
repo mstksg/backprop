@@ -54,6 +54,7 @@ module Numeric.Backprop.Num (
     -- * Running
   , backprop, E.evalBP, gradBP, backpropWith
     -- ** Multiple inputs
+  , E.evalBP0
   , backprop2, E.evalBP2, gradBP2, backpropWith2
   , backpropN, E.evalBPN, gradBPN, backpropWithN, Every
     -- * Manipulating 'BVar'

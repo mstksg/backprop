@@ -47,6 +47,7 @@ module Numeric.Backprop.Explicit (
     -- * Running
   , backprop, evalBP, gradBP, backpropWith
     -- ** Multiple inputs
+  , evalBP0
   , backprop2, evalBP2, gradBP2, backpropWith2
   , backpropN, evalBPN, gradBPN, backpropWithN, Every
     -- * Manipulating 'BVar'
@@ -194,6 +195,15 @@ backpropWith
     -> (b, a)
 backpropWith zfa f x g = backprop zfa (OF g) f x
 {-# INLINE backpropWith #-}
+
+-- | 'evalBP' but with no arguments.  Useful when everything is just given
+-- through 'constVar'.
+evalBP0
+    :: forall a. ()
+    => (forall s. Reifies s W => BVar s a)
+    -> a
+evalBP0 x = evalBPN (const x) Ø
+{-# INLINE evalBP0 #-}
 
 -- | Turn a function @'BVar' s a -> 'BVar' s b@ into the function @a -> b@
 -- that it represents.
