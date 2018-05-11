@@ -1,6 +1,4 @@
 {-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 -- |
 -- Module      : Prelude.Backprop
@@ -53,8 +51,8 @@ import qualified Numeric.Backprop.Explicit as E
 import qualified Prelude                   as P
 import qualified Prelude.Backprop.Explicit as E
 
--- | Lifted 'P.sum'
-sum :: forall t a s. (Foldable t, Functor t, Backprop (t a), Backprop a, Num a, Reifies s W)
+-- | Lifted 'P.sum'.  More efficient than going through 'toList'.
+sum :: (Foldable t, Functor t, Backprop (t a), Backprop a, Num a, Reifies s W)
     => BVar s (t a)
     -> BVar s a
 sum = E.sum E.addFunc E.zeroFunc
@@ -62,41 +60,41 @@ sum = E.sum E.addFunc E.zeroFunc
 
 -- | Lifted 'P.pure'.
 pure
-    :: forall t a s. (Foldable t, Applicative t, Backprop (t a), Backprop a, Reifies s W)
+    :: (Foldable t, Applicative t, Backprop (t a), Backprop a, Reifies s W)
     => BVar s a
     -> BVar s (t a)
 pure = E.pure E.addFunc E.zeroFunc E.zeroFunc
 {-# INLINE pure #-}
 
--- | Lifted 'P.product'
+-- | Lifted 'P.product'.  More efficient than going through 'toList'.
 product
-    :: forall t a s. (Foldable t, Functor t, Backprop (t a), Backprop a, Fractional a, Reifies s W)
+    :: (Foldable t, Functor t, Backprop (t a), Backprop a, Fractional a, Reifies s W)
     => BVar s (t a)
     -> BVar s a
 product = E.product E.addFunc E.zeroFunc
 {-# INLINE product #-}
 
--- | Lifted 'P.length'.
+-- | Lifted 'P.length'.  More efficient than going through 'toList'.
 length
-    :: forall t a b s. (Foldable t, Backprop (t a), Backprop b, Num b, Reifies s W)
+    :: (Foldable t, Backprop (t a), Backprop b, Num b, Reifies s W)
     => BVar s (t a)
     -> BVar s b
 length = E.length E.addFunc E.zeroFunc E.zeroFunc
 {-# INLINE length #-}
 
 -- | Lifted 'P.minimum'.  Undefined for situations where 'P.minimum' would
--- be undefined.
+-- be undefined.  More efficient than going through 'toList'.
 minimum
-    :: forall t a s. (Foldable t, Functor t, Backprop a, Ord a, Backprop (t a), Reifies s W)
+    :: (Foldable t, Functor t, Backprop a, Ord a, Backprop (t a), Reifies s W)
     => BVar s (t a)
     -> BVar s a
 minimum = E.minimum E.addFunc E.zeroFunc
 {-# INLINE minimum #-}
 
 -- | Lifted 'P.maximum'.  Undefined for situations where 'P.maximum' would
--- be undefined.
+-- be undefined.  More efficient than going through 'toList'.
 maximum
-    :: forall t a s. (Foldable t, Functor t, Backprop a, Ord a, Backprop (t a), Reifies s W)
+    :: (Foldable t, Functor t, Backprop a, Ord a, Backprop (t a), Reifies s W)
     => BVar s (t a)
     -> BVar s a
 maximum = E.maximum E.addFunc E.zeroFunc
@@ -105,7 +103,7 @@ maximum = E.maximum E.addFunc E.zeroFunc
 -- | Lifted 'P.fmap'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Functor's.
 fmap
-    :: forall f a b s. (Traversable f, Backprop a, Backprop b, Backprop (f b), Reifies s W)
+    :: (Traversable f, Backprop a, Backprop b, Backprop (f b), Reifies s W)
     => (BVar s a -> BVar s b)
     -> BVar s (f a)
     -> BVar s (f b)
@@ -114,7 +112,7 @@ fmap = E.fmap E.addFunc E.addFunc E.zeroFunc E.zeroFunc E.zeroFunc
 
 -- | Alias for 'fmap'.
 (<$>)
-    :: forall f a b s. (Traversable f, Backprop a, Backprop b, Backprop (f b), Reifies s W)
+    :: (Traversable f, Backprop a, Backprop b, Backprop (f b), Reifies s W)
     => (BVar s a -> BVar s b)
     -> BVar s (f a)
     -> BVar s (f b)
@@ -124,7 +122,7 @@ fmap = E.fmap E.addFunc E.addFunc E.zeroFunc E.zeroFunc E.zeroFunc
 -- | Lifted 'P.traverse'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Functor's.
 traverse
-    :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Backprop a, Backprop b, Backprop (f (t b)), Backprop (t b), Reifies s W)
+    :: (Traversable t, Applicative f, Foldable f, Backprop a, Backprop b, Backprop (f (t b)), Backprop (t b), Reifies s W)
     => (BVar s a -> f (BVar s b))
     -> BVar s (t a)
     -> BVar s (f (t b))
@@ -135,9 +133,7 @@ traverse = E.traverse E.addFunc E.addFunc E.addFunc
 -- | Lifted 'P.liftA2'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Applicative's.
 liftA2
-    :: forall f a b c s.
-       ( Traversable f
-       , Applicative f
+    :: ( Traversable f, Applicative f
        , Backprop a, Backprop b, Backprop c, Backprop (f c)
        , Reifies s W
        )
@@ -152,8 +148,7 @@ liftA2 = E.liftA2 E.addFunc E.addFunc E.addFunc
 -- | Lifted 'P.liftA3'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Applicative's.
 liftA3
-    :: forall f a b c d s.
-       ( Traversable f
+    :: ( Traversable f
        , Applicative f
        , Backprop a, Backprop b, Backprop c, Backprop d, Backprop (f d)
        , Reifies s W
@@ -189,6 +184,11 @@ realToFrac = E.realToFrac E.addFunc E.zeroFunc
 
 -- | Lifted version of 'P.toList'.  Takes a 'BVar' of a 'Traversable' of
 -- items and returns a list of 'BVar's for each item.
+--
+-- You can use this to implement "lifted" versions of 'Foldable' methods
+-- like 'P.foldr', 'P.foldl'', etc.; however, 'sum', 'product', 'length',
+-- 'minimum', and 'maximum' have more efficient implementations than simply
+-- @'P.minimum' . 'toList'.@
 --
 -- @since 0.2.2.0
 toList

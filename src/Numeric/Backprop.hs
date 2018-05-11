@@ -355,7 +355,7 @@ gradBP2 = E.gradBP2 E.zeroFunc E.zeroFunc E.oneFunc
 -- the contents (like 'multiplying').
 --
 (^^.)
-    :: forall a b s. (Reifies s W, Backprop a)
+    :: forall b a s. (Backprop a, Reifies s W)
     => BVar s b
     -> Lens' b a
     -> BVar s a
@@ -372,7 +372,7 @@ infixl 8 ^^.
 --
 -- See documentation for '^^.' for more information.
 viewVar
-    :: forall a b s. (Reifies s W, Backprop a)
+    :: forall a b s. (Backprop a, Reifies s W)
     => Lens' b a
     -> BVar s b
     -> BVar s a
@@ -404,7 +404,7 @@ viewVar = E.viewVar E.addFunc E.zeroFunc
 -- This is the main way to set values inside 'BVar's of container types.
 --
 (.~~)
-    :: forall a b s. (Reifies s W, Backprop a, Backprop b)
+    :: (Backprop a, Backprop b, Reifies s W)
     => Lens' b a
     -> BVar s a
     -> BVar s b
@@ -418,7 +418,7 @@ infixl 8 .~~
 --
 -- See documentation for '.~~' for more information.
 setVar
-    :: forall a b s. (Reifies s W, Backprop a, Backprop b)
+    :: (Backprop a, Backprop b, Reifies s W)
     => Lens' b a
     -> BVar s a
     -> BVar s b
@@ -488,7 +488,7 @@ v ^^?! t = fromMaybe (error e) (previewVar t v)
 --
 -- See documentation for '^^?' for more information.
 previewVar
-    :: forall b a s. (Reifies s W, Backprop a)
+    :: forall b a s. (Backprop a, Reifies s W)
     => Traversal' b a
     -> BVar s b
     -> Maybe (BVar s a)
@@ -545,7 +545,7 @@ toListOfVar = E.toListOfVar E.addFunc E.zeroFunc
 -- unexpected behavior in 'Foldable' instances that don't have a fixed
 -- number of items.
 sequenceVar
-    :: forall t a s. (Backprop a, Reifies s W, Traversable t)
+    :: (Traversable t, Backprop a, Reifies s W)
     => BVar s (t a)
     -> t (BVar s a)
 sequenceVar = E.sequenceVar E.addFunc E.zeroFunc
@@ -560,7 +560,7 @@ sequenceVar = E.sequenceVar E.addFunc E.zeroFunc
 -- etc.; this can cause unexpected behavior in 'Foldable' instances that
 -- don't have a fixed number of items.
 collectVar
-    :: forall t a s. (Backprop a, Backprop (t a), Reifies s W, Foldable t, Functor t)
+    :: (Foldable t, Functor t, Backprop a, Backprop (t a), Reifies s W)
     => t (BVar s a)
     -> BVar s (t a)
 collectVar = E.collectVar E.addFunc E.zeroFunc E.zeroFunc
@@ -576,7 +576,7 @@ collectVar = E.collectVar E.addFunc E.zeroFunc E.zeroFunc
 -- information, and "Numeric.Backprop.Op#prod" for a mini-tutorial on using
 -- 'Prod' and 'Tuple'.
 liftOp
-    :: forall as b s. (Every Backprop as, Known Length as, Backprop b, Reifies s W)
+    :: (Every Backprop as, Known Length as, Backprop b, Reifies s W)
     => Op as b
     -> Prod (BVar s) as
     -> BVar s b
@@ -591,7 +591,7 @@ liftOp = E.liftOp E.addFuncs E.zeroFunc
 -- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
 -- information.
 liftOp1
-    :: forall a b s. (Backprop a, Backprop b, Reifies s W)
+    :: (Backprop a, Backprop b, Reifies s W)
     => Op '[a] b
     -> BVar s a
     -> BVar s b
@@ -606,7 +606,7 @@ liftOp1 = E.liftOp1 E.addFunc E.zeroFunc
 -- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
 -- information.
 liftOp2
-    :: forall a b c s. (Backprop a, Backprop b, Backprop c, Reifies s W)
+    :: (Backprop a, Backprop b, Backprop c, Reifies s W)
     => Op '[a,b] c
     -> BVar s a
     -> BVar s b
@@ -622,7 +622,7 @@ liftOp2 = E.liftOp2 E.addFunc E.addFunc E.zeroFunc
 -- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
 -- information.
 liftOp3
-    :: forall a b c d s. (Backprop a, Backprop b, Backprop c, Backprop d, Reifies s W)
+    :: (Backprop a, Backprop b, Backprop c, Backprop d, Reifies s W)
     => Op '[a,b,c] d
     -> BVar s a
     -> BVar s b
@@ -823,8 +823,7 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
 --
 -- @since 0.2.2.0
 splitBV
-    :: forall z f as s.
-       ( Generic (z f)
+    :: ( Generic (z f)
        , Generic (z (BVar s))
        , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
        , Backprop (Rep (z f) ())
@@ -851,8 +850,7 @@ splitBV = E.splitBV E.addFunc E.addFuncs E.zeroFunc E.zeroFuncs
 --
 -- @since 0.2.2.0
 joinBV
-    :: forall z f as s.
-       ( Generic (z f)
+    :: ( Generic (z f)
        , Generic (z (BVar s))
        , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
        , Backprop (z f)

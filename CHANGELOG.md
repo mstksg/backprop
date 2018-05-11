@@ -18,6 +18,8 @@ Version 0.2.2.0
 *   Un-exported `gzero`, `gadd`, and `gone` from *Numeric.Backprop.Class*
 *   Many, many more instances of `Backprop`
 *   `Backprop` instance for `Proxy` made non-strict for `add`
+*   Swapped type variable order for a few library functions, which might
+    potentially be breaking changes.
 
 *Internal*
 

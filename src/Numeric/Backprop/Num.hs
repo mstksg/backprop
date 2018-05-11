@@ -214,7 +214,7 @@ gradBP2 = E.gradBP2 E.zfNum E.zfNum E.ofNum
 -- | 'Numeric.Backprop.^^.', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 (^^.)
-    :: forall a b s. (Reifies s W, Num a)
+    :: forall b a s. (Num a, Reifies s W)
     => BVar s b
     -> Lens' b a
     -> BVar s a
@@ -225,7 +225,7 @@ infixl 8 ^^.
 -- | 'Numeric.Backprop.viewVar', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 viewVar
-    :: forall a b s. (Reifies s W, Num a)
+    :: forall b a s. (Num a, Reifies s W)
     => Lens' b a
     -> BVar s b
     -> BVar s a
@@ -236,7 +236,7 @@ viewVar = E.viewVar E.afNum E.zfNum
 -- | 'Numeric.Backprop..~~', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 (.~~)
-    :: forall a b s. (Reifies s W, Num a, Num b)
+    :: (Num a, Num b, Reifies s W)
     => Lens' b a
     -> BVar s a
     -> BVar s b
@@ -248,7 +248,7 @@ infixl 8 .~~
 -- | 'Numeric.Backprop.setVar', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 setVar
-    :: forall a b s. (Reifies s W, Num a, Num b)
+    :: forall a b s. (Num a, Num b, Reifies s W)
     => Lens' b a
     -> BVar s a
     -> BVar s b
@@ -303,7 +303,7 @@ v ^^?! t = fromMaybe (error e) (previewVar t v)
 --
 -- See documentation for '^^?' for more information and important notes.
 previewVar
-    :: forall b a s. (Reifies s W, Num a)
+    :: forall b a s. (Num a, Reifies s W)
     => Traversal' b a
     -> BVar s b
     -> Maybe (BVar s a)
@@ -333,7 +333,7 @@ toListOfVar = E.toListOfVar E.afNum E.zfNum
 -- | 'Numeric.Backprop.sequenceVar', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 sequenceVar
-    :: forall t a s. (Num a, Reifies s W, Traversable t)
+    :: (Traversable t, Num a, Reifies s W)
     => BVar s (t a)
     -> t (BVar s a)
 sequenceVar = E.sequenceVar E.afNum E.zfNum
@@ -346,7 +346,7 @@ sequenceVar = E.sequenceVar E.afNum E.zfNum
 -- <https://hackage.haskell.org/package/vector-sized vector-sized> instead:
 -- it's a fixed-length vector type with a very appropriate 'Num' instance!
 collectVar
-    :: forall t a s. (Num a, Num (t a), Reifies s W, Foldable t, Functor t)
+    :: (Foldable t, Functor t, Num a, Num (t a), Reifies s W)
     => t (BVar s a)
     -> BVar s (t a)
 collectVar = E.collectVar E.afNum E.zfNum E.zfNum
@@ -355,7 +355,7 @@ collectVar = E.collectVar E.afNum E.zfNum E.zfNum
 -- | 'Numeric.Backprop.liftOp', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 liftOp
-    :: forall as b s. (Every Num as, Known Length as, Num b, Reifies s W)
+    :: (Every Num as, Known Length as, Num b, Reifies s W)
     => Op as b
     -> Prod (BVar s) as
     -> BVar s b
@@ -365,7 +365,7 @@ liftOp = E.liftOp E.afNums E.zfNum
 -- | 'Numeric.Backprop.liftOp1', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 liftOp1
-    :: forall a b s. (Num a, Num b, Reifies s W)
+    :: (Num a, Num b, Reifies s W)
     => Op '[a] b
     -> BVar s a
     -> BVar s b
@@ -375,7 +375,7 @@ liftOp1 = E.liftOp1 E.afNum E.zfNum
 -- | 'Numeric.Backprop.liftOp2', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 liftOp2
-    :: forall a b c s. (Num a, Num b, Num c, Reifies s W)
+    :: (Num a, Num b, Num c, Reifies s W)
     => Op '[a,b] c
     -> BVar s a
     -> BVar s b
@@ -386,7 +386,7 @@ liftOp2 = E.liftOp2 E.afNum E.afNum E.zfNum
 -- | 'Numeric.Backprop.liftOp3', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 liftOp3
-    :: forall a b c d s. (Num a, Num b, Num c, Num d, Reifies s W)
+    :: (Num a, Num b, Num c, Num d, Reifies s W)
     => Op '[a,b,c] d
     -> BVar s a
     -> BVar s b

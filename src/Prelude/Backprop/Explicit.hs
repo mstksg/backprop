@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_HADDOCK not-home     #-}
 
 -- |
@@ -49,7 +48,7 @@ import qualified Data.Traversable          as P
 import qualified Prelude                   as P
 
 -- | 'Prelude.Backprop.sum', but taking explicit 'add' and 'zero'.
-sum :: forall t a s. (Foldable t, Functor t, Num a, Reifies s W)
+sum :: (Foldable t, Functor t, Num a, Reifies s W)
     => AddFunc (t a)
     -> ZeroFunc a
     -> BVar s (t a)
@@ -62,7 +61,7 @@ sum af zf = liftOp1 af zf . op1 $ \xs ->
 
 -- | 'Prelude.Backprop.pure', but taking explicit 'add' and 'zero'.
 pure
-    :: forall t a s. (Foldable t, Applicative t, Reifies s W)
+    :: (Foldable t, Applicative t, Reifies s W)
     => AddFunc a
     -> ZeroFunc a
     -> ZeroFunc (t a)
@@ -76,7 +75,7 @@ pure af zfa zf = liftOp1 af zf . op1 $ \x ->
 
 -- | 'Prelude.Backprop.product', but taking explicit 'add' and 'zero'.
 product
-    :: forall t a s. (Foldable t, Functor t, Fractional a, Reifies s W)
+    :: (Foldable t, Functor t, Fractional a, Reifies s W)
     => AddFunc (t a)
     -> ZeroFunc a
     -> BVar s (t a)
@@ -90,7 +89,7 @@ product af zf = liftOp1 af zf . op1 $ \xs ->
 
 -- | 'Prelude.Backprop.length', but taking explicit 'add' and 'zero'.
 length
-    :: forall t a b s. (Foldable t, Num b, Reifies s W)
+    :: (Foldable t, Num b, Reifies s W)
     => AddFunc (t a)
     -> ZeroFunc (t a)
     -> ZeroFunc b
@@ -104,7 +103,7 @@ length af zfa zf = liftOp1 af zf . op1 $ \xs ->
 
 -- | 'Prelude.Backprop.minimum', but taking explicit 'add' and 'zero'.
 minimum
-    :: forall t a s. (Foldable t, Functor t, Ord a, Reifies s W)
+    :: (Foldable t, Functor t, Ord a, Reifies s W)
     => AddFunc (t a)
     -> ZeroFunc a
     -> BVar s (t a)
@@ -118,7 +117,7 @@ minimum af zf = liftOp1 af zf . op1 $ \xs ->
 
 -- | 'Prelude.Backprop.maximum', but taking explicit 'add' and 'zero'.
 maximum
-    :: forall t a s. (Foldable t, Functor t, Ord a, Reifies s W)
+    :: (Foldable t, Functor t, Ord a, Reifies s W)
     => AddFunc (t a)
     -> ZeroFunc a
     -> BVar s (t a)
@@ -132,7 +131,7 @@ maximum af zf = liftOp1 af zf . op1 $ \xs ->
 
 -- | 'Prelude.Backprop.fmap', but taking explicit 'add' and 'zero'.
 fmap
-    :: forall f a b s. (Traversable f, Reifies s W)
+    :: (Traversable f, Reifies s W)
     => AddFunc a
     -> AddFunc b
     -> ZeroFunc a
@@ -146,7 +145,7 @@ fmap afa afb zfa zfb zfbs f = collectVar afb zfb zfbs . P.fmap f . sequenceVar a
 
 -- | 'Prelude.Backprop.traverse', but taking explicit 'add' and 'zero'.
 traverse
-    :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Reifies s W)
+    :: (Traversable t, Applicative f, Foldable f, Reifies s W)
     => AddFunc a
     -> AddFunc b
     -> AddFunc (t b)
@@ -166,8 +165,7 @@ traverse afa afb aftb zfa zfb zftb zfftb f
 
 -- | 'Prelude.Backprop.liftA2', but taking explicit 'add' and 'zero'.
 liftA2
-    :: forall f a b c s.
-       ( Traversable f
+    :: ( Traversable f
        , Applicative f
        , Reifies s W
        )
@@ -190,8 +188,7 @@ liftA2 afa afb afc zfa zfb zfc zffc f x y
 
 -- | 'Prelude.Backprop.liftA3', but taking explicit 'add' and 'zero'.
 liftA3
-    :: forall f a b c d s.
-       ( Traversable f
+    :: ( Traversable f
        , Applicative f
        , Reifies s W
        )
@@ -217,10 +214,7 @@ liftA3 afa afb afc afd zfa zfb zfc zfd zffd f x y z
 {-# INLINE liftA3 #-}
 
 -- | Coerce items inside a 'BVar'.
-coerce
-    :: forall a b s. C.Coercible a b
-    => BVar s a
-    -> BVar s b
+coerce :: C.Coercible a b => BVar s a -> BVar s b
 coerce = coerceVar
 {-# INLINE coerce #-}
 

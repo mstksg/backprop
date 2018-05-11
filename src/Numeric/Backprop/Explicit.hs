@@ -198,10 +198,7 @@ backpropWith zfa f x g = backprop zfa (OF g) f x
 
 -- | 'evalBP' but with no arguments.  Useful when everything is just given
 -- through 'constVar'.
-evalBP0
-    :: forall a. ()
-    => (forall s. Reifies s W => BVar s a)
-    -> a
+evalBP0 :: (forall s. Reifies s W => BVar s a) -> a
 evalBP0 x = evalBPN (const x) Ø
 {-# INLINE evalBP0 #-}
 
@@ -442,8 +439,7 @@ instance ( Reifies s W
 --
 -- @since 0.2.2.0
 splitBV
-    :: forall z f as s.
-       ( Generic (z f)
+    :: ( Generic (z f)
        , Generic (z (BVar s))
        , BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
        , Reifies s W
@@ -464,8 +460,7 @@ splitBV af afs zf zfs =
 --
 -- @since 0.2.2.0
 joinBV
-    :: forall z f as s.
-       ( Generic (z f)
+    :: ( Generic (z f)
        , Generic (z (BVar s))
        , BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
        , Reifies s W

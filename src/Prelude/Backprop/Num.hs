@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_HADDOCK not-home     #-}
 
 -- |
@@ -47,7 +46,7 @@ import qualified Prelude.Backprop.Explicit as E
 
 -- | 'Prelude.Backprop.sum', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
-sum :: forall t a s. (Foldable t, Functor t, Num (t a), Num a, Reifies s W)
+sum :: (Foldable t, Functor t, Num (t a), Num a, Reifies s W)
     => BVar s (t a)
     -> BVar s a
 sum = E.sum E.afNum E.zfNum
@@ -56,7 +55,7 @@ sum = E.sum E.afNum E.zfNum
 -- | 'Prelude.Backprop.pure', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 pure
-    :: forall t a s. (Foldable t, Applicative t, Num (t a), Num a, Reifies s W)
+    :: (Foldable t, Applicative t, Num (t a), Num a, Reifies s W)
     => BVar s a
     -> BVar s (t a)
 pure = E.pure E.afNum E.zfNum E.zfNum
@@ -65,7 +64,7 @@ pure = E.pure E.afNum E.zfNum E.zfNum
 -- | 'Prelude.Backprop.product', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 product
-    :: forall t a s. (Foldable t, Functor t, Num (t a), Fractional a, Reifies s W)
+    :: (Foldable t, Functor t, Num (t a), Fractional a, Reifies s W)
     => BVar s (t a)
     -> BVar s a
 product = E.product E.afNum E.zfNum
@@ -74,7 +73,7 @@ product = E.product E.afNum E.zfNum
 -- | 'Prelude.Backprop.length', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 length
-    :: forall t a b s. (Foldable t, Num (t a), Num b, Reifies s W)
+    :: (Foldable t, Num (t a), Num b, Reifies s W)
     => BVar s (t a)
     -> BVar s b
 length = E.length E.afNum E.zfNum E.zfNum
@@ -83,7 +82,7 @@ length = E.length E.afNum E.zfNum E.zfNum
 -- | 'Prelude.Backprop.minimum', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 minimum
-    :: forall t a s. (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W)
+    :: (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W)
     => BVar s (t a)
     -> BVar s a
 minimum = E.minimum E.afNum E.zfNum
@@ -92,7 +91,7 @@ minimum = E.minimum E.afNum E.zfNum
 -- | 'Prelude.Backprop.maximum', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 maximum
-    :: forall t a s. (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W)
+    :: (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W)
     => BVar s (t a)
     -> BVar s a
 maximum = E.maximum E.afNum E.zfNum
@@ -101,7 +100,7 @@ maximum = E.maximum E.afNum E.zfNum
 -- | 'Prelude.Backprop.fmap', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 fmap
-    :: forall f a b s. (Traversable f, Num a, Num b, Num (f b), Reifies s W)
+    :: (Traversable f, Num a, Num b, Num (f b), Reifies s W)
     => (BVar s a -> BVar s b)
     -> BVar s (f a)
     -> BVar s (f b)
@@ -110,7 +109,7 @@ fmap = E.fmap E.afNum E.afNum E.zfNum E.zfNum E.zfNum
 
 -- | Alias for 'fmap'.
 (<$>)
-    :: forall f a b s. (Traversable f, Num a, Num b, Num (f b), Reifies s W)
+    :: (Traversable f, Num a, Num b, Num (f b), Reifies s W)
     => (BVar s a -> BVar s b)
     -> BVar s (f a)
     -> BVar s (f b)
@@ -120,7 +119,7 @@ fmap = E.fmap E.afNum E.afNum E.zfNum E.zfNum E.zfNum
 -- | 'Prelude.Backprop.traverse', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 traverse
-    :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Num a, Num b, Num (f (t b)), Num (t b), Reifies s W)
+    :: (Traversable t, Applicative f, Foldable f, Num a, Num b, Num (f (t b)), Num (t b), Reifies s W)
     => (BVar s a -> f (BVar s b))
     -> BVar s (t a)
     -> BVar s (f (t b))
@@ -130,8 +129,7 @@ traverse = E.traverse E.afNum E.afNum E.afNum E.zfNum E.zfNum E.zfNum E.zfNum
 -- | 'Prelude.Backprop.liftA2', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 liftA2
-    :: forall f a b c s.
-       ( Traversable f
+    :: ( Traversable f
        , Applicative f
        , Num a, Num b, Num c, Num (f c)
        , Reifies s W
@@ -146,8 +144,7 @@ liftA2 = E.liftA2 E.afNum E.afNum E.afNum E.zfNum E.zfNum E.zfNum E.zfNum
 -- | 'Prelude.Backprop.liftA3', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 liftA3
-    :: forall f a b c d s.
-       ( Traversable f
+    :: ( Traversable f
        , Applicative f
        , Num a, Num b, Num c, Num d, Num (f d)
        , Reifies s W
