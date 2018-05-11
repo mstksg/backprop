@@ -439,7 +439,8 @@ instance ( Reifies s W
 --
 -- @since 0.2.2.0
 splitBV
-    :: ( Generic (z f)
+    :: forall z f s as.
+       ( Generic (z f)
        , Generic (z (BVar s))
        , BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
        , Reifies s W
@@ -460,7 +461,8 @@ splitBV af afs zf zfs =
 --
 -- @since 0.2.2.0
 joinBV
-    :: ( Generic (z f)
+    :: forall z f s as.
+       ( Generic (z f)
        , Generic (z (BVar s))
        , BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
        , Reifies s W

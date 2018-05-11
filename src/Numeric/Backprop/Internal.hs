@@ -630,7 +630,7 @@ backpropN zfs ofb f !xs = (y, g)
                            $ zipWithPM_ go zfs xs
         gradRunner (runOF ofb y) r tp
         delts <- toList <$> V.freeze (_rInputs r)
-        return . fromMaybe (error "backpropN") $
+        return . fromMaybe (internalError "backpropN") $
           fillProd (\_ d -> I (unsafeCoerce d)) xs delts
       where
         go :: forall a. ZeroFunc a -> I a -> ((Sum Int, Endo [Any]),())
@@ -762,7 +762,7 @@ itraverse f xs = evalStateT (traverse (StateT . go) xs) 0
 {-# INLINE itraverse #-}
 
 ixi :: Int -> Lens' [a] a
-ixi _ _ []     = error "ixi"
+ixi _ _ []     = internalError "ixi"
 ixi 0 f (x:xs) = (:xs) <$> f x
 ixi n f (x:xs) = (x:)  <$> ixi (n - 1) f xs
 {-# INLINE ixi #-}
@@ -774,7 +774,7 @@ ixt t i f xs = stuff <$> ixi i f contents
     stuff    = evalState (traverseOf t (state . const go) xs)
       where
         go :: [a] -> (a,  [a])
-        go []     = error "Numeric.Backprop.Internal: unexpected shape involved in gradient computation"
+        go []     = internalError "ixt"
         go (y:ys) = (y, ys)
 {-# INLINE ixt #-}
 
@@ -811,3 +811,6 @@ oneFunc :: Backprop a => OneFunc a
 oneFunc = OF one
 {-# INLINE oneFunc #-}
 
+internalError :: String -> a
+internalError m = errorWithoutStackTrace $
+    "Numeric.Backprop.Internal." ++ m ++ ": unexpected shape involved in gradient computation"

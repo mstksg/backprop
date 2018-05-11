@@ -25,6 +25,8 @@ Version 0.2.2.0
 
 *   Fixed documentation for Num and Explicit Prelude modules, and rewrote
     normal and Num Prelude modules in terms of canonical Prelude definitions
+*   Switched to `errorWithoutStackTrace` wherever appropriate (in *Internal*
+    module)
 
 Version 0.2.1.0
 ---------------
