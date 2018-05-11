@@ -10,11 +10,17 @@ Version 0.2.2.0
 
 *   `splitBV` and `joinBV` for "higher-kinded data" style `BVar` manipulation,
     via the `BVGroup` helper typeclass.
-*   `toList` for *Prelude.Backprop* modules
+*   `toList`, `mapAccumL`, and `mapAccumR` for *Prelude.Backprop* modules
 *   `Backprop` instance for `BVar`
 *   *COMPLETE* pragmas for `T2` and `T3`
-*   Un-exported `gzero`, `gadd`, and `gone` from *Numeric.Backprop.Class*.
-*   Many, many more instances of `Backprop`.
+*   Un-exported `gzero`, `gadd`, and `gone` from *Numeric.Backprop.Class*
+*   Many, many more instances of `Backprop`
+*   `Backprop` instance for `Proxy` made non-strict for `add`
+
+*Internal*
+
+*   Fixed documentation for Num and Explicit Prelude modules, and rewrote
+    normal and Num Prelude modules in terms of canonical Prelude definitions
 
 Version 0.2.1.0
 ---------------

@@ -25,6 +25,8 @@ module Prelude.Backprop.Num (
   , maximum
   , traverse
   , toList
+  , mapAccumL
+  , mapAccumR
   -- * Functor and Applicative
   , fmap
   , (<$>)
@@ -34,94 +36,76 @@ module Prelude.Backprop.Num (
   -- * Misc
   , fromIntegral
   , realToFrac
-  , coerce
+  , E.coerce
   ) where
 
 import           Numeric.Backprop.Num
-import           Prelude              (Num(..), Fractional(..), Eq(..), Ord(..), Functor, Foldable, Traversable, Applicative, (.), ($))
-import qualified Control.Applicative  as P
-import qualified Data.Coerce          as C
-import qualified Data.Foldable        as P
-import qualified Prelude              as P
+import           Prelude                   (Num(..), Fractional(..), Ord(..), Functor, Foldable, Traversable, Applicative)
+import qualified Numeric.Backprop.Explicit as E
+import qualified Prelude                   as P
+import qualified Prelude.Backprop.Explicit as E
 
--- | Lifted 'P.sum'
+-- | 'Prelude.Backprop.sum', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
 sum :: forall t a s. (Foldable t, Functor t, Num (t a), Num a, Reifies s W)
     => BVar s (t a)
     -> BVar s a
-sum = liftOp1 . op1 $ \xs ->
-    ( P.sum xs
-    , (P.<$ xs)
-    )
+sum = E.sum E.afNum E.zfNum
 {-# INLINE sum #-}
 
--- | Lifted 'P.pure'.
+-- | 'Prelude.Backprop.pure', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
 pure
     :: forall t a s. (Foldable t, Applicative t, Num (t a), Num a, Reifies s W)
     => BVar s a
     -> BVar s (t a)
-pure = liftOp1 . op1 $ \x ->
-    ( P.pure x
-    , P.sum
-    )
+pure = E.pure E.afNum E.zfNum E.zfNum
 {-# INLINE pure #-}
 
--- | Lifted 'P.product'
+-- | 'Prelude.Backprop.product', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
 product
     :: forall t a s. (Foldable t, Functor t, Num (t a), Fractional a, Reifies s W)
     => BVar s (t a)
     -> BVar s a
-product = liftOp1 . op1 $ \xs ->
-    let p = P.product xs
-    in ( p
-       , \d -> (\x -> p * d / x) P.<$> xs
-       )
+product = E.product E.afNum E.zfNum
 {-# INLINE product #-}
 
--- | Lifted 'P.length'.
+-- | 'Prelude.Backprop.length', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
 length
     :: forall t a b s. (Foldable t, Num (t a), Num b, Reifies s W)
     => BVar s (t a)
     -> BVar s b
-length = liftOp1 . op1 $ \xs ->
-    ( P.fromIntegral (P.length xs)
-    , P.const 0
-    )
+length = E.length E.afNum E.zfNum E.zfNum
 {-# INLINE length #-}
 
--- | Lifted 'P.minimum'.  Undefined for situations where 'P.minimum' would
--- be undefined.
+-- | 'Prelude.Backprop.minimum', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
 minimum
     :: forall t a s. (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W)
     => BVar s (t a)
     -> BVar s a
-minimum = liftOp1 . op1 $ \xs ->
-    let m = P.minimum xs
-    in  ( m
-        , \d -> (\x -> if x == m then d else 0) P.<$> xs
-        )
+minimum = E.minimum E.afNum E.zfNum
 {-# INLINE minimum #-}
 
--- | Lifted 'P.maximum'.  Undefined for situations where 'P.maximum' would
--- be undefined.
+-- | 'Prelude.Backprop.maximum', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
 maximum
     :: forall t a s. (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W)
     => BVar s (t a)
     -> BVar s a
-maximum = liftOp1 . op1 $ \xs ->
-    let m = P.maximum xs
-    in  ( m
-        , \d -> (\x -> if x == m then d else 0) P.<$> xs
-        )
+maximum = E.maximum E.afNum E.zfNum
 {-# INLINE maximum #-}
 
--- | Lifted 'P.fmap'.  Lifts backpropagatable functions to be
--- backpropagatable functions on 'Traversable' 'Functor's.
+-- | 'Prelude.Backprop.fmap', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
 fmap
     :: forall f a b s. (Traversable f, Num a, Num b, Num (f b), Reifies s W)
     => (BVar s a -> BVar s b)
     -> BVar s (f a)
     -> BVar s (f b)
-fmap f = collectVar . P.fmap f . sequenceVar
+fmap = E.fmap E.afNum E.afNum E.zfNum E.zfNum E.zfNum
 {-# INLINE fmap #-}
 
 -- | Alias for 'fmap'.
@@ -133,21 +117,18 @@ fmap f = collectVar . P.fmap f . sequenceVar
 (<$>) = fmap
 {-# INLINE (<$>) #-}
 
--- | Lifted 'P.traverse'.  Lifts backpropagatable functions to be
--- backpropagatable functions on 'Traversable' 'Functor's.
+-- | 'Prelude.Backprop.traverse', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
 traverse
     :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Num a, Num b, Num (f (t b)), Num (t b), Reifies s W)
     => (BVar s a -> f (BVar s b))
     -> BVar s (t a)
     -> BVar s (f (t b))
-traverse f = collectVar
-           . P.fmap collectVar
-           . P.traverse f
-           . sequenceVar
+traverse = E.traverse E.afNum E.afNum E.afNum E.zfNum E.zfNum E.zfNum E.zfNum
 {-# INLINE traverse #-}
 
--- | Lifted 'P.liftA2'.  Lifts backpropagatable functions to be
--- backpropagatable functions on 'Traversable' 'Applicative's.
+-- | 'Prelude.Backprop.liftA2', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
 liftA2
     :: forall f a b c s.
        ( Traversable f
@@ -159,12 +140,11 @@ liftA2
     -> BVar s (f a)
     -> BVar s (f b)
     -> BVar s (f c)
-liftA2 f x y = collectVar $ f P.<$> sequenceVar x
-                              P.<*> sequenceVar y
+liftA2 = E.liftA2 E.afNum E.afNum E.afNum E.zfNum E.zfNum E.zfNum E.zfNum
 {-# INLINE liftA2 #-}
 
--- | Lifted 'P.liftA3'.  Lifts backpropagatable functions to be
--- backpropagatable functions on 'Traversable' 'Applicative's.
+-- | 'Prelude.Backprop.liftA3', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
 liftA3
     :: forall f a b c d s.
        ( Traversable f
@@ -177,48 +157,66 @@ liftA3
     -> BVar s (f b)
     -> BVar s (f c)
     -> BVar s (f d)
-liftA3 f x y z = collectVar $ f P.<$> sequenceVar x
-                                P.<*> sequenceVar y
-                                P.<*> sequenceVar z
+liftA3 = E.liftA3 E.afNum E.afNum E.afNum E.afNum
+                  E.zfNum E.zfNum E.zfNum E.zfNum E.zfNum
 {-# INLINE liftA3 #-}
 
--- | Coerce items inside a 'BVar'.
-coerce
-    :: forall a b s. C.Coercible a b
-    => BVar s a
-    -> BVar s b
-coerce = coerceVar
-{-# INLINE coerce #-}
-
--- | Lifted conversion between two 'P.Integral' instances.
+-- | 'Prelude.Backprop.fromIntegral', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
 --
 -- @since 0.2.1.0
 fromIntegral
     :: (P.Integral a, P.Integral b, Reifies s W)
     => BVar s a
     -> BVar s b
-fromIntegral = liftOp1 . op1 $ \x ->
-    (P.fromIntegral x, P.fromIntegral)
+fromIntegral = E.fromIntegral E.afNum E.zfNum
 {-# INLINE fromIntegral #-}
 
--- | Lifted conversion between two 'Fractional' and 'P.Real' instances.
+-- | 'Prelude.Backprop.realToFrac', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
 --
 -- @since 0.2.1.0
 realToFrac
     :: (Fractional a, P.Real a, Fractional b, P.Real b, Reifies s W)
     => BVar s a
     -> BVar s b
-realToFrac = liftOp1 . op1 $ \x ->
-    (P.realToFrac x, P.realToFrac)
+realToFrac = E.realToFrac E.afNum E.zfNum
 {-# INLINE realToFrac #-}
 
--- | Lifted version of 'P.toList'.  Takes a 'BVar' of a 'Traversable' of
--- items and returns a list of 'BVar's for each item.
+-- | 'Prelude.Backprop.toList', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
 --
 -- @since 0.2.2.0
 toList
     :: (Traversable t, Num a, Reifies s W)
     => BVar s (t a)
     -> [BVar s a]
-toList = toListOfVar P.traverse
+toList = E.toList E.afNum E.zfNum
 {-# INLINE toList #-}
+
+-- | 'Prelude.Backprop.mapAccumL', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
+--
+-- @since 0.2.2.0
+mapAccumL
+    :: (Traversable t, Num b, Num c, Num (t c), Reifies s W)
+    => (BVar s a -> BVar s b -> (BVar s a, BVar s c))
+    -> BVar s a
+    -> BVar s (t b)
+    -> (BVar s a, BVar s (t c))
+mapAccumL = E.mapAccumL E.afNum E.afNum E.zfNum E.zfNum E.zfNum
+{-# INLINE mapAccumL #-}
+
+-- | 'Prelude.Backprop.mapAccumR', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
+--
+-- @since 0.2.2.0
+mapAccumR
+    :: (Traversable t, Num b, Num c, Num (t c), Reifies s W)
+    => (BVar s a -> BVar s b -> (BVar s a, BVar s c))
+    -> BVar s a
+    -> BVar s (t b)
+    -> (BVar s a, BVar s (t c))
+mapAccumR = E.mapAccumR E.afNum E.afNum E.zfNum E.zfNum E.zfNum
+{-# INLINE mapAccumR #-}
+

@@ -26,6 +26,8 @@ module Prelude.Backprop.Explicit (
   , maximum
   , traverse
   , toList
+  , mapAccumL
+  , mapAccumR
   -- * Functor and Applicative
   , fmap
   , pure
@@ -37,14 +39,16 @@ module Prelude.Backprop.Explicit (
   , coerce
   ) where
 
+import           Data.Bifunctor
 import           Numeric.Backprop.Explicit
-import           Prelude             (Num(..), Fractional(..), Eq(..), Ord(..), Functor, Foldable, Traversable, Applicative, (.), ($))
-import qualified Control.Applicative as P
-import qualified Data.Coerce         as C
-import qualified Data.Foldable       as P
-import qualified Prelude             as P
+import           Prelude                   (Num(..), Fractional(..), Eq(..), Ord(..), Functor, Foldable, Traversable, Applicative, (.), ($))
+import qualified Control.Applicative       as P
+import qualified Data.Coerce               as C
+import qualified Data.Foldable             as P
+import qualified Data.Traversable          as P
+import qualified Prelude                   as P
 
--- | Lifted 'P.sum'
+-- | 'Prelude.Backprop.sum', but taking explicit 'add' and 'zero'.
 sum :: forall t a s. (Foldable t, Functor t, Num a, Reifies s W)
     => AddFunc (t a)
     -> ZeroFunc a
@@ -56,7 +60,7 @@ sum af zf = liftOp1 af zf . op1 $ \xs ->
     )
 {-# INLINE sum #-}
 
--- | Lifted 'P.pure'.
+-- | 'Prelude.Backprop.pure', but taking explicit 'add' and 'zero'.
 pure
     :: forall t a s. (Foldable t, Applicative t, Reifies s W)
     => AddFunc a
@@ -70,7 +74,7 @@ pure af zfa zf = liftOp1 af zf . op1 $ \x ->
     )
 {-# INLINE pure #-}
 
--- | Lifted 'P.product'
+-- | 'Prelude.Backprop.product', but taking explicit 'add' and 'zero'.
 product
     :: forall t a s. (Foldable t, Functor t, Fractional a, Reifies s W)
     => AddFunc (t a)
@@ -84,7 +88,7 @@ product af zf = liftOp1 af zf . op1 $ \xs ->
        )
 {-# INLINE product #-}
 
--- | Lifted 'P.length'.
+-- | 'Prelude.Backprop.length', but taking explicit 'add' and 'zero'.
 length
     :: forall t a b s. (Foldable t, Num b, Reifies s W)
     => AddFunc (t a)
@@ -98,8 +102,7 @@ length af zfa zf = liftOp1 af zf . op1 $ \xs ->
     )
 {-# INLINE length #-}
 
--- | Lifted 'P.minimum'.  Undefined for situations where 'P.minimum' would
--- be undefined.
+-- | 'Prelude.Backprop.minimum', but taking explicit 'add' and 'zero'.
 minimum
     :: forall t a s. (Foldable t, Functor t, Ord a, Reifies s W)
     => AddFunc (t a)
@@ -113,8 +116,7 @@ minimum af zf = liftOp1 af zf . op1 $ \xs ->
         )
 {-# INLINE minimum #-}
 
--- | Lifted 'P.maximum'.  Undefined for situations where 'P.maximum' would
--- be undefined.
+-- | 'Prelude.Backprop.maximum', but taking explicit 'add' and 'zero'.
 maximum
     :: forall t a s. (Foldable t, Functor t, Ord a, Reifies s W)
     => AddFunc (t a)
@@ -128,8 +130,7 @@ maximum af zf = liftOp1 af zf . op1 $ \xs ->
         )
 {-# INLINE maximum #-}
 
--- | Lifted 'P.fmap'.  Lifts backpropagatable functions to be
--- backpropagatable functions on 'Traversable' 'Functor's.
+-- | 'Prelude.Backprop.fmap', but taking explicit 'add' and 'zero'.
 fmap
     :: forall f a b s. (Traversable f, Reifies s W)
     => AddFunc a
@@ -143,8 +144,7 @@ fmap
 fmap afa afb zfa zfb zfbs f = collectVar afb zfb zfbs . P.fmap f . sequenceVar afa zfa
 {-# INLINE fmap #-}
 
--- | Lifted 'P.traverse'.  Lifts backpropagatable functions to be
--- backpropagatable functions on 'Traversable' 'Functor's.
+-- | 'Prelude.Backprop.traverse', but taking explicit 'add' and 'zero'.
 traverse
     :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Reifies s W)
     => AddFunc a
@@ -164,8 +164,7 @@ traverse afa afb aftb zfa zfb zftb zfftb f
         . sequenceVar afa zfa
 {-# INLINE traverse #-}
 
--- | Lifted 'P.liftA2'.  Lifts backpropagatable functions to be
--- backpropagatable functions on 'Traversable' 'Applicative's.
+-- | 'Prelude.Backprop.liftA2', but taking explicit 'add' and 'zero'.
 liftA2
     :: forall f a b c s.
        ( Traversable f
@@ -189,8 +188,7 @@ liftA2 afa afb afc zfa zfb zfc zffc f x y
         P.<*> sequenceVar afb zfb y
 {-# INLINE liftA2 #-}
 
--- | Lifted 'P.liftA3'.  Lifts backpropagatable functions to be
--- backpropagatable functions on 'Traversable' 'Applicative's.
+-- | 'Prelude.Backprop.liftA3', but taking explicit 'add' and 'zero'.
 liftA3
     :: forall f a b c d s.
        ( Traversable f
@@ -226,7 +224,7 @@ coerce
 coerce = coerceVar
 {-# INLINE coerce #-}
 
--- | Lifted conversion between two 'P.Integral' instances.
+-- | 'Prelude.Backprop.fromIntegral', but taking explicit 'add' and 'zero'.
 --
 -- @since 0.2.1.0
 fromIntegral
@@ -239,7 +237,7 @@ fromIntegral af zf = liftOp1 af zf . op1 $ \x ->
     (P.fromIntegral x, P.fromIntegral)
 {-# INLINE fromIntegral #-}
 
--- | Lifted conversion between two 'Fractional' and 'P.Real' instances.
+-- | 'Prelude.Backprop.realToFrac', but taking explicit 'add' and 'zero'.
 --
 -- @since 0.2.1.0
 realToFrac
@@ -252,8 +250,7 @@ realToFrac af zf = liftOp1 af zf . op1 $ \x ->
     (P.realToFrac x, P.realToFrac)
 {-# INLINE realToFrac #-}
 
--- | Lifted version of 'P.toList'.  Takes a 'BVar' of a 'Traversable' of
--- items and returns a list of 'BVar's for each item.
+-- | 'Prelude.Backprop.length', but taking explicit 'add' and 'zero'.
 --
 -- @since 0.2.2.0
 toList
@@ -264,3 +261,43 @@ toList
     -> [BVar s a]
 toList af zf = toListOfVar af zf P.traverse
 {-# INLINE toList #-}
+
+-- | 'Prelude.Backprop.mapAccumL', but taking explicit 'add' and 'zero'.
+--
+-- @since 0.2.2.0
+mapAccumL
+    :: (Traversable t, Reifies s W)
+    => AddFunc b
+    -> AddFunc c
+    -> ZeroFunc b
+    -> ZeroFunc c
+    -> ZeroFunc (t c)
+    -> (BVar s a -> BVar s b -> (BVar s a, BVar s c))
+    -> BVar s a
+    -> BVar s (t b)
+    -> (BVar s a, BVar s (t c))
+mapAccumL afb afc zfb zfc zftc f s =
+        second (collectVar afc zfc zftc)
+      . P.mapAccumL f s
+      . sequenceVar afb zfb
+{-# INLINE mapAccumL #-}
+
+-- | 'Prelude.Backprop.mapAccumR', but taking explicit 'add' and 'zero'.
+--
+-- @since 0.2.2.0
+mapAccumR
+    :: (Traversable t, Reifies s W)
+    => AddFunc b
+    -> AddFunc c
+    -> ZeroFunc b
+    -> ZeroFunc c
+    -> ZeroFunc (t c)
+    -> (BVar s a -> BVar s b -> (BVar s a, BVar s c))
+    -> BVar s a
+    -> BVar s (t b)
+    -> (BVar s a, BVar s (t c))
+mapAccumR afb afc zfb zfc zftc f s =
+        second (collectVar afc zfc zftc)
+      . P.mapAccumR f s
+      . sequenceVar afb zfb
+{-# INLINE mapAccumR #-}
