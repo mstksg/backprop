@@ -3203,6 +3203,61 @@ I :: a -> I a
 class Reifies k (s :: k) a | s -> a
 
 
+-- | Provides "explicit" versions of all of the functions in
+--   <a>Prelude.Backprop</a>. Instead of relying on a <a>Backprop</a>
+--   instance, allows you to manually provide <a>zero</a>, <a>add</a>, and
+--   <a>one</a> on a per-value basis.
+module Prelude.Backprop.Explicit
+
+-- | <a>sum</a>, but taking explicit <a>add</a> and <a>zero</a>.
+sum :: forall t a s. (Foldable t, Functor t, Num a, Reifies s W) => AddFunc (t a) -> ZeroFunc a -> BVar s (t a) -> BVar s a
+
+-- | <a>product</a>, but taking explicit <a>add</a> and <a>zero</a>.
+product :: forall t a s. (Foldable t, Functor t, Fractional a, Reifies s W) => AddFunc (t a) -> ZeroFunc a -> BVar s (t a) -> BVar s a
+
+-- | <a>length</a>, but taking explicit <a>add</a> and <a>zero</a>.
+length :: forall t a b s. (Foldable t, Num b, Reifies s W) => AddFunc (t a) -> ZeroFunc (t a) -> ZeroFunc b -> BVar s (t a) -> BVar s b
+
+-- | <a>minimum</a>, but taking explicit <a>add</a> and <a>zero</a>.
+minimum :: forall t a s. (Foldable t, Functor t, Ord a, Reifies s W) => AddFunc (t a) -> ZeroFunc a -> BVar s (t a) -> BVar s a
+
+-- | <a>maximum</a>, but taking explicit <a>add</a> and <a>zero</a>.
+maximum :: forall t a s. (Foldable t, Functor t, Ord a, Reifies s W) => AddFunc (t a) -> ZeroFunc a -> BVar s (t a) -> BVar s a
+
+-- | <a>traverse</a>, but taking explicit <a>add</a> and <a>zero</a>.
+traverse :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Reifies s W) => AddFunc a -> AddFunc b -> AddFunc (t b) -> ZeroFunc a -> ZeroFunc b -> ZeroFunc (t b) -> ZeroFunc (f (t b)) -> (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
+
+-- | <a>length</a>, but taking explicit <a>add</a> and <a>zero</a>.
+toList :: (Traversable t, Reifies s W) => AddFunc a -> ZeroFunc a -> BVar s (t a) -> [BVar s a]
+
+-- | <a>mapAccumL</a>, but taking explicit <a>add</a> and <a>zero</a>.
+mapAccumL :: (Traversable t, Reifies s W) => AddFunc b -> AddFunc c -> ZeroFunc b -> ZeroFunc c -> ZeroFunc (t c) -> (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
+
+-- | <a>mapAccumR</a>, but taking explicit <a>add</a> and <a>zero</a>.
+mapAccumR :: (Traversable t, Reifies s W) => AddFunc b -> AddFunc c -> ZeroFunc b -> ZeroFunc c -> ZeroFunc (t c) -> (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
+
+-- | <a>fmap</a>, but taking explicit <a>add</a> and <a>zero</a>.
+fmap :: forall f a b s. (Traversable f, Reifies s W) => AddFunc a -> AddFunc b -> ZeroFunc a -> ZeroFunc b -> ZeroFunc (f b) -> (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
+
+-- | <a>pure</a>, but taking explicit <a>add</a> and <a>zero</a>.
+pure :: forall t a s. (Foldable t, Applicative t, Reifies s W) => AddFunc a -> ZeroFunc a -> ZeroFunc (t a) -> BVar s a -> BVar s (t a)
+
+-- | <a>liftA2</a>, but taking explicit <a>add</a> and <a>zero</a>.
+liftA2 :: forall f a b c s. (Traversable f, Applicative f, Reifies s W) => AddFunc a -> AddFunc b -> AddFunc c -> ZeroFunc a -> ZeroFunc b -> ZeroFunc c -> ZeroFunc (f c) -> (BVar s a -> BVar s b -> BVar s c) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c)
+
+-- | <a>liftA3</a>, but taking explicit <a>add</a> and <a>zero</a>.
+liftA3 :: forall f a b c d s. (Traversable f, Applicative f, Reifies s W) => AddFunc a -> AddFunc b -> AddFunc c -> AddFunc d -> ZeroFunc a -> ZeroFunc b -> ZeroFunc c -> ZeroFunc d -> ZeroFunc (f d) -> (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
+
+-- | <a>fromIntegral</a>, but taking explicit <a>add</a> and <a>zero</a>.
+fromIntegral :: (Integral a, Integral b, Reifies s W) => AddFunc a -> ZeroFunc b -> BVar s a -> BVar s b
+
+-- | <a>realToFrac</a>, but taking explicit <a>add</a> and <a>zero</a>.
+realToFrac :: (Fractional a, Real a, Fractional b, Real b, Reifies s W) => AddFunc a -> ZeroFunc b -> BVar s a -> BVar s b
+
+-- | Coerce items inside a <a>BVar</a>.
+coerce :: forall a b s. Coercible a b => BVar s a -> BVar s b
+
+
 -- | Some lifted versions of common functions found in <tt>Prelude</tt> (or
 --   <i>base</i> in general).
 --   
@@ -3241,6 +3296,12 @@ traverse :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Backpro
 --   each item.
 toList :: (Traversable t, Backprop a, Reifies s W) => BVar s (t a) -> [BVar s a]
 
+-- | Lifted version of <a>mapAccumL</a>.
+mapAccumL :: (Traversable t, Backprop b, Backprop c, Backprop (t c), Reifies s W) => (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
+
+-- | Lifted version of <a>mapAccumR</a>.
+mapAccumR :: (Traversable t, Backprop b, Backprop c, Backprop (t c), Reifies s W) => (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
+
 -- | Lifted <a>fmap</a>. Lifts backpropagatable functions to be
 --   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
 fmap :: forall f a b s. (Traversable f, Backprop a, Backprop b, Backprop (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
@@ -3270,118 +3331,72 @@ realToFrac :: (Backprop a, Fractional a, Real a, Backprop b, Fractional b, Real 
 coerce :: forall a b s. Coercible a b => BVar s a -> BVar s b
 
 
--- | Provides "explicit" versions of all of the functions in
---   <a>Prelude.Backprop</a>. Instead of relying on a <a>Backprop</a>
---   instance, allows you to manually provide <a>zero</a>, <a>add</a>, and
---   <a>one</a> on a per-value basis.
-module Prelude.Backprop.Explicit
-
--- | Lifted <a>sum</a>
-sum :: forall t a s. (Foldable t, Functor t, Num a, Reifies s W) => AddFunc (t a) -> ZeroFunc a -> BVar s (t a) -> BVar s a
-
--- | Lifted <a>product</a>
-product :: forall t a s. (Foldable t, Functor t, Fractional a, Reifies s W) => AddFunc (t a) -> ZeroFunc a -> BVar s (t a) -> BVar s a
-
--- | Lifted <a>length</a>.
-length :: forall t a b s. (Foldable t, Num b, Reifies s W) => AddFunc (t a) -> ZeroFunc (t a) -> ZeroFunc b -> BVar s (t a) -> BVar s b
-
--- | Lifted <a>minimum</a>. Undefined for situations where <a>minimum</a>
---   would be undefined.
-minimum :: forall t a s. (Foldable t, Functor t, Ord a, Reifies s W) => AddFunc (t a) -> ZeroFunc a -> BVar s (t a) -> BVar s a
-
--- | Lifted <a>maximum</a>. Undefined for situations where <a>maximum</a>
---   would be undefined.
-maximum :: forall t a s. (Foldable t, Functor t, Ord a, Reifies s W) => AddFunc (t a) -> ZeroFunc a -> BVar s (t a) -> BVar s a
-
--- | Lifted <a>traverse</a>. Lifts backpropagatable functions to be
---   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
-traverse :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Reifies s W) => AddFunc a -> AddFunc b -> AddFunc (t b) -> ZeroFunc a -> ZeroFunc b -> ZeroFunc (t b) -> ZeroFunc (f (t b)) -> (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
-
--- | Lifted version of <a>toList</a>. Takes a <a>BVar</a> of a
---   <a>Traversable</a> of items and returns a list of <a>BVar</a>s for
---   each item.
-toList :: (Traversable t, Reifies s W) => AddFunc a -> ZeroFunc a -> BVar s (t a) -> [BVar s a]
-
--- | Lifted <a>fmap</a>. Lifts backpropagatable functions to be
---   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
-fmap :: forall f a b s. (Traversable f, Reifies s W) => AddFunc a -> AddFunc b -> ZeroFunc a -> ZeroFunc b -> ZeroFunc (f b) -> (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
-
--- | Lifted <a>pure</a>.
-pure :: forall t a s. (Foldable t, Applicative t, Reifies s W) => AddFunc a -> ZeroFunc a -> ZeroFunc (t a) -> BVar s a -> BVar s (t a)
-
--- | Lifted <a>liftA2</a>. Lifts backpropagatable functions to be
---   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
-liftA2 :: forall f a b c s. (Traversable f, Applicative f, Reifies s W) => AddFunc a -> AddFunc b -> AddFunc c -> ZeroFunc a -> ZeroFunc b -> ZeroFunc c -> ZeroFunc (f c) -> (BVar s a -> BVar s b -> BVar s c) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c)
-
--- | Lifted <a>liftA3</a>. Lifts backpropagatable functions to be
---   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
-liftA3 :: forall f a b c d s. (Traversable f, Applicative f, Reifies s W) => AddFunc a -> AddFunc b -> AddFunc c -> AddFunc d -> ZeroFunc a -> ZeroFunc b -> ZeroFunc c -> ZeroFunc d -> ZeroFunc (f d) -> (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
-
--- | Lifted conversion between two <a>Integral</a> instances.
-fromIntegral :: (Integral a, Integral b, Reifies s W) => AddFunc a -> ZeroFunc b -> BVar s a -> BVar s b
-
--- | Lifted conversion between two <a>Fractional</a> and <a>Real</a>
---   instances.
-realToFrac :: (Fractional a, Real a, Fractional b, Real b, Reifies s W) => AddFunc a -> ZeroFunc b -> BVar s a -> BVar s b
-
--- | Coerce items inside a <a>BVar</a>.
-coerce :: forall a b s. Coercible a b => BVar s a -> BVar s b
-
-
 -- | Provides the exact same API as <a>Prelude.Backprop</a>, except
 --   requiring <a>Num</a> instances for all types involved instead of
 --   <tt>Backprop</tt> instances.
 module Prelude.Backprop.Num
 
--- | Lifted <a>sum</a>
+-- | <a>sum</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
 sum :: forall t a s. (Foldable t, Functor t, Num (t a), Num a, Reifies s W) => BVar s (t a) -> BVar s a
 
--- | Lifted <a>product</a>
+-- | <a>product</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
 product :: forall t a s. (Foldable t, Functor t, Num (t a), Fractional a, Reifies s W) => BVar s (t a) -> BVar s a
 
--- | Lifted <a>length</a>.
+-- | <a>length</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
 length :: forall t a b s. (Foldable t, Num (t a), Num b, Reifies s W) => BVar s (t a) -> BVar s b
 
--- | Lifted <a>minimum</a>. Undefined for situations where <a>minimum</a>
---   would be undefined.
+-- | <a>minimum</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
 minimum :: forall t a s. (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W) => BVar s (t a) -> BVar s a
 
--- | Lifted <a>maximum</a>. Undefined for situations where <a>maximum</a>
---   would be undefined.
+-- | <a>maximum</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
 maximum :: forall t a s. (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W) => BVar s (t a) -> BVar s a
 
--- | Lifted <a>traverse</a>. Lifts backpropagatable functions to be
---   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
+-- | <a>traverse</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
 traverse :: forall t f a b s. (Traversable t, Applicative f, Foldable f, Num a, Num b, Num (f (t b)), Num (t b), Reifies s W) => (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
 
--- | Lifted version of <a>toList</a>. Takes a <a>BVar</a> of a
---   <a>Traversable</a> of items and returns a list of <a>BVar</a>s for
---   each item.
+-- | <a>toList</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
 toList :: (Traversable t, Num a, Reifies s W) => BVar s (t a) -> [BVar s a]
 
--- | Lifted <a>fmap</a>. Lifts backpropagatable functions to be
---   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
+-- | <a>mapAccumL</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
+mapAccumL :: (Traversable t, Num b, Num c, Num (t c), Reifies s W) => (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
+
+-- | <a>mapAccumR</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
+mapAccumR :: (Traversable t, Num b, Num c, Num (t c), Reifies s W) => (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
+
+-- | <a>fmap</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
 fmap :: forall f a b s. (Traversable f, Num a, Num b, Num (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
 
 -- | Alias for <a>fmap</a>.
 (<$>) :: forall f a b s. (Traversable f, Num a, Num b, Num (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
 
--- | Lifted <a>pure</a>.
+-- | <a>pure</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
 pure :: forall t a s. (Foldable t, Applicative t, Num (t a), Num a, Reifies s W) => BVar s a -> BVar s (t a)
 
--- | Lifted <a>liftA2</a>. Lifts backpropagatable functions to be
---   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
+-- | <a>liftA2</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
 liftA2 :: forall f a b c s. (Traversable f, Applicative f, Num a, Num b, Num c, Num (f c), Reifies s W) => (BVar s a -> BVar s b -> BVar s c) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c)
 
--- | Lifted <a>liftA3</a>. Lifts backpropagatable functions to be
---   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
+-- | <a>liftA3</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
 liftA3 :: forall f a b c d s. (Traversable f, Applicative f, Num a, Num b, Num c, Num d, Num (f d), Reifies s W) => (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
 
--- | Lifted conversion between two <a>Integral</a> instances.
+-- | <a>fromIntegral</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
 fromIntegral :: (Integral a, Integral b, Reifies s W) => BVar s a -> BVar s b
 
--- | Lifted conversion between two <a>Fractional</a> and <a>Real</a>
---   instances.
+-- | <a>realToFrac</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
 realToFrac :: (Fractional a, Real a, Fractional b, Real b, Reifies s W) => BVar s a -> BVar s b
 
 -- | Coerce items inside a <a>BVar</a>.
