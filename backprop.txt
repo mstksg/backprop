@@ -2930,6 +2930,9 @@ liftOp3 :: (Backprop a, Backprop b, Backprop c, Backprop d, Reifies s W) => Op '
 --   whose fields are all instances of <a>Backprop</a>, where the type
 --   itself has an instance of <a>Backprop</a>. The type also must derive
 --   <a>Generic</a>.
+--   
+--   Note that <a>BV</a> is a pattern synonym version where the
+--   deconstructor is exactly a view into <a>splitBV</a>.
 splitBV :: (Generic (z f), Generic (z (BVar s)), BVGroup s as (Rep (z f)) (Rep (z (BVar s))), Backprop (Rep (z f) ()), Every Backprop as, Known Length as, Reifies s W) => BVar s (z f) -> z (BVar s)
 
 -- | Split out a <a>BVar</a> of "higher-kinded data type", a la
@@ -2943,7 +2946,14 @@ splitBV :: (Generic (z f), Generic (z (BVar s)), BVGroup s as (Rep (z f)) (Rep (
 --   This will work with all data types made with a single constructor,
 --   whose fields are all instances of <a>Backprop</a>, where the type
 --   itself has an instance of <a>Backprop</a>.
+--   
+--   Note that <a>BV</a> is a pattern synonym version where the constructor
+--   is exactly <a>joinBV</a>.
 joinBV :: (Generic (z f), Generic (z (BVar s)), BVGroup s as (Rep (z f)) (Rep (z (BVar s))), Backprop (z f), Every Backprop as, Known Length as, Reifies s W) => z (BVar s) -> BVar s (z f)
+
+-- | Pattern synonym wrapping manual usage of <a>splitBV</a> and
+--   <a>joinBV</a>. It is a pattern for a <tt><a>BVar</a> s (z f)</tt>
+--   containing a <tt>z (<a>BVar</a> s)</tt>
 
 -- | Helper class for generically "splitting" and "joining" <a>BVar</a>s
 --   into constructors. See <a>splitBV</a> and <a>joinBV</a>.
