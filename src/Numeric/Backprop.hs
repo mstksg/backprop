@@ -90,6 +90,7 @@ module Numeric.Backprop (
     -- $hkd
   , splitBV
   , joinBV
+  , pattern BV
   , E.BVGroup
     -- * 'Op'
   , Op(..)
@@ -786,6 +787,13 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
 -- myFunction ('splitBV' -> MT x y) =  x + 'Prelude.Backprop.sum' y
 -- @
 --
+-- Or also, using the 'BV' pattern synonym:
+--
+-- @
+-- myFunction :: 'BVar' s MyType -> BVar s Double
+-- myFunction ('BV' (MT x y)) =  x + 'Prelude.Backprop.sum' y
+-- @
+--
 -- If you use 'splitBV', the contents will be a @BVar s Double@ and a @BVar
 -- s [Double]@.  It lets you "extract" the fields, because your 'MyType''
 -- constructor now holds a @'BVar' s Double@ and a @BVar s [Double]@,
@@ -805,6 +813,9 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
 -- myOtherFunction x y = 'joinBV' $ MT x y
 -- @
 --
+-- The 'BV' pattern synonym abstracts over manual application of 'splitBV'
+-- and 'joinBV' as a pattern.
+--
 -- This will work with all data types made with a single constructor, whose
 -- fields are all instances of 'Backprop', where the type itself has an
 -- instance of 'Backprop'.
@@ -820,6 +831,9 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
 -- This will work with all data types made with a single constructor, whose
 -- fields are all instances of 'Backprop', where the type itself has an
 -- instance of 'Backprop'.  The type also must derive 'Generic'.
+--
+-- Note that 'BV' is a pattern synonym version where the deconstructor is
+-- exactly a view into 'splitBV'.
 --
 -- @since 0.2.2.0
 splitBV
@@ -848,6 +862,9 @@ splitBV = E.splitBV E.addFunc E.addFuncs E.zeroFunc E.zeroFuncs
 -- fields are all instances of 'Backprop', where the type itself has an
 -- instance of 'Backprop'.
 --
+-- Note that 'BV' is a pattern synonym version where the constructor is
+-- exactly 'joinBV'.
+--
 -- @since 0.2.2.0
 joinBV
     :: ( Generic (z f)
@@ -862,3 +879,24 @@ joinBV
     -> BVar s (z f)         -- ^ 'BVar' of combined value
 joinBV = E.joinBV E.addFunc E.addFuncs E.zeroFunc E.zeroFuncs
 {-# INLINE joinBV #-}
+
+-- | Pattern synonym wrapping manual usage of 'splitBV' and 'joinBV'.  It
+-- is a pattern for a @'BVar' s (z f)@ containing a @z ('BVar' s)@
+--
+-- @since 0.2.3.0
+pattern BV
+    :: ( Generic (z f)
+       , Generic (z (BVar s))
+       , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
+       , Backprop (Rep (z f) ())
+       , Backprop (z f)
+       , Every Backprop as
+       , Known Length as
+       , Reifies s W
+       )
+    => z (BVar s)           -- ^ 'BVar's of fields
+    -> BVar s (z f)         -- ^ 'BVar' of combined value
+pattern BV v <- (splitBV->v)
+  where
+    BV = joinBV
+{-# COMPLETE BV #-}

@@ -1,6 +1,16 @@
 Changelog
 =========
 
+Version 0.2.3.0
+---------------
+
+*Unreleased*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.2.3.0>
+
+*   `BV` pattern synonym added to *Numeric.Backprop*, abstracting over
+    application of `splitBV` and `joinBV`.
+
 Version 0.2.2.0
 ---------------
 
