@@ -560,11 +560,13 @@ sequenceVar = E.sequenceVar E.addFunc E.zeroFunc
 -- gradient is assumed to correspond with the second item in the input,
 -- etc.; this can cause unexpected behavior in 'Foldable' instances that
 -- don't have a fixed number of items.
+--
+-- Prior to v0.2.3, required a 'Backprop' constraint on @t a@.
 collectVar
-    :: (Foldable t, Functor t, Backprop a, Backprop (t a), Reifies s W)
+    :: (Foldable t, Functor t, Backprop a, Reifies s W)
     => t (BVar s a)
     -> BVar s (t a)
-collectVar = E.collectVar E.addFunc E.zeroFunc E.zeroFunc
+collectVar = E.collectVar E.addFunc E.zeroFunc
 {-# INLINE collectVar #-}
 
 -- | Lift an 'Op' with an arbitrary number of inputs to a function on the

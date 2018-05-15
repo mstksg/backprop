@@ -99,17 +99,19 @@ maximum = E.maximum E.afNum E.zfNum
 
 -- | 'Prelude.Backprop.fmap', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
+--
+-- Prior to v0.2.3, required a 'Num' constraint on @f b@.
 fmap
-    :: (Traversable f, Num a, Num b, Num (f b), Reifies s W)
+    :: (Traversable f, Num a, Num b, Reifies s W)
     => (BVar s a -> BVar s b)
     -> BVar s (f a)
     -> BVar s (f b)
-fmap = E.fmap E.afNum E.afNum E.zfNum E.zfNum E.zfNum
+fmap = E.fmap E.afNum E.afNum E.zfNum E.zfNum
 {-# INLINE fmap #-}
 
 -- | Alias for 'fmap'.
 (<$>)
-    :: (Traversable f, Num a, Num b, Num (f b), Reifies s W)
+    :: (Traversable f, Num a, Num b, Reifies s W)
     => (BVar s a -> BVar s b)
     -> BVar s (f a)
     -> BVar s (f b)
@@ -118,35 +120,44 @@ fmap = E.fmap E.afNum E.afNum E.zfNum E.zfNum E.zfNum
 
 -- | 'Prelude.Backprop.traverse', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
+--
+-- See <https://hackage.haskell.org/package/vector-sized vector-sized> for
+-- a fixed-length vector type with a very appropriate 'Num' instance!
+--
+-- Prior to v0.2.3, required a 'Num' constraint on @f (t b)@.
 traverse
-    :: (Traversable t, Applicative f, Foldable f, Num a, Num b, Num (f (t b)), Num (t b), Reifies s W)
+    :: (Traversable t, Applicative f, Foldable f, Num a, Num b, Num (t b), Reifies s W)
     => (BVar s a -> f (BVar s b))
     -> BVar s (t a)
     -> BVar s (f (t b))
-traverse = E.traverse E.afNum E.afNum E.afNum E.zfNum E.zfNum E.zfNum E.zfNum
+traverse = E.traverse E.afNum E.afNum E.afNum E.zfNum E.zfNum
 {-# INLINE traverse #-}
 
 -- | 'Prelude.Backprop.liftA2', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
+--
+-- Prior to v0.2.3, required a 'Num' constraint on @f c@.
 liftA2
     :: ( Traversable f
        , Applicative f
-       , Num a, Num b, Num c, Num (f c)
+       , Num a, Num b, Num c
        , Reifies s W
        )
     => (BVar s a -> BVar s b -> BVar s c)
     -> BVar s (f a)
     -> BVar s (f b)
     -> BVar s (f c)
-liftA2 = E.liftA2 E.afNum E.afNum E.afNum E.zfNum E.zfNum E.zfNum E.zfNum
+liftA2 = E.liftA2 E.afNum E.afNum E.afNum E.zfNum E.zfNum E.zfNum
 {-# INLINE liftA2 #-}
 
 -- | 'Prelude.Backprop.liftA3', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
+--
+-- Prior to v0.2.3, required a 'Num' constraint on @f d@.
 liftA3
     :: ( Traversable f
        , Applicative f
-       , Num a, Num b, Num c, Num d, Num (f d)
+       , Num a, Num b, Num c, Num d
        , Reifies s W
        )
     => (BVar s a -> BVar s b -> BVar s c -> BVar s d)
@@ -155,7 +166,7 @@ liftA3
     -> BVar s (f c)
     -> BVar s (f d)
 liftA3 = E.liftA3 E.afNum E.afNum E.afNum E.afNum
-                  E.zfNum E.zfNum E.zfNum E.zfNum E.zfNum
+                  E.zfNum E.zfNum E.zfNum E.zfNum
 {-# INLINE liftA3 #-}
 
 -- | 'Prelude.Backprop.fromIntegral', but with 'Num' constraints instead of
@@ -194,26 +205,30 @@ toList = E.toList E.afNum E.zfNum
 -- | 'Prelude.Backprop.mapAccumL', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 --
+-- Prior to v0.2.3, required a 'Num' constraint on @t b@.
+--
 -- @since 0.2.2.0
 mapAccumL
-    :: (Traversable t, Num b, Num c, Num (t c), Reifies s W)
+    :: (Traversable t, Num b, Num c, Reifies s W)
     => (BVar s a -> BVar s b -> (BVar s a, BVar s c))
     -> BVar s a
     -> BVar s (t b)
     -> (BVar s a, BVar s (t c))
-mapAccumL = E.mapAccumL E.afNum E.afNum E.zfNum E.zfNum E.zfNum
+mapAccumL = E.mapAccumL E.afNum E.afNum E.zfNum E.zfNum
 {-# INLINE mapAccumL #-}
 
 -- | 'Prelude.Backprop.mapAccumR', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 --
+-- Prior to v0.2.3, required a 'Num' constraint on @t b@.
+--
 -- @since 0.2.2.0
 mapAccumR
-    :: (Traversable t, Num b, Num c, Num (t c), Reifies s W)
+    :: (Traversable t, Num b, Num c, Reifies s W)
     => (BVar s a -> BVar s b -> (BVar s a, BVar s c))
     -> BVar s a
     -> BVar s (t b)
     -> (BVar s a, BVar s (t c))
-mapAccumR = E.mapAccumR E.afNum E.afNum E.zfNum E.zfNum E.zfNum
+mapAccumR = E.mapAccumR E.afNum E.afNum E.zfNum E.zfNum
 {-# INLINE mapAccumR #-}
 

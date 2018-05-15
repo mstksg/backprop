@@ -130,20 +130,27 @@ maximum af zf = liftOp1 af zf . op1 $ \xs ->
 {-# INLINE maximum #-}
 
 -- | 'Prelude.Backprop.fmap', but taking explicit 'add' and 'zero'.
+--
+-- See documentation for 'Numeric.Backprop.Explicitl.collectVar' for
+-- information the API change in v0.2.3 that removed the @'ZeroFunc' (f b)@
+-- parameter.
 fmap
     :: (Traversable f, Reifies s W)
     => AddFunc a
     -> AddFunc b
     -> ZeroFunc a
     -> ZeroFunc b
-    -> ZeroFunc (f b)
     -> (BVar s a -> BVar s b)
     -> BVar s (f a)
     -> BVar s (f b)
-fmap afa afb zfa zfb zfbs f = collectVar afb zfb zfbs . P.fmap f . sequenceVar afa zfa
+fmap afa afb zfa zfb f = collectVar afb zfb . P.fmap f . sequenceVar afa zfa
 {-# INLINE fmap #-}
 
 -- | 'Prelude.Backprop.traverse', but taking explicit 'add' and 'zero'.
+--
+-- See documentation for 'Numeric.Backprop.Explicitl.collectVar' for
+-- information the API change in v0.2.3 that removed the @'ZeroFunc' (t b)@
+-- and @'ZeroFunc' (f (t b))@ parameters.
 traverse
     :: (Traversable t, Applicative f, Foldable f, Reifies s W)
     => AddFunc a
@@ -151,19 +158,24 @@ traverse
     -> AddFunc (t b)
     -> ZeroFunc a
     -> ZeroFunc b
-    -> ZeroFunc (t b)
-    -> ZeroFunc (f (t b))
     -> (BVar s a -> f (BVar s b))
     -> BVar s (t a)
     -> BVar s (f (t b))
-traverse afa afb aftb zfa zfb zftb zfftb f
-        = collectVar aftb zftb zfftb
-        . P.fmap (collectVar afb zfb zftb)
+traverse afa afb aftb zfa zfb f
+        = collectVar aftb zftb
+        . P.fmap (collectVar afb zfb)
         . P.traverse f
         . sequenceVar afa zfa
+  where
+    zftb = ZF $ P.fmap (runZF zfb)
+    {-# INLINE zftb #-}
 {-# INLINE traverse #-}
 
 -- | 'Prelude.Backprop.liftA2', but taking explicit 'add' and 'zero'.
+--
+-- See documentation for 'Numeric.Backprop.Explicitl.collectVar' for
+-- information the API change in v0.2.3 that removed the @'ZeroFunc' (f c)@
+-- parameter.
 liftA2
     :: ( Traversable f
        , Applicative f
@@ -175,18 +187,21 @@ liftA2
     -> ZeroFunc a
     -> ZeroFunc b
     -> ZeroFunc c
-    -> ZeroFunc (f c)
     -> (BVar s a -> BVar s b -> BVar s c)
     -> BVar s (f a)
     -> BVar s (f b)
     -> BVar s (f c)
-liftA2 afa afb afc zfa zfb zfc zffc f x y
-    = collectVar afc zfc zffc
+liftA2 afa afb afc zfa zfb zfc f x y
+    = collectVar afc zfc
     $ f P.<$> sequenceVar afa zfa x
         P.<*> sequenceVar afb zfb y
 {-# INLINE liftA2 #-}
 
 -- | 'Prelude.Backprop.liftA3', but taking explicit 'add' and 'zero'.
+--
+-- See documentation for 'Numeric.Backprop.Explicitl.collectVar' for
+-- information the API change in v0.2.3 that removed the @'ZeroFunc' (f d)@
+-- parameter.
 liftA3
     :: ( Traversable f
        , Applicative f
@@ -200,14 +215,13 @@ liftA3
     -> ZeroFunc b
     -> ZeroFunc c
     -> ZeroFunc d
-    -> ZeroFunc (f d)
     -> (BVar s a -> BVar s b -> BVar s c -> BVar s d)
     -> BVar s (f a)
     -> BVar s (f b)
     -> BVar s (f c)
     -> BVar s (f d)
-liftA3 afa afb afc afd zfa zfb zfc zfd zffd f x y z
-    = collectVar afd zfd zffd
+liftA3 afa afb afc afd zfa zfb zfc zfd f x y z
+    = collectVar afd zfd
     $ f P.<$> sequenceVar afa zfa x
         P.<*> sequenceVar afb zfb y
         P.<*> sequenceVar afc zfc z
@@ -258,6 +272,10 @@ toList af zf = toListOfVar af zf P.traverse
 
 -- | 'Prelude.Backprop.mapAccumL', but taking explicit 'add' and 'zero'.
 --
+-- See documentation for 'Numeric.Backprop.Explicitl.collectVar' for
+-- information the API change in v0.2.3 that removed the @'ZeroFunc' (t c)@
+-- parameter.
+--
 -- @since 0.2.2.0
 mapAccumL
     :: (Traversable t, Reifies s W)
@@ -265,18 +283,21 @@ mapAccumL
     -> AddFunc c
     -> ZeroFunc b
     -> ZeroFunc c
-    -> ZeroFunc (t c)
     -> (BVar s a -> BVar s b -> (BVar s a, BVar s c))
     -> BVar s a
     -> BVar s (t b)
     -> (BVar s a, BVar s (t c))
-mapAccumL afb afc zfb zfc zftc f s =
-        second (collectVar afc zfc zftc)
+mapAccumL afb afc zfb zfc f s =
+        second (collectVar afc zfc)
       . P.mapAccumL f s
       . sequenceVar afb zfb
 {-# INLINE mapAccumL #-}
 
 -- | 'Prelude.Backprop.mapAccumR', but taking explicit 'add' and 'zero'.
+--
+-- See documentation for 'Numeric.Backprop.Explicitl.collectVar' for
+-- information the API change in v0.2.3 that removed the @'ZeroFunc' (t c)@
+-- parameter.
 --
 -- @since 0.2.2.0
 mapAccumR
@@ -285,13 +306,12 @@ mapAccumR
     -> AddFunc c
     -> ZeroFunc b
     -> ZeroFunc c
-    -> ZeroFunc (t c)
     -> (BVar s a -> BVar s b -> (BVar s a, BVar s c))
     -> BVar s a
     -> BVar s (t b)
     -> (BVar s a, BVar s (t c))
-mapAccumR afb afc zfb zfc zftc f s =
-        second (collectVar afc zfc zftc)
+mapAccumR afb afc zfb zfc f s =
+        second (collectVar afc zfc)
       . P.mapAccumR f s
       . sequenceVar afb zfb
 {-# INLINE mapAccumR #-}

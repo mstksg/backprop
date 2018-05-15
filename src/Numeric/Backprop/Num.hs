@@ -342,14 +342,12 @@ sequenceVar = E.sequenceVar E.afNum E.zfNum
 -- | 'Numeric.Backprop.collectVar', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 --
--- If you are using a list or vector, I recommend using
--- <https://hackage.haskell.org/package/vector-sized vector-sized> instead:
--- it's a fixed-length vector type with a very appropriate 'Num' instance!
+-- Prior to v0.2.3, required a 'Num' constraint on @t a@.
 collectVar
-    :: (Foldable t, Functor t, Num a, Num (t a), Reifies s W)
+    :: (Foldable t, Functor t, Num a, Reifies s W)
     => t (BVar s a)
     -> BVar s (t a)
-collectVar = E.collectVar E.afNum E.zfNum E.zfNum
+collectVar = E.collectVar E.afNum E.zfNum
 {-# INLINE collectVar #-}
 
 -- | 'Numeric.Backprop.liftOp', but with 'Num' constraints instead of

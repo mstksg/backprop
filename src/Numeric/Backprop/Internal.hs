@@ -411,7 +411,7 @@ liftOp3
 liftOp3 afa afb afc z o !v !u !w = unsafePerformIO $ liftOp3_ afa afb afc z o v u w
 {-# INLINE liftOp3 #-}
 
--- TODO: can we get the zero and scale func from the bvar?
+-- TODO: can we get the zero and add func from the bvar?
 viewVar_
     :: forall a b s. Reifies s W
     => AddFunc a
@@ -438,7 +438,7 @@ viewVar
 viewVar af z l !v = unsafePerformIO $ viewVar_ af z l v
 {-# INLINE viewVar #-}
 
--- TODO: can zero and scale func be gotten from the input bvars?
+-- TODO: can zero and add func be gotten from the input bvars?
 setVar_
     :: forall a b s. Reifies s W
     => AddFunc a
@@ -484,15 +484,14 @@ sequenceVar
 sequenceVar af z !v = unsafePerformIO $ traverseVar' af z id traverse v
 {-# INLINE sequenceVar #-}
 
--- TODO: can scale funcs and zeros be had from bvars and Functor instance?
+-- TODO: can add funcs and zeros be had from bvars and Functor instance?
 collectVar_
     :: forall t a s. (Reifies s W, Foldable t, Functor t)
     => AddFunc a
     -> ZeroFunc a
-    -> ZeroFunc (t a)
     -> t (BVar s a)
     -> IO (BVar s (t a))
-collectVar_ af z z' !vs = withV (toList vs) $ \(vVec :: Vec n (BVar s a)) -> do
+collectVar_ af z !vs = withV (toList vs) $ \(vVec :: Vec n (BVar s a)) -> do
     let tn :: TapeNode (t a)
         tn = TN
           { _tnInputs = vecToProd (vmap ((`IR` runAF af) . getI) vVec)
@@ -501,18 +500,27 @@ collectVar_ af z z' !vs = withV (toList vs) $ \(vVec :: Vec n (BVar s a)) -> do
                       . toList
           }
     traverse_ (evaluate . forceBVar) vs
-    insertNode tn (_bvVal <$> vs) z' (reflect (Proxy @s))
+    insertNode tn (_bvVal <$> vs) (ZF $ fmap (runZF z)) (reflect (Proxy @s))
 {-# INLINE collectVar_ #-}
 
 -- | 'Numeric.Backprop.collectVar', but with explicit 'add' and 'zero'.
+--
+-- NOTE: Prior to v0.2.3, this required an extra @'ZeroFunc' (t a)@ input.
+-- However, after v0.2.3, the 'ZeroFunc' is now derived from the 'Functor'
+-- instance of @t@.  This makes the API a little more convenient, and it
+-- enforces consistency with the @'ZeroFunc' a@, so people can't pass in
+-- nonsense combinations.
+--
+-- Please submit an issue to the issue tracker if you find yourself in
+-- a situation where you need the flexibility to provide a separte
+-- @'ZeroFunc' a@ and @'ZeroFunc' (t a)@.
 collectVar
     :: forall t a s. (Reifies s W, Foldable t, Functor t)
     => AddFunc a
     -> ZeroFunc a
-    -> ZeroFunc (t a)
     -> t (BVar s a)
     -> BVar s (t a)
-collectVar af z z' !vs = unsafePerformIO $ collectVar_ af z z' vs
+collectVar af z !vs = unsafePerformIO $ collectVar_ af z vs
 {-# INLINE collectVar #-}
 
 traverseVar'

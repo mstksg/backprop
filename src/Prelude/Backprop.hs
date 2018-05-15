@@ -102,17 +102,19 @@ maximum = E.maximum E.addFunc E.zeroFunc
 
 -- | Lifted 'P.fmap'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Functor's.
+--
+-- Prior to v0.2.3, required a 'Backprop' constraint on @f b@.
 fmap
-    :: (Traversable f, Backprop a, Backprop b, Backprop (f b), Reifies s W)
+    :: (Traversable f, Backprop a, Backprop b, Reifies s W)
     => (BVar s a -> BVar s b)
     -> BVar s (f a)
     -> BVar s (f b)
-fmap = E.fmap E.addFunc E.addFunc E.zeroFunc E.zeroFunc E.zeroFunc
+fmap = E.fmap E.addFunc E.addFunc E.zeroFunc E.zeroFunc
 {-# INLINE fmap #-}
 
 -- | Alias for 'fmap'.
 (<$>)
-    :: (Traversable f, Backprop a, Backprop b, Backprop (f b), Reifies s W)
+    :: (Traversable f, Backprop a, Backprop b, Reifies s W)
     => (BVar s a -> BVar s b)
     -> BVar s (f a)
     -> BVar s (f b)
@@ -121,20 +123,24 @@ fmap = E.fmap E.addFunc E.addFunc E.zeroFunc E.zeroFunc E.zeroFunc
 
 -- | Lifted 'P.traverse'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Functor's.
+--
+-- Prior to v0.2.3, required a 'Backprop' constraint on @f (t b)@.
 traverse
-    :: (Traversable t, Applicative f, Foldable f, Backprop a, Backprop b, Backprop (f (t b)), Backprop (t b), Reifies s W)
+    :: (Traversable t, Applicative f, Foldable f, Backprop a, Backprop b, Backprop (t b), Reifies s W)
     => (BVar s a -> f (BVar s b))
     -> BVar s (t a)
     -> BVar s (f (t b))
 traverse = E.traverse E.addFunc E.addFunc E.addFunc
-                      E.zeroFunc E.zeroFunc E.zeroFunc E.zeroFunc
+                      E.zeroFunc E.zeroFunc
 {-# INLINE traverse #-}
 
 -- | Lifted 'P.liftA2'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Applicative's.
+--
+-- Prior to v0.2.3, required a 'Backprop' constraint on @f c@.
 liftA2
     :: ( Traversable f, Applicative f
-       , Backprop a, Backprop b, Backprop c, Backprop (f c)
+       , Backprop a, Backprop b, Backprop c
        , Reifies s W
        )
     => (BVar s a -> BVar s b -> BVar s c)
@@ -142,15 +148,17 @@ liftA2
     -> BVar s (f b)
     -> BVar s (f c)
 liftA2 = E.liftA2 E.addFunc E.addFunc E.addFunc
-                  E.zeroFunc E.zeroFunc E.zeroFunc E.zeroFunc
+                  E.zeroFunc E.zeroFunc E.zeroFunc
 {-# INLINE liftA2 #-}
 
 -- | Lifted 'P.liftA3'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Applicative's.
+--
+-- Prior to v0.2.3, required a 'Backprop' constraint on @f d@.
 liftA3
     :: ( Traversable f
        , Applicative f
-       , Backprop a, Backprop b, Backprop c, Backprop d, Backprop (f d)
+       , Backprop a, Backprop b, Backprop c, Backprop d
        , Reifies s W
        )
     => (BVar s a -> BVar s b -> BVar s c -> BVar s d)
@@ -159,7 +167,7 @@ liftA3
     -> BVar s (f c)
     -> BVar s (f d)
 liftA3 = E.liftA3 E.addFunc E.addFunc E.addFunc E.addFunc
-                  E.zeroFunc E.zeroFunc E.zeroFunc E.zeroFunc E.zeroFunc
+                  E.zeroFunc E.zeroFunc E.zeroFunc E.zeroFunc
 {-# INLINE liftA3 #-}
 
 -- | Lifted conversion between two 'P.Integral' instances.
@@ -200,25 +208,29 @@ toList = E.toList E.addFunc E.zeroFunc
 
 -- | Lifted version of 'P.mapAccumL'.
 --
+-- Prior to v0.2.3, required a 'Backprop' constraint on @t b@.
+--
 -- @since 0.2.2.0
 mapAccumL
-    :: (Traversable t, Backprop b, Backprop c, Backprop (t c), Reifies s W)
+    :: (Traversable t, Backprop b, Backprop c, Reifies s W)
     => (BVar s a -> BVar s b -> (BVar s a, BVar s c))
     -> BVar s a
     -> BVar s (t b)
     -> (BVar s a, BVar s (t c))
-mapAccumL = E.mapAccumL E.addFunc E.addFunc E.zeroFunc E.zeroFunc E.zeroFunc
+mapAccumL = E.mapAccumL E.addFunc E.addFunc E.zeroFunc E.zeroFunc
 {-# INLINE mapAccumL #-}
 
 -- | Lifted version of 'P.mapAccumR'.
 --
+-- Prior to v0.2.3, required a 'Backprop' constraint on @t b@.
+--
 -- @since 0.2.2.0
 mapAccumR
-    :: (Traversable t, Backprop b, Backprop c, Backprop (t c), Reifies s W)
+    :: (Traversable t, Backprop b, Backprop c, Reifies s W)
     => (BVar s a -> BVar s b -> (BVar s a, BVar s c))
     -> BVar s a
     -> BVar s (t b)
     -> (BVar s a, BVar s (t c))
-mapAccumR = E.mapAccumR E.addFunc E.addFunc E.zeroFunc E.zeroFunc E.zeroFunc
+mapAccumR = E.mapAccumR E.addFunc E.addFunc E.zeroFunc E.zeroFunc
 {-# INLINE mapAccumR #-}
 
