@@ -1332,7 +1332,18 @@ setVar :: forall a b s. Reifies s W => AddFunc a -> AddFunc b -> ZeroFunc a -> Z
 sequenceVar :: forall t a s. (Reifies s W, Traversable t) => AddFunc a -> ZeroFunc a -> BVar s (t a) -> t (BVar s a)
 
 -- | <a>collectVar</a>, but with explicit <a>add</a> and <a>zero</a>.
-collectVar :: forall t a s. (Reifies s W, Foldable t, Functor t) => AddFunc a -> ZeroFunc a -> ZeroFunc (t a) -> t (BVar s a) -> BVar s (t a)
+--   
+--   NOTE: Prior to v0.2.3, this required an extra <tt><a>ZeroFunc</a> (t
+--   a)</tt> input. However, after v0.2.3, the <a>ZeroFunc</a> is now
+--   derived from the <a>Functor</a> instance of <tt>t</tt>. This makes the
+--   API a little more convenient, and it enforces consistency with the
+--   <tt><a>ZeroFunc</a> a</tt>, so people can't pass in nonsense
+--   combinations.
+--   
+--   Please submit an issue to the issue tracker if you find yourself in a
+--   situation where you need the flexibility to provide a separte
+--   <tt><a>ZeroFunc</a> a</tt> and <tt><a>ZeroFunc</a> (t a)</tt>.
+collectVar :: forall t a s. (Reifies s W, Foldable t, Functor t) => AddFunc a -> ZeroFunc a -> t (BVar s a) -> BVar s (t a)
 
 -- | <a>previewVar</a>, but with explicit <a>add</a> and <a>zero</a>.
 previewVar :: forall b a s. Reifies s W => AddFunc a -> ZeroFunc a -> Traversal' b a -> BVar s b -> Maybe (BVar s a)
@@ -1884,10 +1895,8 @@ sequenceVar :: (Traversable t, Num a, Reifies s W) => BVar s (t a) -> t (BVar s 
 -- | <a>collectVar</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
 --   
---   If you are using a list or vector, I recommend using
---   <a>vector-sized</a> instead: it's a fixed-length vector type with a
---   very appropriate <a>Num</a> instance!
-collectVar :: (Foldable t, Functor t, Num a, Num (t a), Reifies s W) => t (BVar s a) -> BVar s (t a)
+--   Prior to v0.2.3, required a <a>Num</a> constraint on <tt>t a</tt>.
+collectVar :: (Foldable t, Functor t, Num a, Reifies s W) => t (BVar s a) -> BVar s (t a)
 
 -- | <a>previewVar</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
@@ -2819,7 +2828,10 @@ sequenceVar :: (Traversable t, Backprop a, Reifies s W) => BVar s (t a) -> t (BV
 --   gradient is assumed to correspond with the second item in the input,
 --   etc.; this can cause unexpected behavior in <a>Foldable</a> instances
 --   that don't have a fixed number of items.
-collectVar :: (Foldable t, Functor t, Backprop a, Backprop (t a), Reifies s W) => t (BVar s a) -> BVar s (t a)
+--   
+--   Prior to v0.2.3, required a <a>Backprop</a> constraint on <tt>t
+--   a</tt>.
+collectVar :: (Foldable t, Functor t, Backprop a, Reifies s W) => t (BVar s a) -> BVar s (t a)
 
 -- | Using a <a>Traversal'</a>, extract a single value <i>inside</i> a
 --   <a>BVar</a>, if it exists. If more than one traversal target exists,
@@ -3247,28 +3259,47 @@ minimum :: (Foldable t, Functor t, Ord a, Reifies s W) => AddFunc (t a) -> ZeroF
 maximum :: (Foldable t, Functor t, Ord a, Reifies s W) => AddFunc (t a) -> ZeroFunc a -> BVar s (t a) -> BVar s a
 
 -- | <a>traverse</a>, but taking explicit <a>add</a> and <a>zero</a>.
-traverse :: (Traversable t, Applicative f, Foldable f, Reifies s W) => AddFunc a -> AddFunc b -> AddFunc (t b) -> ZeroFunc a -> ZeroFunc b -> ZeroFunc (t b) -> ZeroFunc (f (t b)) -> (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
+--   
+--   See documentation for <a>collectVar</a> for information the API change
+--   in v0.2.3 that removed the <tt><a>ZeroFunc</a> (t b)</tt> and
+--   <tt><a>ZeroFunc</a> (f (t b))</tt> parameters.
+traverse :: (Traversable t, Applicative f, Foldable f, Reifies s W) => AddFunc a -> AddFunc b -> AddFunc (t b) -> ZeroFunc a -> ZeroFunc b -> (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
 
 -- | <a>length</a>, but taking explicit <a>add</a> and <a>zero</a>.
 toList :: (Traversable t, Reifies s W) => AddFunc a -> ZeroFunc a -> BVar s (t a) -> [BVar s a]
 
 -- | <a>mapAccumL</a>, but taking explicit <a>add</a> and <a>zero</a>.
-mapAccumL :: (Traversable t, Reifies s W) => AddFunc b -> AddFunc c -> ZeroFunc b -> ZeroFunc c -> ZeroFunc (t c) -> (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
+--   
+--   See documentation for <a>collectVar</a> for information the API change
+--   in v0.2.3 that removed the <tt><a>ZeroFunc</a> (t c)</tt> parameter.
+mapAccumL :: (Traversable t, Reifies s W) => AddFunc b -> AddFunc c -> ZeroFunc b -> ZeroFunc c -> (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
 
 -- | <a>mapAccumR</a>, but taking explicit <a>add</a> and <a>zero</a>.
-mapAccumR :: (Traversable t, Reifies s W) => AddFunc b -> AddFunc c -> ZeroFunc b -> ZeroFunc c -> ZeroFunc (t c) -> (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
+--   
+--   See documentation for <a>collectVar</a> for information the API change
+--   in v0.2.3 that removed the <tt><a>ZeroFunc</a> (t c)</tt> parameter.
+mapAccumR :: (Traversable t, Reifies s W) => AddFunc b -> AddFunc c -> ZeroFunc b -> ZeroFunc c -> (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
 
 -- | <a>fmap</a>, but taking explicit <a>add</a> and <a>zero</a>.
-fmap :: (Traversable f, Reifies s W) => AddFunc a -> AddFunc b -> ZeroFunc a -> ZeroFunc b -> ZeroFunc (f b) -> (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
+--   
+--   See documentation for <a>collectVar</a> for information the API change
+--   in v0.2.3 that removed the <tt><a>ZeroFunc</a> (f b)</tt> parameter.
+fmap :: (Traversable f, Reifies s W) => AddFunc a -> AddFunc b -> ZeroFunc a -> ZeroFunc b -> (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
 
 -- | <a>pure</a>, but taking explicit <a>add</a> and <a>zero</a>.
 pure :: (Foldable t, Applicative t, Reifies s W) => AddFunc a -> ZeroFunc a -> ZeroFunc (t a) -> BVar s a -> BVar s (t a)
 
 -- | <a>liftA2</a>, but taking explicit <a>add</a> and <a>zero</a>.
-liftA2 :: (Traversable f, Applicative f, Reifies s W) => AddFunc a -> AddFunc b -> AddFunc c -> ZeroFunc a -> ZeroFunc b -> ZeroFunc c -> ZeroFunc (f c) -> (BVar s a -> BVar s b -> BVar s c) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c)
+--   
+--   See documentation for <a>collectVar</a> for information the API change
+--   in v0.2.3 that removed the <tt><a>ZeroFunc</a> (f c)</tt> parameter.
+liftA2 :: (Traversable f, Applicative f, Reifies s W) => AddFunc a -> AddFunc b -> AddFunc c -> ZeroFunc a -> ZeroFunc b -> ZeroFunc c -> (BVar s a -> BVar s b -> BVar s c) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c)
 
 -- | <a>liftA3</a>, but taking explicit <a>add</a> and <a>zero</a>.
-liftA3 :: (Traversable f, Applicative f, Reifies s W) => AddFunc a -> AddFunc b -> AddFunc c -> AddFunc d -> ZeroFunc a -> ZeroFunc b -> ZeroFunc c -> ZeroFunc d -> ZeroFunc (f d) -> (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
+--   
+--   See documentation for <a>collectVar</a> for information the API change
+--   in v0.2.3 that removed the <tt><a>ZeroFunc</a> (f d)</tt> parameter.
+liftA3 :: (Traversable f, Applicative f, Reifies s W) => AddFunc a -> AddFunc b -> AddFunc c -> AddFunc d -> ZeroFunc a -> ZeroFunc b -> ZeroFunc c -> ZeroFunc d -> (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
 
 -- | <a>fromIntegral</a>, but taking explicit <a>add</a> and <a>zero</a>.
 fromIntegral :: (Integral a, Integral b, Reifies s W) => AddFunc a -> ZeroFunc b -> BVar s a -> BVar s b
@@ -3312,7 +3343,10 @@ maximum :: (Foldable t, Functor t, Backprop a, Ord a, Backprop (t a), Reifies s 
 
 -- | Lifted <a>traverse</a>. Lifts backpropagatable functions to be
 --   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
-traverse :: (Traversable t, Applicative f, Foldable f, Backprop a, Backprop b, Backprop (f (t b)), Backprop (t b), Reifies s W) => (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
+--   
+--   Prior to v0.2.3, required a <a>Backprop</a> constraint on <tt>f (t
+--   b)</tt>.
+traverse :: (Traversable t, Applicative f, Foldable f, Backprop a, Backprop b, Backprop (t b), Reifies s W) => (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
 
 -- | Lifted version of <a>toList</a>. Takes a <a>BVar</a> of a
 --   <a>Traversable</a> of items and returns a list of <a>BVar</a>s for
@@ -3326,28 +3360,43 @@ traverse :: (Traversable t, Applicative f, Foldable f, Backprop a, Backprop b, B
 toList :: (Traversable t, Backprop a, Reifies s W) => BVar s (t a) -> [BVar s a]
 
 -- | Lifted version of <a>mapAccumL</a>.
-mapAccumL :: (Traversable t, Backprop b, Backprop c, Backprop (t c), Reifies s W) => (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
+--   
+--   Prior to v0.2.3, required a <a>Backprop</a> constraint on <tt>t
+--   b</tt>.
+mapAccumL :: (Traversable t, Backprop b, Backprop c, Reifies s W) => (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
 
 -- | Lifted version of <a>mapAccumR</a>.
-mapAccumR :: (Traversable t, Backprop b, Backprop c, Backprop (t c), Reifies s W) => (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
+--   
+--   Prior to v0.2.3, required a <a>Backprop</a> constraint on <tt>t
+--   b</tt>.
+mapAccumR :: (Traversable t, Backprop b, Backprop c, Reifies s W) => (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
 
 -- | Lifted <a>fmap</a>. Lifts backpropagatable functions to be
 --   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
-fmap :: (Traversable f, Backprop a, Backprop b, Backprop (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
+--   
+--   Prior to v0.2.3, required a <a>Backprop</a> constraint on <tt>f
+--   b</tt>.
+fmap :: (Traversable f, Backprop a, Backprop b, Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
 
 -- | Alias for <a>fmap</a>.
-(<$>) :: (Traversable f, Backprop a, Backprop b, Backprop (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
+(<$>) :: (Traversable f, Backprop a, Backprop b, Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
 
 -- | Lifted <a>pure</a>.
 pure :: (Foldable t, Applicative t, Backprop (t a), Backprop a, Reifies s W) => BVar s a -> BVar s (t a)
 
 -- | Lifted <a>liftA2</a>. Lifts backpropagatable functions to be
 --   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
-liftA2 :: (Traversable f, Applicative f, Backprop a, Backprop b, Backprop c, Backprop (f c), Reifies s W) => (BVar s a -> BVar s b -> BVar s c) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c)
+--   
+--   Prior to v0.2.3, required a <a>Backprop</a> constraint on <tt>f
+--   c</tt>.
+liftA2 :: (Traversable f, Applicative f, Backprop a, Backprop b, Backprop c, Reifies s W) => (BVar s a -> BVar s b -> BVar s c) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c)
 
 -- | Lifted <a>liftA3</a>. Lifts backpropagatable functions to be
 --   backpropagatable functions on <a>Traversable</a> <a>Applicative</a>s.
-liftA3 :: (Traversable f, Applicative f, Backprop a, Backprop b, Backprop c, Backprop d, Backprop (f d), Reifies s W) => (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
+--   
+--   Prior to v0.2.3, required a <a>Backprop</a> constraint on <tt>f
+--   d</tt>.
+liftA3 :: (Traversable f, Applicative f, Backprop a, Backprop b, Backprop c, Backprop d, Reifies s W) => (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
 
 -- | Lifted conversion between two <a>Integral</a> instances.
 fromIntegral :: (Backprop a, Integral a, Backprop b, Integral b, Reifies s W) => BVar s a -> BVar s b
@@ -3387,7 +3436,12 @@ maximum :: (Foldable t, Functor t, Num a, Ord a, Num (t a), Reifies s W) => BVar
 
 -- | <a>traverse</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
-traverse :: (Traversable t, Applicative f, Foldable f, Num a, Num b, Num (f (t b)), Num (t b), Reifies s W) => (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
+--   
+--   See <a>vector-sized</a> for a fixed-length vector type with a very
+--   appropriate <a>Num</a> instance!
+--   
+--   Prior to v0.2.3, required a <a>Num</a> constraint on <tt>f (t b)</tt>.
+traverse :: (Traversable t, Applicative f, Foldable f, Num a, Num b, Num (t b), Reifies s W) => (BVar s a -> f (BVar s b)) -> BVar s (t a) -> BVar s (f (t b))
 
 -- | <a>toList</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
@@ -3395,18 +3449,24 @@ toList :: (Traversable t, Num a, Reifies s W) => BVar s (t a) -> [BVar s a]
 
 -- | <a>mapAccumL</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
-mapAccumL :: (Traversable t, Num b, Num c, Num (t c), Reifies s W) => (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
+--   
+--   Prior to v0.2.3, required a <a>Num</a> constraint on <tt>t b</tt>.
+mapAccumL :: (Traversable t, Num b, Num c, Reifies s W) => (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
 
 -- | <a>mapAccumR</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
-mapAccumR :: (Traversable t, Num b, Num c, Num (t c), Reifies s W) => (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
+--   
+--   Prior to v0.2.3, required a <a>Num</a> constraint on <tt>t b</tt>.
+mapAccumR :: (Traversable t, Num b, Num c, Reifies s W) => (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
 
 -- | <a>fmap</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
-fmap :: (Traversable f, Num a, Num b, Num (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
+--   
+--   Prior to v0.2.3, required a <a>Num</a> constraint on <tt>f b</tt>.
+fmap :: (Traversable f, Num a, Num b, Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
 
 -- | Alias for <a>fmap</a>.
-(<$>) :: (Traversable f, Num a, Num b, Num (f b), Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
+(<$>) :: (Traversable f, Num a, Num b, Reifies s W) => (BVar s a -> BVar s b) -> BVar s (f a) -> BVar s (f b)
 
 -- | <a>pure</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
@@ -3414,11 +3474,15 @@ pure :: (Foldable t, Applicative t, Num (t a), Num a, Reifies s W) => BVar s a -
 
 -- | <a>liftA2</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
-liftA2 :: (Traversable f, Applicative f, Num a, Num b, Num c, Num (f c), Reifies s W) => (BVar s a -> BVar s b -> BVar s c) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c)
+--   
+--   Prior to v0.2.3, required a <a>Num</a> constraint on <tt>f c</tt>.
+liftA2 :: (Traversable f, Applicative f, Num a, Num b, Num c, Reifies s W) => (BVar s a -> BVar s b -> BVar s c) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c)
 
 -- | <a>liftA3</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
-liftA3 :: (Traversable f, Applicative f, Num a, Num b, Num c, Num d, Num (f d), Reifies s W) => (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
+--   
+--   Prior to v0.2.3, required a <a>Num</a> constraint on <tt>f d</tt>.
+liftA3 :: (Traversable f, Applicative f, Num a, Num b, Num c, Num d, Reifies s W) => (BVar s a -> BVar s b -> BVar s c -> BVar s d) -> BVar s (f a) -> BVar s (f b) -> BVar s (f c) -> BVar s (f d)
 
 -- | <a>fromIntegral</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
