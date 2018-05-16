@@ -1,11 +1,13 @@
 backprop
 ========
 
-[![Join the chat at https://gitter.im/haskell-backprop/Lobby](https://badges.gitter.im/haskell-backprop/Lobby.svg)](https://gitter.im/haskell-backprop/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![backprop on Hackage](https://img.shields.io/hackage/v/backprop.svg?maxAge=86400)](https://hackage.haskell.org/package/backprop)
 [![backprop on Stackage LTS 11](http://stackage.org/package/backprop/badge/lts-11)](http://stackage.org/lts-11/package/backprop)
 [![backprop on Stackage Nightly](http://stackage.org/package/backprop/badge/nightly)](http://stackage.org/nightly/package/backprop)
 [![Build Status](https://travis-ci.org/mstksg/backprop.svg?branch=master)](https://travis-ci.org/mstksg/backprop)
+
+[![Join the chat at https://gitter.im/haskell-backprop/Lobby](https://badges.gitter.im/haskell-backprop/Lobby.svg)](https://gitter.im/haskell-backprop/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Beerpay](https://beerpay.io/mstksg/backprop/badge.svg)](https://beerpay.io/mstksg/backprop)
 
 [**Introductory blog post**][blog]
 
@@ -23,10 +25,12 @@ with gradient descent and other numeric optimization techniques.
 [ad]: http://hackage.haskell.org/package/ad
 
 Currently up on [hackage][] (with 100% documentation coverage), but more
-up-to-date documentation is currently rendered [on github pages][docs]!
+up-to-date documentation is currently rendered [on github pages][docs]!  You
+can also find help or support on the [gitter channel][gitter].
 
 [hackage]: http://hackage.haskell.org/package/backprop
 [docs]: https://mstksg.github.io/backprop
+[gitter]: https://gitter.im/haskell-backprop/Lobby
 
 If you want to provide *backprop* for users of your library, see this **[guide
 to equipping your library with backprop][library]**.
