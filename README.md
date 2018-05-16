@@ -264,3 +264,8 @@ Todo
 
     b.  How to support "monadic" operations that depend on results of previous
         operations? (`ApBP` already exists for situations that don't)
+
+## Support on Beerpay
+Hey dude! Help me out for a couple of :beers:!
+
+[![Beerpay](https://beerpay.io/mstksg/backprop/badge.svg?style=beer-square)](https://beerpay.io/mstksg/backprop)  [![Beerpay](https://beerpay.io/mstksg/backprop/make-wish.svg?style=flat-square)](https://beerpay.io/mstksg/backprop?focus=wish)
