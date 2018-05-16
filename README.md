@@ -7,7 +7,7 @@ backprop
 [![Build Status](https://travis-ci.org/mstksg/backprop.svg?branch=master)](https://travis-ci.org/mstksg/backprop)
 
 [![Join the chat at https://gitter.im/haskell-backprop/Lobby](https://badges.gitter.im/haskell-backprop/Lobby.svg)](https://gitter.im/haskell-backprop/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Beerpay](https://beerpay.io/mstksg/backprop/badge.svg)](https://beerpay.io/mstksg/backprop)
+[![Beerpay](https://beerpay.io/mstksg/backprop/badge.svg?style=beer-square)](https://beerpay.io/mstksg/backprop)
 
 [**Introductory blog post**][blog]
 
@@ -268,8 +268,3 @@ Todo
 
     b.  How to support "monadic" operations that depend on results of previous
         operations? (`ApBP` already exists for situations that don't)
-
-## Support on Beerpay
-Hey dude! Help me out for a couple of :beers:!
-
-[![Beerpay](https://beerpay.io/mstksg/backprop/badge.svg?style=beer-square)](https://beerpay.io/mstksg/backprop)  [![Beerpay](https://beerpay.io/mstksg/backprop/make-wish.svg?style=flat-square)](https://beerpay.io/mstksg/backprop?focus=wish)
