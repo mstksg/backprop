@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP              #-}
 {-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs            #-}
@@ -718,7 +719,9 @@ pattern T2
 pattern T2 x y <- (\xy -> (xy ^^. _1, xy ^^. _2) -> (x, y))
   where
     T2 = isoVar2 (,) id
-{-# COMPLETE T2 #-}
+#if MIN_VERSION_base(4,10,0)
+{-# COMPLETE BV #-}
+#endif
 
 -- | Useful pattern for constructing and deconstructing 'BVar's
 -- three-tuples.
@@ -733,7 +736,9 @@ pattern T3
 pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
   where
     T3 = isoVar3 (,,) id
-{-# COMPLETE T3 #-}
+#if MIN_VERSION_base(4,10,0)
+{-# COMPLETE BV #-}
+#endif
 
 -- $hkd
 --
@@ -896,9 +901,16 @@ pattern BV
        , Known Length as
        , Reifies s W
        )
+#if MIN_VERSION_base(4,10,0)
     => z (BVar s)           -- ^ 'BVar's of fields
     -> BVar s (z f)         -- ^ 'BVar' of combined value
+#else
+    => z (BVar s)
+    -> BVar s (z f)
+#endif
 pattern BV v <- (splitBV->v)
   where
     BV = joinBV
+#if MIN_VERSION_base(4,10,0)
 {-# COMPLETE BV #-}
+#endif
