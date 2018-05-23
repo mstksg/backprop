@@ -22,7 +22,6 @@ import           System.Random
 import qualified Numeric.LinearAlgebra.Static as H
 ```
 
-
 *backprop* is a Haskell library available on hackage, so can be used in your
 package however way you like to require libraries.  Be sure to add it to your
 cabal file's (or package.yaml's) build-depends field.
@@ -46,11 +45,15 @@ They can be run with `evalBP`:
 evalBP myFunc 9 :: Double
 ```
 
-The twist?  You can also get the gradient of your functions:
+And...the twist?  You can also get the gradient of your functions!
 
 ```haskell eval
 gradBP myFunc 9 :: Double
 ```
+
+And that's the gist of the entire library: write your functions to compute your
+things, and `gradBP` will give you the gradients and derivatives of those
+functions.
 
 ### Multiple Same-Type Inputs
 
@@ -200,7 +203,7 @@ responses given a certain input.
 [train]: https://blog.jle.im/entry/purely-functional-typed-models-1.html
 
 Main Idea
-=========
+---------
 
 The main pattern of usage for this library is:
 

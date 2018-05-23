@@ -20,9 +20,11 @@ generate functions to compute your gradient.
 
 Differs from [ad][] by offering full heterogeneity -- each intermediate step
 and the resulting value can have different types.  Mostly intended for usage
-with gradient descent and other numeric optimization techniques.
+with gradient descent and other numeric optimization techniques.  Comparable to
+the python library [autograd][].
 
 [ad]: http://hackage.haskell.org/package/ad
+[autograd]: https://github.com/HIPS/autograd
 
 Currently up on [hackage][] (with 100% documentation coverage), but more
 up-to-date documentation is currently rendered [on github pages][docs]!  You
@@ -36,6 +38,7 @@ If you want to provide *backprop* for users of your library, see this **[guide
 to equipping your library with backprop][library]**.
 
 [library]: https://github.com/mstksg/backprop/wiki/Equipping-your-Library-with-Backprop
+
 
 MNIST Digit Classifier Example
 ------------------------------

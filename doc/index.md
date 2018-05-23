@@ -13,9 +13,11 @@ generate functions to compute your gradient.  Useful for applications in
 
 Differs from [ad][] by offering full heterogeneity -- each intermediate step
 and the resulting value can have different types.  Mostly intended for usage
-with gradient descent and other numeric optimization techniques.
+with gradient descent and other numeric optimization techniques.  Comparable to
+the python library [autograd][].
 
 [ad]: http://hackage.haskell.org/package/ad
+[autograd]: https://github.com/HIPS/autograd
 
 Be sure to check out [documentation on hackage][hackage].  Support is also
 available on the [gitter channel][gitter]!
