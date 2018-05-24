@@ -716,7 +716,7 @@ runMet (splitBV -&gt; M w1 b1 w2 b2) x = z
     z = logistic $ w2 #&gt; y + b2
 </code></pre>
 <p>Now, the <code>M w1 b1 w2 b2</code> pattern can be used to deconstruct <em>both</em> &quot;normal&quot;
-<code>Met</code>s, as well as a <code>BVar s Met</code> (with <code>splitBV</code>).</p>
+<code>Met</code>s, as well as a <code>BVar s Met</code> (with <code>splitBV</code> or <code>BV</code>).</p>
 <h3>Potential or Many Fields</h3>
 <p>Some values &quot;may&quot; or &quot;may not&quot; have values of a given field. An example would
 include the nth item in a list or vector, or the <code>Just</code> of a <code>Maybe</code>.</p>
@@ -731,7 +731,7 @@ partial fields. You can use <code>(^^?)</code> or <code>previewVar</code> with a
 first item in a list if it exists.</p>
 <p>If you have a type that might contain <em>many</em> values of a field (like a tree or
 list), you can use <code>(^^..)</code> or <code>toListOfVar</code>, which works on any <code>Traversal</code>:</p>
-<pre class="haskell"><code>(^..)  ::        a -&gt; Traversal&#39; a b -&gt; [b]
+<pre class="haskell"><code>(^..)  ::        a -&gt; Traversal&#39; a b -&gt; [       b]
 (^^..) :: BVar s a -&gt; Traversal&#39; a b -&gt; [BVar s b]
 </code></pre>
 <p>This can be used to implement <code>sequenceVar</code>, actually:</p>
@@ -771,7 +771,10 @@ functions:</p>
 </code></pre>
 <p>We can combine a <code>Double</code> and <code>Int</code> into a <code>DoubleInt</code> using <code>isoVar2</code>:</p>
 <pre class="haskell"><code>isoVar2 DI (\(DI x y) -&gt; (x,y))
-    :: BVar s Double -&gt; BVar s Int -&gt; BVar s DoubleInt
+    :: Reifies s W
+    =&gt; BVar s Double
+    -&gt; BVar s Int
+    -&gt; BVar s DoubleInt
 </code></pre>
 <h4>Higher-Kinded Data Interface</h4>
 <p>You can also use the <a href="http://reasonablypolymorphic.com/blog/higher-kinded-data/">&quot;Higher Kinded Data&quot;</a> interface, as well. For our
@@ -791,7 +794,11 @@ interface with <code>(.~~)</code> or <code>setVar</code>. For example, if we wan
 <pre class="haskell"><code>myNet &amp; nWeights2 .~~ newMatrix
 </code></pre>
 <p>or</p>
-<pre class="haskell"><code>setVar nWeights2 :: BVar s (L 20 5) -&gt; BVar s Net -&gt; BVar s Net
+<pre class="haskell"><code>setVar nWeights2
+    :: Reifies s W
+    =&gt; BVar s (L 20 5)
+    -&gt; BVar s Net
+    -&gt; BVar s Net
 </code></pre>
 <h3>Tuples</h3>
 <p>The <code>T2</code> and <code>T3</code> patterns can also be used to turn, say, a <code>BVar s a</code> and
