@@ -739,9 +739,11 @@ list), you can use <code>(^^..)</code> or <code>toListOfVar</code>, which works 
 sequenceVar xs = xs ^^.. traverse
 </code></pre>
 <h3>Tuples</h3>
-<p>The <code>T2</code> pattern is provided, which allow you to pattern match on a
+<p>The <code>T2</code> pattern synonym is provided, which allow you to pattern match on a
 <code>BVar s (a, b)</code> to get a <code>BVar s a</code> and <code>BVar s b</code>. The <code>T3</code> pattern is also
 provided, which does the same thing for three-tuples.</p>
+<p>Note that <code>T2</code> and <code>T2</code> are bidirectional pattern synonyms, and can be used to
+construct as well as deconstruct.</p>
 <h2>Combining BVars</h2>
 <p>The following techniques can be used to &quot;combine&quot; <code>BVar</code>s:</p>
 <h3>Foldable Containers</h3>
@@ -800,9 +802,6 @@ interface with <code>(.~~)</code> or <code>setVar</code>. For example, if we wan
     -&gt; BVar s Net
     -&gt; BVar s Net
 </code></pre>
-<h3>Tuples</h3>
-<p>The <code>T2</code> and <code>T3</code> patterns can also be used to turn, say, a <code>BVar s a</code> and
-<code>BVar s b</code> into a <code>BVar s (a, b)</code>, for convenience.</p>
 <h2>Prelude Modules</h2>
 <p>Finally, the <em>Prelude.Backprop</em> module has a lot of your normal Prelude
 functions &quot;lifted&quot; to work on <code>BVar</code>s of values. For many situations, these
