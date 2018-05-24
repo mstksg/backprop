@@ -2947,7 +2947,7 @@ liftOp3 :: (Backprop a, Backprop b, Backprop c, Backprop d, Reifies s W) => Op '
 --   deconstructor is exactly a view into <a>splitBV</a>.
 splitBV :: (Generic (z f), Generic (z (BVar s)), BVGroup s as (Rep (z f)) (Rep (z (BVar s))), Backprop (Rep (z f) ()), Every Backprop as, Known Length as, Reifies s W) => BVar s (z f) -> z (BVar s)
 
--- | Split out a <a>BVar</a> of "higher-kinded data type", a la
+-- | Assemble a <a>BVar</a> of "higher-kinded data type", a la
 --   <a>http://reasonablypolymorphic.com/blog/higher-kinded-data/</a>
 --   
 --   It lets you take a <a>BVar</a> of every field of a value, and join
@@ -3280,6 +3280,12 @@ mapAccumL :: (Traversable t, Reifies s W) => AddFunc b -> AddFunc c -> ZeroFunc 
 --   in v0.2.3 that removed the <tt><a>ZeroFunc</a> (t c)</tt> parameter.
 mapAccumR :: (Traversable t, Reifies s W) => AddFunc b -> AddFunc c -> ZeroFunc b -> ZeroFunc c -> (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
 
+-- | <a>foldr</a>, but taking explicit <a>add</a> and <a>zero</a>.
+foldr :: (Traversable t, Reifies s W) => AddFunc a -> ZeroFunc a -> (BVar s a -> BVar s b -> BVar s b) -> BVar s b -> BVar s (t a) -> BVar s b
+
+-- | <a>foldl'</a>, but taking explicit <a>add</a> and <a>zero</a>.
+foldl' :: (Traversable t, Reifies s W) => AddFunc a -> ZeroFunc a -> (BVar s b -> BVar s a -> BVar s b) -> BVar s b -> BVar s (t a) -> BVar s b
+
 -- | <a>fmap</a>, but taking explicit <a>add</a> and <a>zero</a>.
 --   
 --   See documentation for <a>collectVar</a> for information the API change
@@ -3371,6 +3377,14 @@ mapAccumL :: (Traversable t, Backprop b, Backprop c, Reifies s W) => (BVar s a -
 --   b</tt>.
 mapAccumR :: (Traversable t, Backprop b, Backprop c, Reifies s W) => (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
 
+-- | Lifed <a>foldr</a>. Essentially just <a>toList</a> composed with a
+--   normal list <a>foldr</a>, and is only here for convenience.
+foldr :: (Traversable t, Backprop a, Reifies s W) => (BVar s a -> BVar s b -> BVar s b) -> BVar s b -> BVar s (t a) -> BVar s b
+
+-- | Lifed <a>foldl'</a>. Essentially just <a>toList</a> composed with a
+--   normal list <a>foldl'</a>, and is only here for convenience.
+foldl' :: (Traversable t, Backprop a, Reifies s W) => (BVar s b -> BVar s a -> BVar s b) -> BVar s b -> BVar s (t a) -> BVar s b
+
 -- | Lifted <a>fmap</a>. Lifts backpropagatable functions to be
 --   backpropagatable functions on <a>Traversable</a> <a>Functor</a>s.
 --   
@@ -3458,6 +3472,14 @@ mapAccumL :: (Traversable t, Num b, Num c, Reifies s W) => (BVar s a -> BVar s b
 --   
 --   Prior to v0.2.3, required a <a>Num</a> constraint on <tt>t b</tt>.
 mapAccumR :: (Traversable t, Num b, Num c, Reifies s W) => (BVar s a -> BVar s b -> (BVar s a, BVar s c)) -> BVar s a -> BVar s (t b) -> (BVar s a, BVar s (t c))
+
+-- | <a>foldr</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
+foldr :: (Traversable t, Num a, Reifies s W) => (BVar s a -> BVar s b -> BVar s b) -> BVar s b -> BVar s (t a) -> BVar s b
+
+-- | <a>foldl'</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
+foldl' :: (Traversable t, Num a, Reifies s W) => (BVar s b -> BVar s a -> BVar s b) -> BVar s b -> BVar s (t a) -> BVar s b
 
 -- | <a>fmap</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
