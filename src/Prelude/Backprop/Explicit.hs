@@ -33,9 +33,12 @@ module Prelude.Backprop.Explicit (
   , pure
   , liftA2
   , liftA3
-  -- * Misc
+  -- * Numeric
   , fromIntegral
   , realToFrac
+  , round
+  , fromIntegral'
+  -- * Misc
   , coerce
   ) where
 
@@ -131,6 +134,8 @@ maximum af zf = liftOp1 af zf . op1 $ \xs ->
 {-# INLINE maximum #-}
 
 -- | 'Prelude.Backprop.foldr', but taking explicit 'add' and 'zero'.
+--
+-- @since 0.2.3.0
 foldr
     :: (Traversable t, Reifies s W)
     => AddFunc a
@@ -143,6 +148,8 @@ foldr af zf f x = P.foldr f x . toList af zf
 {-# INLINE foldr #-}
 
 -- | 'Prelude.Backprop.foldl'', but taking explicit 'add' and 'zero'.
+--
+-- @since 0.2.3.0
 foldl'
     :: (Traversable t, Reifies s W)
     => AddFunc a
@@ -266,8 +273,7 @@ fromIntegral
     -> ZeroFunc b
     -> BVar s a
     -> BVar s b
-fromIntegral af zf = liftOp1 af zf . op1 $ \x ->
-    (P.fromIntegral x, P.fromIntegral)
+fromIntegral af zf = isoVar af zf P.fromIntegral P.fromIntegral
 {-# INLINE fromIntegral #-}
 
 -- | 'Prelude.Backprop.realToFrac', but taking explicit 'add' and 'zero'.
@@ -279,9 +285,33 @@ realToFrac
     -> ZeroFunc b
     -> BVar s a
     -> BVar s b
-realToFrac af zf = liftOp1 af zf . op1 $ \x ->
-    (P.realToFrac x, P.realToFrac)
+realToFrac af zf = isoVar af zf P.realToFrac P.realToFrac
 {-# INLINE realToFrac #-}
+
+-- | 'Prelude.Backprop.round', but taking explicit 'add' and 'zero'.
+--
+-- @since 0.2.3.0
+round
+    :: (P.RealFrac a, P.Integral b, Reifies s W)
+    => AddFunc a
+    -> ZeroFunc b
+    -> BVar s a
+    -> BVar s b
+round af zf = isoVar af zf P.round P.fromIntegral
+{-# INLINE round #-}
+
+-- | 'Prelude.Backprop.fromIntegral'', but taking explicit 'add' and
+-- 'zero'.
+--
+-- @since 0.2.3.0
+fromIntegral'
+    :: (P.Integral a, P.RealFrac b, Reifies s W)
+    => AddFunc a
+    -> ZeroFunc b
+    -> BVar s a
+    -> BVar s b
+fromIntegral' af zf = isoVar af zf P.fromIntegral P.round
+{-# INLINE fromIntegral' #-}
 
 -- | 'Prelude.Backprop.length', but taking explicit 'add' and 'zero'.
 --

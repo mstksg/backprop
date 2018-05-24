@@ -17,6 +17,7 @@ Version 0.2.3.0
 *   `BV` pattern synonym added to *Numeric.Backprop*, abstracting over
     application of `splitBV` and `joinBV`.
 *   `foldr` and `foldl'` added to Prelude modules, for convenience.
+*   `round` and `fromIntegral'` ("unround") added to Prelude modules.
 
 Version 0.2.2.0
 ---------------

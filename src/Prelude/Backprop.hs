@@ -40,9 +40,12 @@ module Prelude.Backprop (
   , pure
   , liftA2
   , liftA3
-  -- * Misc
+  -- * Numeric
   , fromIntegral
   , realToFrac
+  , round
+  , fromIntegral'
+  -- * Misc
   , E.coerce
   ) where
 
@@ -216,6 +219,35 @@ realToFrac
     -> BVar s b
 realToFrac = E.realToFrac E.addFunc E.zeroFunc
 {-# INLINE realToFrac #-}
+
+-- | Lifted version of 'P.round'.
+--
+-- Gradient should technically diverge whenever the fractional part is 0.5,
+-- but does not do this for convenience reasons.
+--
+-- @since 0.2.3.0
+round
+    :: (P.RealFrac a, P.Integral b, Reifies s W)
+    => BVar s a
+    -> BVar s b
+round = E.round E.afNum E.zfNum
+{-# INLINE round #-}
+
+-- | Lifted version of 'P.fromIntegral', defined to let you return
+-- 'P.RealFrac' instances as targets, instead of only other 'P.Integral's.
+-- Essentially the opposite of 'round'.
+--
+-- The gradient should technically diverge whenever the fractional part of
+-- the downstream gradient is 0.5, but does not do this for convenience
+-- reasons.
+--
+-- @since 0.2.3.0
+fromIntegral'
+    :: (P.Integral a, P.RealFrac b, Reifies s W)
+    => BVar s a
+    -> BVar s b
+fromIntegral' = E.fromIntegral' E.afNum E.zfNum
+{-# INLINE fromIntegral' #-}
 
 -- | Lifted version of 'P.toList'.  Takes a 'BVar' of a 'Traversable' of
 -- items and returns a list of 'BVar's for each item.

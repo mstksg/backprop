@@ -33,9 +33,12 @@ module Prelude.Backprop.Num (
   , pure
   , liftA2
   , liftA3
-  -- * Misc
+  -- * Numeric
   , fromIntegral
   , realToFrac
+  , round
+  , fromIntegral'
+  -- * Misc
   , E.coerce
   ) where
 
@@ -100,6 +103,8 @@ maximum = E.maximum E.afNum E.zfNum
 
 -- | 'Prelude.Backprop.foldr', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
+--
+-- @since 0.2.3.0
 foldr
     :: (Traversable t, Num a, Reifies s W)
     => (BVar s a -> BVar s b -> BVar s b)
@@ -111,6 +116,8 @@ foldr = E.foldr E.afNum E.zfNum
 
 -- | 'Prelude.Backprop.foldl'', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
+--
+-- @since 0.2.3.0
 foldl'
     :: (Traversable t, Num a, Reifies s W)
     => (BVar s b -> BVar s a -> BVar s b)
@@ -213,6 +220,28 @@ realToFrac
     -> BVar s b
 realToFrac = E.realToFrac E.afNum E.zfNum
 {-# INLINE realToFrac #-}
+
+-- | 'Prelude.Backprop.round', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
+--
+-- @since 0.2.3.0
+round
+    :: (P.RealFrac a, P.Integral b, Reifies s W)
+    => BVar s a
+    -> BVar s b
+round = E.round E.afNum E.zfNum
+{-# INLINE round #-}
+
+-- | 'Prelude.Backprop.fromIntegral'', but with 'Num' constraints instead
+-- of 'Backprop' constraints.
+--
+-- @since 0.2.3.0
+fromIntegral'
+    :: (P.Integral a, P.RealFrac b, Reifies s W)
+    => BVar s a
+    -> BVar s b
+fromIntegral' = E.fromIntegral' E.afNum E.zfNum
+{-# INLINE fromIntegral' #-}
 
 -- | 'Prelude.Backprop.toList', but with 'Num' constraints instead of
 -- 'Backprop' constraints.

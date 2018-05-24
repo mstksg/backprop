@@ -75,7 +75,7 @@ Accessing Contents
 
 The following techniques can be used to access values inside `BVar`s:
 
-### Containers
+### Traversable Containers
 
 One that we saw earlier was `sequenceVar`, which we used to turn a `BVar`
 containing a list into a list of `BVar`s:
@@ -115,6 +115,9 @@ linear algebra and related operations on the input and all of the contents of
 the `Net` data type.  However, you can't directly use `_nWeights`, since it
 takes a `Net`, not `BVar s Net`.  And you also can't directly pattern match on
 the `N` constructor.
+
+There are two main options for this: the lens interface, and the higher-kinded
+data interface.
 
 #### Lens Interface
 
@@ -211,7 +214,8 @@ Note that we are using versions of `#>` lifted for `BVar`s, from the
 
 Using the lens based interface, you can't directly pattern match and construct
 fields.  To allow for directly pattern matching, there's another interface
-involving the "Higher-Kinded Data" techniques described in [this article][hkd].
+option involving the "Higher-Kinded Data" techniques described in [this
+article][hkd].
 
 [hkd]: http://reasonablypolymorphic.com/blog/higher-kinded-data/
 
@@ -311,7 +315,7 @@ Combining BVars
 
 The following techniques can be used to "combine" `BVar`s:
 
-### Containers
+### Foldable Containers
 
 The "opposite" of `sequenceVar` is `collectVar`, which takes a foldable
 container of `BVar`s and returns a `BVar` containing that foldable container of
@@ -323,7 +327,7 @@ collectVar :: (Backprop a, Foldable t, Functor t, Reifies s W)
            -> BVar s (t a)
 ```
 
-### Constructors 
+### Constructors
 
 Sometimes you would like to combine a bunch of `BVar`s into a `BVar` of
 specific container or data type.
@@ -387,6 +391,11 @@ or
 setVar nWeights2 :: BVar s (L 20 5) -> BVar s Net -> BVar s Net
 ```
 
+### Tuples
+
+The `T2` and `T3` patterns can also be used to turn, say, a `BVar s a` and
+`BVar s b` into a `BVar s (a, b)`, for convenience.
+
 Prelude Modules
 ---------------
 
@@ -394,5 +403,5 @@ Finally, the *Prelude.Backprop* module has a lot of your normal Prelude
 functions "lifted" to work on `BVar`s of values.  For many situations, these
 aren't necessary, and normal Prelude functions will work just fine on `BVar`s
 of values (like `(.)`).  However, it does have some convenient functions, like
-`minimum`, `fmap`, `toList`, `fromIntegral`, `realToFrac`, etc. lifted to work
-on `BVar`s.  This module is meant to be imported qualified.
+`minimum`, `foldl'`, `fmap`, `toList`, `fromIntegral`, `realToFrac`, etc.
+lifted to work on `BVar`s.  This module is meant to be imported qualified.
