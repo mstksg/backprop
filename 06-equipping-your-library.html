@@ -726,18 +726,18 @@ element.</p>
 \frac{dz}{db}, \frac{dz}{dc} \rangle\).</p></li>
 <li><p><em>Work out each component of the gradient until you start to notice a
 pattern</em></p>
-<p>Let&#39;s start with \(\frac{dz}{da}\). We need to find \(\frac{dz}{da}\) in terms
-of \(\frac{dz}{dy}\):</p>
+<p>Let&#39;s start with \(\frac{dz}{da}\). We need to find \(\frac{dz}{da}\)
+in terms of \(\frac{dz}{dy}\):</p>
 <ul>
 <li>Through the chain rule, \(\frac{dz}{da} = \frac{dz}{dy} \frac{dy}{da}\).</li>
 <li>Because \(y = a + b + c\), we know that \(\frac{dy}{da} = 1\).</li>
 <li>Because \(\frac{dy}{da} = 1\), we know that \(\frac{dz}{da} =
 \frac{dz}{dy} \times 1 = \frac{dz}{dy}\).</li>
 </ul>
-<p>So, our expression of \(\frac{dz}{da}\) in terms of \(\frac{dz}{dy}\) is simple
--- it&#39;s simply \(\frac{dz}{da} = \frac{dz}{dy}\).</p>
-<p>Now, let&#39;s look at \(\frac{dz}{db}\). We need to find \(\frac{dz}{db} in
-terms of \(\frac{dz}{dy}\).</p>
+<p>So, our expression of \(\frac{dz}{da}\) in terms of \(\frac{dz}{dy}\)
+is simple -- it&#39;s simply \(\frac{dz}{da} = \frac{dz}{dy}\).</p>
+<p>Now, let&#39;s look at \(\frac{dz}{db}\). We need to find
+\(\frac{dz}{db}\) in terms of \(\frac{dz}{dy}\).</p>
 <ul>
 <li>Through the chain rule, \(\frac{dz}{db} = \frac{dz}{dy} \frac{dy}{db}\).</li>
 <li>Because \(y = a + b + c\), we know that \(\frac{dy}{db} = 1\).</li>
@@ -748,8 +748,8 @@ terms of \(\frac{dz}{dy}\).</p>
 <p>At this point, we start to notice a pattern. We can apply the same logic
 to see that \(\frac{dz}{dc} = \frac{dz}{dy}\).</p></li>
 <li><p><em>Write out the pattern</em></p>
-<p>Extrapolating the pattern, \(\frac{dz}{dq}\), where \(q\) is <em>any</em> component,
-is always going to be a constant -- \(\frac{dz}dy}\).</p></li>
+<p>Extrapolating the pattern, \(\frac{dz}{dq}\), where \(q\) is <em>any</em>
+component, is always going to be a constant -- \(\frac{dz}{dy}\).</p></li>
 </ol>
 <p>So in the end:</p>
 <pre class="haskell"><code>liftedSumElements
