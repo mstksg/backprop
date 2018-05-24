@@ -1,4 +1,4 @@
-<head><title>backprop - Home</title><link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans|Montserrat:500" rel="stylesheet"><link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/tomorrow-night.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css" rel="stylesheet"><link href="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/favicon-red.ico" rel="shortcut icon"><style>
+<head><title>backprop - The Backprop Typeclass</title><link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans|Montserrat:500" rel="stylesheet"><link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/tomorrow-night.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css" rel="stylesheet"><link href="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/favicon-red.ico" rel="shortcut icon"><style>
 html
 {
   height     : 100%;
@@ -572,15 +572,67 @@ footer
 
 }
 
-/* Generated with Clay, http://fvisser.nl/clay */</style></head><body class="tintin-fg-black tintin-bg-white"><div class="tintin-navigation tintin-bg-red"><div class="cover-container d-flex p-3 mx-auto flex-column tintin-fg-white"><main role="main" class="masthead mb-auto"><div class="container"><div class="row align-items-center"><div id="header-container" class="col"><h1 class="cover-heading">backprop</h1><p class="cover-heading-subtitle">Heterogeneous automatic differentation (backpropagation)</p></div></div></div></main></div><nav style="width: 100%;" class="tintin-navbar"><div class="container d-flex align-items-center"><div class="mr-auto"><ul class="left-part"><li class="tintin-navbar-active"><a href="index.html" class>Home</a></li><li class><a href="01-getting-started.html" class>Docs</a></li></ul></div><div class><ul class><li class><a href="https://github.com/mstksg/backprop" class>View on GitHub</a></li></ul></div></div></nav></div><section id="content" class="animated fadeIn"><div class="container"><div class="content"><div><h1>Backprop</h1>
-<p>Automatic <em>heterogeneous</em> back-propagation.</p>
-<p>Write your functions to compute your result, and the library will automatically
-generate functions to compute your gradient. Useful for applications in
-<em>differential programming</em> and deep learning.</p>
-<p>Differs from <a href="http://hackage.haskell.org/package/ad">ad</a> by offering full heterogeneity -- each intermediate step
-and the resulting value can have different types. Mostly intended for usage
-with gradient descent and other numeric optimization techniques. Comparable to
-the python library <a href="https://github.com/HIPS/autograd">autograd</a>.</p>
-<p>Be sure to check out <a href="http://hackage.haskell.org/package/backprop">documentation on hackage</a>. Support is also
-available on the <a href="https://gitter.im/haskell-backprop/Lobby">gitter channel</a>!</p>
-</div></div></div></section><footer class="tintin-bg-darkgrey tintin-fg-white"><div class="container"><div class="row"><div class="col"><p class="tintin-fg-lightgrey">Developed by <a href="https://github.com/mstksg" class="tintin-fg-red">mstksg</a></p></div><div style class="col"><div class="float-right"><div style="float: left" class="d-inline"><p class>Site generated with </p></div><a style="float: left" href="https://theam.github.io/tintin"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/logo.svg" class="filter-gray"></a><div class="clear-fix float-right"><span style="float:left">&mdash; &copy; 2018 </span><a href="http://theam.io" class="float:left"><img src="http://theam.io/logo_theam.png" class="footer-theam"></a></div></div></div></div></div></footer><script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script><script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/haskell.min.js"></script><script src="https://cdn.rawgit.com/icons8/bower-webicon/v0.10.7/jquery-webicon.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script>$(function () {$("#menu-toggle").click(function(e) {e.preventDefault();$("#wrapper").toggleClass("toggled");$("#menu-toggle img").toggleClass("rotateIn rotateOut");})});</script></body>
+/* Generated with Clay, http://fvisser.nl/clay */</style></head><body class="h-100 tintin-fg-black tintin-bg-white"><div id="main-container" class="h-100"><section id="content"><div id="wrapper" class="toggled"><div id="sidebar-wrapper" class="h-100 tintin-bg-red"><div class="h-100 tintin-bg-70"><p></p></div><ul class="sidebar-nav"><li class="sidebar-brand d-flex tintin-bg-red"><a href="index.html" class="align-self-center tintin-fg-white">backprop</a></li><li><a href="01-getting-started.html" class="tintin-fg-disabled">Getting Started</a></li><li><a href="02-a-detailed-look.html" class="tintin-fg-disabled">A Detailed Look</a></li><li><a href="03-manipulating-bvars.html" class="tintin-fg-disabled">Manipulating BVars</a></li><li><a href="04-the-backprop-typeclass.html" class="tintin-fg-active">The Backprop Typeclass</a></li><li><a href="05-applications.html" class="tintin-fg-disabled">Applications and Resources</a></li><li><a href="06-equipping-your-library.html" class="tintin-fg-disabled">Equipping your Library</a></li></ul></div><nav class="navbar navbar-expand-lg tintin-doc-topbar tintin-fg-white"><a href="#menu-toggle" id="menu-toggle" class><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/menu.png" class="img-fluid animated rotateOut"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/close.png" class="img-fluid animated rotateIn"></a></nav><div id="page-content-wrapper"><div class="container"><div class="col"><div class="animated fadeIn"><h1>The Backprop Typeclass</h1>
+<p>Most of the functions in this module require a <code>Backprop</code> constraint on values
+you wish to backpropagate. Even if you manage to get around it for the most
+part, <code>gradBP</code> (the actual function to compute gradients) requires it on both
+the inputs and outputs. Let&#39;s dig deeper into what it is, and how to define
+instances.</p>
+<h2>The Class</h2>
+<p>The typeclass contains three methods: <code>zero</code>, <code>add</code>, and <code>one</code>:</p>
+<pre class="haskell"><code>class Backprop a where
+    zero :: a -&gt; a
+    add  :: a -&gt; a -&gt; a
+    one  :: a -&gt; a
+</code></pre>
+<p><code>zero</code> is &quot;zero&quot; in the verb sense -- it takes a value and &quot;zeroes out&quot; all
+components. For a vector, this means returning a zero vector of the same
+shape. For a list, this means replacing all of the items with zero and
+returning a list of the same length. <code>one</code> does the same thing but with one.
+<code>add</code> is used to add together contributions in gradients, and is usually a
+component-wise addition.</p>
+<p>Instances are provided for most common data types where it makes sense.</p>
+<h2>Custom Instances</h2>
+<h3>Generics</h3>
+<p>When defining your own custom types, if your custom type is has <em>a single
+constructor</em> where all fields are instances of <code>Backprop</code>, then <em>GHC.Generics</em>
+can be used to write your instances automatically:</p>
+<pre class="haskell"><code>data MyType = MkMyType Double [Float] (R 10) (L 20 10) (V.Vector Double)
+  deriving Generic
+</code></pre>
+<p>Nice type. Since it has a single constructor and all of its fields are already
+<code>Backprop</code> instances, we can just write:</p>
+<pre class="haskell"><code>instance Backprop MyType
+</code></pre>
+<p>and now your type can be backpropagated!</p>
+<h3>Common Patterns</h3>
+<p>For writing &quot;primitive&quot; <code>Backprop</code> instances (types that aren&#39;t product types),
+you can use the provided &quot;helpers&quot; from the <em>Numeric.Backprop.Class</em> module.</p>
+<p>If your type is a <code>Num</code> instance, you can use <code>zeroNum</code>, <code>addNum</code>, and
+<code>oneNum</code>:</p>
+<pre class="haskell"><code>instance Backprop Double where
+    zero = zeroNum
+    add  = addNum
+    one  = oneNum
+</code></pre>
+<p>If your type is made using a <code>Functor</code> instance, you can use <code>zeroFunctor</code> and
+<code>oneFunctor</code>:</p>
+<pre class="haskell"><code>instance Backprop a =&gt; Backprop (V.Vector a) where
+    zero = zeroFunctor
+    add  = undefined        -- ??
+    one  = oneFunctor
+</code></pre>
+<p>And if your type has an <code>IsList</code> instance, you can use <code>addIsList</code>:</p>
+<pre class="haskell"><code>instance Backprop a =&gt; Backprop (V.Vector a) where
+    zero = zeroFunctor
+    add  = addIsList
+    one  = oneFunctor
+</code></pre>
+<h3>Completely Custom</h3>
+<p>Completely custom instances are also possible; you just need to implement
+<code>zero</code>, <code>add</code>, and <code>one</code> as they make sense for your type. Just make sure that
+you obey <a href="http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Class.html">the laws</a> for sane behavior!</p>
+<h1>Moving On</h1>
+<p>At this point, feel free to <a href="https://hackage.haskell.org/package/backprop">jump into the haddocks</a>, or read on
+further for <a href="https://backprop.jle.im/05-applications.html">a list of applications and resources</a>.</p>
+</div></div></div></div></div></section><div class="tintin-doc-footer clear-fix"><div class="float-right"><div style="float: left" class="d-inline"><p class>Site generated with </p></div><a style="float: left" href="https://theam.github.io/tintin"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/logo.svg" class="filter-gray"></a><div class="clear-fix float-right"><span style="float:left">&mdash; &copy; 2018 </span><a href="http://theam.io" class="float:left"><img src="http://theam.io/logo_theam.png" class="footer-theam"></a></div></div></div></div><script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script><script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/haskell.min.js"></script><script src="https://cdn.rawgit.com/icons8/bower-webicon/v0.10.7/jquery-webicon.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script>$(function () {$("#menu-toggle").click(function(e) {e.preventDefault();$("#wrapper").toggleClass("toggled");$("#menu-toggle img").toggleClass("rotateIn rotateOut");})});</script></body>
