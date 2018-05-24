@@ -167,18 +167,18 @@ entail, with rendered math and examples.
 [op]: http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Op.html
 
 The second function requires some elaboration.  Let's say you are writing a
-lifted version of your function $y = f(x)$ (whose derivative is
-$\frac{dy}{dx}$), and that your *final result* at the end of your computation
-is $z = g(f(x))$ (whose derivative is $\frac{dz}{dx}$).  In that case, because of the
-chain rule, $\frac{dz}{dx} = \frac{dz}{dy} \frac{dy}{dx}$.
+lifted version of your function \\(y = f(x)\\) (whose derivative is
+\\(\frac{dy}{dx}\\)), and that your *final result* at the end of your computation
+is \\(z = g(f(x))\\) (whose derivative is \\(\frac{dz}{dx}\\)).  In that case, because of the
+chain rule, \\(\frac{dz}{dx} = \frac{dz}{dy} \frac{dy}{dx}\\).
 
-The scaled gradient is the function which, *given* $\frac{dy}{dz}$, *returns*
-$\frac{dz}{dx}$. (that is, returns $\frac{dz}{dy} \frac{dy}{dx}$).
+The scaled gradient is the function which, *given* \\(\frac{dy}{dz}\\), *returns*
+\\(\frac{dz}{dx}\\). (that is, returns \\(\frac{dz}{dy} \frac{dy}{dx}\\)).
 
-For example, for the mathematical operation $y = f(x) = x^2$, then, considering
-$z = g(f(x))$, $\frac{dz}{dx} = \frac{dz}{dy} 2x$.
+For example, for the mathematical operation \\(y = f(x) = x^2\\), then, considering
+\\(z = g(f(x))\\), \\(\frac{dz}{dx} = \frac{dz}{dy} 2x\\).
 In fact, for all functions taking and returning scalars (just normal single
-numbers), $\frac{dz}{dx} = \frac{dz}{dy} f'(x)$.
+numbers), \\(\frac{dz}{dx} = \frac{dz}{dy} f'(x)\\).
 
 With that in mind, let's write our "squared" op:
 
@@ -192,8 +192,8 @@ square = liftOp1 . op1 $ \x ->
 --    ^- actual result   ^- scaled gradient function
 ```
 
-Keeping along the same pattern, for $y = f(x) = \sin(x)$, then, considering $z
-= g(f(x))$, $\frac{dz}{dx} = \frac{dz}{dy} \cos(x)$.  So, we have:
+Keeping along the same pattern, for \\(y = f(x) = \sin(x)\\), then, considering \\(z
+= g(f(x))\\), \\(\frac{dz}{dx} = \frac{dz}{dy} \cos(x)\\).  So, we have:
 
 ```haskell top
 liftedSin
@@ -225,7 +225,7 @@ source of Op.hs][opsource] for the `Op` definitions for every method in `Num`,
 
 A simple non-trivial example is `sumElements`, which we can define to take the
 *hmatrix* library's `R n` type (an n-vector of `Double`).  In this case, we
-have to think about $g(\mathrm{sum}(\mathbf{x}))$.  In this case, the types
+have to think about \\(g(\mathrm{sum}(\mathbf{x}))\\).  In this case, the types
 guide our thinking:
 
 ```haskell
@@ -240,45 +240,45 @@ element.
 
     In our case:
 
-    *   $y = f(\langle a, b, c \rangle) = a + b + c
-    *   $z = g(y) = g(a + b + c)$
+    *   \\(y = f(\langle a, b, c \rangle) = a + b + c\\)
+    *   \\(z = g(y) = g(a + b + c)\\)
 
 2.  *Identify the components in your gradient*
 
-    In our case, we have to return a gradient $\langle \frac{dz}{da},
-    \frac{dz}{db}, \frac{dz}{dc} \rangle$.
+    In our case, we have to return a gradient \\(\langle \frac{dz}{da},
+    \frac{dz}{db}, \frac{dz}{dc} \rangle\\).
 
 3.  *Work out each component of the gradient until you start to notice a
     pattern*
 
-    Let's start with $\frac{dz}{da}$.  We need to find $\frac{dz}{da}$ in terms
-    of $\frac{dz}{dy}$:
+    Let's start with \\(\frac{dz}{da}\\).  We need to find \\(\frac{dz}{da}\\)
+    in terms of \\(\frac{dz}{dy}\\):
 
-    *   Through the chain rule, $\frac{dz}{da} = \frac{dz}{dy} \frac{dy}{da}$.
-    *   Because $y = a + b + c$, we know that $\frac{dy}{da} = 1$.
-    *   Because $\frac{dy}{da} = 1$, we know that $\frac{dz}{da} =
-        \frac{dz}{dy} \times 1 = \frac{dz}{dy}$.
+    *   Through the chain rule, \\(\frac{dz}{da} = \frac{dz}{dy} \frac{dy}{da}\\).
+    *   Because \\(y = a + b + c\\), we know that \\(\frac{dy}{da} = 1\\).
+    *   Because \\(\frac{dy}{da} = 1\\), we know that \\(\frac{dz}{da} =
+        \frac{dz}{dy} \times 1 = \frac{dz}{dy}\\).
 
-    So, our expression of $\frac{dz}{da}$ in terms of $\frac{dz}{dy}$ is simple
-    -- it's simply $\frac{dz}{da} = \frac{dz}{dy}$.
+    So, our expression of \\(\frac{dz}{da}\\) in terms of \\(\frac{dz}{dy}\\)
+    is simple -- it's simply \\(\frac{dz}{da} = \frac{dz}{dy}\\).
 
-    Now, let's look at $\frac{dz}{db}$.  We need to find $\frac{dz}{db} in
-    terms of $\frac{dz}{dy}$.
+    Now, let's look at \\(\frac{dz}{db}\\).  We need to find
+    \\(\frac{dz}{db}\\) in terms of \\(\frac{dz}{dy}\\).
 
-    *   Through the chain rule, $\frac{dz}{db} = \frac{dz}{dy} \frac{dy}{db}$.
-    *   Because $y = a + b + c$, we know that $\frac{dy}{db} = 1$.
-    *   Because $\frac{dy}{db} = 1$, we know that $\frac{dz}{db} =
-        \frac{dz}{dy} \times 1 = \frac{dz}{db}$.
+    *   Through the chain rule, \\(\frac{dz}{db} = \frac{dz}{dy} \frac{dy}{db}\\).
+    *   Because \\(y = a + b + c\\), we know that \\(\frac{dy}{db} = 1\\).
+    *   Because \\(\frac{dy}{db} = 1\\), we know that \\(\frac{dz}{db} =
+        \frac{dz}{dy} \times 1 = \frac{dz}{db}\\).
 
-    It looks like $\frac{dz}{db} = \frac{dz}{dy}$, as well.
+    It looks like \\(\frac{dz}{db} = \frac{dz}{dy}\\), as well.
 
     At this point, we start to notice a pattern.  We can apply the same logic
-    to see that $\frac{dz}{dc} = \frac{dz}{dy}$.
+    to see that \\(\frac{dz}{dc} = \frac{dz}{dy}\\).
 
 4.  *Write out the pattern*
 
-    Extrapolating the pattern, $\frac{dz}{dq}$, where $q$ is *any* component,
-    is always going to be a constant -- $\frac{dz}dy}$.
+    Extrapolating the pattern, \\(\frac{dz}{dq}\\), where \\(q\\) is *any*
+    component, is always going to be a constant -- \\(\frac{dz}{dy}\\).
 
 So in the end:
 
@@ -316,24 +316,24 @@ A `BVar s a -> BVar s b -> BVar s c` encodes two things:
 1.  The actual `a -> b -> c`
 2.  The scaled gradient, `a -> b -> c -> (a, b)`.
 
-The `c` parameter of the scaled gradient is again $\frac{dz}{dy}$, and the
-final `(a,b)` is a tuple of $\frac{dz}{dx_1}$ and $\frac{dz}{dx_2}$: how
-$\frac{dz}{dy}$ affects both of the inputs.
+The `c` parameter of the scaled gradient is again \\(\frac{dz}{dy}\\), and the
+final `(a,b)` is a tuple of \\(\frac{dz}{dx_1}\\) and \\(\frac{dz}{dx_2}\\): how
+\\(\frac{dz}{dy}\\) affects both of the inputs.
 
-For a simple example, let's look at $x + y$.  Working it out:
+For a simple example, let's look at \\(x + y\\).  Working it out:
 
-*   $y = f(x_1, x_2) = x_1 + x_2$
-*   $z = g(f(x_1, x_2)) = g(x_1 + x_2)$
-*   Looking first for $\frac{dz}{dx_1}$ in terms of $\frac{dz}{dy}$:
-    *   $\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}$ (chain rule)
-    *   From $y = x_1 + x_2$, we see that $\frac{dy}{dx_1} = 1$
-    *   Therefore, $\frac{dz}{dx_1} = \frac{dz}{dy} \times 1 = \frac{dz}{dy}$.
-*   Looking second for $\frac{dz}{dx_2}$ in terms of $\frac{dz}{dy}$:
-    *   $\frac{dz}{dx_2} = \frac{dz}{dy} \frac{dy}{dx_2}$ (chain rule)
-    *   From $y = x_1 + x_2$, we see that $\frac{dy}{dx_2} = 1$
-    *   Therefore, $\frac{dz}{dx_2} = \frac{dz}{dy} \times 1 = \frac{dz}{dy}$.
-*   Therefore, $\frac{dz}{dx_1} = \frac{dz}{dy}$, and also $\frac{dz}{dx_2} =
-    \frac{dz}{dy}$.
+*   \\(y = f(x_1, x_2) = x_1 + x_2\\)
+*   \\(z = g(f(x_1, x_2)) = g(x_1 + x_2)\\)
+*   Looking first for \\(\frac{dz}{dx_1}\\) in terms of \\(\frac{dz}{dy}\\):
+    *   \\(\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}\\) (chain rule)
+    *   From \\(y = x_1 + x_2\\), we see that \\(\frac{dy}{dx_1} = 1\\)
+    *   Therefore, \\(\frac{dz}{dx_1} = \frac{dz}{dy} \times 1 = \frac{dz}{dy}\\).
+*   Looking second for \\(\frac{dz}{dx_2}\\) in terms of \\(\frac{dz}{dy}\\):
+    *   \\(\frac{dz}{dx_2} = \frac{dz}{dy} \frac{dy}{dx_2}\\) (chain rule)
+    *   From \\(y = x_1 + x_2\\), we see that \\(\frac{dy}{dx_2} = 1\\)
+    *   Therefore, \\(\frac{dz}{dx_2} = \frac{dz}{dy} \times 1 = \frac{dz}{dy}\\).
+*   Therefore, \\(\frac{dz}{dx_1} = \frac{dz}{dy}\\), and also \\(\frac{dz}{dx_2} =
+    \frac{dz}{dy}\\).
 
 Putting it into code:
 
@@ -346,20 +346,20 @@ add = liftOp2 . op2 $ \x1 x2 ->
     ( x1 + x2, \dzdy -> (dzdy, dzdy) )
 ```
 
-Let's try our hand at multiplication, or $x * y$:
+Let's try our hand at multiplication, or \\(x * y\\):
 
-*   $y = f(x_1, x_2) = x_1 x_2$
-*   $z = g(f(x_1, x_2)) = g(x_1 x_2)$
-*   Looking first for $\frac{dz}{dx_1}$ in terms of $\frac{dz}{dy}$:
-    *   $\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}$ (chain rule)
-    *   From $y = x_1 x_2$, we see that $\frac{dy}{dx_1} = x_2$
-    *   Therefore, $\frac{dz}{dx_1} = \frac{dz}{dy} x_2$.
-*   Looking second for $\frac{dz}{dx_2}$ in terms of $\frac{dz}{dy}$:
-    *   $\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}$ (chain rule)
-    *   From $y = x_1 x_2$, we see that $\frac{dy}{dx_2} = x_1$
-    *   Therefore, $\frac{dz}{dx_2} = \frac{dz}{dy} x_1$.
-*   Therefore, $\frac{dz}{dx_1} = \frac{dz}{dy} x_2$, and $\frac{dz}{dx_2} =
-    x_1 \frac{dz}{dy}$.
+*   \\(y = f(x_1, x_2) = x_1 x_2\\)
+*   \\(z = g(f(x_1, x_2)) = g(x_1 x_2)\\)
+*   Looking first for \\(\frac{dz}{dx_1}\\) in terms of \\(\frac{dz}{dy}\\):
+    *   \\(\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}\\) (chain rule)
+    *   From \\(y = x_1 x_2\\), we see that \\(\frac{dy}{dx_1} = x_2\\)
+    *   Therefore, \\(\frac{dz}{dx_1} = \frac{dz}{dy} x_2\\).
+*   Looking second for \\(\frac{dz}{dx_2}\\) in terms of \\(\frac{dz}{dy}\\):
+    *   \\(\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}\\) (chain rule)
+    *   From \\(y = x_1 x_2\\), we see that \\(\frac{dy}{dx_2} = x_1\\)
+    *   Therefore, \\(\frac{dz}{dx_2} = \frac{dz}{dy} x_1\\).
+*   Therefore, \\(\frac{dz}{dx_1} = \frac{dz}{dy} x_2\\), and \\(\frac{dz}{dx_2} =
+    x_1 \frac{dz}{dy}\\).
 
 In code:
 
