@@ -268,7 +268,7 @@ element.
     *   Through the chain rule, \\(\frac{dz}{db} = \frac{dz}{dy} \frac{dy}{db}\\).
     *   Because \\(y = a + b + c\\), we know that \\(\frac{dy}{db} = 1\\).
     *   Because \\(\frac{dy}{db} = 1\\), we know that \\(\frac{dz}{db} =
-        \frac{dz}{dy} \times 1 = \frac{dz}{db}\\).
+        \frac{dz}{dy} \times 1 = \frac{dz}{dy}\\).
 
     It looks like \\(\frac{dz}{db} = \frac{dz}{dy}\\), as well.
 
