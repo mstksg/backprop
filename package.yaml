@@ -14,9 +14,10 @@ extra-source-files:
 - samples/*.lhs
 - renders/*.pdf
 - renders/*.md
+- doc/*
 
 # Metadata used when publishing your package
-synopsis:            Heterogeneous automatic differentation (backpropagation)
+synopsis:            Heterogeneous automatic differentation
 category:            Math
 
 # To avoid duplicated efforts in documentation and dealing with the
@@ -29,7 +30,7 @@ description: |
     Implements heterogeneous reverse-mode automatic differentiation, commonly
     known as "backpropagation".
 
-    See <https://github.com/mstksg/backprop#readme README.md>
+    See <https://backprop.jle.im> for official introduction and documentation.
 
 ghc-options:
 - -Wall

@@ -95,7 +95,7 @@ instance Backprop Double where
     one  = oneNum
 ```
 
-If your type has a `Functor` instance, you can use `zeroFunctor` and
+If your type is made using a `Functor` instance, you can use `zeroFunctor` and
 `oneFunctor`:
 
 ```haskell
@@ -121,3 +121,12 @@ Completely custom instances are also possible; you just need to implement
 you obey [the laws][laws] for sane behavior!
 
 [laws]: http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Class.html
+
+Moving On
+=========
+
+At this point, feel free to [jump into the haddocks][haddock], or read on
+further for [a list of applications and resources][applications].
+
+[haddock]: https://hackage.haskell.org/package/backprop
+[applications]: https://backprop.jle.im/05-applications.html

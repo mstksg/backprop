@@ -1,5 +1,5 @@
-backprop
-========
+[backprop][docs]
+================
 
 [![backprop on Hackage](https://img.shields.io/hackage/v/backprop.svg?maxAge=86400)](https://hackage.haskell.org/package/backprop)
 [![backprop on Stackage LTS 11](http://stackage.org/package/backprop/badge/lts-11)](http://stackage.org/lts-11/package/backprop)
@@ -9,9 +9,9 @@ backprop
 [![Join the chat at https://gitter.im/haskell-backprop/Lobby](https://badges.gitter.im/haskell-backprop/Lobby.svg)](https://gitter.im/haskell-backprop/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Beerpay](https://beerpay.io/mstksg/backprop/badge.svg?style=beer-square)](https://beerpay.io/mstksg/backprop)
 
-[**Introductory blog post**][blog]
+[**Documentation and Walkthrough**][docs]
 
-[blog]: https://blog.jle.im/entry/introducing-the-backprop-library.html
+[docs]: https://backprop.jle.im
 
 Automatic *heterogeneous* back-propagation.
 
@@ -19,25 +19,27 @@ Write your functions to compute your result, and the library will automatically
 generate functions to compute your gradient.
 
 Differs from [ad][] by offering full heterogeneity -- each intermediate step
-and the resulting value can have different types.  Mostly intended for usage
-with gradient descent and other numeric optimization techniques.  Comparable to
-the python library [autograd][].
+and the resulting value can have different types (matrices, vectors, scalars,
+lists, etc.).  Mostly intended for usage with gradient descent and other
+numeric optimization techniques.  Comparable to the python library
+[autograd][].
 
 [ad]: http://hackage.haskell.org/package/ad
 [autograd]: https://github.com/HIPS/autograd
 
-Currently up on [hackage][] (with 100% documentation coverage), but more
-up-to-date documentation is currently rendered [on github pages][docs]!  You
-can also find help or support on the [gitter channel][gitter].
+Currently up on [hackage][], with haddock documentation!  However, a proper
+library introduction and usage tutorial [is available here][docs].  See also my
+[introductory blog post][blog].  You can also find help or support on the
+[gitter channel][gitter].
 
 [hackage]: http://hackage.haskell.org/package/backprop
-[docs]: https://mstksg.github.io/backprop
+[blog]: https://blog.jle.im/entry/introducing-the-backprop-library.html
 [gitter]: https://gitter.im/haskell-backprop/Lobby
 
 If you want to provide *backprop* for users of your library, see this **[guide
 to equipping your library with backprop][library]**.
 
-[library]: https://github.com/mstksg/backprop/wiki/Equipping-your-Library-with-Backprop
+[library]: https://backprop.jle.im/06-equipping-your-library.html
 
 
 MNIST Digit Classifier Example
@@ -69,7 +71,8 @@ literate haskell][neural-lhs] and also [rendered as a PDF][neural-pdf].
 Brief example
 -------------
 
-(This is a really brief version of my [blog post][blog])
+(This is a really brief version of [the documentation walkthrough][docs] and my
+[blog post][blog])
 
 The quick example below describes the running of a neural network with one
 hidden layer to calculate its squared error with respect to target `targ`,
@@ -82,138 +85,88 @@ Let's make a data type to store our parameters, with convenient accessors using
 [lens]: http://hackage.haskell.org/package/lens
 
 ```haskell
-data Network i h o = Net { _weight1 :: L h i
-                         , _bias1   :: R h
-                         , _weight2 :: L o h
-                         , _bias2   :: R o
-                         }
+import Numeric.LinearAlgebra.Static.Backprop
+
+data Network = Net { _weight1 :: L 20 100
+                   , _bias1   :: R 20
+                   , _weight2 :: L  5  20
+                   , _bias2   :: R  5
+                   }
 
 makeLenses ''Network
 ```
 
-Normally, we might write code to "run" a neural network on an input like this:
+(`R n` is an n-length vector, `L m n` is an m-by-n matrix, etc., `#>` is
+matrix-vector multiplication)
+
+"Running" a network on an input vector might look like this:
 
 ```haskell
-neuralNet
-    :: R i
-    -> Network i h o
-    -> R h
-neuralNet x n = z
+runNet net x = z
   where
-    y = logistic $ (n ^. weight1) #> x + (n ^. bias1)
-    z = logistic $ (n ^. weight2) #> y + (n ^. bias2)
+    y = logistic $ (net ^^. weight1) #> x + (net ^^. bias1)
+    z = logistic $ (net ^^. weight2) #> y + (net ^^. bias2)
 
 logistic :: Floating a => a -> a
 logistic x = 1 / (1 + exp (-x))
 ```
-
-(`R i` is an i-length vector, `L h i` is an h-by-i matrix, etc., `#>` is
-matrix-vector multiplication, and `^.` is access to a field via lens.)
-
-When given an input vector and the network, we compute the result of the neural
-network ran on the input vector.
-
-We can write it, instead, using *backprop*:
-
-```haskell
-neuralNet
-    :: Reifies s W
-    => BVar s (R i)
-    -> BVar s (Network i h o)
-    -> BVar s (R o)
-neuralNet x n = z
-  where
-    y = logistic $ (n ^^. weight1) #> x + (n ^^. bias1)
-    z = logistic $ (n ^^. weight2) #> y + (n ^^. bias2)
-
-logistic :: Floating a => a -> a
-logistic x = 1 / (1 + exp (-x))
-```
-
-(`#>!` is a backprop-aware version of `#>`, and `^^.` is access to a field via
-lens in a `BVar`)
 
 And that's it!  `neuralNet` is now backpropagatable!
 
 We can "run" it using `evalBP`:
 
 ```haskell
-evalBP (neuralNet (constVar x)) :: Network i h o -> R o
-```
-
-And we can find the gradient using `gradBP`:
-
-```haskell
-gradBP (neuralNet (constVar x)) :: Network i h o -> Network i h o
+evalBP2 runNet :: Network -> R 100 -> R 5
 ```
 
 If we write a function to compute errors:
 
 ```haskell
-netError
-    :: Reifies s W
-    => BVar s (R i)
-    -> BVar s (R o)
-    -> BVar s (Network i h o)
-    -> BVar s Double
-netError x targ n = norm_2 (neuralNet x - t)
+squaredError target output = error `dot` error
+  where
+    error = target - output
 ```
 
-(`norm_2` is a backprop-aware euclidean norm)
+we can "test" our networks:
+
+```haskell
+netError target input net = squaredError (auto target)
+                                         (runNet net (auto input))
+```
+
+This can be run, again:
+
+```haskell
+evalBP (netError myTarget myVector) :: Network -> Network
+```
+
+Now, we just wrote a *normal function to compute the error of our network*.
+With the *backprop* library, we now also have a way to *compute the gradient*,
+as well!
+
+```haskell
+gradBP (netError myTarget myVector) :: Network -> Network
+```
 
 Now, we can perform gradient descent!
 
 ```haskell
 gradDescent
-    :: R i
-    -> R o
-    -> Network i h o
-    -> Network i h o
+    :: R 100
+    -> R 5
+    -> Network
+    -> Network
 gradDescent x targ n0 = n0 - 0.1 * gradient
   where
-    gradient = gradBP (netError (constVar x) (constVar targ)) n0
+    gradient = gradBP (netError targ x) n0
 ```
 
 Ta dah!  We were able to compute the gradient of our error function, just by
 only saying how to compute *the error itself*.
 
-For a more fleshed out example, see my [blog post][blog] and the [MNIST
-tutorial][mnist-lhs] (also [rendered as a pdf][mnist-pdf])
-
-Lens Access
------------
-
-A lot of the friction of dealing with `BVar s a`s instead of `a`s directly is
-alleviated with the lens interface.
-
-With a lens, you can "view" and "set" items inside a `BVar`, as if they were
-the actual values:
-
-```haskell
-(^.)  ::        a -> Lens' a b ->        b
-(^^.) :: BVar s a -> Lens' a b -> BVar s b
-
-(.~)  :: Lens' a b ->        b ->        a ->        a
-(.~~) :: Lens' a b -> BVar s b -> BVar s a -> BVar s a
-```
-
-And you can also extract multiple potential targets, as well, using
-`Traversal`s and `Prism`s:
-
-```haskell
--- | Actually takes a Traversal, to be more general.
--- Can be used to implement "pattern matching" on BVars
-(^?)  ::        a -> Prism' a b -> Maybe (       b)
-(^^?) :: BVar s a -> Prism' a b -> Maybe (BVar s b)
-
-(^..)  ::        a -> Traversal' a b -> [       b]
-(^^..) :: BVar s a -> Traversal' a b -> [BVar s b]
-```
-
-Note that the library itself has no *lens* dependency, using *[microlens][]*
-instead.
-
-[microlens]: http://hackage.haskell.org/package/microlens
+For a more fleshed out example, see [the documentaiton][docs], my [blog
+post][blog] and the [MNIST tutorial][mnist-lhs] (also [rendered as a
+pdf][mnist-pdf])
 
 Benchmarks
 ----------

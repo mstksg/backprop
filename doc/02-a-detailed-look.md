@@ -114,11 +114,14 @@ functions, so you can use all of your favorite higher order functions and
 combinators (like `(.)`, `map`, etc.).  And once you're done, use `gradBP` to
 compute that gradient.
 
-Backprop Typeclass
-------------------
-
 Note that `gradBP` requires a `Backprop` constraint on the input and output of
 your function.  `Backprop` is essentially the typeclass of values that can be
 "backpropagated".  For product types, this instance is automatically derivable.
 But writing your own custom instances for your own types is also fairly
 straightforward.  More on this later!
+
+The rest of the package really is just ways to manipulate `BVar s a`s as if
+they were just `a`s, to make everything as smooth as possible.  Let's move on
+to learning about [ways to manipulate BVars][bvars]!
+
+[bvars]: https://backprop.jle.im/03-manipulating-bvars.html

@@ -50,8 +50,8 @@
 -- reading the docs for 'BVar'.
 --
 -- If you are writing a library, see
--- <https://github.com/mstksg/backprop/wiki/Equipping-your-Library-with-Backprop>
--- for a guide for equipping your library with backpropatable operations.
+-- <https://backprop.jle.im/06-equipping-your-library.html> for a guide for
+-- equipping your library with backpropatable operations.
 --
 -- In the original version 0.1, this module required 'Num' instances for
 -- methods instead of 'Backprop' instances.  This interface is still

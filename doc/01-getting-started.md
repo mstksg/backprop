@@ -42,13 +42,13 @@ myFunc x = sqrt (x * 4)
 They can be run with `evalBP`:
 
 ```haskell eval
-evalBP myFunc 9 :: Double
+evalBP myFunc (9 :: Double)
 ```
 
 And...the twist?  You can also get the gradient of your functions!
 
 ```haskell eval
-gradBP myFunc 9 :: Double
+gradBP myFunc (9 :: Double)
 ```
 
 And that's the gist of the entire library: write your functions to compute your
@@ -198,7 +198,9 @@ gradBP (netError myTarget myVector) myNet
 ```
 
 We can now use the gradient to "[train][]" our network to give the correct
-responses given a certain input.
+responses given a certain input!  This can be done by computing the gradient
+for every expected input-output pair, and adjusting the network in the opposite
+direction of the gradient every time.
 
 [train]: https://blog.jle.im/entry/purely-functional-typed-models-1.html
 
@@ -217,3 +219,9 @@ In the case of optimizing models, you:
 2.  Use `gradBP` to automatically get the gradient of the thing you want to
     minimize with respect to your inputs.  Then, adjust your inputs according
     to this gradient until you get the perfect minimal result!
+
+Now that you've had a taste, let's [look at the details][details].  You can
+also just go ahead and [jump into the haddock documentation][]!
+
+[details]: https://backprop.jle.im/02-a-detailed-look.html
+[haddock]: https://hackage.haskell.org/package/backprop

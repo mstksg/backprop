@@ -34,6 +34,9 @@ seamlessly manipulate `BVar s a`s as if they were just `a`s, without requiring
 you as the user to be able to recognize or acknowledge the difference.  Here
 are some techniques to that end.
 
+Remember, a `BVar s a` is a `BVar` containing an `a` --- it's an `a` that, when
+used, keeps track of and propagates your gradient.
+
 Typeclass Interface
 -------------------
 
@@ -405,3 +408,12 @@ aren't necessary, and normal Prelude functions will work just fine on `BVar`s
 of values (like `(.)`).  However, it does have some convenient functions, like
 `minimum`, `foldl'`, `fmap`, `toList`, `fromIntegral`, `realToFrac`, etc.
 lifted to work on `BVar`s.  This module is meant to be imported qualified.
+
+Moving On
+=========
+
+Now that you know all about `BVar`s, you really can just [jump into the
+haddocks][haddock] and start writing programs.  The next section of this
+documentation is more details about [the `Backprop` typeclass][class].
+
+[class]: https://backprop.jle.im/04-the-backprop-typeclass.html
