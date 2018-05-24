@@ -6,23 +6,9 @@ A Detailed Look
 ===============
 
 ```haskell top hide
-{-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE DeriveGeneric    #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TemplateHaskell  #-}
-{-# LANGUAGE ViewPatterns     #-}
 
-
-import           GHC.Generics (Generic)
-import           GHC.TypeNats
-import           Inliterate.Import
-import           Lens.Micro
-import           Lens.Micro.TH
 import           Numeric.Backprop
-import           Numeric.Backprop.Class
-import           Numeric.LinearAlgebra.Static (L, R)
-import           System.Random
-import qualified Numeric.LinearAlgebra.Static as H
 ```
 
 So, what's really going on?
@@ -128,57 +114,11 @@ functions, so you can use all of your favorite higher order functions and
 combinators (like `(.)`, `map`, etc.).  And once you're done, use `gradBP` to
 compute that gradient.
 
-### Backprop Typeclass
+Backprop Typeclass
+------------------
 
 Note that `gradBP` requires a `Backprop` constraint on the input and output of
 your function.  `Backprop` is essentially the typeclass of values that can be
 "backpropagated".  For product types, this instance is automatically derivable.
 But writing your own custom instances for your own types is also fairly
-straightforward; more on this later!
-
-Manipulating BVars
-------------------
-
-That is the core of the library, from the perspective of the end user.  The
-rest of the library is essentially tools to allow you to seamlessly manipulate
-`BVar s a`s as if they were just `a`s.
-
-### Constant Values
-
-If we don't *care* about a value's gradient, we can use `auto`:
-
-```haskell
-auto :: a -> BVar s a
-```
-
-`auto x` basically gives you a `BVar` that contains just `x` alone.  Useful for
-using with functions that expect `BVar`s, but you just have a specific value
-you want to use.
-
-### Containers
-
-One that we saw earlier was `sequenceVar`, which we used to turn a `BVar`
-containing a list into a list of `BVar`s:
-
-```haskell
-sequenceVar :: (Backprop a, Reifies s W)
-            => BVar s [a]
-            -> [BVar s a]
-```
-
-If you have a `BVar` containing a list, you can get a list of `BVar`s of all of
-that list's elements.  (`sequenceVar` actually works on all `Traversable`
-instances, not just lists)  This is very useful when combined with
-`-XViewPatterns`, as seen earlier.
-
-Also convenient would be `collectVar`, which essentially does the opposite.
-
-```haskell
-collectVar :: (Backprop a, Reifies s W)
-           => [BVar s a]
-           -> BVar s [a]
-```
-
-### Records and Fields
-
-
+straightforward.  More on this later!

@@ -16,6 +16,7 @@ Version 0.2.3.0
     only for those using the *Explicit* interfaces.
 *   `BV` pattern synonym added to *Numeric.Backprop*, abstracting over
     application of `splitBV` and `joinBV`.
+*   `foldr` and `foldl'` added to Prelude modules, for convenience.
 
 Version 0.2.2.0
 ---------------

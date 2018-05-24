@@ -86,6 +86,8 @@ data Net = N { _nWeights1 :: L 20 100
              }
   deriving (Show, Generic)
 
+instance Backprop Net
+
 makeLenses ''Net
 ```
 
@@ -110,8 +112,6 @@ instance (KnownNat n, KnownNat m) => Backprop (L n m) where
     zero = zeroNum
     add  = addNum
     one  = oneNum
-
-instance Backprop Net
 
 (#>)
     :: (KnownNat n, KnownNat m, Reifies s W)

@@ -27,6 +27,7 @@ module Prelude.Backprop.Explicit (
   , toList
   , mapAccumL
   , mapAccumR
+  , foldr, foldl'
   -- * Functor and Applicative
   , fmap
   , pure
@@ -128,6 +129,30 @@ maximum af zf = liftOp1 af zf . op1 $ \xs ->
         , \d -> (\x -> if x == m then d else runZF zf x) P.<$> xs
         )
 {-# INLINE maximum #-}
+
+-- | 'Prelude.Backprop.foldr', but taking explicit 'add' and 'zero'.
+foldr
+    :: (Traversable t, Reifies s W)
+    => AddFunc a
+    -> ZeroFunc a
+    -> (BVar s a -> BVar s b -> BVar s b)
+    -> BVar s b
+    -> BVar s (t a)
+    -> BVar s b
+foldr af zf f x = P.foldr f x . toList af zf
+{-# INLINE foldr #-}
+
+-- | 'Prelude.Backprop.foldl'', but taking explicit 'add' and 'zero'.
+foldl'
+    :: (Traversable t, Reifies s W)
+    => AddFunc a
+    -> ZeroFunc a
+    -> (BVar s b -> BVar s a -> BVar s b)
+    -> BVar s b
+    -> BVar s (t a)
+    -> BVar s b
+foldl' af zf f x = P.foldl' f x . toList af zf
+{-# INLINE foldl' #-}
 
 -- | 'Prelude.Backprop.fmap', but taking explicit 'add' and 'zero'.
 --

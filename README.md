@@ -271,3 +271,7 @@ Todo
 
     b.  How to support "monadic" operations that depend on results of previous
         operations? (`ApBP` already exists for situations that don't)
+
+    c.  What needs to be done to allow us to automatically do second,
+        third-order differentiation, as well?  This might be useful for certain
+        ODE solvers which rely on second order gradients and hessians.

@@ -26,6 +26,7 @@ module Prelude.Backprop.Num (
   , toList
   , mapAccumL
   , mapAccumR
+  , foldr, foldl'
   -- * Functor and Applicative
   , fmap
   , (<$>)
@@ -96,6 +97,28 @@ maximum
     -> BVar s a
 maximum = E.maximum E.afNum E.zfNum
 {-# INLINE maximum #-}
+
+-- | 'Prelude.Backprop.foldr', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
+foldr
+    :: (Traversable t, Num a, Reifies s W)
+    => (BVar s a -> BVar s b -> BVar s b)
+    -> BVar s b
+    -> BVar s (t a)
+    -> BVar s b
+foldr = E.foldr E.afNum E.zfNum
+{-# INLINE foldr #-}
+
+-- | 'Prelude.Backprop.foldl'', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
+foldl'
+    :: (Traversable t, Num a, Reifies s W)
+    => (BVar s b -> BVar s a -> BVar s b)
+    -> BVar s b
+    -> BVar s (t a)
+    -> BVar s b
+foldl' = E.foldl' E.afNum E.zfNum
+{-# INLINE foldl' #-}
 
 -- | 'Prelude.Backprop.fmap', but with 'Num' constraints instead of
 -- 'Backprop' constraints.

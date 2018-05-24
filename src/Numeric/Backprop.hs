@@ -857,7 +857,7 @@ splitBV
 splitBV = E.splitBV E.addFunc E.addFuncs E.zeroFunc E.zeroFuncs
 {-# INLINE splitBV #-}
 
--- | Split out a 'BVar' of "higher-kinded data type", a la
+-- | Assemble a 'BVar' of "higher-kinded data type", a la
 -- <http://reasonablypolymorphic.com/blog/higher-kinded-data/>
 --
 -- It lets you take a 'BVar' of every field of a value, and join them into

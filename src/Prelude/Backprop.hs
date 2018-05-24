@@ -33,6 +33,7 @@ module Prelude.Backprop (
   , toList
   , mapAccumL
   , mapAccumR
+  , foldr, foldl'
   -- * Functor and Applicative
   , fmap
   , (<$>)
@@ -99,6 +100,32 @@ maximum
     -> BVar s a
 maximum = E.maximum E.addFunc E.zeroFunc
 {-# INLINE maximum #-}
+
+-- | Lifed 'P.foldr'.  Essentially just 'toList' composed with a normal
+-- list 'P.foldr', and is only here for convenience.
+--
+-- @since 0.2.3.0
+foldr
+    :: (Traversable t, Backprop a, Reifies s W)
+    => (BVar s a -> BVar s b -> BVar s b)
+    -> BVar s b
+    -> BVar s (t a)
+    -> BVar s b
+foldr = E.foldr E.addFunc E.zeroFunc
+{-# INLINE foldr #-}
+
+-- | Lifed 'P.foldl''.  Essentially just 'toList' composed with a normal
+-- list 'P.foldl'', and is only here for convenience.
+--
+-- @since 0.2.3.0
+foldl'
+    :: (Traversable t, Backprop a, Reifies s W)
+    => (BVar s b -> BVar s a -> BVar s b)
+    -> BVar s b
+    -> BVar s (t a)
+    -> BVar s b
+foldl' = E.foldl' E.addFunc E.zeroFunc
+{-# INLINE foldl' #-}
 
 -- | Lifted 'P.fmap'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Functor's.
