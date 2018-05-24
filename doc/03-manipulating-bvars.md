@@ -271,7 +271,7 @@ runMet (splitBV -> M w1 b1 w2 b2) x = z
 ```
 
 Now, the `M w1 b1 w2 b2` pattern can be used to deconstruct *both* "normal"
-`Met`s, as well as a `BVar s Met` (with `splitBV`).
+`Met`s, as well as a `BVar s Met` (with `splitBV` or `BV`).
 
 ### Potential or Many Fields
 
@@ -296,7 +296,7 @@ If you have a type that might contain *many* values of a field (like a tree or
 list), you can use `(^^..)` or `toListOfVar`, which works on any `Traversal`:
 
 ```haskell
-(^..)  ::        a -> Traversal' a b -> [b]
+(^..)  ::        a -> Traversal' a b -> [       b]
 (^^..) :: BVar s a -> Traversal' a b -> [BVar s b]
 ```
 
@@ -309,9 +309,12 @@ sequenceVar xs = xs ^^.. traverse
 
 ### Tuples
 
-The `T2` pattern is provided, which allow you to pattern match on a
+The `T2` pattern synonym is provided, which allow you to pattern match on a
 `BVar s (a, b)` to get a `BVar s a` and `BVar s b`.  The `T3` pattern is also
 provided, which does the same thing for three-tuples.
+
+Note that `T2` and `T2` are bidirectional pattern synonyms, and can be used to
+construct as well as deconstruct.
 
 Combining BVars
 ---------------
@@ -360,7 +363,10 @@ We can combine a `Double` and `Int` into a `DoubleInt` using `isoVar2`:
 
 ```haskell
 isoVar2 DI (\(DI x y) -> (x,y))
-    :: BVar s Double -> BVar s Int -> BVar s DoubleInt
+    :: Reifies s W
+    => BVar s Double
+    -> BVar s Int
+    -> BVar s DoubleInt
 ```
 
 #### Higher-Kinded Data Interface
@@ -391,13 +397,12 @@ myNet & nWeights2 .~~ newMatrix
 or
 
 ```haskell
-setVar nWeights2 :: BVar s (L 20 5) -> BVar s Net -> BVar s Net
+setVar nWeights2
+    :: Reifies s W
+    => BVar s (L 20 5)
+    -> BVar s Net
+    -> BVar s Net
 ```
-
-### Tuples
-
-The `T2` and `T3` patterns can also be used to turn, say, a `BVar s a` and
-`BVar s b` into a `BVar s (a, b)`, for convenience.
 
 Prelude Modules
 ---------------
