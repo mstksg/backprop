@@ -1,4 +1,4 @@
-<head><title>backprop - Equipping your Library</title><link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans|Montserrat:500" rel="stylesheet"><link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/tomorrow-night.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css" rel="stylesheet"><link href="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/favicon-darkorange.ico" rel="shortcut icon"><style>
+<!DOCTYPE HTML><html><head><title>backprop - Equipping your Library</title><link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans|Montserrat:500" rel="stylesheet"><link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/tomorrow-night.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css" rel="stylesheet"><link href="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/favicon-darkorange.ico" rel="shortcut icon"><link href="https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.css" rel="stylesheet"><style>
 html
 {
   height     : 100%;
@@ -594,7 +594,8 @@ your types.</p>
 <ol>
 <li><p>If your type is a type with a single constructor whose fields are all
 instances of <code>Backprop</code>, you can just write <code>instance Backprop MyType</code>, and
-the instance is generated automatically.</p></li>
+the instance is generated automatically (as long as your type has a
+<code>Generic</code> instance)</p></li>
 <li><p>If your type is an instance of <code>Num</code>, you can use <code>zeroNum</code>, <code>addNum</code>, and
 <code>oneNum</code> to get free definitions of the typeclass methods.</p>
 <pre class="haskell"><code>instance Backprop Double where
@@ -766,10 +767,10 @@ and <code>op2</code>, or <code>liftOpN</code> and <code>opN</code>.</p>
 <li>The actual <code>a -&gt; b -&gt; c</code></li>
 <li>The scaled gradient, <code>a -&gt; b -&gt; c -&gt; (a, b)</code>.</li>
 </ol>
-<p><code>c</code> is again $\frac{dz}{dy}$, and the final <code>(a,b)</code> is a tuple of
-$\frac{dz}{dx_1}$ and $\frac{dz}{dx_2}$: how $\frac{dz}{dy}$ affects both of the
-inputs.</p>
-<p>For a simple example, $x + y$. Working it out:</p>
+<p>The <code>c</code> parameter of the scaled gradient is again $\frac{dz}{dy}$, and the
+final <code>(a,b)</code> is a tuple of $\frac{dz}{dx_1}$ and $\frac{dz}{dx_2}$: how
+$\frac{dz}{dy}$ affects both of the inputs.</p>
+<p>For a simple example, let&#39;s look at $x + y$. Working it out:</p>
 <ul>
 <li>$y = f(x_1, x_2) = x_1 + x_2$</li>
 <li>$z = g(f(x_1, x_2)) = g(x_1 + x_2)$</li>
@@ -988,4 +989,4 @@ any actions are performed.</p>
 etc. to decide what operations to use.</p>
 <p>At the moment, this is not supported. Please open an issue if this becomes an
 issue!</p>
-</div></div></div></div></div></section><div class="tintin-doc-footer clear-fix"><div class="float-right"><div style="float: left" class="d-inline"><p class>Site generated with </p></div><a style="float: left" href="https://theam.github.io/tintin"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/logo.svg" class="filter-gray"></a><div class="clear-fix float-right"><span style="float:left">&mdash; &copy; 2018 </span><a href="http://theam.io" class="float:left"><img src="http://theam.io/logo_theam.png" class="footer-theam"></a></div></div></div></div><script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script><script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/haskell.min.js"></script><script src="https://cdn.rawgit.com/icons8/bower-webicon/v0.10.7/jquery-webicon.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script>$(function () {$("#menu-toggle").click(function(e) {e.preventDefault();$("#wrapper").toggleClass("toggled");$("#menu-toggle img").toggleClass("rotateIn rotateOut");})});</script></body>
+</div></div></div></div></div></section><div class="tintin-doc-footer clear-fix"><div class="float-right"><div style="float: left" class="d-inline"><p class>Site generated with </p></div><a style="float: left" href="https://theam.github.io/tintin"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/logo.svg" class="filter-gray"></a><div class="clear-fix float-right"><span style="float:left">&mdash; &copy; 2018 </span><a href="http://theam.io" class="float:left"><img src="http://theam.io/logo_theam.png" class="footer-theam"></a></div></div></div></div><script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script><script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/haskell.min.js"></script><script src="https://cdn.rawgit.com/icons8/bower-webicon/v0.10.7/jquery-webicon.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script>$(function () {$("#menu-toggle").click(function(e) {e.preventDefault();$("#wrapper").toggleClass("toggled");$("#menu-toggle img").toggleClass("rotateIn rotateOut");})});</script><script src="https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/contrib/auto-render.min.js"></script><script>renderMathInElement(document.body);</script></body></html>
