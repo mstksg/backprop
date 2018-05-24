@@ -621,18 +621,19 @@ gradRunner o R{..} (n,stns) = do
 {-# INLINE gradRunner #-}
 
 -- | 'Numeric.Backprop.backpropN', but with explicit 'zero' and 'one'.
+--
+-- Note that argument order changed in v0.2.3.
 backpropN
     :: forall as b. ()
     => Prod ZeroFunc as
-    -> OneFunc b
     -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
-    -> (b, Tuple as)
-backpropN zfs ofb f !xs = (y, g)
+    -> (b, OneFunc b -> Tuple as)
+backpropN zfs f !xs = (y, g)
   where
     !(!tp@(!_,!_),!y) = unsafePerformIO $ fillWengert f xs
-    g :: Tuple as
-    g = runST $ do
+    g :: OneFunc b -> Tuple as
+    g ofb = runST $ do
         r <- initRunner tp $ bimap getSum (`appEndo` [])
                            . fst
                            $ zipWithPM_ go zfs xs

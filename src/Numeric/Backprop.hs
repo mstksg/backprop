@@ -113,6 +113,7 @@ module Numeric.Backprop (
   , Reifies
   ) where
 
+import           Data.Bifunctor
 import           Data.Maybe
 import           Data.Reflection
 import           Data.Type.Index
@@ -197,20 +198,21 @@ backpropN
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> (b, Tuple as)
-backpropN = E.backpropN E.zeroFuncs E.oneFunc
+backpropN f = second ($ E.oneFunc) . E.backpropN E.zeroFuncs f
 {-# INLINE backpropN #-}
 
 -- | 'backpropN', but allows you to provide the gradient of the "final
 -- result" with respect to the output of your function.  See 'backpropWith'
 -- for more details.
+-- 
+-- Note that argument order changed in v0.2.3.
 --
 -- @since 0.2.0.0
 backpropWithN
     :: (Every Backprop as, Known Length as)
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
-    -> (b -> b)                 -- ^ Gradient of final result with respect to output of function
-    -> (b, Tuple as)
+    -> (b, (b -> b) -> Tuple as) -- ^ Takes function giving gradient of final result given the output of function
 backpropWithN = E.backpropWithN E.zeroFuncs
 {-# INLINE backpropWithN #-}
 
@@ -226,7 +228,7 @@ backprop
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> (b, a)
-backprop = E.backprop E.zeroFunc E.oneFunc
+backprop f = second ($ E.oneFunc) . E.backprop E.zeroFunc f
 {-# INLINE backprop #-}
 
 -- | A version of 'backprop' that allows you to specify the gradent of your
@@ -243,13 +245,14 @@ backprop = E.backprop E.zeroFunc E.oneFunc
 -- 'backprop' is essentially 'backpropWith' with @'const' 1@ for scalars
 -- and 'Num' instances.
 --
+-- Note that argument order changed in v0.2.3
+--
 -- @since 0.2.0.0
 backpropWith
     :: Backprop a
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
-    -> (b -> b)                 -- ^ Gradient of final result with respect to output of function
-    -> (b, a)
+    -> (b, (b -> b) -> a) -- ^ Takes function giving gradient of final result given the output of function
 backpropWith = E.backpropWith E.zeroFunc
 {-# INLINE backpropWith #-}
 
@@ -298,12 +301,14 @@ backprop2
     -> a
     -> b
     -> (c, (a, b))
-backprop2 = E.backprop2 E.zeroFunc E.zeroFunc E.oneFunc
+backprop2 f x = second ($ E.oneFunc) . E.backprop2 E.zeroFunc E.zeroFunc f x
 {-# INLINE backprop2 #-}
 
 -- | 'backprop2', but allows you to provide the gradient of the "final
 -- result" with respect to the output of your function.  See 'backpropWith'
 -- for more details.
+--
+-- Note that argument order changed in v0.2.3
 --
 -- @since 0.2.0.0
 backpropWith2
@@ -311,8 +316,7 @@ backpropWith2
     => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
     -> a
     -> b
-    -> (c -> c)                 -- ^ Gradient of final result with respect to output of function
-    -> (c, (a, b))
+    -> (c, (c -> c) -> (a, b)) -- ^ Takes function giving gradient of final result given the output of function
 backpropWith2 = E.backpropWith2 E.zeroFunc E.zeroFunc
 {-# INLINE backpropWith2 #-}
 

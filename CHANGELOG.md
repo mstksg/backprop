@@ -8,6 +8,12 @@ Version 0.2.3.0
 
 <https://github.com/mstksg/backprop/releases/tag/v0.2.3.0>
 
+*   Argument order in `backpropWith` family of functions switched around to
+    allow for final gradient to be given after-the-fact.  **Braking change**
+    for anyone using any `backpropWith` function.
+*   As a consequence of the previous change, `backprop` family of functions in
+    *Explicit* interfaces also all changed argument order.  **Breaking change**
+    only for those using the *Explicit* interfaces.
 *   Explicit `collectVar` no longer needs a `ZeroFunc` for the container, and
     so all versions of `collectVar` and functions that use it (`fmap`,
     `liftA2`, `liftA3`, `traverse`, `mapAccumL`, `mapAccumR`) no longer require

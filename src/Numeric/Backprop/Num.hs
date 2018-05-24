@@ -88,6 +88,7 @@ module Numeric.Backprop.Num (
   , Reifies
   ) where
 
+import           Data.Bifunctor
 import           Data.Maybe
 import           Data.Reflection
 import           Data.Type.Index
@@ -114,19 +115,22 @@ backpropN
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> (b, Tuple as)
-backpropN = E.backpropN E.zfNums E.ofNum
+backpropN f = second ($ E.ofNum) . E.backpropN E.zfNums f
 {-# INLINE backpropN #-}
 
 -- | 'Numeric.Backprop.backpropWithN', but with 'Num' constraints instead
 -- of 'Backprop' constraints.
 --
 -- See 'backpropN' for information on the 'Every' constraint.
+--
+-- Note that argument order changed in v0.2.3.
+--
+-- @since 0.2.0.0
 backpropWithN
     :: (Every Num as, Known Length as)
     => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
-    -> (b -> b)                 -- ^ Gradient of final result with respect to output of function
-    -> (b, Tuple as)
+    -> (b, (b -> b) -> Tuple as) -- ^ Takes function giving gradient of final result given the output of function
 backpropWithN = E.backpropWithN E.zfNums
 {-# INLINE backpropWithN #-}
 
@@ -140,7 +144,7 @@ backprop
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> (b, a)
-backprop = E.backprop E.zfNum E.ofNum
+backprop f = second ($ E.ofNum) . E.backprop E.zfNum f
 {-# INLINE backprop #-}
 
 -- | 'Numeric.Backprop.backpropWith', but with 'Num' constraints instead of
@@ -148,12 +152,15 @@ backprop = E.backprop E.zfNum E.ofNum
 --
 -- See module documentation for "Numeric.Backprop.Num" for information on
 -- using this with tuples.
+--
+-- Note that argument order changed in v0.2.3.
+--
+-- @since 0.2.0.0
 backpropWith
     :: Num a
     => (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
-    -> (b -> b)                 -- ^ Gradient of final result with respect to output of function
-    -> (b, a)
+    -> (b, (b -> b) -> a) -- ^ Takes function giving gradient of final result given the output of function
 backpropWith = E.backpropWith E.zfNum
 {-# INLINE backpropWith #-}
 
@@ -185,18 +192,21 @@ backprop2
     -> a
     -> b
     -> (c, (a, b))
-backprop2 = E.backprop2 E.zfNum E.zfNum E.ofNum
+backprop2 f x = second ($ E.ofNum) . E.backprop2 E.zfNum E.zfNum f x
 {-# INLINE backprop2 #-}
 
 -- | 'Numeric.Backprop.backpropWith2', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
+--
+-- Note that argument order changed in v0.2.3.
+--
+-- @since 0.2.0.0
 backpropWith2
     :: (Num a, Num b)
     => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
     -> a
     -> b
-    -> (c -> c)                 -- ^ Gradient of final result with respect to output of function
-    -> (c, (a, b))
+    -> (c, (c -> c) -> (a, b)) -- ^ Takes function giving gradient of final result given the output of function
 backpropWith2 = E.backpropWith2 E.zfNum E.zfNum
 {-# INLINE backpropWith2 #-}
 

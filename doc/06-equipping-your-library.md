@@ -61,7 +61,8 @@ In short:
 
 1.  If your type is a type with a single constructor whose fields are all
     instances of `Backprop`, you can just write `instance Backprop MyType`, and
-    the instance is generated automatically.
+    the instance is generated automatically (as long as your type has a
+    `Generic` instance)
 2.  If your type is an instance of `Num`, you can use `zeroNum`, `addNum`, and
     `oneNum` to get free definitions of the typeclass methods.
 
@@ -315,11 +316,11 @@ A `BVar s a -> BVar s b -> BVar s c` encodes two things:
 1.  The actual `a -> b -> c`
 2.  The scaled gradient, `a -> b -> c -> (a, b)`.
 
-`c` is again $\frac{dz}{dy}$, and the final `(a,b)` is a tuple of
-$\frac{dz}{dx_1}$ and $\frac{dz}{dx_2}$: how $\frac{dz}{dy}$ affects both of the
-inputs.
+The `c` parameter of the scaled gradient is again $\frac{dz}{dy}$, and the
+final `(a,b)` is a tuple of $\frac{dz}{dx_1}$ and $\frac{dz}{dx_2}$: how
+$\frac{dz}{dy}$ affects both of the inputs.
 
-For a simple example, $x + y$.  Working it out:
+For a simple example, let's look at $x + y$.  Working it out:
 
 *   $y = f(x_1, x_2) = x_1 + x_2$
 *   $z = g(f(x_1, x_2)) = g(x_1 + x_2)$
