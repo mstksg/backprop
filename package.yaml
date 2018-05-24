@@ -1,6 +1,7 @@
 name:                backprop
 version:             0.2.3.0
 github:              mstksg/backprop
+homepage:            https://backprop.jle.im
 license:             BSD3
 author:              Justin Le
 maintainer:          justin@jle.im
