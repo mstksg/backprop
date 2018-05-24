@@ -722,34 +722,43 @@ element.</p>
 <li>\(z = g(y) = g(a + b + c)\)</li>
 </ul></li>
 <li><p><em>Identify the components in your gradient</em></p>
-<p>In our case, we have to return a gradient \(\langle \frac{dz}{da},
-\frac{dz}{db}, \frac{dz}{dc} \rangle\).</p></li>
+<p>In our case, we have to return a gradient \(\langle \frac{\partial z}{\partial a},
+\frac{\partial z}{\partial b}, \frac{\partial z}{\partial c} \rangle\).</p></li>
 <li><p><em>Work out each component of the gradient until you start to notice a
 pattern</em></p>
-<p>Let&#39;s start with \(\frac{dz}{da}\). We need to find \(\frac{dz}{da}\)
-in terms of \(\frac{dz}{dy}\):</p>
+<p>Let&#39;s start with \(\frac{\partial z}{\partial a}\). We need to find
+\(\frac{\partial z}{\partial a}\) in terms of \(\frac{dz}{dy}\):</p>
 <ul>
-<li>Through the chain rule, \(\frac{dz}{da} = \frac{dz}{dy} \frac{dy}{da}\).</li>
-<li>Because \(y = a + b + c\), we know that \(\frac{dy}{da} = 1\).</li>
-<li>Because \(\frac{dy}{da} = 1\), we know that \(\frac{dz}{da} =
-\frac{dz}{dy} \times 1 = \frac{dz}{dy}\).</li>
+<li>Through the chain rule, \(\frac{\partial z}{\partial a} =
+\frac{dz}{dy} \frac{\partial y}{\partial a}\).</li>
+<li>Because \(y = a + b + c\), we know that \(\frac{\partial y}{\partial
+a} = 1\).</li>
+<li>Because \(\frac{\partial y}{\partial a} = 1\), we know that
+\(\frac{\partial z}{\partial a} = \frac{dz}{dy} \times 1 =
+\frac{dz}{dy}\).</li>
 </ul>
-<p>So, our expression of \(\frac{dz}{da}\) in terms of \(\frac{dz}{dy}\)
-is simple -- it&#39;s simply \(\frac{dz}{da} = \frac{dz}{dy}\).</p>
-<p>Now, let&#39;s look at \(\frac{dz}{db}\). We need to find
-\(\frac{dz}{db}\) in terms of \(\frac{dz}{dy}\).</p>
+<p>So, our expression of \(\frac{\partial z}{\partial a}\) in terms of
+\(\frac{dz}{dy}\) is simple -- it&#39;s simply \(\frac{\partial z}{\partial
+a} = \frac{dz}{dy}\).</p>
+<p>Now, let&#39;s look at \(\frac{\partial z}{\partial b}\). We need to find
+\(\frac{\partial z}{\partial b}\) in terms of \(\frac{dz}{dy}\).</p>
 <ul>
-<li>Through the chain rule, \(\frac{dz}{db} = \frac{dz}{dy} \frac{dy}{db}\).</li>
-<li>Because \(y = a + b + c\), we know that \(\frac{dy}{db} = 1\).</li>
-<li>Because \(\frac{dy}{db} = 1\), we know that \(\frac{dz}{db} =
-\frac{dz}{dy} \times 1 = \frac{dz}{dy}\).</li>
+<li>Through the chain rule, \(\frac{\partial z}{\partial b} =
+\frac{dz}{dy} \frac{\partial y}{\partial b}\).</li>
+<li>Because \(y = a + b + c\), we know that \(\frac{\partial y}{\partial
+b} = 1\).</li>
+<li>Because \(\frac{\partial y}{\partial b} = 1\), we know that
+\(\frac{\partial z}{\partial b} = \frac{dz}{dy} \times 1 =
+\frac{dz}{dy}\).</li>
 </ul>
-<p>It looks like \(\frac{dz}{db} = \frac{dz}{dy}\), as well.</p>
+<p>It looks like \(\frac{\partial z}{\partial b} = \frac{\partial z}{\partial
+y}\), as well.</p>
 <p>At this point, we start to notice a pattern. We can apply the same logic
-to see that \(\frac{dz}{dc} = \frac{dz}{dy}\).</p></li>
+to see that \(\frac{\partial z}{\partial c} = \frac{dz}{dy}\).</p></li>
 <li><p><em>Write out the pattern</em></p>
-<p>Extrapolating the pattern, \(\frac{dz}{dq}\), where \(q\) is <em>any</em>
-component, is always going to be a constant -- \(\frac{dz}{dy}\).</p></li>
+<p>Extrapolating the pattern, \(\frac{\partial z}{\partial q}\), where
+\(q\) is <em>any</em> component, is always going to be a constant --
+\(\frac{dz}{dy}\).</p></li>
 </ol>
 <p>So in the end:</p>
 <pre class="haskell"><code>liftedSumElements
@@ -768,26 +777,35 @@ and <code>op2</code>, or <code>liftOpN</code> and <code>opN</code>.</p>
 <li>The scaled gradient, <code>a -&gt; b -&gt; c -&gt; (a, b)</code>.</li>
 </ol>
 <p>The <code>c</code> parameter of the scaled gradient is again \(\frac{dz}{dy}\), and the
-final <code>(a,b)</code> is a tuple of \(\frac{dz}{dx_1}\) and \(\frac{dz}{dx_2}\): how
-\(\frac{dz}{dy}\) affects both of the inputs.</p>
+final <code>(a,b)</code> is a tuple of \(\frac{\partial z}{\partial x_1}\) and
+\(\frac{\partial z}{\partial x_2}\): how \(\frac{dz}{dy}\) affects both of
+the inputs.</p>
 <p>For a simple example, let&#39;s look at \(x + y\). Working it out:</p>
 <ul>
 <li>\(y = f(x_1, x_2) = x_1 + x_2\)</li>
 <li>\(z = g(f(x_1, x_2)) = g(x_1 + x_2)\)</li>
-<li>Looking first for \(\frac{dz}{dx_1}\) in terms of \(\frac{dz}{dy}\):
+<li>Looking first for \(\frac{\partial z}{\partial x_1}\) in terms of
+\(\frac{dz}{dy}\):
 <ul>
-<li>\(\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}\) (chain rule)</li>
-<li>From \(y = x_1 + x_2\), we see that \(\frac{dy}{dx_1} = 1\)</li>
-<li>Therefore, \(\frac{dz}{dx_1} = \frac{dz}{dy} \times 1 = \frac{dz}{dy}\).</li>
+<li>\(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} \frac{\partial
+y}{\partial x_1}\) (chain rule)</li>
+<li>From \(y = x_1 + x_2\), we see that \(\frac{\partial y}{\partial
+x_1} = 1\)</li>
+<li>Therefore, \(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} \times 1
+= \frac{dz}{dy}\).</li>
 </ul></li>
-<li>Looking second for \(\frac{dz}{dx_2}\) in terms of \(\frac{dz}{dy}\):
+<li>Looking second for \(\frac{\partial z}{\partial x_2}\) in terms of
+\(\frac{dz}{dy}\):
 <ul>
-<li>\(\frac{dz}{dx_2} = \frac{dz}{dy} \frac{dy}{dx_2}\) (chain rule)</li>
-<li>From \(y = x_1 + x_2\), we see that \(\frac{dy}{dx_2} = 1\)</li>
-<li>Therefore, \(\frac{dz}{dx_2} = \frac{dz}{dy} \times 1 = \frac{dz}{dy}\).</li>
+<li>\(\frac{\partial z}{\partial x_2} = \frac{dz}{dy} \frac{\partial
+y}{\partial x_2}\) (chain rule)</li>
+<li>From \(y = x_1 + x_2\), we see that \(\frac{\partial y}{\partial
+x_2} = 1\)</li>
+<li>Therefore, \(\frac{\partial z}{\partial x_2} = \frac{dz}{dy} \times 1
+= \frac{dz}{dy}\).</li>
 </ul></li>
-<li>Therefore, \(\frac{dz}{dx_1} = \frac{dz}{dy}\), and also \(\frac{dz}{dx_2} =
-\frac{dz}{dy}\).</li>
+<li>Therefore, \(\frac{\partial z}{\partial x_1} = \frac{dz}{dy}\), and also
+\(\frac{\partial z}{\partial x_2} = \frac{dz}{dy}\).</li>
 </ul>
 <p>Putting it into code:</p>
 <pre class="haskell"><code>add :: (Num a, Backprop a, Reifies s W)
@@ -801,20 +819,26 @@ add = liftOp2 . op2 $ \x1 x2 -&gt;
 <ul>
 <li>\(y = f(x_1, x_2) = x_1 x_2\)</li>
 <li>\(z = g(f(x_1, x_2)) = g(x_1 x_2)\)</li>
-<li>Looking first for \(\frac{dz}{dx_1}\) in terms of \(\frac{dz}{dy}\):
+<li>Looking first for \(\frac{d\partial }{d\partial _1}\) in terms of
+\(\frac{dz}{dy}\):
 <ul>
-<li>\(\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}\) (chain rule)</li>
-<li>From \(y = x_1 x_2\), we see that \(\frac{dy}{dx_1} = x_2\)</li>
-<li>Therefore, \(\frac{dz}{dx_1} = \frac{dz}{dy} x_2\).</li>
+<li>\(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} \frac{\partial
+y}{\partial x_1}\) (chain rule)</li>
+<li>From \(y = x_1 x_2\), we see that \(\frac{\partial y}{\partial x_1}
+= x_2\)</li>
+<li>Therefore, \(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} x_2\).</li>
 </ul></li>
-<li>Looking second for \(\frac{dz}{dx_2}\) in terms of \(\frac{dz}{dy}\):
+<li>Looking second for \(\frac{\partial z}{\partial x_2}\) in terms of
+\(\frac{dz}{dy}\):
 <ul>
-<li>\(\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}\) (chain rule)</li>
-<li>From \(y = x_1 x_2\), we see that \(\frac{dy}{dx_2} = x_1\)</li>
-<li>Therefore, \(\frac{dz}{dx_2} = \frac{dz}{dy} x_1\).</li>
+<li>\(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} \frac{\partial
+y}{\partial x_1}\) (chain rule)</li>
+<li>From \(y = x_1 x_2\), we see that \(\frac{\partial y}{\partial x_2}
+= x_1\)</li>
+<li>Therefore, \(\frac{\partial z}{\partial x_2} = \frac{dz}{dy} x_1\).</li>
 </ul></li>
-<li>Therefore, \(\frac{dz}{dx_1} = \frac{dz}{dy} x_2\), and \(\frac{dz}{dx_2} =
-x_1 \frac{dz}{dy}\).</li>
+<li>Therefore, \(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} x_2\), and
+\(\frac{\partial z}{\partial x_2} = x_1 \frac{dz}{dy}\).</li>
 </ul>
 <p>In code:</p>
 <pre class="haskell"><code>mul :: (Num a, Backprop a, Reifies s W)
@@ -980,7 +1004,8 @@ addX = liftOp2 . op2 $ \(IOX x) (IOX y) -&gt;
 actions. You must not ever need to peek inside the <em>results</em> of the action in
 order to decide <em>what</em> operations to do next. In other words, this works if
 the operations you need to perform are all known and fixed before-hand, before
-any actions are performed.</p>
+any actions are performed. So, this means no access to the <code>Eq</code> or <code>Ord</code>
+instances of BVars (unless your monad has <code>Eq</code> or <code>Ord</code> instances defined).</p>
 <p>A newtype wrapper is provided to give you this behavior automatically -- it&#39;s
 <code>ABP</code>, from <em>Numeric.Backprop</em> and <em>Numeric.Backprop.Class</em>.</p>
 <pre class="haskell"><code>type IOX = ABP IO X
