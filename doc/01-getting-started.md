@@ -16,6 +16,8 @@ Getting Started
 import           GHC.Generics (Generic)
 import           GHC.TypeNats
 import           Inliterate.Import
+import           Lens.Micro
+import           Lens.Micro.TH
 import           Numeric.Backprop.Class
 import           Numeric.LinearAlgebra.Static (L, R)
 import           System.Random
@@ -33,8 +35,6 @@ With *backprop*, you can write your functions in Haskell as normal functions:
 
 ```haskell top
 import Numeric.Backprop
-import Lens.Micro
-import Lens.Micro.TH
 
 myFunc x = sqrt (x * 4)
 ```
