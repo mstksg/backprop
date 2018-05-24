@@ -245,40 +245,49 @@ element.
 
 2.  *Identify the components in your gradient*
 
-    In our case, we have to return a gradient \\(\langle \frac{dz}{da},
-    \frac{dz}{db}, \frac{dz}{dc} \rangle\\).
+    In our case, we have to return a gradient \\(\langle \frac{\partial z}{\partial a},
+    \frac{\partial z}{\partial b}, \frac{\partial z}{\partial c} \rangle\\).
 
 3.  *Work out each component of the gradient until you start to notice a
     pattern*
 
-    Let's start with \\(\frac{dz}{da}\\).  We need to find \\(\frac{dz}{da}\\)
-    in terms of \\(\frac{dz}{dy}\\):
+    Let's start with \\(\frac{\partial z}{\partial a}\\).  We need to find
+    \\(\frac{\partial z}{\partial a}\\) in terms of \\(\frac{dz}{dy}\\):
 
-    *   Through the chain rule, \\(\frac{dz}{da} = \frac{dz}{dy} \frac{dy}{da}\\).
-    *   Because \\(y = a + b + c\\), we know that \\(\frac{dy}{da} = 1\\).
-    *   Because \\(\frac{dy}{da} = 1\\), we know that \\(\frac{dz}{da} =
-        \frac{dz}{dy} \times 1 = \frac{dz}{dy}\\).
+    *   Through the chain rule, \\(\frac{\partial z}{\partial a} =
+        \frac{dz}{dy} \frac{\partial y}{\partial a}\\).
+    *   Because \\(y = a + b + c\\), we know that \\(\frac{\partial y}{\partial
+        a} = 1\\).
+    *   Because \\(\frac{\partial y}{\partial a} = 1\\), we know that
+        \\(\frac{\partial z}{\partial a} = \frac{dz}{dy} \times 1 =
+        \frac{dz}{dy}\\).
 
-    So, our expression of \\(\frac{dz}{da}\\) in terms of \\(\frac{dz}{dy}\\)
-    is simple -- it's simply \\(\frac{dz}{da} = \frac{dz}{dy}\\).
+    So, our expression of \\(\frac{\partial z}{\partial a}\\) in terms of
+    \\(\frac{dz}{dy}\\) is simple -- it's simply \\(\frac{\partial z}{\partial
+    a} = \frac{dz}{dy}\\).
 
-    Now, let's look at \\(\frac{dz}{db}\\).  We need to find
-    \\(\frac{dz}{db}\\) in terms of \\(\frac{dz}{dy}\\).
+    Now, let's look at \\(\frac{\partial z}{\partial b}\\).  We need to find
+    \\(\frac{\partial z}{\partial b}\\) in terms of \\(\frac{dz}{dy}\\).
 
-    *   Through the chain rule, \\(\frac{dz}{db} = \frac{dz}{dy} \frac{dy}{db}\\).
-    *   Because \\(y = a + b + c\\), we know that \\(\frac{dy}{db} = 1\\).
-    *   Because \\(\frac{dy}{db} = 1\\), we know that \\(\frac{dz}{db} =
-        \frac{dz}{dy} \times 1 = \frac{dz}{dy}\\).
+    *   Through the chain rule, \\(\frac{\partial z}{\partial b} =
+        \frac{dz}{dy} \frac{\partial y}{\partial b}\\).
+    *   Because \\(y = a + b + c\\), we know that \\(\frac{\partial y}{\partial
+        b} = 1\\).
+    *   Because \\(\frac{\partial y}{\partial b} = 1\\), we know that
+        \\(\frac{\partial z}{\partial b} = \frac{dz}{dy} \times 1 =
+        \frac{dz}{dy}\\).
 
-    It looks like \\(\frac{dz}{db} = \frac{dz}{dy}\\), as well.
+    It looks like \\(\frac{\partial z}{\partial b} = \frac{\partial z}{\partial
+    y}\\), as well.
 
     At this point, we start to notice a pattern.  We can apply the same logic
-    to see that \\(\frac{dz}{dc} = \frac{dz}{dy}\\).
+    to see that \\(\frac{\partial z}{\partial c} = \frac{dz}{dy}\\).
 
 4.  *Write out the pattern*
 
-    Extrapolating the pattern, \\(\frac{dz}{dq}\\), where \\(q\\) is *any*
-    component, is always going to be a constant -- \\(\frac{dz}{dy}\\).
+    Extrapolating the pattern, \\(\frac{\partial z}{\partial q}\\), where
+    \\(q\\) is *any* component, is always going to be a constant --
+    \\(\frac{dz}{dy}\\).
 
 So in the end:
 
@@ -317,23 +326,32 @@ A `BVar s a -> BVar s b -> BVar s c` encodes two things:
 2.  The scaled gradient, `a -> b -> c -> (a, b)`.
 
 The `c` parameter of the scaled gradient is again \\(\frac{dz}{dy}\\), and the
-final `(a,b)` is a tuple of \\(\frac{dz}{dx_1}\\) and \\(\frac{dz}{dx_2}\\): how
-\\(\frac{dz}{dy}\\) affects both of the inputs.
+final `(a,b)` is a tuple of \\(\frac{\partial z}{\partial x_1}\\) and
+\\(\frac{\partial z}{\partial x_2}\\): how \\(\frac{dz}{dy}\\) affects both of
+the inputs.
 
 For a simple example, let's look at \\(x + y\\).  Working it out:
 
 *   \\(y = f(x_1, x_2) = x_1 + x_2\\)
 *   \\(z = g(f(x_1, x_2)) = g(x_1 + x_2)\\)
-*   Looking first for \\(\frac{dz}{dx_1}\\) in terms of \\(\frac{dz}{dy}\\):
-    *   \\(\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}\\) (chain rule)
-    *   From \\(y = x_1 + x_2\\), we see that \\(\frac{dy}{dx_1} = 1\\)
-    *   Therefore, \\(\frac{dz}{dx_1} = \frac{dz}{dy} \times 1 = \frac{dz}{dy}\\).
-*   Looking second for \\(\frac{dz}{dx_2}\\) in terms of \\(\frac{dz}{dy}\\):
-    *   \\(\frac{dz}{dx_2} = \frac{dz}{dy} \frac{dy}{dx_2}\\) (chain rule)
-    *   From \\(y = x_1 + x_2\\), we see that \\(\frac{dy}{dx_2} = 1\\)
-    *   Therefore, \\(\frac{dz}{dx_2} = \frac{dz}{dy} \times 1 = \frac{dz}{dy}\\).
-*   Therefore, \\(\frac{dz}{dx_1} = \frac{dz}{dy}\\), and also \\(\frac{dz}{dx_2} =
-    \frac{dz}{dy}\\).
+*   Looking first for \\(\frac{\partial z}{\partial x_1}\\) in terms of
+    \\(\frac{dz}{dy}\\):
+    *   \\(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} \frac{\partial
+        y}{\partial x_1}\\) (chain rule)
+    *   From \\(y = x_1 + x_2\\), we see that \\(\frac{\partial y}{\partial
+        x_1} = 1\\)
+    *   Therefore, \\(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} \times 1
+        = \frac{dz}{dy}\\).
+*   Looking second for \\(\frac{\partial z}{\partial x_2}\\) in terms of
+    \\(\frac{dz}{dy}\\):
+    *   \\(\frac{\partial z}{\partial x_2} = \frac{dz}{dy} \frac{\partial
+        y}{\partial x_2}\\) (chain rule)
+    *   From \\(y = x_1 + x_2\\), we see that \\(\frac{\partial y}{\partial
+        x_2} = 1\\)
+    *   Therefore, \\(\frac{\partial z}{\partial x_2} = \frac{dz}{dy} \times 1
+        = \frac{dz}{dy}\\).
+*   Therefore, \\(\frac{\partial z}{\partial x_1} = \frac{dz}{dy}\\), and also
+    \\(\frac{\partial z}{\partial x_2} = \frac{dz}{dy}\\).
 
 Putting it into code:
 
@@ -350,16 +368,22 @@ Let's try our hand at multiplication, or \\(x * y\\):
 
 *   \\(y = f(x_1, x_2) = x_1 x_2\\)
 *   \\(z = g(f(x_1, x_2)) = g(x_1 x_2)\\)
-*   Looking first for \\(\frac{dz}{dx_1}\\) in terms of \\(\frac{dz}{dy}\\):
-    *   \\(\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}\\) (chain rule)
-    *   From \\(y = x_1 x_2\\), we see that \\(\frac{dy}{dx_1} = x_2\\)
-    *   Therefore, \\(\frac{dz}{dx_1} = \frac{dz}{dy} x_2\\).
-*   Looking second for \\(\frac{dz}{dx_2}\\) in terms of \\(\frac{dz}{dy}\\):
-    *   \\(\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}\\) (chain rule)
-    *   From \\(y = x_1 x_2\\), we see that \\(\frac{dy}{dx_2} = x_1\\)
-    *   Therefore, \\(\frac{dz}{dx_2} = \frac{dz}{dy} x_1\\).
-*   Therefore, \\(\frac{dz}{dx_1} = \frac{dz}{dy} x_2\\), and \\(\frac{dz}{dx_2} =
-    x_1 \frac{dz}{dy}\\).
+*   Looking first for \\(\frac{d\partial }{d\partial _1}\\) in terms of
+    \\(\frac{dz}{dy}\\):
+    *   \\(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} \frac{\partial
+        y}{\partial x_1}\\) (chain rule)
+    *   From \\(y = x_1 x_2\\), we see that \\(\frac{\partial y}{\partial x_1}
+        = x_2\\)
+    *   Therefore, \\(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} x_2\\).
+*   Looking second for \\(\frac{\partial z}{\partial x_2}\\) in terms of
+    \\(\frac{dz}{dy}\\):
+    *   \\(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} \frac{\partial
+        y}{\partial x_1}\\) (chain rule)
+    *   From \\(y = x_1 x_2\\), we see that \\(\frac{\partial y}{\partial x_2}
+        = x_1\\)
+    *   Therefore, \\(\frac{\partial z}{\partial x_2} = \frac{dz}{dy} x_1\\).
+*   Therefore, \\(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} x_2\\), and
+    \\(\frac{\partial z}{\partial x_2} = x_1 \frac{dz}{dy}\\).
 
 In code:
 
@@ -579,7 +603,8 @@ This should work fine as long as you never "branch" on any *results* of your
 actions.  You must not ever need to peek inside the *results* of the action in
 order to decide *what* operations to do next.  In other words, this works if
 the operations you need to perform are all known and fixed before-hand, before
-any actions are performed.
+any actions are performed.  So, this means no access to the `Eq` or `Ord`
+instances of BVars (unless your monad has `Eq` or `Ord` instances defined).
 
 A newtype wrapper is provided to give you this behavior automatically -- it's
 `ABP`, from *Numeric.Backprop* and *Numeric.Backprop.Class*.
