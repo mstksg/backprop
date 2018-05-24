@@ -417,3 +417,4 @@ haddocks][haddock] and start writing programs.  The next section of this
 documentation is more details about [the `Backprop` typeclass][class].
 
 [class]: https://backprop.jle.im/04-the-backprop-typeclass.html
+[haddock]: https://hackage.haskell.org/package/backprop
