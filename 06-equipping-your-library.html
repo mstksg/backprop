@@ -665,16 +665,16 @@ already lifted.</p>
 <p>The documentation for <a href="http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Op.html">Numeric.Backprop.Op</a> gives detail about what these
 entail, with rendered math and examples.</p>
 <p>The second function requires some elaboration. Let&#39;s say you are writing a
-lifted version of your function (y = f(x)) (whose derivative is
-(\frac{dy}{dx})), and that your <em>final result</em> at the end of your computation
-is (z = g(f(x))) (whose derivative is (\frac{dz}{dx})). In that case, because of the
-chain rule, (\frac{dz}{dx} = \frac{dz}{dy} \frac{dy}{dx}).</p>
-<p>The scaled gradient is the function which, <em>given</em> (\frac{dy}{dz}), <em>returns</em>
-(\frac{dz}{dx}). (that is, returns (\frac{dz}{dy} \frac{dy}{dx})).</p>
-<p>For example, for the mathematical operation (y = f(x) = x^2), then, considering
-(z = g(f(x))), (\frac{dz}{dx} = \frac{dz}{dy} 2x).
+lifted version of your function \(y = f(x)\) (whose derivative is
+\(\frac{dy}{dx}\)), and that your <em>final result</em> at the end of your computation
+is \(z = g(f(x))\) (whose derivative is \(\frac{dz}{dx}\)). In that case, because of the
+chain rule, \(\frac{dz}{dx} = \frac{dz}{dy} \frac{dy}{dx}\).</p>
+<p>The scaled gradient is the function which, <em>given</em> \(\frac{dy}{dz}\), <em>returns</em>
+\(\frac{dz}{dx}\). (that is, returns \(\frac{dz}{dy} \frac{dy}{dx}\)).</p>
+<p>For example, for the mathematical operation \(y = f(x) = x^2\), then, considering
+\(z = g(f(x))\), \(\frac{dz}{dx} = \frac{dz}{dy} 2x\).
 In fact, for all functions taking and returning scalars (just normal single
-numbers), (\frac{dz}{dx} = \frac{dz}{dy} f&#39;(x)).</p>
+numbers), \(\frac{dz}{dx} = \frac{dz}{dy} f&#39;(x)\).</p>
 <p>With that in mind, let&#39;s write our &quot;squared&quot; op:</p>
 <pre class="haskell"><code>square
     :: (Num a, Backprop a, Reifies s W)
@@ -684,8 +684,8 @@ square = liftOp1 . op1 $ \x -&gt;
     ( x^2              , \dzdy -&gt; dzdy * 2 * x)
 --    ^- actual result   ^- scaled gradient function
 </code></pre>
-<p>Keeping along the same pattern, for (y = f(x) = \sin(x)), then, considering (z
-= g(f(x))), (\frac{dz}{dx} = \frac{dz}{dy} \cos(x)). So, we have:</p>
+<p>Keeping along the same pattern, for \(y = f(x) = \sin(x)\), then, considering \(z
+= g(f(x))\), \(\frac{dz}{dx} = \frac{dz}{dy} \cos(x)\). So, we have:</p>
 <pre class="haskell"><code>liftedSin
     :: (Floating a, Backprop a, Reifies s W)
     =&gt; BVar s a
@@ -707,7 +707,7 @@ source of Op.hs</a> for the <code>Op</code> definitions for every method in <cod
 <h3>Non-trivial example</h3>
 <p>A simple non-trivial example is <code>sumElements</code>, which we can define to take the
 <em>hmatrix</em> library&#39;s <code>R n</code> type (an n-vector of <code>Double</code>). In this case, we
-have to think about (g(\mathrm{sum}(\mathbf{x}))). In this case, the types
+have to think about \(g(\mathrm{sum}(\mathbf{x}))\). In this case, the types
 guide our thinking:</p>
 <pre class="haskell"><code>sumElements           :: R n -&gt; Double
 sumElementsScaledGrad :: R n -&gt; Double -&gt; R n
@@ -718,38 +718,38 @@ element.</p>
 <li><p><em>Write out the functions in question, in a simple example</em></p>
 <p>In our case:</p>
 <ul>
-<li>(y = f(\langle a, b, c \rangle) = a + b + c)</li>
-<li>(z = g(y) = g(a + b + c))</li>
+<li>\(y = f(\langle a, b, c \rangle) = a + b + c\)</li>
+<li>\(z = g(y) = g(a + b + c)\)</li>
 </ul></li>
 <li><p><em>Identify the components in your gradient</em></p>
-<p>In our case, we have to return a gradient (\langle \frac{dz}{da},
-\frac{dz}{db}, \frac{dz}{dc} \rangle).</p></li>
+<p>In our case, we have to return a gradient \(\langle \frac{dz}{da},
+\frac{dz}{db}, \frac{dz}{dc} \rangle\).</p></li>
 <li><p><em>Work out each component of the gradient until you start to notice a
 pattern</em></p>
-<p>Let&#39;s start with (\frac{dz}{da}). We need to find (\frac{dz}{da}) in terms
-of (\frac{dz}{dy}):</p>
+<p>Let&#39;s start with \(\frac{dz}{da}\). We need to find \(\frac{dz}{da}\) in terms
+of \(\frac{dz}{dy}\):</p>
 <ul>
-<li>Through the chain rule, (\frac{dz}{da} = \frac{dz}{dy} \frac{dy}{da}).</li>
-<li>Because (y = a + b + c), we know that (\frac{dy}{da} = 1).</li>
-<li>Because (\frac{dy}{da} = 1), we know that (\frac{dz}{da} =
-\frac{dz}{dy} \times 1 = \frac{dz}{dy}).</li>
+<li>Through the chain rule, \(\frac{dz}{da} = \frac{dz}{dy} \frac{dy}{da}\).</li>
+<li>Because \(y = a + b + c\), we know that \(\frac{dy}{da} = 1\).</li>
+<li>Because \(\frac{dy}{da} = 1\), we know that \(\frac{dz}{da} =
+\frac{dz}{dy} \times 1 = \frac{dz}{dy}\).</li>
 </ul>
-<p>So, our expression of (\frac{dz}{da}) in terms of (\frac{dz}{dy}) is simple
--- it&#39;s simply (\frac{dz}{da} = \frac{dz}{dy}).</p>
-<p>Now, let&#39;s look at (\frac{dz}{db}). We need to find (\frac{dz}{db} in
-terms of (\frac{dz}{dy}).</p>
+<p>So, our expression of \(\frac{dz}{da}\) in terms of \(\frac{dz}{dy}\) is simple
+-- it&#39;s simply \(\frac{dz}{da} = \frac{dz}{dy}\).</p>
+<p>Now, let&#39;s look at \(\frac{dz}{db}\). We need to find \(\frac{dz}{db} in
+terms of \(\frac{dz}{dy}\).</p>
 <ul>
-<li>Through the chain rule, (\frac{dz}{db} = \frac{dz}{dy} \frac{dy}{db}).</li>
-<li>Because (y = a + b + c), we know that (\frac{dy}{db} = 1).</li>
-<li>Because (\frac{dy}{db} = 1), we know that (\frac{dz}{db} =
-\frac{dz}{dy} \times 1 = \frac{dz}{db}).</li>
+<li>Through the chain rule, \(\frac{dz}{db} = \frac{dz}{dy} \frac{dy}{db}\).</li>
+<li>Because \(y = a + b + c\), we know that \(\frac{dy}{db} = 1\).</li>
+<li>Because \(\frac{dy}{db} = 1\), we know that \(\frac{dz}{db} =
+\frac{dz}{dy} \times 1 = \frac{dz}{db}\).</li>
 </ul>
-<p>It looks like (\frac{dz}{db} = \frac{dz}{dy}), as well.</p>
+<p>It looks like \(\frac{dz}{db} = \frac{dz}{dy}\), as well.</p>
 <p>At this point, we start to notice a pattern. We can apply the same logic
-to see that (\frac{dz}{dc} = \frac{dz}{dy}).</p></li>
+to see that \(\frac{dz}{dc} = \frac{dz}{dy}\).</p></li>
 <li><p><em>Write out the pattern</em></p>
-<p>Extrapolating the pattern, (\frac{dz}{dq}), where (q) is <em>any</em> component,
-is always going to be a constant -- (\frac{dz}dy}).</p></li>
+<p>Extrapolating the pattern, \(\frac{dz}{dq}\), where \(q\) is <em>any</em> component,
+is always going to be a constant -- \(\frac{dz}dy}\).</p></li>
 </ol>
 <p>So in the end:</p>
 <pre class="haskell"><code>liftedSumElements
@@ -767,27 +767,27 @@ and <code>op2</code>, or <code>liftOpN</code> and <code>opN</code>.</p>
 <li>The actual <code>a -&gt; b -&gt; c</code></li>
 <li>The scaled gradient, <code>a -&gt; b -&gt; c -&gt; (a, b)</code>.</li>
 </ol>
-<p>The <code>c</code> parameter of the scaled gradient is again (\frac{dz}{dy}), and the
-final <code>(a,b)</code> is a tuple of (\frac{dz}{dx_1}) and (\frac{dz}{dx_2}): how
-(\frac{dz}{dy}) affects both of the inputs.</p>
-<p>For a simple example, let&#39;s look at (x + y). Working it out:</p>
+<p>The <code>c</code> parameter of the scaled gradient is again \(\frac{dz}{dy}\), and the
+final <code>(a,b)</code> is a tuple of \(\frac{dz}{dx_1}\) and \(\frac{dz}{dx_2}\): how
+\(\frac{dz}{dy}\) affects both of the inputs.</p>
+<p>For a simple example, let&#39;s look at \(x + y\). Working it out:</p>
 <ul>
-<li>(y = f(x_1, x_2) = x_1 + x_2)</li>
-<li>(z = g(f(x_1, x_2)) = g(x_1 + x_2))</li>
-<li>Looking first for (\frac{dz}{dx_1}) in terms of (\frac{dz}{dy}):
+<li>\(y = f(x_1, x_2) = x_1 + x_2\)</li>
+<li>\(z = g(f(x_1, x_2)) = g(x_1 + x_2)\)</li>
+<li>Looking first for \(\frac{dz}{dx_1}\) in terms of \(\frac{dz}{dy}\):
 <ul>
-<li>(\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}) (chain rule)</li>
-<li>From (y = x_1 + x_2), we see that (\frac{dy}{dx_1} = 1)</li>
-<li>Therefore, (\frac{dz}{dx_1} = \frac{dz}{dy} \times 1 = \frac{dz}{dy}).</li>
+<li>\(\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}\) (chain rule)</li>
+<li>From \(y = x_1 + x_2\), we see that \(\frac{dy}{dx_1} = 1\)</li>
+<li>Therefore, \(\frac{dz}{dx_1} = \frac{dz}{dy} \times 1 = \frac{dz}{dy}\).</li>
 </ul></li>
-<li>Looking second for (\frac{dz}{dx_2}) in terms of (\frac{dz}{dy}):
+<li>Looking second for \(\frac{dz}{dx_2}\) in terms of \(\frac{dz}{dy}\):
 <ul>
-<li>(\frac{dz}{dx_2} = \frac{dz}{dy} \frac{dy}{dx_2}) (chain rule)</li>
-<li>From (y = x_1 + x_2), we see that (\frac{dy}{dx_2} = 1)</li>
-<li>Therefore, (\frac{dz}{dx_2} = \frac{dz}{dy} \times 1 = \frac{dz}{dy}).</li>
+<li>\(\frac{dz}{dx_2} = \frac{dz}{dy} \frac{dy}{dx_2}\) (chain rule)</li>
+<li>From \(y = x_1 + x_2\), we see that \(\frac{dy}{dx_2} = 1\)</li>
+<li>Therefore, \(\frac{dz}{dx_2} = \frac{dz}{dy} \times 1 = \frac{dz}{dy}\).</li>
 </ul></li>
-<li>Therefore, (\frac{dz}{dx_1} = \frac{dz}{dy}), and also (\frac{dz}{dx_2} =
-\frac{dz}{dy}).</li>
+<li>Therefore, \(\frac{dz}{dx_1} = \frac{dz}{dy}\), and also \(\frac{dz}{dx_2} =
+\frac{dz}{dy}\).</li>
 </ul>
 <p>Putting it into code:</p>
 <pre class="haskell"><code>add :: (Num a, Backprop a, Reifies s W)
@@ -797,24 +797,24 @@ final <code>(a,b)</code> is a tuple of (\frac{dz}{dx_1}) and (\frac{dz}{dx_2}): 
 add = liftOp2 . op2 $ \x1 x2 -&gt;
     ( x1 + x2, \dzdy -&gt; (dzdy, dzdy) )
 </code></pre>
-<p>Let&#39;s try our hand at multiplication, or (x * y):</p>
+<p>Let&#39;s try our hand at multiplication, or \(x * y\):</p>
 <ul>
-<li>(y = f(x_1, x_2) = x_1 x_2)</li>
-<li>(z = g(f(x_1, x_2)) = g(x_1 x_2))</li>
-<li>Looking first for (\frac{dz}{dx_1}) in terms of (\frac{dz}{dy}):
+<li>\(y = f(x_1, x_2) = x_1 x_2\)</li>
+<li>\(z = g(f(x_1, x_2)) = g(x_1 x_2)\)</li>
+<li>Looking first for \(\frac{dz}{dx_1}\) in terms of \(\frac{dz}{dy}\):
 <ul>
-<li>(\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}) (chain rule)</li>
-<li>From (y = x_1 x_2), we see that (\frac{dy}{dx_1} = x_2)</li>
-<li>Therefore, (\frac{dz}{dx_1} = \frac{dz}{dy} x_2).</li>
+<li>\(\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}\) (chain rule)</li>
+<li>From \(y = x_1 x_2\), we see that \(\frac{dy}{dx_1} = x_2\)</li>
+<li>Therefore, \(\frac{dz}{dx_1} = \frac{dz}{dy} x_2\).</li>
 </ul></li>
-<li>Looking second for (\frac{dz}{dx_2}) in terms of (\frac{dz}{dy}):
+<li>Looking second for \(\frac{dz}{dx_2}\) in terms of \(\frac{dz}{dy}\):
 <ul>
-<li>(\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}) (chain rule)</li>
-<li>From (y = x_1 x_2), we see that (\frac{dy}{dx_2} = x_1)</li>
-<li>Therefore, (\frac{dz}{dx_2} = \frac{dz}{dy} x_1).</li>
+<li>\(\frac{dz}{dx_1} = \frac{dz}{dy} \frac{dy}{dx_1}\) (chain rule)</li>
+<li>From \(y = x_1 x_2\), we see that \(\frac{dy}{dx_2} = x_1\)</li>
+<li>Therefore, \(\frac{dz}{dx_2} = \frac{dz}{dy} x_1\).</li>
 </ul></li>
-<li>Therefore, (\frac{dz}{dx_1} = \frac{dz}{dy} x_2), and (\frac{dz}{dx_2} =
-x_1 \frac{dz}{dy}).</li>
+<li>Therefore, \(\frac{dz}{dx_1} = \frac{dz}{dy} x_2\), and \(\frac{dz}{dx_2} =
+x_1 \frac{dz}{dy}\).</li>
 </ul>
 <p>In code:</p>
 <pre class="haskell"><code>mul :: (Num a, Backprop a, Reifies s W)
