@@ -3313,6 +3313,12 @@ fromIntegral :: (Integral a, Integral b, Reifies s W) => AddFunc a -> ZeroFunc b
 -- | <a>realToFrac</a>, but taking explicit <a>add</a> and <a>zero</a>.
 realToFrac :: (Fractional a, Real a, Fractional b, Real b, Reifies s W) => AddFunc a -> ZeroFunc b -> BVar s a -> BVar s b
 
+-- | <a>round</a>, but taking explicit <a>add</a> and <a>zero</a>.
+round :: (RealFrac a, Integral b, Reifies s W) => AddFunc a -> ZeroFunc b -> BVar s a -> BVar s b
+
+-- | <a>fromIntegral'</a>, but taking explicit <a>add</a> and <a>zero</a>.
+fromIntegral' :: (Integral a, RealFrac b, Reifies s W) => AddFunc a -> ZeroFunc b -> BVar s a -> BVar s b
+
 -- | Coerce items inside a <a>BVar</a>.
 coerce :: Coercible a b => BVar s a -> BVar s b
 
@@ -3419,6 +3425,21 @@ fromIntegral :: (Backprop a, Integral a, Backprop b, Integral b, Reifies s W) =>
 --   instances.
 realToFrac :: (Backprop a, Fractional a, Real a, Backprop b, Fractional b, Real b, Reifies s W) => BVar s a -> BVar s b
 
+-- | Lifted version of <a>round</a>.
+--   
+--   Gradient should technically diverge whenever the fractional part is
+--   0.5, but does not do this for convenience reasons.
+round :: (RealFrac a, Integral b, Reifies s W) => BVar s a -> BVar s b
+
+-- | Lifted version of <a>fromIntegral</a>, defined to let you return
+--   <a>RealFrac</a> instances as targets, instead of only other
+--   <a>Integral</a>s. Essentially the opposite of <a>round</a>.
+--   
+--   The gradient should technically diverge whenever the fractional part
+--   of the downstream gradient is 0.5, but does not do this for
+--   convenience reasons.
+fromIntegral' :: (Integral a, RealFrac b, Reifies s W) => BVar s a -> BVar s b
+
 -- | Coerce items inside a <a>BVar</a>.
 coerce :: Coercible a b => BVar s a -> BVar s b
 
@@ -3513,6 +3534,14 @@ fromIntegral :: (Integral a, Integral b, Reifies s W) => BVar s a -> BVar s b
 -- | <a>realToFrac</a>, but with <a>Num</a> constraints instead of
 --   <tt>Backprop</tt> constraints.
 realToFrac :: (Fractional a, Real a, Fractional b, Real b, Reifies s W) => BVar s a -> BVar s b
+
+-- | <a>round</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
+round :: (RealFrac a, Integral b, Reifies s W) => BVar s a -> BVar s b
+
+-- | <a>fromIntegral'</a>, but with <a>Num</a> constraints instead of
+--   <tt>Backprop</tt> constraints.
+fromIntegral' :: (Integral a, RealFrac b, Reifies s W) => BVar s a -> BVar s b
 
 -- | Coerce items inside a <a>BVar</a>.
 coerce :: Coercible a b => BVar s a -> BVar s b
