@@ -22,20 +22,22 @@ Differs from [ad][] by offering full heterogeneity -- each intermediate step
 and the resulting value can have different types (matrices, vectors, scalars,
 lists, etc.)
 
+[ad]: http://hackage.haskell.org/package/ad
+
 ```haskell eval
 gradBP2 (\x xs -> sum (map (**2) (sequenceVar xs)) / x)
         (9       :: Double  )
         ([1,6,2] :: [Double])
 ```
 
-Useful for applications in *differential programming* and deep learning for
+Useful for applications in *[differential programming][dp]* and deep learning for
 creating and training numerical models, especially as described in this blog
 post on [a purely functional typed approach to trainable models][models].
 Overall, intended for the implementation of gradient descent and other numeric
 optimization techniques.  Comparable to the python library [autograd][].
 
+[dp]: https://www.facebook.com/yann.lecun/posts/10155003011462143
 [models]: https://blog.jle.im/entry/purely-functional-typed-models-1.html
-[ad]: http://hackage.haskell.org/package/ad
 [autograd]: https://github.com/HIPS/autograd
 
 [Get started][getting started] with the introduction and walkthrough!  Full

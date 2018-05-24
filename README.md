@@ -20,11 +20,18 @@ generate functions to compute your gradient.
 
 Differs from [ad][] by offering full heterogeneity -- each intermediate step
 and the resulting value can have different types (matrices, vectors, scalars,
-lists, etc.).  Mostly intended for usage with gradient descent and other
-numeric optimization techniques.  Comparable to the python library
-[autograd][].
+lists, etc.).
 
 [ad]: http://hackage.haskell.org/package/ad
+
+Useful for applications in *[differential programming][dp]* and deep learning for
+creating and training numerical models, especially as described in this blog
+post on [a purely functional typed approach to trainable models][models].
+Overall, intended for the implementation of gradient descent and other numeric
+optimization techniques.  Comparable to the python library [autograd][].
+
+[dp]: https://www.facebook.com/yann.lecun/posts/10155003011462143
+[models]: https://blog.jle.im/entry/purely-functional-typed-models-1.html
 [autograd]: https://github.com/HIPS/autograd
 
 Currently up on [hackage][], with haddock documentation!  However, a proper
