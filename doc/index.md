@@ -30,7 +30,7 @@ gradBP2 (\x xs -> sum (map (**2) (sequenceVar xs)) / x)
         ([1,6,2] :: [Double])
 ```
 
-Useful for applications in *[differential programming][dp]* and deep learning for
+Useful for applications in [differential programming][dp] and deep learning for
 creating and training numerical models, especially as described in this blog
 post on [a purely functional typed approach to trainable models][models].
 Overall, intended for the implementation of gradient descent and other numeric
@@ -40,10 +40,10 @@ optimization techniques.  Comparable to the python library [autograd][].
 [models]: https://blog.jle.im/entry/purely-functional-typed-models-1.html
 [autograd]: https://github.com/HIPS/autograd
 
-[Get started][getting started] with the introduction and walkthrough!  Full
-technical documentation is also [available on hackage][hackage] if you want to
-skip the introduction and get right into using the library.  Support is
-available on the [gitter channel][gitter]!
+**[Get started][getting started]** with the introduction and walkthrough!  Full
+technical documentation is also **[available on hackage][hackage]** if you want
+to skip the introduction and get right into using the library.  Support is
+available on the **[gitter channel][gitter]**!
 
 [getting started]: https://backprop.jle.im/01-getting-started.html
 

@@ -422,9 +422,9 @@ lifted to work on `BVar`s.  This module is meant to be imported qualified.
 Moving On
 =========
 
-Now that you know all about `BVar`s, you really can just [jump into the
-haddocks][haddock] and start writing programs.  The next section of this
-documentation is more details about [the `Backprop` typeclass][class].
+Now that you know all about `BVar`s, you really can just **[jump into the
+haddocks][haddock]** and start writing programs.  The next section of this
+documentation is more details about **[the `Backprop` typeclass][class]**.
 
 [class]: https://backprop.jle.im/04-the-backprop-typeclass.html
 [haddock]: https://hackage.haskell.org/package/backprop

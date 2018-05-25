@@ -220,8 +220,8 @@ In the case of optimizing models, you:
     minimize with respect to your inputs.  Then, adjust your inputs according
     to this gradient until you get the perfect minimal result!
 
-Now that you've had a taste, let's [look at the details][details].  You can
-also just go ahead and [jump into the haddock documentation][haddock]!
+Now that you've had a taste, let's **[look at the details][details]**.  You can
+also just go ahead and **[jump into the haddock documentation][haddock]**!
 
 [details]: https://backprop.jle.im/02-a-detailed-look.html
 [haddock]: https://hackage.haskell.org/package/backprop

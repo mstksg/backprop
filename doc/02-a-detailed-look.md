@@ -122,6 +122,6 @@ straightforward.  More on this later!
 
 The rest of the package really is just ways to manipulate `BVar s a`s as if
 they were just `a`s, to make everything as smooth as possible.  Let's move on
-to learning about [ways to manipulate BVars][bvars]!
+to learning about **[ways to manipulate BVars][bvars]**!
 
 [bvars]: https://backprop.jle.im/03-manipulating-bvars.html

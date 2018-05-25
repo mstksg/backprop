@@ -125,8 +125,8 @@ you obey [the laws][laws] for sane behavior!
 Moving On
 =========
 
-At this point, feel free to [jump into the haddocks][haddock], or read on
-further for [a list of applications and resources][applications].
+At this point, feel free to **[jump into the haddocks][haddock]**, or read on
+further for **[a list of applications and resources][applications]**.
 
 [haddock]: https://hackage.haskell.org/package/backprop
 [applications]: https://backprop.jle.im/05-applications.html

@@ -37,10 +37,12 @@ functions and types in this library.  Now what?
 [renders]: https://github.com/mstksg/backprop/tree/master/renders
 [hmatrix-backprop]: http://hackage.haskell.org/package/hmatrix-backprop
 
-This is the end of the "end-user" documentation for *backprop*.
+This is the end of the "end-user" documentation for *backprop*!  The rest of
+all you need to know to use the library is in the **[haddocks on
+hackage][haddock]**.
 
 However, if you are a library writer who wants to offer your users the ability
-to backpropagate your library functions, let's move on to the [library
-maintainer's guide to equipping your library with backprop][equipping]!
+to backpropagate your library functions, let's move on to the **[library
+maintainer's guide to equipping your library with backprop][equipping]**!
 
 [equipping]: https://backprop.jle.im/06-equipping-your-library.html
