@@ -584,43 +584,9 @@ library fully by providing <em>only</em> backprop versions of your functions, si
 you can use a backprop-aware function as a normal function with <code>evalBP</code>.
 Alternatively, you can re-export all of your functions in a separate module with
 &quot;backprop-aware&quot; versions.</p>
-<h2>Backprop Class</h2>
-<p>First of all, all of your library&#39;s types should have instances of the
-<a href="https://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Class.html"><code>Backprop</code> typeclass</a>. This allows values of your type to be used in
-backpropagatable functions. See the <a href="https://backprop.jle.im/04-the-backprop-typeclass.html">Backprop typeclass section</a> of
-this documentation for more information on writing a <code>Backprop</code> instance for
-your types.</p>
-<p>In short:</p>
-<ol>
-<li><p>If your type is a type with a single constructor whose fields are all
-instances of <code>Backprop</code>, you can just write <code>instance Backprop MyType</code>, and
-the instance is generated automatically (as long as your type has a
-<code>Generic</code> instance)</p></li>
-<li><p>If your type is an instance of <code>Num</code>, you can use <code>zeroNum</code>, <code>addNum</code>, and
-<code>oneNum</code> to get free definitions of the typeclass methods.</p>
-<pre class="haskell"><code>instance Backprop Double where
-    zero = zeroNum
-    add  = addNum
-    one  = oneNum
-</code></pre></li>
-<li><p>If your type is made using a <code>Functor</code> instance, you can use <code>zeroFunctor</code>
-and <code>oneFunctor</code>:</p>
-<pre class="haskell"><code>instance Backprop a =&gt; Backprop (V.Vector a) where
-    zero = zeroFunctor
-    add  = undefined        -- ??
-    one  = oneFunctor
-</code></pre></li>
-<li><p>If your type has an <code>IsList</code> instance, you can use <code>addIsList</code>:</p>
-<pre class="haskell"><code>instance Backprop a =&gt; Backprop (V.Vector a) where
-    zero = zeroFunctor
-    add  = addIsList
-    one  = oneFunctor
-</code></pre></li>
-</ol>
-<p>For more details, see the <a href="https://backprop.jle.im/04-the-backprop-typeclass.html">aforementioned documentation</a> or the <a href="https://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Class.html">actual
-typeclass haddock documentation</a>.</p>
 <h2>Know Thy Types</h2>
-<p>Now, to translate/lift your library&#39;s functions. If you have a function:</p>
+<p>The most significant effort will be in lifting your library&#39;s functions. If
+you have a function:</p>
 <pre class="haskell"><code>myFunc :: a -&gt; b
 </code></pre>
 <p>Then its lifted version would have type:</p>
@@ -1014,4 +980,50 @@ instances of BVars (unless your monad has <code>Eq</code> or <code>Ord</code> in
 etc. to decide what operations to use.</p>
 <p>At the moment, this is not supported. Please open an issue if this becomes an
 issue!</p>
+<h2>Supporting Data Types</h2>
+<p>Your library will probably have data types that you expect your users to use.
+To equip your data types for backpropagation, you can take a few steps.</p>
+<h3>Backprop Class</h3>
+<p>First of all, all of your library&#39;s types should have instances of the
+<a href="https://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Class.html"><code>Backprop</code> typeclass</a>. This allows values of your type to be used in
+backpropagatable functions. See the <a href="https://backprop.jle.im/04-the-backprop-typeclass.html">Backprop typeclass section</a> of
+this documentation for more information on writing a <code>Backprop</code> instance for
+your types.</p>
+<p>In short:</p>
+<ol>
+<li><p>If your type is a type with a single constructor whose fields are all
+instances of <code>Backprop</code>, you can just write <code>instance Backprop MyType</code>, and
+the instance is generated automatically (as long as your type has a
+<code>Generic</code> instance)</p>
+<pre class="haskell"><code>data MyType = MkMyType Double [Float] (R 10) (L 20 10) (V.Vector Double)
+  deriving Generic
+</code></pre></li>
+<li><p>If your type is an instance of <code>Num</code>, you can use <code>zeroNum</code>, <code>addNum</code>, and
+<code>oneNum</code> to get free definitions of the typeclass methods.</p>
+<pre class="haskell"><code>instance Backprop Double where
+    zero = zeroNum
+    add  = addNum
+    one  = oneNum
+</code></pre></li>
+<li><p>If your type is made using a <code>Functor</code> instance, you can use <code>zeroFunctor</code>
+and <code>oneFunctor</code>:</p>
+<pre class="haskell"><code>instance Backprop a =&gt; Backprop (V.Vector a) where
+    zero = zeroFunctor
+    add  = undefined        -- ??
+    one  = oneFunctor
+</code></pre></li>
+<li><p>If your type has an <code>IsList</code> instance, you can use <code>addIsList</code>:</p>
+<pre class="haskell"><code>instance Backprop a =&gt; Backprop (V.Vector a) where
+    zero = zeroFunctor
+    add  = addIsList
+    one  = oneFunctor
+</code></pre></li>
+</ol>
+<p>For more details, see the <a href="https://backprop.jle.im/04-the-backprop-typeclass.html">aforementioned documentation</a> or the <a href="https://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Class.html">actual
+typeclass haddock documentation</a>.</p>
+<h2>Higher-Kinded Data Interface</h2>
+<p>This trick is mostly for end-users, but can also be useful for library data
+types in some situations.</p>
+<p>Your library might might export product types like the neural network parameter
+example in previous pages:</p>
 </div></div></div></div></div></section><div class="tintin-doc-footer clear-fix"><div class="float-right"><div style="float: left" class="d-inline"><p class>Site generated with </p></div><a style="float: left" href="https://theam.github.io/tintin"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/logo.svg" class="filter-gray"></a><div class="clear-fix float-right"><span style="float:left">&mdash; &copy; 2018 </span><a href="http://theam.io" class="float:left"><img src="http://theam.io/logo_theam.png" class="footer-theam"></a></div></div></div></div><script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script><script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/haskell.min.js"></script><script src="https://cdn.rawgit.com/icons8/bower-webicon/v0.10.7/jquery-webicon.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script>$(function () {$("#menu-toggle").click(function(e) {e.preventDefault();$("#wrapper").toggleClass("toggled");$("#menu-toggle img").toggleClass("rotateIn rotateOut");})});</script><script src="https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/contrib/auto-render.min.js"></script><script>renderMathInElement(document.body);</script></body></html>
