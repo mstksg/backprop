@@ -641,7 +641,11 @@ data interface.</p>
 <p>If we make lenses for <code>Net</code> using the <em><a href="http://hackage.haskell.org/package/lens">lens</a></em> or <em><a href="http://hackage.haskell.org/package/microlens-th">microlens-th</a></em> packages:</p>
 <pre class="haskell"><code>makeLenses &#39;&#39;Net
 </code></pre>
-<p>Then <code>^.</code> from the <em>lens</em> or <em><a href="http://hackage.haskell.org/package/microlens">microlens</a></em> packages lets you retrieve a field
+<p>or make them manually:</p>
+<pre class="haskell"><code>nBias1&#39; :: Functor f =&gt; (R 20 -&gt; f (R 20)) -&gt; Net -&gt; f Net
+nBias1&#39; f n = (\b -&gt; n { _nBias1 = b }) &lt;$&gt; f (_nBias1 n)
+</code></pre>
+<p>then <code>^.</code> from the <em>lens</em> or <em><a href="http://hackage.haskell.org/package/microlens">microlens</a></em> packages lets you retrieve a field
 from a <code>Net</code>:</p>
 <pre class="haskell"><code>(^. nWeights1) :: Net -&gt; L 20 100
 (^. nBias1   ) :: Net -&gt; R 20
@@ -720,6 +724,8 @@ runMet (splitBV -&gt; M w1 b1 w2 b2) x = z
 </code></pre>
 <p>Now, the <code>M w1 b1 w2 b2</code> pattern can be used to deconstruct <em>both</em> &quot;normal&quot;
 <code>Met</code>s, as well as a <code>BVar s Met</code> (with <code>splitBV</code> or <code>BV</code>).</p>
+<p>Note that this HKD access method is potentially less performant than lens
+access (by about 10-20%).</p>
 <h3>Potential or Many Fields</h3>
 <p>Some values &quot;may&quot; or &quot;may not&quot; have values of a given field. An example would
 include the nth item in a list or vector, or the <code>Just</code> of a <code>Maybe</code>.</p>

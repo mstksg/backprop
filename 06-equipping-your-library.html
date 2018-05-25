@@ -1105,6 +1105,8 @@ getMT2DoubleBVar (splitBV -&gt; MT2 d _ _) = d
 </code></pre>
 <p>Under <code>splitBV</code>, your users can pattern match on the <code>MT2</code> constructor and get
 the contents as <code>BVar</code>s.</p>
+<p>Note that HKD access through pattern matching is potentially less performant
+than access using lens (by about 10-20%).</p>
 <p>Users can also use <code>joinBV</code> (or the <code>BV</code> pattern synonym in constructor mode)
 to re-construct a <code>BVar</code> of <code>MyType2</code> in terms of <code>BVar</code>s of its contents using
 the <code>MT2</code> constructor:</p>
