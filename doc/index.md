@@ -30,9 +30,9 @@ gradBP2 (\x xs -> sum (map (**2) (sequenceVar xs)) / x)
         ([1,6,2] :: [Double])
 ```
 
-Useful for applications in [differential programming][dp] and deep learning for
-creating and training numerical models, especially as described in this blog
-post on [a purely functional typed approach to trainable models][models].
+Useful for applications in [differentiable programming][dp] and deep learning
+for creating and training numerical models, especially as described in this
+blog post on [a purely functional typed approach to trainable models][models].
 Overall, intended for the implementation of gradient descent and other numeric
 optimization techniques.  Comparable to the python library [autograd][].
 
