@@ -1035,4 +1035,11 @@ data-based interface.</p>
                  , _mtDoubles :: [Double]
                  }
 </code></pre>
+<p>Users who have a <code>BVar s MyType</code> can&#39;t normally access the fields inside,
+because you can&#39;t directly pattern match normally, and the record accessors
+are <code>MyType -&gt; Int</code> (unlifted). As a library maintainer, you can provide them
+<em>lenses</em> to the fields, either generated automatically using the <em><a href="http://hackage.haskell.org/package/lens">lens</a></em> or
+<em><a href="http://hackage.haskell.org/package/microlens-th">microlens-th</a></em> packages:</p>
+<pre class="haskell"><code>makeLenses &#39;&#39;MyType
+</code></pre>
 </div></div></div></div></div></section><div class="tintin-doc-footer clear-fix"><div class="float-right"><div style="float: left" class="d-inline"><p class>Site generated with </p></div><a style="float: left" href="https://theam.github.io/tintin"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/logo.svg" class="filter-gray"></a><div class="clear-fix float-right"><span style="float:left">&mdash; &copy; 2018 </span><a href="http://theam.io" class="float:left"><img src="http://theam.io/logo_theam.png" class="footer-theam"></a></div></div></div></div><script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script><script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/haskell.min.js"></script><script src="https://cdn.rawgit.com/icons8/bower-webicon/v0.10.7/jquery-webicon.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script>$(function () {$("#menu-toggle").click(function(e) {e.preventDefault();$("#wrapper").toggleClass("toggled");$("#menu-toggle img").toggleClass("rotateIn rotateOut");})});</script><script src="https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/contrib/auto-render.min.js"></script><script>renderMathInElement(document.body);</script></body></html>
