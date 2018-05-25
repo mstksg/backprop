@@ -1026,8 +1026,11 @@ typeclass haddock documentation</a>.</p>
 <h3>Accessors</h3>
 <p>If you have product types, users should be able to access values inside <code>BVar</code>s
 of your data type. There are two main ways to provide access: the lens-based
-interface (providing &quot;getter&quot; and &quot;setter&quot; functions) and the higher-kinded
-data-based interface.</p>
+interface and the higher-kinded-data-based interface.</p>
+<p>The lens-based interface gives your users &quot;getter&quot; and &quot;setter&quot; functions for
+fields, and the higher-kinded-data-based interface lets your users pattern
+match on your data type&#39;s original constructor to get fields and construct
+values.</p>
 <h4>Lens-Based Interface</h4>
 <p>If you are defining a product type, like</p>
 <pre class="haskell"><code>data MyType = MT { _mtDouble  :: Double
