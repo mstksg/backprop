@@ -991,15 +991,17 @@ this documentation for more information on writing a <code>Backprop</code> insta
 your types.</p>
 <p>In short:</p>
 <ol>
-<li><p>If your type is a type with a single constructor whose fields are all
+<li>If your type is a type with a single constructor whose fields are all
 instances of <code>Backprop</code>, you can just write <code>instance Backprop MyType</code>, and
 the instance is generated automatically (as long as your type has a
-<code>Generic</code> instance)</p>
+<code>Generic</code> instance)</li>
+</ol>
 <pre class="haskell"><code>data MyType = MkMyType Double [Float] (R 10) (L 20 10) (V.Vector Double)
   deriving Generic
 
-instance Backprop MyTypo
-</code></pre></li>
+instance Backprop MyType
+</code></pre>
+<ol start="2">
 <li><p>If your type is an instance of <code>Num</code>, you can use <code>zeroNum</code>, <code>addNum</code>, and
 <code>oneNum</code> to get free definitions of the typeclass methods.</p>
 <pre class="haskell"><code>instance Backprop Double where
