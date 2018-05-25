@@ -1071,10 +1071,17 @@ all of your data types:</p>
 </code></pre>
 <p>and define your data types in terms of this type family (remembering to derive
 <code>Generic</code>):</p>
-<pre class="haskell"><code>data MyType2 f = MT2 { mt2Double  :: HKD f Double
-                     , mt2Int     :: HKD f Int
-                     , mt2Doubles :: HKD f [Double]
-                     }
+<pre class="haskell"><code>data MyType2&#39; f = MT2 { mt2Double  :: HKD f Double
+                      , mt2Int     :: HKD f Int
+                      , mt2Doubles :: HKD f [Double]
+                      }
   deriving Generic
+</code></pre>
+<p>Now your original data type can be recovered with <code>MyType2&#39; Identity</code>, and can
+be pattern matched directly in the same way as the original type:</p>
+<pre class="haskell"><code>type MyType2 = MyType2&#39; Identity
+
+deriving instance Show MyType2
+instance Backprop MyType2
 </code></pre>
 </div></div></div></div></div></section><div class="tintin-doc-footer clear-fix"><div class="float-right"><div style="float: left" class="d-inline"><p class>Site generated with </p></div><a style="float: left" href="https://theam.github.io/tintin"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/logo.svg" class="filter-gray"></a><div class="clear-fix float-right"><span style="float:left">&mdash; &copy; 2018 </span><a href="http://theam.io" class="float:left"><img src="http://theam.io/logo_theam.png" class="footer-theam"></a></div></div></div></div><script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script><script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/haskell.min.js"></script><script src="https://cdn.rawgit.com/icons8/bower-webicon/v0.10.7/jquery-webicon.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script>$(function () {$("#menu-toggle").click(function(e) {e.preventDefault();$("#wrapper").toggleClass("toggled");$("#menu-toggle img").toggleClass("rotateIn rotateOut");})});</script><script src="https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/contrib/auto-render.min.js"></script><script>renderMathInElement(document.body);</script></body></html>
