@@ -991,17 +991,15 @@ this documentation for more information on writing a <code>Backprop</code> insta
 your types.</p>
 <p>In short:</p>
 <ol>
-<li>If your type is a type with a single constructor whose fields are all
+<li><p>If your type is a type with a single constructor whose fields are all
 instances of <code>Backprop</code>, you can just write <code>instance Backprop MyType</code>, and
 the instance is generated automatically (as long as your type has a
-<code>Generic</code> instance)</li>
-</ol>
+<code>Generic</code> instance)</p>
 <pre class="haskell"><code>data MyType = MkMyType Double [Float] (R 10) (L 20 10) (V.Vector Double)
   deriving Generic
 
 instance Backprop MyType
-</code></pre>
-<ol start="2">
+</code></pre></li>
 <li><p>If your type is an instance of <code>Num</code>, you can use <code>zeroNum</code>, <code>addNum</code>, and
 <code>oneNum</code> to get free definitions of the typeclass methods.</p>
 <pre class="haskell"><code>instance Backprop Double where
@@ -1025,9 +1023,16 @@ and <code>oneFunctor</code>:</p>
 </ol>
 <p>For more details, see the <a href="https://backprop.jle.im/04-the-backprop-typeclass.html">aforementioned documentation</a> or the <a href="https://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Class.html">actual
 typeclass haddock documentation</a>.</p>
-<h2>Higher-Kinded Data Interface</h2>
-<p>This trick is mostly for end-users, but can also be useful for library data
-types in some situations.</p>
-<p>Your library might might export product types like the neural network parameter
-example in previous pages:</p>
+<h3>Accessors</h3>
+<p>If you have product types, users should be able to access values inside <code>BVar</code>s
+of your data type. There are two main ways to provide access: the lens-based
+interface (providing &quot;getter&quot; and &quot;setter&quot; functions) and the higher-kinded
+data-based interface.</p>
+<h4>Lens-Based Interface</h4>
+<p>If you are defining a product type, like</p>
+<pre class="haskell"><code>data MyType = MT { _mtDouble  :: Double
+                 , _tInt      :: Int
+                 , _mtDoubles :: [Double]
+                 }
+</code></pre>
 </div></div></div></div></div></section><div class="tintin-doc-footer clear-fix"><div class="float-right"><div style="float: left" class="d-inline"><p class>Site generated with </p></div><a style="float: left" href="https://theam.github.io/tintin"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/logo.svg" class="filter-gray"></a><div class="clear-fix float-right"><span style="float:left">&mdash; &copy; 2018 </span><a href="http://theam.io" class="float:left"><img src="http://theam.io/logo_theam.png" class="footer-theam"></a></div></div></div></div><script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script><script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/haskell.min.js"></script><script src="https://cdn.rawgit.com/icons8/bower-webicon/v0.10.7/jquery-webicon.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script>$(function () {$("#menu-toggle").click(function(e) {e.preventDefault();$("#wrapper").toggleClass("toggled");$("#menu-toggle img").toggleClass("rotateIn rotateOut");})});</script><script src="https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/contrib/auto-render.min.js"></script><script>renderMathInElement(document.body);</script></body></html>
