@@ -24,9 +24,9 @@ import           System.Random
 import qualified Numeric.LinearAlgebra.Static as H
 ```
 
-*backprop* is a Haskell library available on hackage, so can be used in your
-package however way you like to require libraries.  Be sure to add it to your
-cabal file's (or package.yaml's) build-depends field.
+*backprop* is a Haskell library **[available on hackage][haddock]**, so can be
+used in your package however way you like to require libraries.  Be sure to add
+it to your cabal file's (or package.yaml's) build-depends field.
 
 Automatic Backpropagated Functions
 ----------------------------------

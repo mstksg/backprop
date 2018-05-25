@@ -59,8 +59,8 @@ module Numeric.Backprop.Num (
   , backpropN, E.evalBPN, gradBPN, backpropWithN, Every
     -- * Manipulating 'BVar'
   , E.constVar, E.auto, E.coerceVar
-  , (^^.), (.~~), (^^?), (^^..), (^^?!)
-  , viewVar, setVar
+  , (^^.), (.~~), (%~~), (^^?), (^^..), (^^?!)
+  , viewVar, setVar, overVar
   , sequenceVar, collectVar
   , previewVar, toListOfVar
     -- ** With Isomorphisms
@@ -265,6 +265,34 @@ setVar
     -> BVar s b
 setVar = E.setVar E.afNum E.afNum E.zfNum E.zfNum
 {-# INLINE setVar #-}
+
+-- | 'Numeric.Backprop.%~~', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
+--
+-- @since 0.2.4.0
+--
+(%~~)
+    :: (Num a, Num b, Reifies s W)
+    => Lens' b a
+    -> (BVar s a -> BVar s a)
+    -> BVar s b
+    -> BVar s b
+l %~~ f = overVar l f
+infixr 4 %~~
+{-# INLINE (%~~) #-}
+
+-- | 'Numeric.Backprop.overVar', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
+--
+-- @since 0.2.4.0
+overVar
+    :: (Num a, Num b, Reifies s W)
+    => Lens' b a
+    -> (BVar s a -> BVar s a)
+    -> BVar s b
+    -> BVar s b
+overVar = E.overVar E.afNum E.afNum E.zfNum E.zfNum
+{-# INLINE overVar #-}
 
 -- | 'Numeric.Backprop.^^?', but with 'Num' constraints instead of
 -- 'Backprop' constraints.

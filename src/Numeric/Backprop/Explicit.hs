@@ -52,7 +52,7 @@ module Numeric.Backprop.Explicit (
   , backpropN, evalBPN, gradBPN, backpropWithN, Every
     -- * Manipulating 'BVar'
   , constVar, auto, coerceVar
-  , viewVar, setVar
+  , viewVar, setVar, overVar
   , sequenceVar, collectVar
   , previewVar, toListOfVar
     -- ** With Isomorphisms
@@ -292,6 +292,22 @@ gradBP2
     -> (a, b)
 gradBP2 zfa zfb ofc f x = ($ ofc) . snd . backprop2 zfa zfb f x
 {-# INLINE gradBP2 #-}
+
+-- | 'Numeric.Backprop.overVar' with explicit 'add' and 'zero'.
+--
+-- @since 0.2.4.0
+overVar
+    :: Reifies s W
+    => AddFunc a
+    -> AddFunc b
+    -> ZeroFunc a
+    -> ZeroFunc b
+    -> Lens' b a
+    -> (BVar s a -> BVar s a)
+    -> BVar s b
+    -> BVar s b
+overVar afa afb zfa zfb l f x = setVar afa afb zfa zfb l (f (viewVar afa zfa l x)) x
+{-# INLINE overVar #-}
 
 -- | 'Numeric.Backprop.isoVar' with explicit 'add' and 'zero'.
 isoVar

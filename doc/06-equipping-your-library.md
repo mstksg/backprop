@@ -703,6 +703,10 @@ set    mtDouble ::        Double ->        MyType ->        MyType
 setVar mtDouble :: BVar s Double -> BVar s MyType -> BVar s MyType
 ```
 
+Likewise, `over` and `%~` can be used to apply a function to the contents of a
+field, and `overVar` and `%~~` can be used to apply backpropagatable functions
+to over fields of a value in a `BVar`.
+
 #### Higher-Kinded Data Interface
 
 The alternative "Higher-Kinded Data" technique, inspired by [this

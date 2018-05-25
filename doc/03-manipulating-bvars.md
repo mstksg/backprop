@@ -409,6 +409,9 @@ setVar nWeights2
     -> BVar s Net
 ```
 
+You can also use `(%~~)` or `overVar` to apply a *function* to a specific
+inside your value.
+
 Prelude Modules
 ---------------
 

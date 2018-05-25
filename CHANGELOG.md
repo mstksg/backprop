@@ -1,6 +1,16 @@
 Changelog
 =========
 
+Version 0.2.4.0
+---------------
+
+*Unreleased*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.2.4.0>
+
+*   `overVar` and `%~~`, for modifying fields.  Essentially a wrapper over a
+    `viewVar` and `setVar`.
+
 Version 0.2.3.0
 ---------------
 

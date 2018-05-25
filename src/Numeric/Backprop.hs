@@ -21,6 +21,9 @@
 -- automatically provies the gradient of that function as well, for usage
 -- with gradient descent and other training methods.
 --
+-- See the <https://backprop.jle.im homepage> for an introduction and
+-- walkthrough.
+--
 -- In more detail: instead of working directly with values to produce your
 -- result, you work with 'BVar's containing those values.  Working with
 -- these 'BVar's is made smooth with the usage of lenses and other
@@ -45,9 +48,9 @@
 --
 -- to automatically get the /gradient/, as well, for a given input.
 --
--- See the <https://github.com/mstksg/backprop README> for more information
--- and links to demonstrations and tutorials, or dive striaght in by
--- reading the docs for 'BVar'.
+-- Refer to the <https://backprop.jle.im homepage> for more information and
+-- links to demonstrations and tutorials, or dive striaght in by reading
+-- the docs for 'BVar'.
 --
 -- If you are writing a library, see
 -- <https://backprop.jle.im/06-equipping-your-library.html> for a guide for
@@ -76,8 +79,8 @@ module Numeric.Backprop (
     -- * Manipulating 'BVar'
   , E.evalBP0
   , E.constVar, E.auto, E.coerceVar
-  , (^^.), (.~~), (^^?), (^^..), (^^?!)
-  , viewVar, setVar
+  , (^^.), (.~~), (%~~), (^^?), (^^..), (^^?!)
+  , viewVar, setVar, overVar
   , sequenceVar, collectVar
   , previewVar, toListOfVar
   , pattern T2, pattern T3
@@ -390,7 +393,6 @@ viewVar = E.viewVar E.addFunc E.zeroFunc
 -- lens.
 --
 -- With normal values, you can set something in a value with a lens:
--- a lens:
 --
 -- @
 -- x '&' myLens '.~' 'y'
@@ -431,6 +433,56 @@ setVar
     -> BVar s b
 setVar = E.setVar E.addFunc E.addFunc E.zeroFunc E.zeroFunc
 {-# INLINE setVar #-}
+
+-- | An infix version of 'overVar', meant to evoke parallels to '%~~' from
+-- lens.
+--
+-- With normal values, you can set modify in a value with a lens:
+--
+-- @
+-- x '&' myLens '%~' 'negate'
+-- @
+--
+-- would "modify" a part of @x :: b@, specified by @myLens :: 'Lens'' a b@,
+-- using the function @negate :: a -> a@.
+--
+-- @
+-- xVar '&' myLens '%~~' 'negate'
+-- @
+--
+-- would "modify" a part of @xVar :: 'BVar' s b@ (a 'BVar' holding a @b@),
+-- specified by @myLens :: 'Lens'' a b@, using the function @negate :: BVar
+-- s a -> BVar s @.  The result is a new (updated) value of type @'BVar'
+-- s b@.
+--
+-- Is essentially a convenient wrapper over a 'viewVar' followed by
+-- a 'setVar'.
+--
+-- @since 0.2.4.0
+--
+(%~~)
+    :: (Backprop a, Backprop b, Reifies s W)
+    => Lens' b a
+    -> (BVar s a -> BVar s a)
+    -> BVar s b
+    -> BVar s b
+l %~~ f = overVar l f
+infixr 4 %~~
+{-# INLINE (%~~) #-}
+
+-- | Using a 'Lens'', modify a value /inzide/ a 'BVar'.  Meant to evoke
+-- parallels to "over" from lens.  See documentation for '%~~' for more
+-- information.
+--
+-- @since 0.2.4.0
+overVar
+    :: (Backprop a, Backprop b, Reifies s W)
+    => Lens' b a
+    -> (BVar s a -> BVar s a)
+    -> BVar s b
+    -> BVar s b
+overVar = E.overVar E.addFunc E.addFunc E.zeroFunc E.zeroFunc
+{-# INLINE overVar #-}
 
 
 -- | An infix version of 'previewVar', meant to evoke parallels to '^?'
