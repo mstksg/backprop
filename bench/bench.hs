@@ -2,11 +2,16 @@
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
 {-# LANGUAGE LambdaCase           #-}
+{-# LANGUAGE PolyKinds            #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE StandaloneDeriving   #-}
 {-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE ViewPatterns         #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
@@ -33,69 +38,85 @@ import qualified Data.Vector.Unboxed          as VU
 import qualified Numeric.LinearAlgebra        as HM
 import qualified System.Random.MWC            as MWC
 
-data Layer i o =
-    Layer { _lWeights :: !(L o i)
-          , _lBiases  :: !(R o)
-          }
-  deriving (Show, Generic)
+type family HKD f a where
+    HKD Identity a = a
+    HKD f        a = f a
 
+data Layer' i o f =
+    Layer { _lWeights :: !(HKD f (L o i))
+          , _lBiases  :: !(HKD f (R o))
+          }
+  deriving (Generic)
+
+type Layer i o = Layer' i o Identity
+
+deriving instance (KnownNat i, KnownNat o) => Show (Layer i o)
 instance NFData (Layer i o)
 
-makeLenses ''Layer
+makeLenses ''Layer'
 
-data Network i h1 h2 o =
-    Net { _nLayer1 :: !(Layer i  h1)
-        , _nLayer2 :: !(Layer h1 h2)
-        , _nLayer3 :: !(Layer h2 o)
+data Network' i h1 h2 o f =
+    Net { _nLayer1 :: !(HKD f (Layer i  h1))
+        , _nLayer2 :: !(HKD f (Layer h1 h2))
+        , _nLayer3 :: !(HKD f (Layer h2 o ))
         }
-  deriving (Show, Generic)
+  deriving (Generic)
 
+type Network i h1 h2 o = Network' i h1 h2 o Identity
+
+deriving instance (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o) => Show (Network i h1 h2 o)
 instance NFData (Network i h1 h2 o)
 
-makeLenses ''Network
+makeLenses ''Network'
 
-infixr 8 #>!
-(#>!)
-    :: (KnownNat m, KnownNat n, Reifies s W)
-    => BVar s (L m n)
-    -> BVar s (R n)
-    -> BVar s (R m)
-(#>!) = liftOp2 . op2 $ \m v ->
-  ( m #> v, \g -> (g `outer` v, tr m #> g) )
-{-# INLINE (#>!) #-}
+main :: IO ()
+main = MWC.withSystemRandom $ \g -> do
+    Just test  <- loadMNIST "data/t10k-images-idx3-ubyte"  "data/t10k-labels-idx1-ubyte"
+    putStrLn "Loaded data."
+    net0 <- MWC.uniformR @(Network 784 300 100 10) (-0.5, 0.5) g
+    createDirectoryIfMissing True "bench-results"
+    t <- getZonedTime
+    let test0   = head test
+        tstr    = formatTime defaultTimeLocale "%Y%m%d-%H%M%S" t
+    defaultMainWith defaultConfig
+          { reportFile = Just $ "bench-results/mnist-bench_" ++ tstr ++ ".html"
+          , timeLimit  = 10
+          } [
+        bgroup "gradient" [
+            let testManual x y = gradNetManual x y net0
+            in  bench "manual" $ nf (uncurry testManual) test0
+          , let testBP     x y = gradBP (netErr x y) net0
+            in  bench "bp"     $ nf (uncurry testBP) test0
+          , let testBPHKD  x y = gradBP (netErrHKD x y) net0
+            in  bench "bp-hkd" $ nf (uncurry testBPHKD) test0
+          , let testHybrid x y = gradBP (\n' -> netErrHybrid n' y x) net0
+            in  bench "hybrid" $ nf (uncurry testHybrid) test0
+          ]
+      , bgroup "descent" [
+            let testManual x y = trainStepManual 0.02 x y net0
+            in  bench "manual" $ nf (uncurry testManual) test0
+          , let testBP     x y = trainStep 0.02 x y net0
+            in  bench "bp"     $ nf (uncurry testBP) test0
+          , let testBPHKD  x y = trainStepHKD 0.02 x y net0
+            in  bench "bp-hkd" $ nf (uncurry testBPHKD) test0
+          , let testHybrid x y = trainStepHybrid 0.02 x y net0
+            in  bench "hybrid" $ nf (uncurry testHybrid) test0
+          ]
+      , bgroup "run" [
+            let testManual     = runNetManual net0
+            in  bench "manual" $ nf testManual (fst test0)
+          , let testBP     x   = evalBP (`runNetwork` x) net0
+            in  bench "bp"     $ nf testBP (fst test0)
+          , let testBPHKD  x   = evalBP (`runNetworkHKD` x) net0
+            in  bench "bp-hkd" $ nf testBPHKD (fst test0)
+          , let testHybrid x   = evalBP (`runNetHybrid` x) net0
+            in  bench "hybrid" $ nf testHybrid (fst test0)
+          ]
+      ]
 
-infixr 8 <.>!
-(<.>!)
-    :: (KnownNat n, Reifies s W)
-    => BVar s (R n)
-    -> BVar s (R n)
-    -> BVar s Double
-(<.>!) = liftOp2 . op2 $ \x y ->
-  ( x <.> y, \g -> (konst g * y, x * konst g)
-  )
-{-# INLINE (<.>!) #-}
-
-konst'
-    :: (KnownNat n, Reifies s W)
-    => BVar s Double
-    -> BVar s (R n)
-konst' = liftOp1 . op1 $ \c -> (konst c, HM.sumElements . extract)
-{-# INLINE konst' #-}
-
-sumElements :: KnownNat n => R n -> Double
-sumElements = HM.sumElements . extract
-{-# INLINE sumElements #-}
-
-sumElements'
-    :: (KnownNat n, Reifies s W)
-    => BVar s (R n)
-    -> BVar s Double
-sumElements' = liftOp1 . op1 $ \x -> (sumElements x, konst)
-{-# INLINE sumElements' #-}
-
-logistic :: Floating a => a -> a
-logistic x = 1 / (1 + exp (-x))
-{-# INLINE logistic #-}
+-- ------------------------------
+-- - "Backprop" Lens Mode       -
+-- ------------------------------
 
 runLayer
     :: (KnownNat i, KnownNat o, Reifies s W)
@@ -151,6 +172,137 @@ trainStep
     -> Network i h1 h2 o
 trainStep r !x !t !n = n - realToFrac r * gradBP (netErr x t) n
 {-# INLINE trainStep #-}
+
+-- ------------------------------
+-- - "Backprop" HKD Mode        -
+-- ------------------------------
+
+runLayerHKD
+    :: (KnownNat i, KnownNat o, Reifies s W)
+    => BVar s (Layer i o)
+    -> BVar s (R i)
+    -> BVar s (R o)
+runLayerHKD (splitBV->Layer w b) x = w #>! x + b
+{-# INLINE runLayerHKD #-}
+
+runNetworkHKD
+    :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o, Reifies s W)
+    => BVar s (Network i h1 h2 o)
+    -> R i
+    -> BVar s (R o)
+runNetworkHKD (splitBV->Net l1 l2 l3) = softMax
+                                      . runLayerHKD l3
+                                      . logistic
+                                      . runLayerHKD l2
+                                      . logistic
+                                      . runLayerHKD l1
+                                      . auto
+{-# INLINE runNetworkHKD #-}
+
+netErrHKD
+    :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o, Reifies s W)
+    => R i
+    -> R o
+    -> BVar s (Network i h1 h2 o)
+    -> BVar s Double
+netErrHKD x t n = crossEntropy t (runNetworkHKD n x)
+{-# INLINE netErrHKD #-}
+
+trainStepHKD
+    :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
+    => Double
+    -> R i
+    -> R o
+    -> Network i h1 h2 o
+    -> Network i h1 h2 o
+trainStepHKD r !x !t !n = n - realToFrac r * gradBP (netErrHKD x t) n
+{-# INLINE trainStepHKD #-}
+
+-- ------------------------------
+-- - "Manual" Mode              -
+-- ------------------------------
+
+runLayerManual
+    :: (KnownNat i, KnownNat o)
+    => Layer i o
+    -> R i
+    -> R o
+runLayerManual l x = (l ^. lWeights) #> x + (l ^. lBiases)
+{-# INLINE runLayerManual #-}
+
+softMaxManual :: KnownNat n => R n -> R n
+softMaxManual x = konst (1 / sumElements expx) * expx
+  where
+    expx = exp x
+{-# INLINE softMaxManual #-}
+
+runNetManual
+    :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
+    => Network i h1 h2 o
+    -> R i
+    -> R o
+runNetManual n = softMaxManual
+               . runLayerManual (n ^. nLayer3)
+               . logistic
+               . runLayerManual (n ^. nLayer2)
+               . logistic
+               . runLayerManual (n ^. nLayer1)
+{-# INLINE runNetManual #-}
+
+gradNetManual
+    :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
+    => R i
+    -> R o
+    -> Network i h1 h2 o
+    -> Network i h1 h2 o
+gradNetManual x t (Net (Layer w1 b1) (Layer w2 b2) (Layer w3 b3)) =
+    let y1 = w1 #> x
+        z1 = y1 + b1
+        x2 = logistic z1
+        y2 = w2 #> x2
+        z2 = y2 + b2
+        x3 = logistic z2
+        y3 = w3 #> x3
+        z3 = y3 + b3
+        o0 = exp z3
+        o1 = HM.sumElements (extract o0)
+        o2 = o0 / konst o1
+        -- o3 = - (log o2 <.> t)
+        dEdO3 = 1
+        dEdO2 = dEdO3 * (- t / o2)
+        dEdO1 = - (dEdO2 <.> o0) / (o1 ** 2)
+        dEdO0 = konst dEdO1 + dEdO2 / konst o1
+        dEdZ3 = dEdO0 * o0
+        dEdY3 = dEdZ3
+        dEdX3 = tr w3 #> dEdY3
+        dEdZ2 = dEdX3 * (x3 * (1 - x3))
+        dEdY2 = dEdZ2
+        dEdX2 = tr w2 #> dEdY2
+        dEdZ1 = dEdX2 * (x2 * (1 - x2))
+        dEdY1 = dEdZ1
+        dEdB3 = dEdZ3
+        dEdW3 = dEdY3 `outer` x3
+        dEdB2 = dEdZ2
+        dEdW2 = dEdY2 `outer` x2
+        dEdB1 = dEdZ1
+        dEdW1 = dEdY1 `outer` x
+    in  Net (Layer dEdW1 dEdB1) (Layer dEdW2 dEdB2) (Layer dEdW3 dEdB3)
+{-# INLINE gradNetManual #-}
+
+trainStepManual
+    :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
+    => Double
+    -> R i
+    -> R o
+    -> Network i h1 h2 o
+    -> Network i h1 h2 o
+trainStepManual r !x !t !n =
+    let gN = gradNetManual x t n
+    in  n - (realToFrac r * gN)
+
+-- ------------------------------
+-- - "Hybrid" Mode              -
+-- ------------------------------
 
 layerOp :: (KnownNat i, KnownNat o) => Op '[Layer i o, R i] (R o)
 layerOp = op2 $ \(Layer w b) x ->
@@ -233,127 +385,61 @@ trainStepHybrid r !x !t !n =
     in  n - (realToFrac r * gN)
 {-# INLINE trainStepHybrid #-}
 
-runLayerManual
-    :: (KnownNat i, KnownNat o)
-    => Layer i o
-    -> R i
-    -> R o
-runLayerManual l x = (l ^. lWeights) #> x + (l ^. lBiases)
-{-# INLINE runLayerManual #-}
+-- ------------------------------
+-- - Operations                 -
+-- ------------------------------
 
-softMaxManual :: KnownNat n => R n -> R n
-softMaxManual x = konst (1 / sumElements expx) * expx
-  where
-    expx = exp x
-{-# INLINE softMaxManual #-}
+infixr 8 #>!
+(#>!)
+    :: (KnownNat m, KnownNat n, Reifies s W)
+    => BVar s (L m n)
+    -> BVar s (R n)
+    -> BVar s (R m)
+(#>!) = liftOp2 . op2 $ \m v ->
+  ( m #> v, \g -> (g `outer` v, tr m #> g) )
+{-# INLINE (#>!) #-}
 
-runNetManual
-    :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
-    => Network i h1 h2 o
-    -> R i
-    -> R o
-runNetManual n = softMaxManual
-               . runLayerManual (n ^. nLayer3)
-               . logistic
-               . runLayerManual (n ^. nLayer2)
-               . logistic
-               . runLayerManual (n ^. nLayer1)
-{-# INLINE runNetManual #-}
+infixr 8 <.>!
+(<.>!)
+    :: (KnownNat n, Reifies s W)
+    => BVar s (R n)
+    -> BVar s (R n)
+    -> BVar s Double
+(<.>!) = liftOp2 . op2 $ \x y ->
+  ( x <.> y, \g -> (konst g * y, x * konst g)
+  )
+{-# INLINE (<.>!) #-}
 
-gradNetManual
-    :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
-    => R i
-    -> R o
-    -> Network i h1 h2 o
-    -> Network i h1 h2 o
-gradNetManual x t (Net (Layer w1 b1) (Layer w2 b2) (Layer w3 b3)) =
-    let y1 = w1 #> x
-        z1 = y1 + b1
-        x2 = logistic z1
-        y2 = w2 #> x2
-        z2 = y2 + b2
-        x3 = logistic z2
-        y3 = w3 #> x3
-        z3 = y3 + b3
-        o0 = exp z3
-        o1 = HM.sumElements (extract o0)
-        o2 = o0 / konst o1
-        -- o3 = - (log o2 <.> t)
-        dEdO3 = 1
-        dEdO2 = dEdO3 * (- t / o2)
-        dEdO1 = - (dEdO2 <.> o0) / (o1 ** 2)
-        dEdO0 = konst dEdO1 + dEdO2 / konst o1
-        dEdZ3 = dEdO0 * o0
-        dEdY3 = dEdZ3
-        dEdX3 = tr w3 #> dEdY3
-        dEdZ2 = dEdX3 * (x3 * (1 - x3))
-        dEdY2 = dEdZ2
-        dEdX2 = tr w2 #> dEdY2
-        dEdZ1 = dEdX2 * (x2 * (1 - x2))
-        dEdY1 = dEdZ1
-        dEdB3 = dEdZ3
-        dEdW3 = dEdY3 `outer` x3
-        dEdB2 = dEdZ2
-        dEdW2 = dEdY2 `outer` x2
-        dEdB1 = dEdZ1
-        dEdW1 = dEdY1 `outer` x
-    in  Net (Layer dEdW1 dEdB1) (Layer dEdW2 dEdB2) (Layer dEdW3 dEdB3)
-{-# INLINE gradNetManual #-}
+konst'
+    :: (KnownNat n, Reifies s W)
+    => BVar s Double
+    -> BVar s (R n)
+konst' = liftOp1 . op1 $ \c -> (konst c, HM.sumElements . extract)
+{-# INLINE konst' #-}
 
-trainStepManual
-    :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
-    => Double
-    -> R i
-    -> R o
-    -> Network i h1 h2 o
-    -> Network i h1 h2 o
-trainStepManual r !x !t !n =
-    let gN = gradNetManual x t n
-    in  n - (realToFrac r * gN)
+sumElements :: KnownNat n => R n -> Double
+sumElements = HM.sumElements . extract
+{-# INLINE sumElements #-}
 
-main :: IO ()
-main = MWC.withSystemRandom $ \g -> do
-    Just test  <- loadMNIST "data/t10k-images-idx3-ubyte"  "data/t10k-labels-idx1-ubyte"
-    putStrLn "Loaded data."
-    net0 <- MWC.uniformR @(Network 784 300 100 9) (-0.5, 0.5) g
-    createDirectoryIfMissing True "bench-results"
-    t <- getZonedTime
-    let test0   = head test
-        tstr    = formatTime defaultTimeLocale "%Y%m%d-%H%M%S" t
-    defaultMainWith defaultConfig
-          { reportFile = Just $ "bench-results/mnist-bench_" ++ tstr ++ ".html"
-          , timeLimit  = 10
-          } [
-        bgroup "gradient" [
-            let testManual x y = gradNetManual x y net0
-            in  bench "manual" $ nf (uncurry testManual) test0
-          , let testBP     x y = gradBP (netErr x y) net0
-            in  bench "bp"     $ nf (uncurry testBP) test0
-          , let testHybrid x y = gradBP (\n' -> netErrHybrid n' y x) net0
-            in  bench "hybrid" $ nf (uncurry testHybrid) test0
-          ]
-      , bgroup "descent" [
-            let testManual x y = trainStepManual 0.02 x y net0
-            in  bench "manual" $ nf (uncurry testManual) test0
-          , let testBP     x y = trainStep 0.02 x y net0
-            in  bench "bp"     $ nf (uncurry testBP) test0
-          , let testHybrid x y = trainStepHybrid 0.02 x y net0
-            in  bench "hybrid" $ nf (uncurry testHybrid) test0
-          ]
-      , bgroup "run" [
-            let testManual     = runNetManual net0
-            in  bench "manual" $ nf testManual (fst test0)
-          , let testBP     x   = evalBP (`runNetwork` x) net0
-            in  bench "bp"     $ nf testBP (fst test0)
-          , let testHybrid x   = evalBP (`runNetHybrid` x) net0
-            in  bench "hybrid" $ nf testHybrid (fst test0)
-          ]
-      ]
+sumElements'
+    :: (KnownNat n, Reifies s W)
+    => BVar s (R n)
+    -> BVar s Double
+sumElements' = liftOp1 . op1 $ \x -> (sumElements x, konst)
+{-# INLINE sumElements' #-}
+
+logistic :: Floating a => a -> a
+logistic x = 1 / (1 + exp (-x))
+{-# INLINE logistic #-}
+
+-- ------------------------------
+-- - IO Plumbing                -
+-- ------------------------------
 
 loadMNIST
     :: FilePath
     -> FilePath
-    -> IO (Maybe [(R 784, R 9)])
+    -> IO (Maybe [(R 784, R 10)])
 loadMNIST fpI fpL = runMaybeT $ do
     i <- MaybeT          $ decodeIDXFile       fpI
     l <- MaybeT          $ decodeIDXLabelsFile fpL
@@ -363,8 +449,12 @@ loadMNIST fpI fpL = runMaybeT $ do
   where
     mkImage :: VU.Vector Int -> Maybe (R 784)
     mkImage = create . VG.convert . VG.map (\i -> fromIntegral i / 255)
-    mkLabel :: Int -> Maybe (R 9)
-    mkLabel n = create $ HM.build 9 (\i -> if round i == n then 1 else 0)
+    mkLabel :: Int -> Maybe (R 10)
+    mkLabel n = create $ HM.build 10 (\i -> if round i == n then 1 else 0)
+
+-- ------------------------------
+-- - Instances                  -
+-- ------------------------------
 
 instance (KnownNat i, KnownNat o) => Num (Layer i o) where
     Layer w1 b1 + Layer w2 b2 = Layer (w1 + w2) (b1 + b2)

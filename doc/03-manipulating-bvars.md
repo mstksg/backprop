@@ -136,7 +136,14 @@ If we make lenses for `Net` using the *[lens][]* or *[microlens-th][]* packages:
 makeLenses ''Net
 ```
 
-Then `^.` from the *lens* or *[microlens][]* packages lets you retrieve a field
+or make them manually:
+
+```haskell top
+nBias1' :: Functor f => (R 20 -> f (R 20)) -> Net -> f Net
+nBias1' f n = (\b -> n { _nBias1 = b }) <$> f (_nBias1 n)
+```
+
+then `^.` from the *lens* or *[microlens][]* packages lets you retrieve a field
 from a `Net`:
 
 [microlens]: http://hackage.haskell.org/package/microlens
@@ -277,6 +284,9 @@ runMet (splitBV -> M w1 b1 w2 b2) x = z
 
 Now, the `M w1 b1 w2 b2` pattern can be used to deconstruct *both* "normal"
 `Met`s, as well as a `BVar s Met` (with `splitBV` or `BV`).
+
+Note that this HKD access method is potentially less performant than lens
+access (by about 10-20%).
 
 ### Potential or Many Fields
 

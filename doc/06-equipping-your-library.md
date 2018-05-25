@@ -764,6 +764,9 @@ getMT2DoubleBVar (splitBV -> MT2 d _ _) = d
 Under `splitBV`, your users can pattern match on the `MT2` constructor and get
 the contents as `BVar`s.
 
+Note that HKD access through pattern matching is potentially less performant
+than access using lens (by about 10-20%).
+
 Users can also use `joinBV` (or the `BV` pattern synonym in constructor mode)
 to re-construct a `BVar` of `MyType2` in terms of `BVar`s of its contents using
 the `MT2` constructor:
@@ -777,4 +780,3 @@ makeMyType2
     -> BVar s MyType2
 makeMyType2 d i ds = joinBV $ MT2 d i ds
 ```
-

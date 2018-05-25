@@ -207,7 +207,7 @@ backpropN f = second ($ E.oneFunc) . E.backpropN E.zeroFuncs f
 -- | 'backpropN', but allows you to provide the gradient of the "final
 -- result" with respect to the output of your function.  See 'backpropWith'
 -- for more details.
--- 
+--
 -- Note that argument order changed in v0.2.3.
 --
 -- @since 0.2.0.0
@@ -862,6 +862,9 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
 -- constructor now holds a @'BVar' s Double@ and a @BVar s [Double]@,
 -- instead of just a normal 'Double' and @[Double]@.
 --
+-- Note that access using 'splitBV' and pattern matching is slightly slower
+-- than access using lenses (by about 10-20%).
+--
 -- With this trick, 'joinBV' can also be used, with the type:
 --
 -- @
@@ -895,7 +898,10 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
 -- fields are all instances of 'Backprop', where the type itself has an
 -- instance of 'Backprop'.  The type also must derive 'Generic'.
 --
--- Note that 'BV' is a pattern synonym version where the deconstructor is
+-- Note that access using 'splitBV' and pattern matching is slightly slower
+-- than access using lenses (by about 10-20%).
+--
+-- See also 'BV', pattern synonym version where the deconstructor is
 -- exactly a view into 'splitBV'.
 --
 -- @since 0.2.2.0
