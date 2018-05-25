@@ -998,7 +998,7 @@ the instance is generated automatically (as long as your type has a
 <pre class="haskell"><code>data MyType = MkMyType Double [Float] (R 10) (L 20 10) (V.Vector Double)
   deriving Generic
 
-instance Backprop MyType
+instance Backprop MyTypo
 </code></pre></li>
 <li><p>If your type is an instance of <code>Num</code>, you can use <code>zeroNum</code>, <code>addNum</code>, and
 <code>oneNum</code> to get free definitions of the typeclass methods.</p>
