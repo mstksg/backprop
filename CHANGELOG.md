@@ -10,6 +10,16 @@ Version 0.2.4.0
 
 *   `overVar` and `%~~`, for modifying fields.  Essentially a wrapper over a
     `viewVar` and `setVar`.
+*   Argument order in the `backpropWith` family of functions changed again;
+    **breaking change** for those using any `backpropWith` function.  However,
+    the new order is much more usable.
+*   Changes to the argument order in the `backprop` family of functions in the
+    *Explicit* interfaces now reverted back to previous order, from v0.2.0 and
+    before.  Should be an "un-breaking" change, but will break code written in
+    v0.2.3 style.
+*   Added warning to *Explicit* module that the API is "semi-stable".
+*   Bechmarks now include HKD access and a "hybrid" approach.  Documentation
+    updated to reflect results.
 
 Version 0.2.3.0
 ---------------
@@ -19,7 +29,7 @@ Version 0.2.3.0
 <https://github.com/mstksg/backprop/releases/tag/v0.2.3.0>
 
 *   Argument order in `backpropWith` family of functions switched around to
-    allow for final gradient to be given after-the-fact.  **Braking change**
+    allow for final gradient to be given after-the-fact.  **Breaking change**
     for anyone using any `backpropWith` function.
 *   As a consequence of the previous change, `backprop` family of functions in
     *Explicit* interfaces also all changed argument order.  **Breaking change**

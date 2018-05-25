@@ -30,7 +30,7 @@
 module Numeric.Backprop.Internal (
     BVar
   , W
-  , backpropN, evalBPN
+  , backpropWithN, evalBPN
   , constVar
   , liftOp, liftOp1, liftOp2, liftOp3
   , viewVar, setVar, sequenceVar, collectVar, previewVar, toListOfVar
@@ -620,24 +620,26 @@ gradRunner o R{..} (n,stns) = do
     {-# INLINE propagate #-}
 {-# INLINE gradRunner #-}
 
--- | 'Numeric.Backprop.backpropN', but with explicit 'zero' and 'one'.
+-- | 'Numeric.Backprop.backpropWithN', but with explicit 'zero' and 'one'.
 --
--- Note that argument order changed in v0.2.3.
-backpropN
+-- Note that argument order changed in v0.2.4.
+--
+-- @since 0.2.0.0
+backpropWithN
     :: forall as b. ()
     => Prod ZeroFunc as
     -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
-    -> (b, OneFunc b -> Tuple as)
-backpropN zfs f !xs = (y, g)
+    -> (b, b -> Tuple as)
+backpropWithN zfs f !xs = (y, g)
   where
     !(!tp@(!_,!_),!y) = unsafePerformIO $ fillWengert f xs
-    g :: OneFunc b -> Tuple as
-    g ofb = runST $ do
+    g :: b -> Tuple as
+    g o = runST $ do
         r <- initRunner tp $ bimap getSum (`appEndo` [])
                            . fst
                            $ zipWithPM_ go zfs xs
-        gradRunner (runOF ofb y) r tp
+        gradRunner o r tp
         delts <- toList <$> V.freeze (_rInputs r)
         return . fromMaybe (internalError "backpropN") $
           fillProd (\_ d -> I (unsafeCoerce d)) xs delts
@@ -645,7 +647,7 @@ backpropN zfs f !xs = (y, g)
         go :: forall a. ZeroFunc a -> I a -> ((Sum Int, Endo [Any]),())
         go zf (I x) = ((1, Endo (unsafeCoerce (runZF zf x) :)), ())
         {-# INLINE go #-}
-{-# INLINE backpropN #-}
+{-# INLINE backpropWithN #-}
 
 -- | 'evalBP' generalized to multiple inputs of different types.  See
 -- documentation for 'Numeric.Backprop.backpropN' for more details.

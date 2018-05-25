@@ -27,13 +27,18 @@
 -- "Numeric.Backprop".  Instead of relying on a 'Backprop' instance, allows
 -- you to manually provide 'zero', 'add', and 'one' on a per-value basis.
 --
--- It is recommended you use 'Numeric.Backprop' or 'Numeric.Backprop.Num'
+-- It is recommended you use "Numeric.Backprop" or "Numeric.Backprop.Num"
 -- instead, unless your type has no 'Num' instance, or you else you want to
 -- avoid defining orphan 'Backprop' instances for external types.  Can also
 -- be useful if mixing and matching styles.
 --
 -- See "Numeric.Backprop" for fuller documentation on using these
 -- functions.
+--
+-- WARNING: API of this module can be considered only "semi-stable"; while
+-- the API of "Numeric.Backprop" and "Numeric.Backprop.Num" are kept
+-- consistent, some argument order changes might happen in this module to
+-- reflect changes in underlying implementation.
 --
 -- @since 0.2.0.0
 
@@ -164,41 +169,42 @@ auto :: a -> BVar s a
 auto = constVar
 {-# INLINE auto #-}
 
--- | 'Numeric.Backprop.backpropWithN', but with explicit 'zero'.
---
--- Note that argument order changed in v0.2.3.
---
--- @since 0.2.0.0
-backpropWithN
-    :: Prod ZeroFunc as
+-- | 'Numeric.Backprop.backpropN', but with explicit 'zero' and 'one'.
+backpropN
+    :: forall as b. ()
+    => Prod ZeroFunc as
+    -> OneFunc b
     -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
-    -> (b, (b -> b) -> Tuple as) -- ^ Takes function giving gradient of final result given the output of function
-backpropWithN zfs f = second (. OF) . backpropN zfs f
-{-# INLINE backpropWithN #-}
+    -> (b, Tuple as)
+backpropN zfs ob f xs = (y, g (runOF ob y))
+  where
+    (y, g) = backpropWithN zfs f xs
+{-# INLINE backpropN #-}
 
 -- | 'Numeric.Backprop.backprop', but with explicit 'zero' and 'one'.
---
--- Note that argument order changed in v0.2.3.
 backprop
     :: ZeroFunc a
+    -> OneFunc b
     -> (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
-    -> (b, OneFunc b -> a)
-backprop zfa f = second ((getI . head') .)
-               . backpropN (zfa :< Ø) (f . head')
-               . only_
+    -> (b, a)
+backprop zfa ofb f = second (getI . head')
+                   . backpropN (zfa :< Ø) ofb (f . head')
+                   . only_
 {-# INLINE backprop #-}
 
 -- | 'Numeric.Backprop.backpropWith', but with explicit 'zero'.
 --
--- Note that argument order changed in v0.2.3.
+-- Note that argument order changed in v0.2.4.
 backpropWith
     :: ZeroFunc a
     -> (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
-    -> (b, (b -> b) -> a) -- ^ Takes function giving gradient of final result given the output of function
-backpropWith zfa f = second (. OF) . backprop zfa f
+    -> (b, b -> a)
+backpropWith zfa f = second ((getI . head') .)
+                   . backpropWithN (zfa :< Ø) (f . head')
+                   . only_
 {-# INLINE backpropWith #-}
 
 -- | 'evalBP' but with no arguments.  Useful when everything is just given
@@ -226,7 +232,7 @@ gradBP
     -> (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> a
-gradBP zfa ofb f = ($ ofb) . snd . backprop zfa f
+gradBP zfa ofb f = snd . backprop zfa ofb f
 {-# INLINE gradBP #-}
 
 -- | 'Numeric.Backprop.gradBP', Nbut with explicit 'zero' and 'one'.
@@ -236,28 +242,27 @@ gradBPN
     -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> Tuple as
-gradBPN zfas ofb f = ($ ofb) . snd . backpropN zfas f
+gradBPN zfas ofb f = snd . backpropN zfas ofb f
 {-# INLINE gradBPN #-}
 
 -- | 'Numeric.Backprop.backprop2', but with explicit 'zero' and 'one'.
---
--- Note that argument order changed in v0.2.3.
 backprop2
     :: ZeroFunc a
     -> ZeroFunc b
+    -> OneFunc c
     -> (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
     -> a
     -> b
-    -> (c, OneFunc c -> (a, b))
-backprop2 zfa zfb f x y = second ((\(dx ::< dy ::< Ø) -> (dx, dy)) .) $
-    backpropN (zfa :< zfb :< Ø)
+    -> (c, (a, b))
+backprop2 zfa zfb ofc f x y = second (\(dx ::< dy ::< Ø) -> (dx, dy)) $
+    backpropN (zfa :< zfb :< Ø) ofc
         (\(x' :< y' :< Ø) -> f x' y')
         (x ::< y ::< Ø)
 {-# INLINE backprop2 #-}
 
 -- | 'Numeric.Backprop.backpropWith2', but with explicit 'zero'.
 --
--- Note that argument order changed in v0.2.3.
+-- Note that argument order changed in v0.2.4.
 --
 -- @since 0.2.0.0
 backpropWith2
@@ -266,8 +271,11 @@ backpropWith2
     -> (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
     -> a
     -> b
-    -> (c, (c -> c) -> (a, b)) -- ^ Takes function giving gradient of final result given the output of function
-backpropWith2 zfa zfb f x = second (. OF) . backprop2 zfa zfb f x
+    -> (c, c -> (a, b))
+backpropWith2 zfa zfb f x y = second ((\(dx ::< dy ::< Ø) -> (dx, dy)) .) $
+    backpropWithN (zfa :< zfb :< Ø)
+        (\(x' :< y' :< Ø) -> f x' y')
+        (x ::< y ::< Ø)
 {-# INLINE backpropWith2 #-}
 
 -- | 'evalBP' for a two-argument function.  See
@@ -290,7 +298,7 @@ gradBP2
     -> a
     -> b
     -> (a, b)
-gradBP2 zfa zfb ofc f x = ($ ofc) . snd . backprop2 zfa zfb f x
+gradBP2 zfa zfb ofc f x = snd . backprop2 zfa zfb ofc f x
 {-# INLINE gradBP2 #-}
 
 -- | 'Numeric.Backprop.overVar' with explicit 'add' and 'zero'.
