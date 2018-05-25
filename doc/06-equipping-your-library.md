@@ -27,6 +27,7 @@ import           Numeric.Backprop
 import           Numeric.Backprop.Class
 import           Numeric.LinearAlgebra.Static (L, R, konst)
 import           System.Random
+import qualified Data.Vector                  as V
 import qualified Numeric.LinearAlgebra.Static as H
 import qualified Numeric.LinearAlgebra        as HU
 ```
@@ -45,60 +46,11 @@ you can use a backprop-aware function as a normal function with `evalBP`.
 Alternatively, you can re-export all of your functions in a separate module with
 "backprop-aware" versions.
 
-Backprop Class
---------------
-
-First of all, all of your library's types should have instances of the
-[`Backprop` typeclass][class].  This allows values of your type to be used in
-backpropagatable functions.  See the [Backprop typeclass section][tcdocs] of
-this documentation for more information on writing a `Backprop` instance for
-your types.
-
-[class]: https://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Class.html
-[tcdocs]: https://backprop.jle.im/04-the-backprop-typeclass.html
-
-In short:
-
-1.  If your type is a type with a single constructor whose fields are all
-    instances of `Backprop`, you can just write `instance Backprop MyType`, and
-    the instance is generated automatically (as long as your type has a
-    `Generic` instance)
-2.  If your type is an instance of `Num`, you can use `zeroNum`, `addNum`, and
-    `oneNum` to get free definitions of the typeclass methods.
-
-    ```haskell
-    instance Backprop Double where
-        zero = zeroNum
-        add  = addNum
-        one  = oneNum
-    ```
-
-3.  If your type is made using a `Functor` instance, you can use `zeroFunctor`
-    and `oneFunctor`:
-
-    ```haskell
-    instance Backprop a => Backprop (V.Vector a) where
-        zero = zeroFunctor
-        add  = undefined        -- ??
-        one  = oneFunctor
-    ```
-
-4.  If your type has an `IsList` instance, you can use `addIsList`:
-
-    ```haskell
-    instance Backprop a => Backprop (V.Vector a) where
-        zero = zeroFunctor
-        add  = addIsList
-        one  = oneFunctor
-    ```
-
-For more details, see the [aforementioned documentation][tcdocs] or the [actual
-typeclass haddock documentation][class].
-
 Know Thy Types
 --------------
 
-Now, to translate/lift your library's functions.  If you have a function:
+The most significant effort will be in lifting your library's functions.  If
+you have a function:
 
 ```haskell
 myFunc :: a -> b
@@ -618,3 +570,203 @@ etc. to decide what operations to use.
 
 At the moment, this is not supported.  Please open an issue if this becomes an
 issue!
+
+Supporting Data Types
+---------------------
+
+Your library will probably have data types that you expect your users to use.
+To equip your data types for backpropagation, you can take a few steps.
+
+### Backprop Class
+
+First of all, all of your library's types should have instances of the
+[`Backprop` typeclass][class].  This allows values of your type to be used in
+backpropagatable functions.  See the [Backprop typeclass section][tcdocs] of
+this documentation for more information on writing a `Backprop` instance for
+your types.
+
+[class]: https://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Class.html
+[tcdocs]: https://backprop.jle.im/04-the-backprop-typeclass.html
+
+In short:
+
+1.  If your type is a type with a single constructor whose fields are all
+    instances of `Backprop`, you can just write `instance Backprop MyType`, and
+    the instance is generated automatically (as long as your type has a
+    `Generic` instance)
+
+    ```haskell top
+    data MyType = MkMyType Double [Float] (R 10) (L 20 10) (V.Vector Double)
+      deriving Generic
+
+    instance Backprop MyType
+    ```
+
+2.  If your type is an instance of `Num`, you can use `zeroNum`, `addNum`, and
+    `oneNum` to get free definitions of the typeclass methods.
+
+    ```haskell
+    instance Backprop Double where
+        zero = zeroNum
+        add  = addNum
+        one  = oneNum
+    ```
+
+3.  If your type is made using a `Functor` instance, you can use `zeroFunctor`
+    and `oneFunctor`:
+
+    ```haskell
+    instance Backprop a => Backprop (V.Vector a) where
+        zero = zeroFunctor
+        add  = undefined        -- ??
+        one  = oneFunctor
+    ```
+
+4.  If your type has an `IsList` instance, you can use `addIsList`:
+
+    ```haskell
+    instance Backprop a => Backprop (V.Vector a) where
+        zero = zeroFunctor
+        add  = addIsList
+        one  = oneFunctor
+    ```
+
+For more details, see the [aforementioned documentation][tcdocs] or the [actual
+typeclass haddock documentation][class].
+
+### Accessors
+
+If you have product types, users should be able to access values inside `BVar`s
+of your data type.  There are two main ways to provide access: the lens-based
+interface and the higher-kinded-data-based interface.
+
+The lens-based interface gives your users "getter" and "setter" functions for
+fields, and the higher-kinded-data-based interface lets your users pattern
+match on your data type's original constructor to get fields and construct
+values.
+
+#### Lens-Based Interface
+
+If you are defining a product type, like
+
+```haskell top
+data MyType = MT { _mtDouble  :: Double
+                 , _mtInt     :: Int
+                 , _mtDoubles :: [Double]
+                 }
+```
+
+Users who have a `BVar s MyType` can't normally access the fields inside,
+because you can't directly pattern match normally, and the record accessors
+are `MyType -> Int` (unlifted).  As a library maintainer, you can provide them
+*lenses* to the fields, either generated automatically using the *[lens][]* or
+*[microlens-th][]* packages:
+
+[lens]: http://hackage.haskell.org/package/lens
+[microlens-th]: http://hackage.haskell.org/package/microlens-th
+
+```haskell top
+makeLenses ''MyType
+```
+
+or manually by hand:
+
+```haskell top
+mtInt' :: Functor f => (Int -> f Int) -> MyType -> f MyType
+mtInt' f mt = (\i -> mt { _mtInt = i }) <$> f (_mtInt mt)
+```
+
+Now, users can use `^.` or `view` from the *lens* or *[microlens][]* packages
+to retrieve your fields:
+
+[microlens]: http://hackage.haskell.org/package/microlens
+
+```haskell
+(^. mtDouble)  ::        MyType ->        Double
+```
+
+And `(^^.)` and `viewVar` from *backprop* to retrieve fields from a `BVar`:
+
+```haskell
+(^^. mtDouble) :: BVar s MyType -> BVar s Double
+```
+
+They can also use `set` or `.~` to modify fields, and `setVar` and `.~~` to
+modify and "set" fields in a `BVar`:
+
+```haskell
+set    mtDouble ::        Double ->        MyType ->        MyType
+setVar mtDouble :: BVar s Double -> BVar s MyType -> BVar s MyType
+```
+
+#### Higher-Kinded Data Interface
+
+The alternative "Higher-Kinded Data" technique, inspired by [this
+article][hkd], allows your users to directly pattern match on `BVar`s of your
+types to get their contents.
+
+[hkd]: http://reasonablypolymorphic.com/blog/higher-kinded-data/
+
+Doing this requires modifying the definition of your data types slightly.
+Instead of `MyType` above, we can make a type family that can be re-used for
+all of your data types:
+
+```haskell top
+type family HKD f a where
+    HKD Identity a = a
+    HKD f        a = f a
+```
+
+and define your data types in terms of this type family (remembering to derive
+`Generic`):
+
+```haskell top
+data MyType2' f = MT2 { mt2Double  :: HKD f Double
+                      , mt2Int     :: HKD f Int
+                      , mt2Doubles :: HKD f [Double]
+                      }
+  deriving Generic
+```
+
+Now your original data type can be recovered with `MyType2' Identity`, and can
+be pattern matched directly in the same way as the original type (the
+`Identity` disappears):
+
+```haskell top
+type MyType2 = MyType2' Identity
+
+deriving instance Show MyType2
+instance Backprop MyType2
+
+getMT2Double :: MyType2 -> Double
+getMT2Double (MT2 d _ _) = d
+```
+
+But now, users can *pattern match* on a `BVar s MyType2` to get `BVar`s of the
+contents, with `splitBV` or the `BV` pattern synonym:
+
+```haskell top
+getMT2DoubleBVar
+    :: Reifies s W
+    => BVar s MyType2
+    -> BVar s Double
+getMT2DoubleBVar (splitBV -> MT2 d _ _) = d
+```
+
+Under `splitBV`, your users can pattern match on the `MT2` constructor and get
+the contents as `BVar`s.
+
+Users can also use `joinBV` (or the `BV` pattern synonym in constructor mode)
+to re-construct a `BVar` of `MyType2` in terms of `BVar`s of its contents using
+the `MT2` constructor:
+
+```haskell top
+makeMyType2
+    :: Reifies s W
+    => BVar s Double
+    -> BVar s Int
+    -> BVar s [Double]
+    -> BVar s MyType2
+makeMyType2 d i ds = joinBV $ MT2 d i ds
+```
+

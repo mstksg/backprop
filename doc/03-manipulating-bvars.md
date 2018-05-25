@@ -251,7 +251,12 @@ instance Backprop Met
 ```
 
 `Met` is the same as `Net` in every way -- it can be pattern matched on to get
-the `L 20 100`, etc.
+the `L 20 100`, etc. (the `Identity` disappears):
+
+```haskell top
+getMetBias1 :: Met -> R 20
+getMetBias1 (M _ b _ _) = b
+```
 
 The benefit of this is that we can now directly pattern match on a `BVar s Met`
 to get the internal fields as `BVar`s using `splitBV` as a view pattern (or the
