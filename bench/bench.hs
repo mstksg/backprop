@@ -62,7 +62,7 @@ infixr 8 #>!
     -> BVar s (R m)
 (#>!) = liftOp2 . op2 $ \m v ->
   ( m #> v, \g -> (g `outer` v, tr m #> g) )
-
+{-# INLINE (#>!) #-}
 
 infixr 8 <.>!
 (<.>!)
@@ -73,21 +73,25 @@ infixr 8 <.>!
 (<.>!) = liftOp2 . op2 $ \x y ->
   ( x <.> y, \g -> (konst g * y, x * konst g)
   )
+{-# INLINE (<.>!) #-}
 
 konst'
     :: (KnownNat n, Reifies s W)
     => BVar s Double
     -> BVar s (R n)
 konst' = liftOp1 . op1 $ \c -> (konst c, HM.sumElements . extract)
+{-# INLINE konst' #-}
 
 sumElements :: KnownNat n => R n -> Double
 sumElements = HM.sumElements . extract
+{-# INLINE sumElements #-}
 
 sumElements'
     :: (KnownNat n, Reifies s W)
     => BVar s (R n)
     -> BVar s Double
 sumElements' = liftOp1 . op1 $ \x -> (sumElements x, konst)
+{-# INLINE sumElements' #-}
 
 logistic :: Floating a => a -> a
 logistic x = 1 / (1 + exp (-x))
@@ -118,11 +122,15 @@ runNetwork n = softMax
              . runLayer (n ^^. nLayer2)
              . logistic
              . runLayer (n ^^. nLayer1)
-             . constVar
+             . auto
 {-# INLINE runNetwork #-}
 
-crossEntropy :: (KnownNat n, Reifies s W) => R n -> BVar s (R n) -> BVar s Double
-crossEntropy t r = negate $ log r <.>! constVar t
+crossEntropy
+    :: (KnownNat n, Reifies s W)
+    => R n
+    -> BVar s (R n)
+    -> BVar s Double
+crossEntropy t r = negate $ log r <.>! auto t
 {-# INLINE crossEntropy #-}
 
 netErr
@@ -143,6 +151,87 @@ trainStep
     -> Network i h1 h2 o
 trainStep r !x !t !n = n - realToFrac r * gradBP (netErr x t) n
 {-# INLINE trainStep #-}
+
+layerOp :: (KnownNat i, KnownNat o) => Op '[Layer i o, R i] (R o)
+layerOp = op2 $ \(Layer w b) x ->
+    ( w #> x + b
+    , \g -> (Layer (g `outer` x) g, tr w #> g)
+    )
+{-# INLINE layerOp #-}
+
+logisticOp
+    :: Floating a
+    => Op '[a] a
+logisticOp = op1 $ \x ->
+    let lx = logistic x
+    in  (lx, \g -> lx * (1 - lx) * g)
+{-# INLINE logisticOp #-}
+
+softMaxOp
+    :: KnownNat n
+    => Op '[R n] (R n)
+softMaxOp = op1 $ \x ->
+    let expx   = exp x
+        tot    = sumElements expx
+        invtot = 1 / tot
+        res    = konst invtot * expx
+    in  ( res
+        , \g -> res - konst (invtot ** 2) * exp (2 * x) * g
+        )
+{-# INLINE softMaxOp #-}
+
+softMaxCrossEntropyOp
+    :: KnownNat n
+    => Op '[R n, R n] Double
+softMaxCrossEntropyOp = op2 $ \targ x ->
+    let expx   = exp x
+        sm     = konst (1 / sumElements expx) * expx
+        ce     = negate $ log sm <.> targ
+    in  ( ce
+        , \g -> (0, (konst ce - targ) * konst g)    -- TODO: it's not zero
+        )
+{-# INLINE softMaxCrossEntropyOp #-}
+
+runNetHybrid
+    :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o, Reifies s W)
+    => BVar s (Network i h1 h2 o)
+    -> R i
+    -> BVar s (R o)
+runNetHybrid n = liftOp1 softMaxOp
+               . liftOp2 layerOp (n ^^. nLayer3)
+               . liftOp1 logisticOp
+               . liftOp2 layerOp (n ^^. nLayer2)
+               . liftOp1 logisticOp
+               . liftOp2 layerOp (n ^^. nLayer1)
+               . auto
+{-# INLINE runNetHybrid #-}
+
+netErrHybrid
+    :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o, Reifies s W)
+    => BVar s (Network i h1 h2 o)
+    -> R o
+    -> R i
+    -> BVar s Double
+netErrHybrid n t = liftOp2 softMaxCrossEntropyOp (auto t)
+                 . liftOp2 layerOp (n ^^. nLayer3)
+                 . liftOp1 logisticOp
+                 . liftOp2 layerOp (n ^^. nLayer2)
+                 . liftOp1 logisticOp
+                 . liftOp2 layerOp (n ^^. nLayer1)
+                 . auto
+{-# INLINE netErrHybrid #-}
+
+trainStepHybrid
+    :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
+    => Double
+    -> R i
+    -> R o
+    -> Network i h1 h2 o
+    -> Network i h1 h2 o
+trainStepHybrid r !x !t !n =
+    let gN = gradBP (\n' -> netErrHybrid n' t x) n
+    in  n - (realToFrac r * gN)
+{-# INLINE trainStepHybrid #-}
 
 runLayerManual
     :: (KnownNat i, KnownNat o)
@@ -240,18 +329,24 @@ main = MWC.withSystemRandom $ \g -> do
             in  bench "manual" $ nf (uncurry testManual) test0
           , let testBP     x y = gradBP (netErr x y) net0
             in  bench "bp"     $ nf (uncurry testBP) test0
+          , let testHybrid x y = gradBP (\n' -> netErrHybrid n' y x) net0
+            in  bench "hybrid" $ nf (uncurry testHybrid) test0
           ]
       , bgroup "descent" [
             let testManual x y = trainStepManual 0.02 x y net0
             in  bench "manual" $ nf (uncurry testManual) test0
           , let testBP     x y = trainStep 0.02 x y net0
             in  bench "bp"     $ nf (uncurry testBP) test0
+          , let testHybrid x y = trainStepHybrid 0.02 x y net0
+            in  bench "hybrid" $ nf (uncurry testHybrid) test0
           ]
       , bgroup "run" [
             let testManual     = runNetManual net0
             in  bench "manual" $ nf testManual (fst test0)
           , let testBP     x   = evalBP (`runNetwork` x) net0
             in  bench "bp"     $ nf testBP (fst test0)
+          , let testHybrid x   = evalBP (`runNetHybrid` x) net0
+            in  bench "hybrid" $ nf testHybrid (fst test0)
           ]
       ]
 
