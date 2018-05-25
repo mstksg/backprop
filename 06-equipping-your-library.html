@@ -898,12 +898,6 @@ mkFoo
     -&gt; BVar s Foo
 mkFoo = isoVar MkFoo getFoo
 
--- also:
-mkFoo&#39;
-    :: BVar s Double
-    -&gt; BVar s Foo
-mkFoo&#39; = coerceVar          -- requires no `Reifies s W` constraint
-
 data Bar = MkBar { bar1 :: Double, bar2 :: Float }
   deriving Generic
 
@@ -915,6 +909,13 @@ mkBar
     -&gt; BVar s Float
     -&gt; BVar s Bar
 mkBar = isoVar2 MkBar (\b -&gt; (bar1 b, bar2 b))
+</code></pre>
+<p>Note also that if you have a newtype with one constructor (or any other two
+<code>Coercible</code> types), you can simply use <code>coerceVar</code>:</p>
+<pre class="haskell"><code>mkFoo&#39;
+    :: BVar s Double
+    -&gt; BVar s Foo
+mkFoo&#39; = coerceVar          -- requires no `Reifies s W` constraint
 </code></pre>
 <h3>NoGrad</h3>
 <p>If you do decide to go to the extreme, and provide <em>only</em> a BVar-based
