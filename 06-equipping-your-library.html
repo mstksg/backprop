@@ -1088,4 +1088,25 @@ instance Backprop MyType2
 getMT2Double :: MyType2 -&gt; Double
 getMT2Double (MT2 d _ _) = d
 </code></pre>
+<p>But now, users can <em>pattern match</em> on a <code>BVar s MyType2</code> to get <code>BVar</code>s of the
+contents, with <code>splitBV</code> or the <code>BV</code> pattern synonym:</p>
+<pre class="haskell"><code>getMT2DoubleBVar
+    :: Reifies s W
+    =&gt; BVar s MyType2
+    -&gt; BVar s Double
+getMT2DoubleBVar (splitBV -&gt; MT2 d _ _) = d
+</code></pre>
+<p>Under <code>splitBV</code>, your users can pattern match on the <code>MT2</code> constructor and get
+the contents as <code>BVar</code>s.</p>
+<p>Users can also use <code>joinBV</code> (or the <code>BV</code> pattern synonym in constructor mode)
+to re-construct a <code>BVar</code> of <code>MyType2</code> in terms of <code>BVar</code>s of its contents using
+the <code>MT2</code> constructor:</p>
+<pre class="haskell"><code>makeMyType2
+    :: Reifies s W
+    =&gt; BVar s Double
+    -&gt; BVar s Int
+    -&gt; BVar s [Double]
+    -&gt; BVar s MyType2
+makeMyType2 d i ds = joinBV $ MT2 d i ds
+</code></pre>
 </div></div></div></div></div></section><div class="tintin-doc-footer clear-fix"><div class="float-right"><div style="float: left" class="d-inline"><p class>Site generated with </p></div><a style="float: left" href="https://theam.github.io/tintin"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/logo.svg" class="filter-gray"></a><div class="clear-fix float-right"><span style="float:left">&mdash; &copy; 2018 </span><a href="http://theam.io" class="float:left"><img src="http://theam.io/logo_theam.png" class="footer-theam"></a></div></div></div></div><script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script><script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/haskell.min.js"></script><script src="https://cdn.rawgit.com/icons8/bower-webicon/v0.10.7/jquery-webicon.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script>$(function () {$("#menu-toggle").click(function(e) {e.preventDefault();$("#wrapper").toggleClass("toggled");$("#menu-toggle img").toggleClass("rotateIn rotateOut");})});</script><script src="https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/contrib/auto-render.min.js"></script><script>renderMathInElement(document.body);</script></body></html>
