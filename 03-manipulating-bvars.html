@@ -700,7 +700,10 @@ deriving instance Show Met
 instance Backprop Met
 </code></pre>
 <p><code>Met</code> is the same as <code>Net</code> in every way -- it can be pattern matched on to get
-the <code>L 20 100</code>, etc. (the <code>Identity</code> disappears)</p>
+the <code>L 20 100</code>, etc. (the <code>Identity</code> disappears):</p>
+<pre class="haskell"><code>getMetBias1 :: Met -&gt; R 20
+getMetBias1 (M _ b _ _) = b
+</code></pre>
 <p>The benefit of this is that we can now directly pattern match on a <code>BVar s Met</code>
 to get the internal fields as <code>BVar</code>s using <code>splitBV</code> as a view pattern (or the
 <code>BV</code> pattern synonym):</p>
