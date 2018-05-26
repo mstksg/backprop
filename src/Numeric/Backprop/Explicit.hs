@@ -180,7 +180,7 @@ backpropN
 backpropN zfs ob f xs = (y, g (runOF ob y))
   where
     (y, g) = backpropWithN zfs f xs
-{-# INLINE backpropN #-}
+-- {-# INLINE backpropN #-}
 
 -- | 'Numeric.Backprop.backprop', but with explicit 'zero' and 'one'.
 backprop
@@ -192,7 +192,7 @@ backprop
 backprop zfa ofb f = second (getI . head')
                    . backpropN (zfa :< Ø) ofb (f . head')
                    . only_
-{-# INLINE backprop #-}
+-- {-# INLINE backprop #-}
 
 -- | 'Numeric.Backprop.backpropWith', but with explicit 'zero'.
 --
