@@ -12,5 +12,7 @@
 /prof-results
 *.prof
 *.prof.folded
+*.prof.html
 /samples-prof
 *.dyn_o
+*.o

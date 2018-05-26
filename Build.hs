@@ -1,5 +1,5 @@
 #!/usr/bin/env stack
--- stack --install-ghc runghc --package shake
+-- stack --install-ghc runghc --package shake --stack-yaml stack.yaml
 
 import           Development.Shake
 import           Development.Shake.FilePath
@@ -71,15 +71,7 @@ main = getDirectoryFilesIO "samples" ["/*.lhs", "/*.hs"] >>= \allSamps ->
         createDirectoryIfMissing True ".build"
       removeFilesAfter "samples" ["/*.o"]
       cmd "stack" "ghc"
-                  "--resolver lts-10"
-                  "--package backprop"
-                  "--package hmatrix"
-                  "--package lens"
-                  "--package mnist-idx"
-                  "--package one-liner-instances"
-                  "--package split"
-                  "--package singletons"
-                  "--package mwc-random"
+                  "--stack-yaml stack.yaml"
                   "--"
                   ("samples" </> src)
                   "-o" f
