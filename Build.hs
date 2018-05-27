@@ -65,7 +65,7 @@ main = getDirectoryFilesIO "samples" ["/*.lhs", "/*.hs"] >>= \allSamps ->
         "--reference-location block"
         "-o" f
         src
-        
+
     "samples-exe/*" %> \f -> do
       need ["install"]
       [src] <- getDirectoryFiles "samples" $ (takeFileName f <.>) <$> ["hs","lhs"]
@@ -81,7 +81,7 @@ main = getDirectoryFilesIO "samples" ["/*.lhs", "/*.hs"] >>= \allSamps ->
         "-hidir .build"
         "-Wall"
         "-O2"
-        
+
     "profile" ~> do
       need $ do
         s <- ["manual","bp-lens","bp-hkd","hybrid"]
@@ -119,7 +119,7 @@ main = getDirectoryFilesIO "samples" ["/*.lhs", "/*.hs"] >>= \allSamps ->
                  "+RTS"
                  "-p"
       cmd "mv" "bench.prof" f
-      
+
     "**/*.prof.html" %> \f -> do
       let src = f -<.> ""
       need [src]

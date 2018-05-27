@@ -24,7 +24,7 @@ Version 0.2.4.0
     *Explicit* interfaces now reverted back to previous order, from v0.2.0 and
     before.  Should be an "un-breaking" change, but will break code written in
     v0.2.3 style.
-*   Added warning to *Explicit* module that the API is "semi-stable".
+*   Added warnings to *Explicit* modules that the API is "semi-stable".
 *   Bechmarks now include HKD access and a "hybrid" approach.  Documentation
     updated to reflect results.
 *   Documentation updated to include a new "unital" law for `one`, namely `one

@@ -14,6 +14,11 @@
 -- "Prelude.Backprop".  Instead of relying on a 'Backprop' instance, allows
 -- you to manually provide 'zero', 'add', and 'one' on a per-value basis.
 --
+-- WARNING: API of this module can be considered only "semi-stable"; while
+-- the API of "Prelude.Backprop" and Prelude.Backprop.Num" are kept
+-- consistent, some argument order changes might happen in this module to
+-- reflect changes in underlying implementation.
+--
 -- @since 0.2.0.0
 
 module Prelude.Backprop.Explicit (
