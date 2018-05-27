@@ -363,7 +363,7 @@ gradBP2 = E.gradBP2 E.zeroFunc E.zeroFunc E.oneFunc
 -- the contents (like 'multiplying').
 --
 (^^.)
-    :: forall b a s. (Backprop a, Reifies s W)
+    :: forall b a s. (Backprop b, Backprop a, Reifies s W)
     => BVar s b
     -> Lens' b a
     -> BVar s a
@@ -380,7 +380,7 @@ infixl 8 ^^.
 --
 -- See documentation for '^^.' for more information.
 viewVar
-    :: forall a b s. (Backprop a, Reifies s W)
+    :: forall b a s. (Backprop a, Backprop b, Reifies s W)
     => Lens' b a
     -> BVar s b
     -> BVar s a
@@ -430,7 +430,7 @@ setVar
     -> BVar s a
     -> BVar s b
     -> BVar s b
-setVar = E.setVar E.addFunc E.addFunc E.zeroFunc E.zeroFunc
+setVar = E.setVar E.addFunc E.addFunc E.zeroFunc
 {-# INLINE setVar #-}
 
 -- | An infix version of 'overVar', meant to evoke parallels to '%~~' from
@@ -514,7 +514,7 @@ overVar = E.overVar E.addFunc E.addFunc E.zeroFunc E.zeroFunc
 -- This can be used to "pattern match" on 'BVar's, by using prisms on
 -- constructors.
 (^^?)
-    :: forall b a s. (Backprop a, Reifies s W)
+    :: forall b a s. (Backprop b, Backprop a, Reifies s W)
     => BVar s b
     -> Traversal' b a
     -> Maybe (BVar s a)
@@ -529,7 +529,7 @@ v ^^? t = previewVar t v
 --
 -- @since 0.2.1.0
 (^^?!)
-    :: forall b a s. (Backprop a, Reifies s W)
+    :: forall b a s. (Backprop b, Backprop a, Reifies s W)
     => BVar s b
     -> Traversal' b a
     -> BVar s a
@@ -545,7 +545,7 @@ v ^^?! t = fromMaybe (error e) (previewVar t v)
 --
 -- See documentation for '^^?' for more information.
 previewVar
-    :: forall b a s. (Backprop a, Reifies s W)
+    :: forall b a s. (Backprop b, Backprop a, Reifies s W)
     => Traversal' b a
     -> BVar s b
     -> Maybe (BVar s a)
@@ -574,7 +574,7 @@ previewVar = E.previewVar E.addFunc E.zeroFunc
 -- has type @['BVar' s a]@ (A list of 'BVar's holding @a@s).
 --
 (^^..)
-    :: forall b a s. (Backprop a, Reifies s W)
+    :: forall b a s. (Backprop b, Backprop a, Reifies s W)
     => BVar s b
     -> Traversal' b a
     -> [BVar s a]
@@ -586,7 +586,7 @@ v ^^.. t = toListOfVar t v
 --
 -- See documentation for '^^..' for more information.
 toListOfVar
-    :: forall b a s. (Backprop a, Reifies s W)
+    :: forall b a s. (Backprop b, Backprop a, Reifies s W)
     => Traversal' b a
     -> BVar s b
     -> [BVar s a]
@@ -602,7 +602,7 @@ toListOfVar = E.toListOfVar E.addFunc E.zeroFunc
 -- unexpected behavior in 'Foldable' instances that don't have a fixed
 -- number of items.
 sequenceVar
-    :: (Traversable t, Backprop a, Reifies s W)
+    :: (Traversable t, Backprop a, Backprop (t a), Reifies s W)
     => BVar s (t a)
     -> t (BVar s a)
 sequenceVar = E.sequenceVar E.addFunc E.zeroFunc
@@ -635,11 +635,11 @@ collectVar = E.collectVar E.addFunc E.zeroFunc
 -- information, and "Numeric.Backprop.Op#prod" for a mini-tutorial on using
 -- 'Prod' and 'Tuple'.
 liftOp
-    :: (Every Backprop as, Known Length as, Backprop b, Reifies s W)
+    :: (Every Backprop as, Known Length as, Reifies s W)
     => Op as b
     -> Prod (BVar s) as
     -> BVar s b
-liftOp = E.liftOp E.addFuncs E.zeroFunc
+liftOp = E.liftOp E.addFuncs
 {-# INLINE liftOp #-}
 
 -- | Lift an 'Op' with a single input to be a function on a single 'BVar'.
@@ -650,11 +650,11 @@ liftOp = E.liftOp E.addFuncs E.zeroFunc
 -- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
 -- information.
 liftOp1
-    :: (Backprop a, Backprop b, Reifies s W)
+    :: (Backprop a, Reifies s W)
     => Op '[a] b
     -> BVar s a
     -> BVar s b
-liftOp1 = E.liftOp1 E.addFunc E.zeroFunc
+liftOp1 = E.liftOp1 E.addFunc
 {-# INLINE liftOp1 #-}
 
 -- | Lift an 'Op' with two inputs to be a function on a two 'BVar's.
@@ -665,12 +665,12 @@ liftOp1 = E.liftOp1 E.addFunc E.zeroFunc
 -- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
 -- information.
 liftOp2
-    :: (Backprop a, Backprop b, Backprop c, Reifies s W)
+    :: (Backprop a, Backprop b, Reifies s W)
     => Op '[a,b] c
     -> BVar s a
     -> BVar s b
     -> BVar s c
-liftOp2 = E.liftOp2 E.addFunc E.addFunc E.zeroFunc
+liftOp2 = E.liftOp2 E.addFunc E.addFunc
 {-# INLINE liftOp2 #-}
 
 -- | Lift an 'Op' with three inputs to be a function on a three 'BVar's.
@@ -681,13 +681,13 @@ liftOp2 = E.liftOp2 E.addFunc E.addFunc E.zeroFunc
 -- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
 -- information.
 liftOp3
-    :: (Backprop a, Backprop b, Backprop c, Backprop d, Reifies s W)
+    :: (Backprop a, Backprop b, Backprop c, Reifies s W)
     => Op '[a,b,c] d
     -> BVar s a
     -> BVar s b
     -> BVar s c
     -> BVar s d
-liftOp3 = E.liftOp3 E.addFunc E.addFunc E.addFunc E.zeroFunc
+liftOp3 = E.liftOp3 E.addFunc E.addFunc E.addFunc
 {-# INLINE liftOp3 #-}
 
 -- | Convert the value inside a 'BVar' using a given isomorphism.  Useful
@@ -703,12 +703,12 @@ liftOp3 = E.liftOp3 E.addFunc E.addFunc E.addFunc E.zeroFunc
 --
 -- @since 0.1.4.0
 isoVar
-    :: (Backprop a, Backprop b, Reifies s W)
+    :: (Backprop a, Reifies s W)
     => (a -> b)
     -> (b -> a)
     -> BVar s a
     -> BVar s b
-isoVar = E.isoVar E.addFunc E.zeroFunc
+isoVar = E.isoVar E.addFunc
 {-# INLINE isoVar #-}
 
 -- | Convert the values inside two 'BVar's using a given isomorphism.
@@ -720,13 +720,13 @@ isoVar = E.isoVar E.addFunc E.zeroFunc
 --
 -- @since 0.1.4.0
 isoVar2
-    :: (Backprop a, Backprop b, Backprop c, Reifies s W)
+    :: (Backprop a, Backprop b, Reifies s W)
     => (a -> b -> c)
     -> (c -> (a, b))
     -> BVar s a
     -> BVar s b
     -> BVar s c
-isoVar2 = E.isoVar2 E.addFunc E.addFunc E.zeroFunc
+isoVar2 = E.isoVar2 E.addFunc E.addFunc
 {-# INLINE isoVar2 #-}
 
 -- | Convert the values inside three 'BVar's using a given isomorphism.
@@ -734,14 +734,14 @@ isoVar2 = E.isoVar2 E.addFunc E.addFunc E.zeroFunc
 --
 -- @since 0.1.4.0
 isoVar3
-    :: (Backprop a, Backprop b, Backprop c, Backprop d, Reifies s W)
+    :: (Backprop a, Backprop b, Backprop c, Reifies s W)
     => (a -> b -> c -> d)
     -> (d -> (a, b, c))
     -> BVar s a
     -> BVar s b
     -> BVar s c
     -> BVar s d
-isoVar3 = E.isoVar3 E.addFunc E.addFunc E.addFunc E.zeroFunc
+isoVar3 = E.isoVar3 E.addFunc E.addFunc E.addFunc
 {-# INLINE isoVar3 #-}
 
 -- | Convert the values inside a tuple of 'BVar's using a given
@@ -754,12 +754,12 @@ isoVar3 = E.isoVar3 E.addFunc E.addFunc E.addFunc E.zeroFunc
 --
 -- @since 0.1.4.0
 isoVarN
-    :: (Every Backprop as, Known Length as, Backprop b, Reifies s W)
+    :: (Every Backprop as, Known Length as, Reifies s W)
     => (Tuple as -> b)
     -> (b -> Tuple as)
     -> Prod (BVar s) as
     -> BVar s b
-isoVarN = E.isoVarN E.addFuncs E.zeroFunc
+isoVarN = E.isoVarN E.addFuncs
 {-# INLINE isoVarN #-}
 
 -- | Useful pattern for constructing and deconstructing 'BVar's of
@@ -908,6 +908,7 @@ splitBV
     :: ( Generic (z f)
        , Generic (z (BVar s))
        , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
+       , Backprop (z f)
        , Backprop (Rep (z f) ())
        , Every Backprop as
        , Known Length as
@@ -939,6 +940,7 @@ joinBV
        , Generic (z (BVar s))
        , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
        , Backprop (z f)
+       , Backprop (Rep (z f) ())
        , Every Backprop as
        , Known Length as
        , Reifies s W

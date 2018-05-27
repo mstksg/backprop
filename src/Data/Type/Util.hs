@@ -20,10 +20,12 @@ module Data.Type.Util (
   , fillProd
   , zipVecList
   , splitProd
+  , traverse1_
   , p1, p2, s1, s2
   ) where
 
 import           Data.Bifunctor
+import           Data.Foldable
 import           Data.Type.Conjunction hiding ((:*:))
 import           Data.Type.Length
 import           Data.Type.Nat
@@ -31,6 +33,7 @@ import           Data.Type.Product
 import           Data.Type.Vector
 import           GHC.Generics
 import           Lens.Micro
+import           Type.Class.Higher
 import           Type.Class.Witness
 import           Type.Family.List
 import           Type.Family.Nat
@@ -162,6 +165,13 @@ zipVecList f = go
       x :* xs -> \case
         []   -> f x Nothing  :* go xs []
         y:ys -> f x (Just y) :* go xs ys
+
+traverse1_
+    :: (Foldable1 t, Applicative g)
+    => (forall a. f a -> g ())
+    -> t f as
+    -> g ()
+traverse1_ f = sequenceA_ . foldMap1 ((:[]) . f)
 
 splitProd
     :: Length as

@@ -56,34 +56,34 @@ import qualified Prelude                   as P
 import qualified Prelude.Backprop.Explicit as E
 
 -- | Lifted 'P.sum'.  More efficient than going through 'toList'.
-sum :: (Foldable t, Functor t, Backprop (t a), Backprop a, Num a, Reifies s W)
+sum :: (Foldable t, Functor t, Backprop (t a), Num a, Reifies s W)
     => BVar s (t a)
     -> BVar s a
-sum = E.sum E.addFunc E.zeroFunc
+sum = E.sum E.addFunc
 {-# INLINE sum #-}
 
 -- | Lifted 'P.pure'.
 pure
-    :: (Foldable t, Applicative t, Backprop (t a), Backprop a, Reifies s W)
+    :: (Foldable t, Applicative t, Backprop a, Reifies s W)
     => BVar s a
     -> BVar s (t a)
-pure = E.pure E.addFunc E.zeroFunc E.zeroFunc
+pure = E.pure E.addFunc E.zeroFunc
 {-# INLINE pure #-}
 
 -- | Lifted 'P.product'.  More efficient than going through 'toList'.
 product
-    :: (Foldable t, Functor t, Backprop (t a), Backprop a, Fractional a, Reifies s W)
+    :: (Foldable t, Functor t, Backprop (t a), Fractional a, Reifies s W)
     => BVar s (t a)
     -> BVar s a
-product = E.product E.addFunc E.zeroFunc
+product = E.product E.addFunc
 {-# INLINE product #-}
 
 -- | Lifted 'P.length'.  More efficient than going through 'toList'.
 length
-    :: (Foldable t, Backprop (t a), Backprop b, Num b, Reifies s W)
+    :: (Foldable t, Backprop (t a), Num b, Reifies s W)
     => BVar s (t a)
     -> BVar s b
-length = E.length E.addFunc E.zeroFunc E.zeroFunc
+length = E.length E.addFunc E.zeroFunc
 {-# INLINE length #-}
 
 -- | Lifted 'P.minimum'.  Undefined for situations where 'P.minimum' would
@@ -109,7 +109,7 @@ maximum = E.maximum E.addFunc E.zeroFunc
 --
 -- @since 0.2.3.0
 foldr
-    :: (Traversable t, Backprop a, Reifies s W)
+    :: (Traversable t, Backprop a, Backprop (t a), Reifies s W)
     => (BVar s a -> BVar s b -> BVar s b)
     -> BVar s b
     -> BVar s (t a)
@@ -122,7 +122,7 @@ foldr = E.foldr E.addFunc E.zeroFunc
 --
 -- @since 0.2.3.0
 foldl'
-    :: (Traversable t, Backprop a, Reifies s W)
+    :: (Traversable t, Backprop a, Backprop (t a), Reifies s W)
     => (BVar s b -> BVar s a -> BVar s b)
     -> BVar s b
     -> BVar s (t a)
@@ -132,10 +132,8 @@ foldl' = E.foldl' E.addFunc E.zeroFunc
 
 -- | Lifted 'P.fmap'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Functor's.
---
--- Prior to v0.2.3, required a 'Backprop' constraint on @f b@.
 fmap
-    :: (Traversable f, Backprop a, Backprop b, Reifies s W)
+    :: (Traversable f, Backprop a, Backprop b, Backprop (f a), Reifies s W)
     => (BVar s a -> BVar s b)
     -> BVar s (f a)
     -> BVar s (f b)
@@ -144,7 +142,7 @@ fmap = E.fmap E.addFunc E.addFunc E.zeroFunc E.zeroFunc
 
 -- | Alias for 'fmap'.
 (<$>)
-    :: (Traversable f, Backprop a, Backprop b, Reifies s W)
+    :: (Traversable f, Backprop a, Backprop b, Backprop (f a), Reifies s W)
     => (BVar s a -> BVar s b)
     -> BVar s (f a)
     -> BVar s (f b)
@@ -153,10 +151,8 @@ fmap = E.fmap E.addFunc E.addFunc E.zeroFunc E.zeroFunc
 
 -- | Lifted 'P.traverse'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Functor's.
---
--- Prior to v0.2.3, required a 'Backprop' constraint on @f (t b)@.
 traverse
-    :: (Traversable t, Applicative f, Foldable f, Backprop a, Backprop b, Backprop (t b), Reifies s W)
+    :: (Traversable t, Applicative f, Foldable f, Backprop a, Backprop b, Backprop (t a), Backprop (t b), Reifies s W)
     => (BVar s a -> f (BVar s b))
     -> BVar s (t a)
     -> BVar s (f (t b))
@@ -166,11 +162,9 @@ traverse = E.traverse E.addFunc E.addFunc E.addFunc
 
 -- | Lifted 'P.liftA2'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Applicative's.
---
--- Prior to v0.2.3, required a 'Backprop' constraint on @f c@.
 liftA2
     :: ( Traversable f, Applicative f
-       , Backprop a, Backprop b, Backprop c
+       , Backprop a, Backprop b, Backprop c, Backprop (f a), Backprop (f b)
        , Reifies s W
        )
     => (BVar s a -> BVar s b -> BVar s c)
@@ -183,12 +177,11 @@ liftA2 = E.liftA2 E.addFunc E.addFunc E.addFunc
 
 -- | Lifted 'P.liftA3'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Applicative's.
---
--- Prior to v0.2.3, required a 'Backprop' constraint on @f d@.
 liftA3
     :: ( Traversable f
        , Applicative f
        , Backprop a, Backprop b, Backprop c, Backprop d
+       , Backprop (f a), Backprop (f b), Backprop (f c)
        , Reifies s W
        )
     => (BVar s a -> BVar s b -> BVar s c -> BVar s d)
@@ -204,20 +197,20 @@ liftA3 = E.liftA3 E.addFunc E.addFunc E.addFunc E.addFunc
 --
 -- @since 0.2.1.0
 fromIntegral
-    :: (Backprop a, P.Integral a, Backprop b, P.Integral b, Reifies s W)
+    :: (Backprop a, P.Integral a, P.Integral b, Reifies s W)
     => BVar s a
     -> BVar s b
-fromIntegral = E.fromIntegral E.addFunc E.zeroFunc
+fromIntegral = E.fromIntegral E.addFunc
 {-# INLINE fromIntegral #-}
 
 -- | Lifted conversion between two 'Fractional' and 'P.Real' instances.
 --
 -- @since 0.2.1.0
 realToFrac
-    :: (Backprop a, Fractional a, P.Real a, Backprop b, Fractional b, P.Real b, Reifies s W)
+    :: (Backprop a, Fractional a, P.Real a, Fractional b, P.Real b, Reifies s W)
     => BVar s a
     -> BVar s b
-realToFrac = E.realToFrac E.addFunc E.zeroFunc
+realToFrac = E.realToFrac E.addFunc
 {-# INLINE realToFrac #-}
 
 -- | Lifted version of 'P.round'.
@@ -230,7 +223,7 @@ round
     :: (P.RealFrac a, P.Integral b, Reifies s W)
     => BVar s a
     -> BVar s b
-round = E.round E.afNum E.zfNum
+round = E.round E.afNum
 {-# INLINE round #-}
 
 -- | Lifted version of 'P.fromIntegral', defined to let you return
@@ -246,7 +239,7 @@ fromIntegral'
     :: (P.Integral a, P.RealFrac b, Reifies s W)
     => BVar s a
     -> BVar s b
-fromIntegral' = E.fromIntegral' E.afNum E.zfNum
+fromIntegral' = E.fromIntegral' E.afNum
 {-# INLINE fromIntegral' #-}
 
 -- | Lifted version of 'P.toList'.  Takes a 'BVar' of a 'Traversable' of
@@ -259,7 +252,7 @@ fromIntegral' = E.fromIntegral' E.afNum E.zfNum
 --
 -- @since 0.2.2.0
 toList
-    :: (Traversable t, Backprop a, Reifies s W)
+    :: (Traversable t, Backprop a, Backprop (t a), Reifies s W)
     => BVar s (t a)
     -> [BVar s a]
 toList = E.toList E.addFunc E.zeroFunc
@@ -271,7 +264,7 @@ toList = E.toList E.addFunc E.zeroFunc
 --
 -- @since 0.2.2.0
 mapAccumL
-    :: (Traversable t, Backprop b, Backprop c, Reifies s W)
+    :: (Traversable t, Backprop b, Backprop c, Backprop (t b), Reifies s W)
     => (BVar s a -> BVar s b -> (BVar s a, BVar s c))
     -> BVar s a
     -> BVar s (t b)
@@ -285,7 +278,7 @@ mapAccumL = E.mapAccumL E.addFunc E.addFunc E.zeroFunc E.zeroFunc
 --
 -- @since 0.2.2.0
 mapAccumR
-    :: (Traversable t, Backprop b, Backprop c, Reifies s W)
+    :: (Traversable t, Backprop b, Backprop c, Backprop (t b), Reifies s W)
     => (BVar s a -> BVar s b -> (BVar s a, BVar s c))
     -> BVar s a
     -> BVar s (t b)

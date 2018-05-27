@@ -223,7 +223,7 @@ gradBP2 = E.gradBP2 E.zfNum E.zfNum E.ofNum
 -- | 'Numeric.Backprop.^^.', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 (^^.)
-    :: forall b a s. (Num a, Reifies s W)
+    :: forall b a s. (Num a, Num b, Reifies s W)
     => BVar s b
     -> Lens' b a
     -> BVar s a
@@ -234,7 +234,7 @@ infixl 8 ^^.
 -- | 'Numeric.Backprop.viewVar', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 viewVar
-    :: forall b a s. (Num a, Reifies s W)
+    :: forall b a s. (Num a, Num b, Reifies s W)
     => Lens' b a
     -> BVar s b
     -> BVar s a
@@ -262,7 +262,7 @@ setVar
     -> BVar s a
     -> BVar s b
     -> BVar s b
-setVar = E.setVar E.afNum E.afNum E.zfNum E.zfNum
+setVar = E.setVar E.afNum E.afNum E.zfNum
 {-# INLINE setVar #-}
 
 -- | 'Numeric.Backprop.%~~', but with 'Num' constraints instead of
@@ -312,7 +312,7 @@ overVar = E.overVar E.afNum E.afNum E.zfNum E.zfNum
 -- myPrism . 'iso' 'tupT2' 't2Tup' :: 'Prism'' c ('T2' a b)
 -- @
 (^^?)
-    :: forall b a s. (Num a, Reifies s W)
+    :: forall b a s. (Num b, Num a, Reifies s W)
     => BVar s b
     -> Traversal' b a
     -> Maybe (BVar s a)
@@ -326,7 +326,7 @@ v ^^? t = previewVar t v
 --
 -- @since 0.2.1.0
 (^^?!)
-    :: forall b a s. (Num a, Reifies s W)
+    :: forall b a s. (Num b, Num a, Reifies s W)
     => BVar s b
     -> Traversal' b a
     -> BVar s a
@@ -340,7 +340,7 @@ v ^^?! t = fromMaybe (error e) (previewVar t v)
 --
 -- See documentation for '^^?' for more information and important notes.
 previewVar
-    :: forall b a s. (Num a, Reifies s W)
+    :: forall b a s. (Num b, Num a, Reifies s W)
     => Traversal' b a
     -> BVar s b
     -> Maybe (BVar s a)
@@ -350,7 +350,7 @@ previewVar = E.previewVar E.afNum E.zfNum
 -- | 'Numeric.Backprop.^^..', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 (^^..)
-    :: forall b a s. (Num a, Reifies s W)
+    :: forall b a s. (Num b, Num a, Reifies s W)
     => BVar s b
     -> Traversal' b a
     -> [BVar s a]
@@ -360,7 +360,7 @@ v ^^.. t = toListOfVar t v
 -- | 'Numeric.Backprop.toListOfVar', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 toListOfVar
-    :: forall b a s. (Num a, Reifies s W)
+    :: forall b a s. (Num b, Num a, Reifies s W)
     => Traversal' b a
     -> BVar s b
     -> [BVar s a]
@@ -369,8 +369,10 @@ toListOfVar = E.toListOfVar E.afNum E.zfNum
 
 -- | 'Numeric.Backprop.sequenceVar', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
+--
+-- Since v0.2.4, requires a 'Num' constraint on @t a@.
 sequenceVar
-    :: (Traversable t, Num a, Reifies s W)
+    :: (Traversable t, Num a, Num (t a), Reifies s W)
     => BVar s (t a)
     -> t (BVar s a)
 sequenceVar = E.sequenceVar E.afNum E.zfNum
@@ -390,89 +392,89 @@ collectVar = E.collectVar E.afNum E.zfNum
 -- | 'Numeric.Backprop.liftOp', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 liftOp
-    :: (Every Num as, Known Length as, Num b, Reifies s W)
+    :: (Every Num as, Known Length as, Reifies s W)
     => Op as b
     -> Prod (BVar s) as
     -> BVar s b
-liftOp = E.liftOp E.afNums E.zfNum
+liftOp = E.liftOp E.afNums
 {-# INLINE liftOp #-}
 
 -- | 'Numeric.Backprop.liftOp1', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 liftOp1
-    :: (Num a, Num b, Reifies s W)
+    :: (Num a, Reifies s W)
     => Op '[a] b
     -> BVar s a
     -> BVar s b
-liftOp1 = E.liftOp1 E.afNum E.zfNum
+liftOp1 = E.liftOp1 E.afNum
 {-# INLINE liftOp1 #-}
 
 -- | 'Numeric.Backprop.liftOp2', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 liftOp2
-    :: (Num a, Num b, Num c, Reifies s W)
+    :: (Num a, Num b, Reifies s W)
     => Op '[a,b] c
     -> BVar s a
     -> BVar s b
     -> BVar s c
-liftOp2 = E.liftOp2 E.afNum E.afNum E.zfNum
+liftOp2 = E.liftOp2 E.afNum E.afNum
 {-# INLINE liftOp2 #-}
 
 -- | 'Numeric.Backprop.liftOp3', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 liftOp3
-    :: (Num a, Num b, Num c, Num d, Reifies s W)
+    :: (Num a, Num b, Num c, Reifies s W)
     => Op '[a,b,c] d
     -> BVar s a
     -> BVar s b
     -> BVar s c
     -> BVar s d
-liftOp3 = E.liftOp3 E.afNum E.afNum E.afNum E.zfNum
+liftOp3 = E.liftOp3 E.afNum E.afNum E.afNum
 {-# INLINE liftOp3 #-}
 
 -- | 'Numeric.Backprop.isoVar', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 isoVar
-    :: (Num a, Num b, Reifies s W)
+    :: (Num a, Reifies s W)
     => (a -> b)
     -> (b -> a)
     -> BVar s a
     -> BVar s b
-isoVar = E.isoVar E.afNum E.zfNum
+isoVar = E.isoVar E.afNum
 {-# INLINE isoVar #-}
 
 -- | 'Numeric.Backprop.isoVar', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 isoVar2
-    :: (Num a, Num b, Num c, Reifies s W)
+    :: (Num a, Num b, Reifies s W)
     => (a -> b -> c)
     -> (c -> (a, b))
     -> BVar s a
     -> BVar s b
     -> BVar s c
-isoVar2 = E.isoVar2 E.afNum E.afNum E.zfNum
+isoVar2 = E.isoVar2 E.afNum E.afNum
 {-# INLINE isoVar2 #-}
 
 -- | 'Numeric.Backprop.isoVar3', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 isoVar3
-    :: (Num a, Num b, Num c, Num d, Reifies s W)
+    :: (Num a, Num b, Num c, Reifies s W)
     => (a -> b -> c -> d)
     -> (d -> (a, b, c))
     -> BVar s a
     -> BVar s b
     -> BVar s c
     -> BVar s d
-isoVar3 = E.isoVar3 E.afNum E.afNum E.afNum E.zfNum
+isoVar3 = E.isoVar3 E.afNum E.afNum E.afNum
 {-# INLINE isoVar3 #-}
 
 -- | 'Numeric.Backprop.isoVarN', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 isoVarN
-    :: (Every Num as, Known Length as, Num b, Reifies s W)
+    :: (Every Num as, Known Length as, Reifies s W)
     => (Tuple as -> b)
     -> (b -> Tuple as)
     -> Prod (BVar s) as
     -> BVar s b
-isoVarN = E.isoVarN E.afNums E.zfNum
+isoVarN = E.isoVarN E.afNums
 {-# INLINE isoVarN #-}

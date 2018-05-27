@@ -20,6 +20,7 @@ Version 0.2.4.0
 *   Added warning to *Explicit* module that the API is "semi-stable".
 *   Bechmarks now include HKD access and a "hybrid" approach.  Documentation
     updated to reflect results.
+*   Added `fmap . const` and `<$` to *Prelude* modules.
 
 Version 0.2.3.0
 ---------------
