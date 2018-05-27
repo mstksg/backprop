@@ -181,7 +181,8 @@ know exactly what type of network we have:
 >     -> BVar s (R o)
 > runNetwork n = \case
 >     SNil          -> softMax . runLayer (n ^^. _NO)
->     SCons SNat hs -> runNetwork (withSingI hs (n ^^. _NIN))  hs
+>     SCons SNat hs -> withSingI hs $
+>                      runNetwork (n ^^. _NIN)  hs
 >                    . logistic
 >                    . runLayer (n ^^. _NIL)
 > {-# INLINE runNetwork #-}
