@@ -39,7 +39,11 @@ class Backprop a where
 `zero` is "zero" in the verb sense -- it takes a value and "zeroes out" all
 components.  For a vector, this means returning a zero vector of the same
 shape.  For a list, this means replacing all of the items with zero and
-returning a list of the same length.  `one` does the same thing but with one.
+returning a list of the same length.
+
+`one` does the same thing but with one; the point of it is to be `one = gradBP
+id` --- the gradient of the identity function for your type.
+
 `add` is used to add together contributions in gradients, and is usually a
 component-wise addition.
 
