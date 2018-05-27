@@ -129,6 +129,10 @@ import qualified Type.Family.Maybe            as M
 --
 --   * @'one' '.' 'one' = 'one'@
 --
+-- [/unital/]
+--
+--   * @'one' = 'gradBP' 'id'@
+--
 -- Note that not all values in the backpropagation process needs all of
 -- these methods: Only the "final result" needs 'one', for example.  These
 -- are all grouped under one typeclass for convenience in defining
@@ -183,7 +187,14 @@ class Backprop a where
     -- just be @'const' 1@.  For vectors and matrices, this should set all
     -- components to one, the multiplicative identity.
     --
-    -- Should be idempotent:
+    -- As the library uses it, the most important law is:
+    --
+    --   * @'one' = 'gradBP' 'id'@
+    --
+    -- That is, @'one' x@ is the gradient of the identity function with
+    -- respect to its input.
+    --
+    -- Ideally should be idempotent:
     --
     --   * @'one' '.' 'one' = 'one'@
     --

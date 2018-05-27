@@ -20,6 +20,8 @@ Version 0.2.4.0
 *   Added warning to *Explicit* module that the API is "semi-stable".
 *   Bechmarks now include HKD access and a "hybrid" approach.  Documentation
     updated to reflect results.
+*   Documentation updated to include a new "unital" law for `one`, namely `one
+    = gradBP id`.
 
 Version 0.2.3.0
 ---------------
