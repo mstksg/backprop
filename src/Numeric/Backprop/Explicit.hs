@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns           #-}
 {-# LANGUAGE DataKinds              #-}
 {-# LANGUAGE EmptyCase              #-}
 {-# LANGUAGE FlexibleContexts       #-}
@@ -179,7 +178,7 @@ backpropN
     -> Tuple as
     -> (b, Tuple as)
 backpropN zfs ob f xs = case backpropWithN zfs f xs of
-    (!y, g) -> (y, g (runOF ob y))
+    (y, g) -> (y, g (runOF ob y))
 {-# INLINE backpropN #-}
 
 -- | 'Numeric.Backprop.backprop', but with explicit 'zero' and 'one'.
@@ -314,19 +313,18 @@ overVar
     -> (BVar s a -> BVar s a)
     -> BVar s b
     -> BVar s b
-overVar afa afb zfa zfb l f x = setVar afa afb zfa zfb l (f (viewVar afa zfa l x)) x
+overVar afa afb zfa zfb l f x = setVar afa afb zfa l (f (viewVar afa zfb l x)) x
 {-# INLINE overVar #-}
 
 -- | 'Numeric.Backprop.isoVar' with explicit 'add' and 'zero'.
 isoVar
     :: Reifies s W
     => AddFunc a
-    -> ZeroFunc b
     -> (a -> b)
     -> (b -> a)
     -> BVar s a
     -> BVar s b
-isoVar af z f g = liftOp1 af z (opIso f g)
+isoVar af f g = liftOp1 af (opIso f g)
 {-# INLINE isoVar #-}
 
 -- | 'Numeric.Backprop.isoVar2' with explicit 'add' and 'zero'.
@@ -334,13 +332,12 @@ isoVar2
     :: Reifies s W
     => AddFunc a
     -> AddFunc b
-    -> ZeroFunc c
     -> (a -> b -> c)
     -> (c -> (a, b))
     -> BVar s a
     -> BVar s b
     -> BVar s c
-isoVar2 afa afb z f g = liftOp2 afa afb z (opIso2 f g)
+isoVar2 afa afb f g = liftOp2 afa afb (opIso2 f g)
 {-# INLINE isoVar2 #-}
 
 -- | 'Numeric.Backprop.isoVar3' with explicit 'add' and 'zero'.
@@ -349,26 +346,24 @@ isoVar3
     => AddFunc a
     -> AddFunc b
     -> AddFunc c
-    -> ZeroFunc d
     -> (a -> b -> c -> d)
     -> (d -> (a, b, c))
     -> BVar s a
     -> BVar s b
     -> BVar s c
     -> BVar s d
-isoVar3 afa afb afc z f g = liftOp3 afa afb afc z (opIso3 f g)
+isoVar3 afa afb afc f g = liftOp3 afa afb afc (opIso3 f g)
 {-# INLINE isoVar3 #-}
 
 -- | 'Numeric.Backprop.isoVarN' with explicit 'add' and 'zero'.
 isoVarN
     :: Reifies s W
     => Prod AddFunc as
-    -> ZeroFunc b
     -> (Tuple as -> b)
     -> (b -> Tuple as)
     -> Prod (BVar s) as
     -> BVar s b
-isoVarN afs z f g = liftOp afs z (opIsoN f g)
+isoVarN afs f g = liftOp afs (opIsoN f g)
 {-# INLINE isoVarN #-}
 
 -- | Helper class for generically "splitting" and "joining" 'BVar's into
@@ -424,15 +419,15 @@ instance ( Reifies s W
       where
         (afas, afbs) = splitProd known afs
         (zfas, zfbs) = splitProd known zfs
-        x = gsplitBV afas zfas . viewVar afa zfa p1 $ xy
-        y = gsplitBV afbs zfbs . viewVar afb zfb p2 $ xy
+        zfab = ZF $ \(xx :*: yy) -> runZF zfa xx :*: runZF zfb yy
+        x = gsplitBV afas zfas . viewVar afa zfab p1 $ xy
+        y = gsplitBV afbs zfbs . viewVar afb zfab p2 $ xy
     {-# INLINE gsplitBV #-}
-    gjoinBV (afa :< afb :< afs) (zfa :< zfb :< zfs) (x :*: y)
-        = isoVar2 afa afb zfab (:*:) unP
+    gjoinBV (afa :< afb :< afs) (_ :< _ :< zfs) (x :*: y)
+        = isoVar2 afa afb (:*:) unP
             (gjoinBV afas zfas x)
             (gjoinBV afbs zfbs y)
       where
-        zfab = ZF $ \(xx :*: yy) -> runZF zfa xx :*: runZF zfb yy
         (afas, afbs) = splitProd known afs
         (zfas, zfbs) = splitProd known zfs
         unP (xx :*: yy) = (xx, yy)
@@ -446,26 +441,26 @@ instance ( Reifies s W
          , Known Length as
          ) => BVGroup s (i1 () ': i2 () ': cs) (i1 :+: i2) (o1 :+: o2) where
     gsplitBV (afa :< afb :< afs) (zfa :< zfb :< zfs) xy =
-        case previewVar afa zfa s1 xy of
+        case previewVar afa zf s1 xy of
           Just x -> L1 $ gsplitBV afas zfas x
-          Nothing -> case previewVar afb zfb s2 xy of
+          Nothing -> case previewVar afb zf s2 xy of
             Just y -> R1 $ gsplitBV afbs zfbs y
             Nothing -> error "Numeric.Backprop.gsplitBV: Internal error occurred"
       where
+        zf = ZF $ \case
+            L1 xx -> L1 $ runZF zfa xx
+            R1 yy -> R1 $ runZF zfb yy
         (afas, afbs) = splitProd known afs
         (zfas, zfbs) = splitProd known zfs
     {-# INLINE gsplitBV #-}
     gjoinBV (afa :< afb :< afs) (zfa :< zfb :< zfs) = \case
-        L1 x -> liftOp1 afa zf (op1 (\xx -> (L1 xx, \case L1 d -> d; R1 _ -> runZF zfa xx)))
+        L1 x -> liftOp1 afa (op1 (\xx -> (L1 xx, \case L1 d -> d; R1 _ -> runZF zfa xx)))
                     (gjoinBV afas zfas x)
-        R1 y -> liftOp1 afb zf (op1 (\yy -> (R1 yy, \case L1 _ -> runZF zfb yy; R1 d -> d)))
+        R1 y -> liftOp1 afb (op1 (\yy -> (R1 yy, \case L1 _ -> runZF zfb yy; R1 d -> d)))
                     (gjoinBV afbs zfbs y)
       where
         (afas, afbs) = splitProd known afs
         (zfas, zfbs) = splitProd known zfs
-        zf = ZF $ \case
-            L1 xx -> L1 $ runZF zfa xx
-            R1 yy -> R1 $ runZF zfb yy
     {-# INLINE gjoinBV #-}
 
 -- | 'Numeric.Backprop.splitBV' with explicit 'add' and 'zero'.
@@ -480,7 +475,7 @@ splitBV
        )
     => AddFunc (Rep (z f) ())
     -> Prod AddFunc as
-    -> ZeroFunc (Rep (z f) ())
+    -> ZeroFunc (z f)
     -> Prod ZeroFunc as
     -> BVar s (z f)             -- ^ 'BVar' of value
     -> z (BVar s)               -- ^ 'BVar's of fields
@@ -502,7 +497,7 @@ joinBV
        )
     => AddFunc (z f)
     -> Prod AddFunc as
-    -> ZeroFunc (z f)
+    -> ZeroFunc (Rep (z f) ())
     -> Prod ZeroFunc as
     -> z (BVar s)           -- ^ 'BVar's of fields
     -> BVar s (z f)         -- ^ 'BVar' of combined value

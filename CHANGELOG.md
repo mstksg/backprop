@@ -23,6 +23,7 @@ Version 0.2.4.0
 *   Documentation updated to include a new "unital" law for `one`, namely `one
     = gradBP id`.
 *   Fixity declarations for `^^?` and `^^?!`.
+*   Added `fmap . const` and `<$` to *Prelude* modules.
 
 Version 0.2.3.0
 ---------------
