@@ -519,6 +519,7 @@ overVar = E.overVar E.addFunc E.addFunc E.zeroFunc E.zeroFunc
     -> Traversal' b a
     -> Maybe (BVar s a)
 v ^^? t = previewVar t v
+infixl 8 ^^?
 {-# INLINE (^^?) #-}
 
 -- | An *UNSAFE* version of 'previewVar' assuming that it is there.
@@ -536,6 +537,7 @@ v ^^? t = previewVar t v
 v ^^?! t = fromMaybe (error e) (previewVar t v)
   where
     e = "Numeric.Backprop.^^?!: Empty traversal"
+infixl 8 ^^?!
 {-# INLINE (^^?!) #-}
 
 -- | Using a 'Traversal'', extract a single value /inside/ a 'BVar', if it

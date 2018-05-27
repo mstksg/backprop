@@ -317,6 +317,7 @@ overVar = E.overVar E.afNum E.afNum E.zfNum E.zfNum
     -> Traversal' b a
     -> Maybe (BVar s a)
 v ^^? t = previewVar t v
+infixl 8 ^^?
 {-# INLINE (^^?) #-}
 
 -- | 'Numeric.Backprop.^^?!', but with 'Num' constraints instead of
@@ -333,6 +334,7 @@ v ^^? t = previewVar t v
 v ^^?! t = fromMaybe (error e) (previewVar t v)
   where
     e = "Numeric.Backprop.Num.^^?!: Empty traversal"
+infixl 8 ^^?!
 {-# INLINE (^^?!) #-}
 
 -- | 'Numeric.Backprop.previewVar', but with 'Num' constraints instead of

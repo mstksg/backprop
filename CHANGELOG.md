@@ -22,6 +22,7 @@ Version 0.2.4.0
     updated to reflect results.
 *   Documentation updated to include a new "unital" law for `one`, namely `one
     = gradBP id`.
+*   Fixity declarations for `^^?` and `^^?!`.
 
 Version 0.2.3.0
 ---------------
