@@ -82,35 +82,35 @@ main = MWC.withSystemRandom $ \g -> do
           { reportFile = Just $ "bench-results/mnist-bench_" ++ tstr ++ ".html"
           , timeLimit  = 10
           } [
-        bgroup "gradient" [
-            let testManual x y = gradNetManual x y net0
-            in  bench "manual" $ nf (uncurry testManual) test0
-          , let testBP     x y = gradBP (netErr x y) net0
-            in  bench "bp"     $ nf (uncurry testBP) test0
-          , let testBPHKD  x y = gradBP (netErrHKD x y) net0
-            in  bench "bp-hkd" $ nf (uncurry testBPHKD) test0
-          , let testHybrid x y = gradBP (\n' -> netErrHybrid n' y x) net0
-            in  bench "hybrid" $ nf (uncurry testHybrid) test0
+        bgroup "gradient"
+          [ let runTest x y     = gradNetManual x y net0
+            in  bench "manual"  $ nf (uncurry runTest) test0
+          , let runTest x y     = gradBP (netErr x y) net0
+            in  bench "bp-lens" $ nf (uncurry runTest) test0
+          , let runTest x y     = gradBP (netErrHKD x y) net0
+            in  bench "bp-hkd"  $ nf (uncurry runTest) test0
+          , let runTest x y     = gradBP (\n' -> netErrHybrid n' y x) net0
+            in  bench "hybrid"  $ nf (uncurry runTest) test0
           ]
-      , bgroup "descent" [
-            let testManual x y = trainStepManual 0.02 x y net0
-            in  bench "manual" $ nf (uncurry testManual) test0
-          , let testBP     x y = trainStep 0.02 x y net0
-            in  bench "bp"     $ nf (uncurry testBP) test0
-          , let testBPHKD  x y = trainStepHKD 0.02 x y net0
-            in  bench "bp-hkd" $ nf (uncurry testBPHKD) test0
-          , let testHybrid x y = trainStepHybrid 0.02 x y net0
-            in  bench "hybrid" $ nf (uncurry testHybrid) test0
+      , bgroup "descent"
+          [ let runTest x y     = trainStepManual 0.02 x y net0
+            in  bench "manual"  $ nf (uncurry runTest) test0
+          , let runTest x y     = trainStep 0.02 x y net0
+            in  bench "bp-lens" $ nf (uncurry runTest) test0
+          , let runTest x y     = trainStepHKD 0.02 x y net0
+            in  bench "bp-hkd"  $ nf (uncurry runTest) test0
+          , let runTest x y     = trainStepHybrid 0.02 x y net0
+            in  bench "hybrid"  $ nf (uncurry runTest) test0
           ]
-      , bgroup "run" [
-            let testManual     = runNetManual net0
-            in  bench "manual" $ nf testManual (fst test0)
-          , let testBP     x   = evalBP (`runNetwork` x) net0
-            in  bench "bp"     $ nf testBP (fst test0)
-          , let testBPHKD  x   = evalBP (`runNetworkHKD` x) net0
-            in  bench "bp-hkd" $ nf testBPHKD (fst test0)
-          , let testHybrid x   = evalBP (`runNetHybrid` x) net0
-            in  bench "hybrid" $ nf testHybrid (fst test0)
+      , bgroup "run"
+          [ let runTest         = runNetManual net0
+            in  bench "manual"  $ nf runTest (fst test0)
+          , let runTest x       = evalBP (`runNetwork` x) net0
+            in  bench "bp-lens" $ nf runTest (fst test0)
+          , let runTest x       = evalBP (`runNetworkHKD` x) net0
+            in  bench "bp-hkd"  $ nf runTest (fst test0)
+          , let runTest x       = evalBP (`runNetHybrid` x) net0
+            in  bench "hybrid"  $ nf runTest (fst test0)
           ]
       ]
 
