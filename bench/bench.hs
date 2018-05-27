@@ -16,25 +16,18 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 import           Control.DeepSeq
-import           Control.Exception
 import           Control.Lens hiding          ((:<), (<.>))
-import           Control.Monad.IO.Class
-import           Control.Monad.Trans.Maybe
 import           Criterion.Main
 import           Criterion.Types
-import           Data.Bitraversable
-import           Data.IDX
+import           Data.Char
 import           Data.Time
-import           Data.Traversable
-import           Data.Tuple
 import           GHC.Generics                 (Generic)
 import           GHC.TypeLits
 import           Numeric.Backprop
 import           Numeric.Backprop.Class
 import           Numeric.LinearAlgebra.Static
 import           System.Directory
-import qualified Data.Vector.Generic          as VG
-import qualified Data.Vector.Unboxed          as VU
+import qualified Data.Vector                  as V
 import qualified Numeric.LinearAlgebra        as HM
 import qualified System.Random.MWC            as MWC
 
@@ -70,14 +63,16 @@ instance NFData (Network i h1 h2 o)
 makeLenses ''Network'
 
 main :: IO ()
-main = MWC.withSystemRandom $ \g -> do
-    Just test  <- loadMNIST "data/t10k-images-idx3-ubyte"  "data/t10k-labels-idx1-ubyte"
-    putStrLn "Loaded data."
-    net0 <- MWC.uniformR @(Network 784 300 100 10) (-0.5, 0.5) g
+main = do
+    g     <- MWC.initialize
+           . V.fromList
+           . map (fromIntegral . ord)
+           $ "hello world"
+    test0 <- MWC.uniformR @(R 784, R 10) ((0,0),(1,1)) g
+    net0  <- MWC.uniformR @(Network 784 300 100 10) (-0.5, 0.5) g
+    t     <- getZonedTime
+    let tstr = formatTime defaultTimeLocale "%Y%m%d-%H%M%S" t
     createDirectoryIfMissing True "bench-results"
-    t <- getZonedTime
-    let test0   = head test
-        tstr    = formatTime defaultTimeLocale "%Y%m%d-%H%M%S" t
     defaultMainWith defaultConfig
           { reportFile = Just $ "bench-results/mnist-bench_" ++ tstr ++ ".html"
           , timeLimit  = 10
@@ -431,26 +426,6 @@ sumElements' = liftOp1 . op1 $ \x -> (sumElements x, konst)
 logistic :: Floating a => a -> a
 logistic x = 1 / (1 + exp (-x))
 {-# INLINE logistic #-}
-
--- ------------------------------
--- - IO Plumbing                -
--- ------------------------------
-
-loadMNIST
-    :: FilePath
-    -> FilePath
-    -> IO (Maybe [(R 784, R 10)])
-loadMNIST fpI fpL = runMaybeT $ do
-    i <- MaybeT          $ decodeIDXFile       fpI
-    l <- MaybeT          $ decodeIDXLabelsFile fpL
-    d <- MaybeT . return $ labeledIntData l i
-    r <- MaybeT . return $ for d (bitraverse mkImage mkLabel . swap)
-    liftIO . evaluate $ force r
-  where
-    mkImage :: VU.Vector Int -> Maybe (R 784)
-    mkImage = create . VG.convert . VG.map (\i -> fromIntegral i / 255)
-    mkLabel :: Int -> Maybe (R 10)
-    mkLabel n = create $ HM.build 10 (\i -> if round i == n then 1 else 0)
 
 -- ------------------------------
 -- - Instances                  -

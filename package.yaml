@@ -42,7 +42,6 @@ ghc-options:
 dependencies:
 - base >=4.7 && <5
 - deepseq
-- transformers
 - vector
 
 library:
@@ -60,11 +59,12 @@ library:
   - Numeric.Backprop.Internal
   - Data.Type.Util
   dependencies:
+  - containers
   - microlens
   - primitive
   - reflection
+  - transformers
   - type-combinators
-  - containers
 
 benchmarks:
   backprop-mnist-bench:
@@ -77,11 +77,9 @@ benchmarks:
     - -O2
     dependencies:
     - backprop
-    - bifunctors
     - criterion
     - directory
     - hmatrix >=0.18
     - lens
-    - mnist-idx
     - mwc-random
     - time

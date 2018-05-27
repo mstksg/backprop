@@ -45,10 +45,10 @@ module Numeric.Backprop.Internal (
   , debugIR
   ) where
 
+-- import           Control.Monad.Primitive
 import           Control.DeepSeq
 import           Control.Exception
 import           Control.Monad
-import           Control.Monad.Primitive
 import           Control.Monad.ST
 import           Control.Monad.Trans.State
 import           Data.Bifunctor

@@ -66,7 +66,6 @@ main = getDirectoryFilesIO "samples" ["/*.lhs", "/*.hs"] >>= \allSamps ->
         "-o" f
         src
         
-
     "samples-exe/*" %> \f -> do
       need ["install"]
       [src] <- getDirectoryFiles "samples" $ (takeFileName f <.>) <$> ["hs","lhs"]
