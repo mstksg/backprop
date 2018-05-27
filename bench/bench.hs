@@ -119,13 +119,13 @@ runLayer
     -> BVar s (R i)
     -> BVar s (R o)
 runLayer l x = (l ^^. lWeights) #>! x + (l ^^. lBiases)
-{-# INLINE runLayer #-}
+-- {-# INLINE runLayer #-}
 
 softMax :: (KnownNat n, Reifies s W) => BVar s (R n) -> BVar s (R n)
 softMax x = konst' (1 / sumElements' expx) * expx
   where
     expx = exp x
-{-# INLINE softMax #-}
+-- {-# INLINE softMax #-}
 
 runNetwork
     :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o, Reifies s W)
@@ -139,7 +139,7 @@ runNetwork n = softMax
              . logistic
              . runLayer (n ^^. nLayer1)
              . auto
-{-# INLINE runNetwork #-}
+-- {-# INLINE runNetwork #-}
 
 crossEntropy
     :: (KnownNat n, Reifies s W)
@@ -147,7 +147,7 @@ crossEntropy
     -> BVar s (R n)
     -> BVar s Double
 crossEntropy t r = negate $ log r <.>! auto t
-{-# INLINE crossEntropy #-}
+-- {-# INLINE crossEntropy #-}
 
 netErr
     :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o, Reifies s W)
@@ -156,7 +156,7 @@ netErr
     -> BVar s (Network i h1 h2 o)
     -> BVar s Double
 netErr x t n = crossEntropy t (runNetwork n x)
-{-# INLINE netErr #-}
+-- {-# INLINE netErr #-}
 
 trainStep
     :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
@@ -166,7 +166,7 @@ trainStep
     -> Network i h1 h2 o
     -> Network i h1 h2 o
 trainStep r !x !t !n = n - realToFrac r * gradBP (netErr x t) n
-{-# INLINE trainStep #-}
+-- {-# INLINE trainStep #-}
 
 -- ------------------------------
 -- - "Backprop" HKD Mode        -
@@ -178,7 +178,7 @@ runLayerHKD
     -> BVar s (R i)
     -> BVar s (R o)
 runLayerHKD (splitBV->Layer w b) x = w #>! x + b
-{-# INLINE runLayerHKD #-}
+-- {-# INLINE runLayerHKD #-}
 
 runNetworkHKD
     :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o, Reifies s W)
@@ -192,7 +192,7 @@ runNetworkHKD (splitBV->Net l1 l2 l3) = softMax
                                       . logistic
                                       . runLayerHKD l1
                                       . auto
-{-# INLINE runNetworkHKD #-}
+-- {-# INLINE runNetworkHKD #-}
 
 netErrHKD
     :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o, Reifies s W)
@@ -201,7 +201,7 @@ netErrHKD
     -> BVar s (Network i h1 h2 o)
     -> BVar s Double
 netErrHKD x t n = crossEntropy t (runNetworkHKD n x)
-{-# INLINE netErrHKD #-}
+-- {-# INLINE netErrHKD #-}
 
 trainStepHKD
     :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
@@ -211,7 +211,7 @@ trainStepHKD
     -> Network i h1 h2 o
     -> Network i h1 h2 o
 trainStepHKD r !x !t !n = n - realToFrac r * gradBP (netErrHKD x t) n
-{-# INLINE trainStepHKD #-}
+-- {-# INLINE trainStepHKD #-}
 
 -- ------------------------------
 -- - "Manual" Mode              -
@@ -223,13 +223,13 @@ runLayerManual
     -> R i
     -> R o
 runLayerManual l x = (l ^. lWeights) #> x + (l ^. lBiases)
-{-# INLINE runLayerManual #-}
+-- {-# INLINE runLayerManual #-}
 
 softMaxManual :: KnownNat n => R n -> R n
 softMaxManual x = konst (1 / sumElements expx) * expx
   where
     expx = exp x
-{-# INLINE softMaxManual #-}
+-- {-# INLINE softMaxManual #-}
 
 runNetManual
     :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
@@ -242,7 +242,7 @@ runNetManual n = softMaxManual
                . runLayerManual (n ^. nLayer2)
                . logistic
                . runLayerManual (n ^. nLayer1)
-{-# INLINE runNetManual #-}
+-- {-# INLINE runNetManual #-}
 
 gradNetManual
     :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
@@ -282,7 +282,7 @@ gradNetManual x t (Net (Layer w1 b1) (Layer w2 b2) (Layer w3 b3)) =
         dEdB1 = dEdZ1
         dEdW1 = dEdY1 `outer` x
     in  Net (Layer dEdW1 dEdB1) (Layer dEdW2 dEdB2) (Layer dEdW3 dEdB3)
-{-# INLINE gradNetManual #-}
+-- {-# INLINE gradNetManual #-}
 
 trainStepManual
     :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
@@ -304,7 +304,7 @@ layerOp = op2 $ \(Layer w b) x ->
     ( w #> x + b
     , \g -> (Layer (g `outer` x) g, tr w #> g)
     )
-{-# INLINE layerOp #-}
+-- {-# INLINE layerOp #-}
 
 logisticOp
     :: Floating a
@@ -312,7 +312,7 @@ logisticOp
 logisticOp = op1 $ \x ->
     let lx = logistic x
     in  (lx, \g -> lx * (1 - lx) * g)
-{-# INLINE logisticOp #-}
+-- {-# INLINE logisticOp #-}
 
 softMaxOp
     :: KnownNat n
@@ -325,7 +325,7 @@ softMaxOp = op1 $ \x ->
     in  ( res
         , \g -> res - konst (invtot ** 2) * exp (2 * x) * g
         )
-{-# INLINE softMaxOp #-}
+-- {-# INLINE softMaxOp #-}
 
 softMaxCrossEntropyOp
     :: KnownNat n
@@ -337,7 +337,7 @@ softMaxCrossEntropyOp = op2 $ \targ x ->
     in  ( ce
         , \g -> (0, (konst ce - targ) * konst g)    -- TODO: it's not zero
         )
-{-# INLINE softMaxCrossEntropyOp #-}
+-- {-# INLINE softMaxCrossEntropyOp #-}
 
 runNetHybrid
     :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o, Reifies s W)
@@ -351,7 +351,7 @@ runNetHybrid n = liftOp1 softMaxOp
                . liftOp1 logisticOp
                . liftOp2 layerOp (n ^^. nLayer1)
                . auto
-{-# INLINE runNetHybrid #-}
+-- {-# INLINE runNetHybrid #-}
 
 netErrHybrid
     :: (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o, Reifies s W)
@@ -366,7 +366,7 @@ netErrHybrid n t = liftOp2 softMaxCrossEntropyOp (auto t)
                  . liftOp1 logisticOp
                  . liftOp2 layerOp (n ^^. nLayer1)
                  . auto
-{-# INLINE netErrHybrid #-}
+-- {-# INLINE netErrHybrid #-}
 
 trainStepHybrid
     :: forall i h1 h2 o. (KnownNat i, KnownNat h1, KnownNat h2, KnownNat o)
@@ -378,7 +378,7 @@ trainStepHybrid
 trainStepHybrid r !x !t !n =
     let gN = gradBP (\n' -> netErrHybrid n' t x) n
     in  n - (realToFrac r * gN)
-{-# INLINE trainStepHybrid #-}
+-- {-# INLINE trainStepHybrid #-}
 
 -- ------------------------------
 -- - Operations                 -
@@ -392,7 +392,7 @@ infixr 8 #>!
     -> BVar s (R m)
 (#>!) = liftOp2 . op2 $ \m v ->
   ( m #> v, \g -> (g `outer` v, tr m #> g) )
-{-# INLINE (#>!) #-}
+-- {-# INLINE (#>!) #-}
 
 infixr 8 <.>!
 (<.>!)
@@ -403,29 +403,29 @@ infixr 8 <.>!
 (<.>!) = liftOp2 . op2 $ \x y ->
   ( x <.> y, \g -> (konst g * y, x * konst g)
   )
-{-# INLINE (<.>!) #-}
+-- {-# INLINE (<.>!) #-}
 
 konst'
     :: (KnownNat n, Reifies s W)
     => BVar s Double
     -> BVar s (R n)
 konst' = liftOp1 . op1 $ \c -> (konst c, HM.sumElements . extract)
-{-# INLINE konst' #-}
+-- {-# INLINE konst' #-}
 
 sumElements :: KnownNat n => R n -> Double
 sumElements = HM.sumElements . extract
-{-# INLINE sumElements #-}
+-- {-# INLINE sumElements #-}
 
 sumElements'
     :: (KnownNat n, Reifies s W)
     => BVar s (R n)
     -> BVar s Double
 sumElements' = liftOp1 . op1 $ \x -> (sumElements x, konst)
-{-# INLINE sumElements' #-}
+-- {-# INLINE sumElements' #-}
 
 logistic :: Floating a => a -> a
 logistic x = 1 / (1 + exp (-x))
-{-# INLINE logistic #-}
+-- {-# INLINE logistic #-}
 
 -- ------------------------------
 -- - Instances                  -
