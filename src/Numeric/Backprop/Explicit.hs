@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns           #-}
 {-# LANGUAGE DataKinds              #-}
 {-# LANGUAGE EmptyCase              #-}
 {-# LANGUAGE FlexibleContexts       #-}
@@ -177,9 +178,10 @@ backpropN
     -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> (b, Tuple as)
-backpropN zfs ob f xs = (y, g (runOF ob y))
-  where
-    (y, g) = backpropWithN zfs f xs
+backpropN zfs ob f xs = case backpropWithN zfs f xs of
+    (!y, !g) -> (y, g (runOF ob y))
+  -- where
+  --   (!y, !g) = backpropWithN zfs f xs
 -- {-# INLINE backpropN #-}
 
 -- | 'Numeric.Backprop.backprop', but with explicit 'zero' and 'one'.
@@ -205,13 +207,13 @@ backpropWith
 backpropWith zfa f = second ((getI . head') .)
                    . backpropWithN (zfa :< Ø) (f . head')
                    . only_
-{-# INLINE backpropWith #-}
+-- {-# INLINE backpropWith #-}
 
 -- | 'evalBP' but with no arguments.  Useful when everything is just given
 -- through 'constVar'.
 evalBP0 :: (forall s. Reifies s W => BVar s a) -> a
 evalBP0 x = evalBPN (const x) Ø
-{-# INLINE evalBP0 #-}
+-- {-# INLINE evalBP0 #-}
 
 -- | Turn a function @'BVar' s a -> 'BVar' s b@ into the function @a -> b@
 -- that it represents.
@@ -223,7 +225,7 @@ evalBP0 x = evalBPN (const x) Ø
 -- See documentation of 'Numeric.Backprop.backprop' for more information.
 evalBP :: (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
 evalBP f = evalBPN (f . head') . only_
-{-# INLINE evalBP #-}
+-- {-# INLINE evalBP #-}
 
 -- | 'Numeric.Backprop.gradBP', but with explicit 'zero' and 'one'.
 gradBP
@@ -233,7 +235,7 @@ gradBP
     -> a
     -> a
 gradBP zfa ofb f = snd . backprop zfa ofb f
-{-# INLINE gradBP #-}
+-- {-# INLINE gradBP #-}
 
 -- | 'Numeric.Backprop.gradBP', Nbut with explicit 'zero' and 'one'.
 gradBPN
@@ -243,7 +245,7 @@ gradBPN
     -> Tuple as
     -> Tuple as
 gradBPN zfas ofb f = snd . backpropN zfas ofb f
-{-# INLINE gradBPN #-}
+-- {-# INLINE gradBPN #-}
 
 -- | 'Numeric.Backprop.backprop2', but with explicit 'zero' and 'one'.
 backprop2
@@ -258,7 +260,7 @@ backprop2 zfa zfb ofc f x y = second (\(dx ::< dy ::< Ø) -> (dx, dy)) $
     backpropN (zfa :< zfb :< Ø) ofc
         (\(x' :< y' :< Ø) -> f x' y')
         (x ::< y ::< Ø)
-{-# INLINE backprop2 #-}
+-- {-# INLINE backprop2 #-}
 
 -- | 'Numeric.Backprop.backpropWith2', but with explicit 'zero'.
 --
@@ -276,7 +278,7 @@ backpropWith2 zfa zfb f x y = second ((\(dx ::< dy ::< Ø) -> (dx, dy)) .) $
     backpropWithN (zfa :< zfb :< Ø)
         (\(x' :< y' :< Ø) -> f x' y')
         (x ::< y ::< Ø)
-{-# INLINE backpropWith2 #-}
+-- {-# INLINE backpropWith2 #-}
 
 -- | 'evalBP' for a two-argument function.  See
 -- 'Numeric.Backprop.backprop2' for notes.
@@ -286,7 +288,7 @@ evalBP2
     -> b
     -> c
 evalBP2 f x y = evalBPN (\(x' :< y' :< Ø) -> f x' y') (x ::< y ::< Ø)
-{-# INLINE evalBP2 #-}
+-- {-# INLINE evalBP2 #-}
 
 -- | 'gradBP' for a two-argument function.  See
 -- 'Numeric.Backprop.backprop2' for notes.
@@ -299,7 +301,7 @@ gradBP2
     -> b
     -> (a, b)
 gradBP2 zfa zfb ofc f x = snd . backprop2 zfa zfb ofc f x
-{-# INLINE gradBP2 #-}
+-- {-# INLINE gradBP2 #-}
 
 -- | 'Numeric.Backprop.overVar' with explicit 'add' and 'zero'.
 --

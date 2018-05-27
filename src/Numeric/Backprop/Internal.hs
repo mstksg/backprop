@@ -637,21 +637,37 @@ backpropWithN
     -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> (b, b -> Tuple as)
-backpropWithN zfs f !xs = (y, forceSTNs stns `seq` g)
-  where
-    !(!tp@(!_,!stns),!y) = unsafePerformIO $ fillWengert f xs
-    g :: b -> Tuple as
-    g o = runST $ do
-        r <- initRunner tp $ bimap getSum (`appEndo` [])
-                           . fst
-                           $ zipWithPM_ go zfs xs
-        gradRunner o r tp
-        delts <- toList <$> V.freeze (_rInputs r)
-        return . fromMaybe (internalError "backpropN") $
-          fillProd (\_ d -> I (unsafeCoerce d)) xs delts
-      where
-        go :: forall a. ZeroFunc a -> I a -> ((Sum Int, Endo [Any]),())
-        go zf (I x) = ((1, Endo (unsafeCoerce (runZF zf x) :)), ())
+backpropWithN zfs f !xs = case unsafePerformIO $ fillWengert f xs of
+    (tp@(!_,!stns), !y) ->
+      let g :: b -> Tuple as
+          g o = runST $ do
+              r <- initRunner tp $ bimap getSum (`appEndo` [])
+                                 . fst
+                                 $ zipWithPM_ go zfs xs
+              gradRunner o r tp
+              delts <- toList <$> V.freeze (_rInputs r)
+              return . fromMaybe (internalError "backpropN") $
+                fillProd (\_ d -> I (unsafeCoerce d)) xs delts
+            where
+              go :: forall a. ZeroFunc a -> I a -> ((Sum Int, Endo [Any]),())
+              go zf (I x) = ((1, Endo (unsafeCoerce (runZF zf x) :)), ())
+      in  forceSTNs stns `seq` (y, g)
+
+--                               forceSTNs stns `seq` y `seq` (y, g)
+--   where
+--     !(!tp@(!_,!stns),!y) = unsafePerformIO $ fillWengert f xs
+--     g :: b -> Tuple as
+--     g o = runST $ do
+--         r <- initRunner tp $ bimap getSum (`appEndo` [])
+--                            . fst
+--                            $ zipWithPM_ go zfs xs
+--         gradRunner o r tp
+--         delts <- toList <$> V.freeze (_rInputs r)
+--         return . fromMaybe (internalError "backpropN") $
+--           fillProd (\_ d -> I (unsafeCoerce d)) xs delts
+--       where
+--         go :: forall a. ZeroFunc a -> I a -> ((Sum Int, Endo [Any]),())
+--         go zf (I x) = ((1, Endo (unsafeCoerce (runZF zf x) :)), ())
         -- {-# INLINE go #-}
 -- {-# INLINE backpropWithN #-}
 
