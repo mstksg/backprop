@@ -10,9 +10,11 @@
 
 /bench-results
 /prof-results
+/bench-prof
 *.prof
 *.prof.folded
 *.prof.html
 /samples-prof
 *.dyn_o
 *.o
+*.hi
