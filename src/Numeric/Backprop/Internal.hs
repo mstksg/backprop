@@ -44,10 +44,10 @@ module Numeric.Backprop.Internal (
   , debugIR
   ) where
 
+-- import           Control.Monad.Primitive
 import           Control.DeepSeq
 import           Control.Exception
 import           Control.Monad
-import           Control.Monad.Primitive
 import           Control.Monad.ST
 import           Control.Monad.Trans.State
 import           Data.Bifunctor
@@ -579,10 +579,9 @@ data Runner s = R { _rDelta  :: !(MV.MVector s Any)
                   }
 
 initRunner
-    :: (PrimMonad m, PrimState m ~ s)
-    => (Int, [SomeTapeNode])
+    :: (Int, [SomeTapeNode])
     -> (Int, [Any])
-    -> m (Runner s)
+    -> ST s (Runner s)
 initRunner (n, stns) (nx,xs) = do
     delts <- MV.new n
     for_ (zip [n-1,n-2..] stns) $ \(i, STN z (TN{..} :: TapeNode c)) ->
@@ -594,23 +593,23 @@ initRunner (n, stns) (nx,xs) = do
 {-# INLINE initRunner #-}
 
 gradRunner
-    :: forall m b s. (PrimMonad m, PrimState m ~ s)
+    :: forall b s. ()
     => b                        -- ^ one
     -> Runner s
     -> (Int, [SomeTapeNode])
-    -> m ()
+    -> ST s ()
 gradRunner o R{..} (n,stns) = do
     when (n > 0) $
       MV.write _rDelta (n - 1) (unsafeCoerce o)
     zipWithM_ go [n-1,n-2..] stns
   where
-    go :: Int -> SomeTapeNode -> m ()
+    go :: Int -> SomeTapeNode -> ST s ()
     go i (STN _ TN{..}) = do
       delt <- MV.read _rDelta i
       let gs = _tnGrad (unsafeCoerce delt)
       zipWithPM_ propagate _tnInputs gs
     {-# INLINE go #-}
-    propagate :: forall x. InpRef x -> I x -> m ()
+    propagate :: forall x. InpRef x -> I x -> ST s ()
     propagate (IR v (+*)) (I d) = case _bvRef v of
       BRInp i -> flip (MV.modify _rInputs) i $
         unsafeCoerce . (d +*) . unsafeCoerce
