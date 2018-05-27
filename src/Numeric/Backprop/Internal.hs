@@ -4,6 +4,7 @@
 {-# LANGUAGE EmptyCase           #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE GADTs               #-}
+{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -237,14 +238,13 @@ forceTapeNode (TN inps !_) = foldMap1 forceInpRef inps `seq` ()
 {-# INLINE forceTapeNode #-}
 
 data SomeTapeNode :: Type where
-    STN :: { _stnZero :: a
-           , _stnNode :: !(TapeNode a)
+    STN :: { _stnNode :: !(TapeNode a)
            }
         -> SomeTapeNode
 
 -- | Debugging string for a 'SomeTapeMode'.
 debugSTN :: SomeTapeNode -> String
-debugSTN (STN _ TN{..}) = show . foldMap1 ((:[]) . debugIR) $ _tnInputs
+debugSTN (STN TN{..}) = show . foldMap1 ((:[]) . debugIR) $ _tnInputs
 
 -- | An ephemeral Wengert Tape in the environment.  Used internally to
 -- track of the computational graph of variables.
@@ -265,7 +265,7 @@ insertNode
     -> IO (BVar s a)
 insertNode tn !x zf !w = fmap ((`BV` x) . BRIx) . atomicModifyIORef' (wRef w) $ \(!n,!t) ->
     let n' = n + 1
-        t' = STN (runZF zf x) tn : t
+        t' = STN tn : t
     in  forceTapeNode tn `seq` n' `seq` t' `seq` ((n', t'), n)
 {-# INLINE insertNode #-}
 
@@ -574,18 +574,18 @@ coerceVar
     -> BVar s b
 coerceVar v@(BV r x) = forceBVar v `seq` BV r (coerce x)
 
-data Runner s = R { _rDelta  :: !(MV.MVector s Any)
-                  , _rInputs :: !(MV.MVector s Any)
+data Runner s = R { _rDelta  :: !(MV.MVector s (Maybe Any))
+                  , _rInputs :: !(MV.MVector s (Maybe Any))
                   }
 
 initRunner
     :: (Int, [SomeTapeNode])
-    -> (Int, [Any])
+    -> (Int, [Maybe Any])
     -> ST s (Runner s)
 initRunner (n, stns) (nx,xs) = do
     delts <- MV.new n
-    for_ (zip [n-1,n-2..] stns) $ \(i, STN z (TN{..} :: TapeNode c)) ->
-      MV.write delts i $ unsafeCoerce z
+    for_ (zip [n-1,n-2..] stns) $ \(i, STN (TN{..} :: TapeNode c)) ->
+      MV.write delts i $ unsafeCoerce (Nothing @c)
     inps <- MV.new nx
     for_ (zip [0..] xs) . uncurry $ \i z ->
       MV.write inps i z
@@ -604,20 +604,30 @@ gradRunner o R{..} (n,stns) = do
     zipWithM_ go [n-1,n-2..] stns
   where
     go :: Int -> SomeTapeNode -> ST s ()
-    go i (STN _ TN{..}) = do
+    go i (STN (TN{..} :: TapeNode c)) = do
       delt <- MV.read _rDelta i
-      let gs = _tnGrad (unsafeCoerce delt)
-      zipWithPM_ propagate _tnInputs gs
+      forM_ delt $ \d -> do
+        let gs = _tnGrad (unsafeCoerce d)
+        zipWithPM_ propagate _tnInputs gs
     {-# INLINE go #-}
     propagate :: forall x. InpRef x -> I x -> ST s ()
     propagate (IR v (+*)) (I d) = case _bvRef v of
       BRInp i -> flip (MV.modify _rInputs) i $
-        unsafeCoerce . (d +*) . unsafeCoerce
+        unsafeCoerce . bumpMaybe d (+*) . unsafeCoerce
       BRIx i -> flip (MV.modify _rDelta) i $
-        unsafeCoerce . (d +*) . unsafeCoerce
+        unsafeCoerce . bumpMaybe d (+*) . unsafeCoerce
       BRC     -> return ()
     {-# INLINE propagate #-}
 {-# INLINE gradRunner #-}
+
+bumpMaybe
+    :: a
+    -> (a -> b -> b)
+    -> Maybe b
+    -> Maybe b
+bumpMaybe x (+*) = \case
+    Nothing -> Just undefined
+    Just y  -> Just (x +* y)
 
 -- | 'Numeric.Backprop.backpropWithN', but with explicit 'zero' and 'one'.
 --
@@ -641,10 +651,13 @@ backpropWithN zfs f !xs = (y, g)
         gradRunner o r tp
         delts <- toList <$> V.freeze (_rInputs r)
         return . fromMaybe (internalError "backpropN") $
-          fillProd (\_ d -> I (unsafeCoerce d)) xs delts
+          fillProd (\(zf :&: I x) d -> I $ maybe (runZF zf x) unsafeCoerce d
+                   )
+            (zipP zfs xs)
+            delts
       where
-        go :: forall a. ZeroFunc a -> I a -> ((Sum Int, Endo [Any]),())
-        go zf (I x) = ((1, Endo (unsafeCoerce (runZF zf x) :)), ())
+        go :: forall a. ZeroFunc a -> I a -> ((Sum Int, Endo [Maybe Any]),())
+        go zf (I x) = ((1, Endo (unsafeCoerce (Nothing @a) :)), ())
         {-# INLINE go #-}
 {-# INLINE backpropWithN #-}
 
