@@ -577,7 +577,7 @@ footer
 <p><em>Write your functions normally</em> to compute your result, and the library will
 <em>automatically compute your gradient</em>!</p>
 <pre class="haskell"><code>gradBP (\x -> x^2 + 3) (9 :: Double) => 
-18.0
+0.0
 </code></pre>
 <p>Differs from <a href="http://hackage.haskell.org/package/ad">ad</a> by offering full heterogeneity -- each intermediate step
 and the resulting value can have different types (matrices, vectors, scalars,
@@ -585,7 +585,7 @@ lists, etc.)</p>
 <pre class="haskell"><code>gradBP2 (\x xs -> sum (map (**2) (sequenceVar xs)) / x)
         (9       :: Double  )
         ([1,6,2] :: [Double]) => 
-(-0.5061728395061729,[0.2222222222222222,1.3333333333333333,0.4444444444444444])
+(0.0,[0.0,0.0,0.0])
 </code></pre>
 <p>Useful for applications in <a href="https://www.facebook.com/yann.lecun/posts/10155003011462143">differentiable programming</a> and deep learning
 for creating and training numerical models, especially as described in this
