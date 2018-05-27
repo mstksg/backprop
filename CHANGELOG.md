@@ -8,6 +8,13 @@ Version 0.2.4.0
 
 <https://github.com/mstksg/backprop/releases/tag/v0.2.4.0>
 
+*   Huge improvements in performance, with around 20-40% reduction in
+    runtimes/overheads, with savings higher for large matrix situations or
+    situations with expensive `add`.
+*   However, this restructuring required some reshuffling of constraints on
+    `Backprop`/`Num` for most functions.  These are potentially **breaking
+    changes** for polymorphic code, but monomorphic code should remain
+    unchanged.
 *   `overVar` and `%~~`, for modifying fields.  Essentially a wrapper over a
     `viewVar` and `setVar`.
 *   Argument order in the `backpropWith` family of functions changed again;
@@ -22,7 +29,7 @@ Version 0.2.4.0
     updated to reflect results.
 *   Documentation updated to include a new "unital" law for `one`, namely `one
     = gradBP id`.
-*   Fixity declarations for `^^?` and `^^?!`.
+*   Fixity declarations for `^^?`, `^^?!`, and `<$>`.
 *   Added `fmap . const` and `<$` to *Prelude* modules.
 
 Version 0.2.3.0

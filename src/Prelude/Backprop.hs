@@ -35,8 +35,8 @@ module Prelude.Backprop (
   , mapAccumR
   , foldr, foldl'
   -- * Functor and Applicative
-  , fmap
-  , (<$>)
+  , fmap, fmapConst
+  , (<$>), (<$), ($>)
   , pure
   , liftA2
   , liftA3
@@ -140,6 +140,20 @@ fmap
 fmap = E.fmap E.addFunc E.addFunc E.zeroFunc E.zeroFunc
 {-# INLINE fmap #-}
 
+-- | Efficient version of 'fmap' when used to "replace" all values in
+-- a 'Functor' value.
+--
+-- @
+-- 'fmapConst' x = 'fmap' ('P.const' x)
+-- @
+fmapConst
+    :: (Functor f, Foldable f, Backprop b, Backprop (f a), Reifies s W)
+    => BVar s b
+    -> BVar s (f a)
+    -> BVar s (f b)
+fmapConst = E.fmapConst E.addFunc E.addFunc E.zeroFunc E.zeroFunc
+{-# INLINE fmapConst #-}
+
 -- | Alias for 'fmap'.
 (<$>)
     :: (Traversable f, Backprop a, Backprop b, Backprop (f a), Reifies s W)
@@ -147,7 +161,28 @@ fmap = E.fmap E.addFunc E.addFunc E.zeroFunc E.zeroFunc
     -> BVar s (f a)
     -> BVar s (f b)
 (<$>) = fmap
+infixl 4 <$>
 {-# INLINE (<$>) #-}
+
+-- | Alias for 'fmapConst'.
+(<$)
+    :: (Traversable f, Backprop b, Backprop (f a), Reifies s W)
+    => BVar s b
+    -> BVar s (f a)
+    -> BVar s (f b)
+(<$) = fmapConst
+infixl 4 <$
+{-# INLINE (<$) #-}
+
+-- | Alias for @'flip' 'fmapConst'@.
+($>)
+    :: (Traversable f, Backprop b, Backprop (f a), Reifies s W)
+    => BVar s (f a)
+    -> BVar s b
+    -> BVar s (f b)
+xs $> x = x <$ xs
+infixl 4 $>
+{-# INLINE ($>) #-}
 
 -- | Lifted 'P.traverse'.  Lifts backpropagatable functions to be
 -- backpropagatable functions on 'Traversable' 'Functor's.

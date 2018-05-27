@@ -28,8 +28,8 @@ module Prelude.Backprop.Num (
   , mapAccumR
   , foldr, foldl'
   -- * Functor and Applicative
-  , fmap
-  , (<$>)
+  , fmap, fmapConst
+  , (<$>), (<$), ($>)
   , pure
   , liftA2
   , liftA3
@@ -137,6 +137,16 @@ fmap
 fmap = E.fmap E.afNum E.afNum E.zfNum E.zfNum
 {-# INLINE fmap #-}
 
+-- | 'Prelude.Backprop.fmapConst', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
+fmapConst
+    :: (Functor f, Foldable f, Num b, Num (f a), Reifies s W)
+    => BVar s b
+    -> BVar s (f a)
+    -> BVar s (f b)
+fmapConst = E.fmapConst E.afNum E.afNum E.zfNum E.zfNum
+{-# INLINE fmapConst #-}
+
 -- | Alias for 'fmap'.
 (<$>)
     :: (Traversable f, Num a, Num b, Num (f a), Reifies s W)
@@ -144,7 +154,28 @@ fmap = E.fmap E.afNum E.afNum E.zfNum E.zfNum
     -> BVar s (f a)
     -> BVar s (f b)
 (<$>) = fmap
+infixl 4 <$>
 {-# INLINE (<$>) #-}
+
+-- | Alias for 'fmapConst'.
+(<$)
+    :: (Functor f, Foldable f, Num b, Num (f a), Reifies s W)
+    => BVar s b
+    -> BVar s (f a)
+    -> BVar s (f b)
+(<$) = fmapConst
+infixl 4 <$
+{-# INLINE (<$) #-}
+
+-- | Alias for @'flip' 'fmapConst'@.
+($>)
+    :: (Functor f, Foldable f, Num b, Num (f a), Reifies s W)
+    => BVar s (f a)
+    -> BVar s b
+    -> BVar s (f b)
+xs $> x = x <$ xs
+infixl 4 $>
+{-# INLINE ($>) #-}
 
 -- | 'Prelude.Backprop.traverse', but with 'Num' constraints instead of
 -- 'Backprop' constraints.

@@ -29,7 +29,7 @@ module Prelude.Backprop.Explicit (
   , mapAccumR
   , foldr, foldl'
   -- * Functor and Applicative
-  , fmap
+  , fmap, fmapConst
   , pure
   , liftA2
   , liftA3
@@ -71,7 +71,9 @@ pure
     -> BVar s (t a)
 pure af zfa = liftOp1 af . op1 $ \x ->
     ( P.pure x
-    , P.foldl' (runAF af) (runZF zfa x)
+    , \d -> case P.toList d of
+        []   -> runZF zfa x
+        e:es -> P.foldl' (runAF af) e es
     )
 {-# INLINE pure #-}
 
@@ -158,10 +160,6 @@ foldl' af z f x = P.foldl' f x . toList af z
 {-# INLINE foldl' #-}
 
 -- | 'Prelude.Backprop.fmap', but taking explicit 'add' and 'zero'.
---
--- See documentation for 'Numeric.Backprop.Explicitl.collectVar' for
--- information the API change in v0.2.3 that removed the @'ZeroFunc' (f b)@
--- parameter.
 fmap
     :: (Traversable f, Reifies s W)
     => AddFunc a
@@ -174,11 +172,27 @@ fmap
 fmap afa afb zfa zfb f = collectVar afb zfb . P.fmap f . sequenceVar afa zfa
 {-# INLINE fmap #-}
 
+-- | 'Prelude.Backprop.fmapConst', but taking explicit 'add' and 'zero'.
+fmapConst
+    :: (Functor f, Foldable f, Reifies s W)
+    => AddFunc (f a)
+    -> AddFunc b
+    -> ZeroFunc (f a)
+    -> ZeroFunc b
+    -> BVar s b
+    -> BVar s (f a)
+    -> BVar s (f b)
+fmapConst afa afb zfa zfb = liftOp2 afb afa . op2 $ \x xs ->
+    ( x P.<$ xs
+    , \d -> ( case P.toList d of
+                []   -> runZF zfb x
+                e:es -> P.foldl' (runAF afb) e es
+            , runZF zfa xs
+            )
+    )
+{-# INLINE fmapConst #-}
+
 -- | 'Prelude.Backprop.traverse', but taking explicit 'add' and 'zero'.
---
--- See documentation for 'Numeric.Backprop.Explicitl.collectVar' for
--- information the API change in v0.2.3 that removed the @'ZeroFunc' (t b)@
--- and @'ZeroFunc' (f (t b))@ parameters.
 traverse
     :: (Traversable t, Applicative f, Foldable f, Reifies s W)
     => AddFunc a
@@ -200,10 +214,6 @@ traverse afa afb aftb zfa zfb f
 {-# INLINE traverse #-}
 
 -- | 'Prelude.Backprop.liftA2', but taking explicit 'add' and 'zero'.
---
--- See documentation for 'Numeric.Backprop.Explicitl.collectVar' for
--- information the API change in v0.2.3 that removed the @'ZeroFunc' (f c)@
--- parameter.
 liftA2
     :: ( Traversable f
        , Applicative f
@@ -226,10 +236,6 @@ liftA2 afa afb afc zfa zfb zfc f x y
 {-# INLINE liftA2 #-}
 
 -- | 'Prelude.Backprop.liftA3', but taking explicit 'add' and 'zero'.
---
--- See documentation for 'Numeric.Backprop.Explicitl.collectVar' for
--- information the API change in v0.2.3 that removed the @'ZeroFunc' (f d)@
--- parameter.
 liftA3
     :: ( Traversable f
        , Applicative f
@@ -319,10 +325,6 @@ toList af z = toListOfVar af z P.traverse
 
 -- | 'Prelude.Backprop.mapAccumL', but taking explicit 'add' and 'zero'.
 --
--- See documentation for 'Numeric.Backprop.Explicitl.collectVar' for
--- information the API change in v0.2.3 that removed the @'ZeroFunc' (t c)@
--- parameter.
---
 -- @since 0.2.2.0
 mapAccumL
     :: (Traversable t, Reifies s W)
@@ -341,10 +343,6 @@ mapAccumL afb afc zfb zfc f s =
 {-# INLINE mapAccumL #-}
 
 -- | 'Prelude.Backprop.mapAccumR', but taking explicit 'add' and 'zero'.
---
--- See documentation for 'Numeric.Backprop.Explicitl.collectVar' for
--- information the API change in v0.2.3 that removed the @'ZeroFunc' (t c)@
--- parameter.
 --
 -- @since 0.2.2.0
 mapAccumR
