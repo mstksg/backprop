@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns           #-}
 {-# LANGUAGE DataKinds              #-}
 {-# LANGUAGE EmptyCase              #-}
 {-# LANGUAGE FlexibleContexts       #-}
@@ -177,9 +178,8 @@ backpropN
     -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
     -> Tuple as
     -> (b, Tuple as)
-backpropN zfs ob f xs = (y, g (runOF ob y))
-  where
-    (y, g) = backpropWithN zfs f xs
+backpropN zfs ob f xs = case backpropWithN zfs f xs of
+    (!y, g) -> (y, g (runOF ob y))
 {-# INLINE backpropN #-}
 
 -- | 'Numeric.Backprop.backprop', but with explicit 'zero' and 'one'.
