@@ -588,8 +588,10 @@ instances.</p>
 <p><code>zero</code> is &quot;zero&quot; in the verb sense -- it takes a value and &quot;zeroes out&quot; all
 components. For a vector, this means returning a zero vector of the same
 shape. For a list, this means replacing all of the items with zero and
-returning a list of the same length. <code>one</code> does the same thing but with one.
-<code>add</code> is used to add together contributions in gradients, and is usually a
+returning a list of the same length.</p>
+<p><code>one</code> does the same thing but with one; the point of it is to be <code>one = gradBP
+id</code> --- the gradient of the identity function for your type.</p>
+<p><code>add</code> is used to add together contributions in gradients, and is usually a
 component-wise addition.</p>
 <p>Instances are provided for most common data types where it makes sense.</p>
 <h2>Custom Instances</h2>
