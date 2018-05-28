@@ -19,7 +19,6 @@ Manipulating BVars
 import           Data.Functor.Identity
 import           GHC.Generics (Generic)
 import           GHC.TypeNats
-import           Inliterate.Import
 import           Lens.Micro
 import           Lens.Micro.TH
 import           Numeric.Backprop

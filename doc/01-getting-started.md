@@ -159,7 +159,9 @@ myNet = N (H.uniformSample 2394834 (-0.5) 0.5)
 instance KnownNat n => AskInliterate (R n) where
     askInliterate = answerWith (show . H.extract)
 instance AskInliterate Net where
-    askInliterate = answerWith (unlines . (++ ["-- ..."]) . take 5 . lines . show)
+    askInliterate = answerWith (unlines . ((++ ["-- ..."]) . map lim) . take 5 . lines . show)
+      where
+        lim = (++ " -- ...") . take 200
 ```
 
 ```haskell eval

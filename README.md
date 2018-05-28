@@ -231,8 +231,8 @@ process and is not aware of any symbolic level of reasoning, so cannot perform
 such high-level refactorings.  Specific situations where naive differentiation
 yields bad algorithms can be mitigated by manually providing gradients.
 
-A common example is the composition of the *[softmax][]* activation function
-and the *[cross-entropy][]* error function often used in deep learning.
+A common example is the composition of the [softmax][] activation function
+and the [cross-entropy][] error function often used in deep learning.
 Together, their derivatives are straightforward.  However, the derivative of
 their *composition* , `crossEntropy x . softMax` actually has an extremely
 "simple" form, because of how some factors cancel out.  To get around this,
@@ -283,6 +283,10 @@ some overlap:
 [caffe]: http://caffe.berkeleyvision.org/
 [theano]: http://www.deeplearning.net/software/theano/
 [grenade]: http://hackage.haskell.org/package/grenade
+
+See [documentation][comparisons] for a more detailed look.
+
+[comparisons]: https://backprop.jle.im/07-comparisons.html
 
 Todo
 ----
