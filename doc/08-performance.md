@@ -330,9 +330,9 @@ crossEntropy
 crossEntropy x y = -(log y `dot` auto x)
 ```
 
-(Note we `auto :: a -> BVar s a` to lift a normal value into a `BVar`)
+(Note the usage of `auto :: a -> BVar s a` to lift a normal value into a `BVar`)
 
-Now, you can use `crossEntropy x . softMax` as a `BVar s [a] -> BVar s a`
+Now, you can use `crossEntropy x . softMax` as a `BVar s (R n) -> BVar s Double`
 function, and the result and gradient would be correct.  It would backpropagate
 the gradient of `crossEntropy` into `softMax`.  However, you can take advantage
 of the fact that some factors in the result "cancel out", and you can
@@ -366,7 +366,7 @@ for the gradient of the cross entropy composed with softmax, \\(f(x,y)\\):
 Basically, the gradient is just the result of `softMax` vector-subtracted
 from the target.
 
-After computing the gradient by hand, we can write `softMaxCrossEntropyAgainst`
+After computing the gradient by hand, we can write `softMaxCrossEntropy`
 with our manual gradient:
 
 ```haskell top
