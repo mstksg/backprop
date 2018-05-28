@@ -13,6 +13,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE UndecidableInstances       #-}
 
@@ -37,17 +38,18 @@ module Numeric.Backprop.Class (
     Backprop(..)
   -- * Derived methods
   , zeroNum, addNum, oneNum
-  , zeroVec, addVec, oneVec
+  , zeroVec, addVec, oneVec, zeroVecNum, oneVecNum
   , zeroFunctor, addIsList, addAsList, oneFunctor
   , genericZero, genericAdd, genericOne
   -- * Newtype
-  , ABP(..), NumBP(..)
+  , ABP(..), NumBP(..), NumVec(..)
   -- * Generics
   , GZero, GAdd, GOne
   ) where
 
 import           Control.Applicative
 import           Control.DeepSeq
+import           Control.Monad
 import           Data.Coerce
 import           Data.Complex
 import           Data.Data
@@ -279,6 +281,30 @@ oneVec :: (VG.Vector v a, Backprop a) => v a -> v a
 oneVec = VG.map one
 {-# INLINE oneVec #-}
 
+-- | 'zero' for instances of 'VG.Vector' when the contained type is an
+-- instance of 'Num'.  Is potentially more performant than 'zeroVec' when
+-- the vectors are larger.
+--
+-- See 'NumVec' for a 'Backprop' instance for 'VG.Vector' instances that
+-- uses this for 'zero'.
+--
+-- @since 0.2.4.0
+zeroVecNum :: (VG.Vector v a, Num a) => v a -> v a
+zeroVecNum = flip VG.replicate 0 . VG.length
+{-# INLINE zeroVecNum #-}
+
+-- | 'one' for instances of 'VG.Vector' when the contained type is an
+-- instance of 'Num'.  Is potentially more performant than 'oneVec' when
+-- the vectors are larger.
+--
+-- See 'NumVec' for a 'Backprop' instance for 'VG.Vector' instances that
+-- uses this for 'one'.
+--
+-- @since 0.2.4.0
+oneVecNum :: (VG.Vector v a, Num a) => v a -> v a
+oneVecNum = flip VG.replicate 1 . VG.length
+{-# INLINE oneVecNum #-}
+
 -- | 'zero' for 'Functor' instances.
 zeroFunctor :: (Functor f, Backprop a) => f a -> f a
 zeroFunctor = fmap zero
@@ -325,16 +351,54 @@ instance NFData a => NFData (NumBP a)
 
 instance Applicative NumBP where
     pure    = NumBP
+    {-# INLINE pure #-}
     f <*> x = NumBP $ (runNumBP f) (runNumBP x)
+    {-# INLINE (<*>) #-}
 
 instance Monad NumBP where
     return = NumBP
+    {-# INLINE return #-}
     x >>= f = f (runNumBP x)
+    {-# INLINE (>>=) #-}
 
 instance Num a => Backprop (NumBP a) where
     zero = coerce (zeroNum :: a -> a)
+    {-# INLINE zero #-}
     add = coerce (addNum :: a -> a -> a)
+    {-# INLINE add #-}
     one = coerce (oneNum :: a -> a)
+    {-# INLINE one #-}
+
+-- | Newtype wrapper around a @v a@ for @'VG.Vector' v a@, that gives
+-- a more efficient 'Backprop' instance for /long/ vectors when @a@ is an
+-- instance of 'Num'.  The normal 'Backprop' instance for vectors will map
+-- 'zero' or 'one' over all items; this instance will completely ignore the
+-- contents of the original vector and instead produce a new vector of the
+-- same length, with all @0@ or @1@ using the 'Num' instance of @a@
+-- (essentially using 'zeroVecNum' and 'oneVecNum' instead of 'zeroVec' and
+-- 'oneVec').
+--
+-- 'add' is essentially the same as normal, but using '+' instead of the
+-- type's 'add'.
+--
+-- @since 0.2.4.0
+newtype NumVec v a = NumVec { runNumVec :: v a }
+  deriving (Show, Read, Eq, Ord, Typeable, Data, Generic, Functor, Applicative, Monad, Alternative, MonadPlus, Foldable, Traversable)
+
+instance NFData (v a) => NFData (NumVec v a)
+
+instance (VG.Vector v a, Num a) => Backprop (NumVec v a) where
+    zero = coerce $ zeroVecNum @v @a
+    add (NumVec x) (NumVec y) = NumVec $ case compare lX lY of
+        LT -> let (y1,y2) = VG.splitAt (lY - lX) y
+              in  VG.zipWith (+) x y1 VG.++ y2
+        EQ -> VG.zipWith (+) x y
+        GT -> let (x1,x2) = VG.splitAt (lX - lY) x
+              in  VG.zipWith (+) x1 y VG.++ x2
+      where
+        lX = VG.length x
+        lY = VG.length y
+    one = coerce $ oneVecNum @v @a
 
 -- | A newtype wrapper over an @f a@ for @'Applicative' f@ that gives
 -- a free 'Backprop' instance (as well as 'Num' etc. instances).
@@ -344,23 +408,9 @@ instance Num a => Backprop (NumBP a) where
 --
 -- @since 0.2.1.0
 newtype ABP f a = ABP { runABP :: f a }
-  deriving (Show, Read, Eq, Ord, Typeable, Data, Generic, Functor, Foldable, Traversable)
+  deriving (Show, Read, Eq, Ord, Typeable, Data, Generic, Functor, Applicative, Monad, Alternative, MonadPlus, Foldable, Traversable)
 
 instance NFData (f a) => NFData (ABP f a)
-
-instance Applicative f => Applicative (ABP f) where
-    pure = ABP . pure
-    {-# INLINE pure #-}
-    f <*> x = ABP $ ($) <$> runABP f <*> runABP x
-    {-# INLINE (<*>) #-}
-
-instance Monad m => Monad (ABP m) where
-    return = ABP . return
-    {-# INLINE return #-}
-    x >>= f = ABP $ do
-      x' <- runABP x
-      runABP $ f x'
-    {-# INLINE (>>=) #-}
 
 instance (Applicative f, Backprop a) => Backprop (ABP f a) where
     zero = fmap zero

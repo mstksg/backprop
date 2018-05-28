@@ -4,11 +4,11 @@ Changelog
 Version 0.2.4.0
 ---------------
 
-*Unreleased*
+*May 28, 2018*
 
 <https://github.com/mstksg/backprop/releases/tag/v0.2.4.0>
 
-*   Huge improvements in performance, with around 20-40% reduction in
+*   *Huge improvements in performance!*  Around 20-40% reduction in
     runtimes/overheads, with savings higher for large matrix situations or
     situations with expensive `add`.
 *   However, this restructuring required some reshuffling of constraints on
@@ -32,6 +32,11 @@ Version 0.2.4.0
 *   Fixity declarations for `^^?`, `^^?!`, and `<$>`.
 *   Added `fmap . const` and `<$` to *Prelude* modules.
 *   `Backprop` instances for `Expr` from *simple-reflect*
+*   Added `zeroVecNum` and `oneVecNum` to *Numeric.Backprop.Class*, which is
+    potentially more efficient than `zeroVec` and `oneVec` if the items are
+    instances of `Num` and the vectors are larger.  Also added `NumVec` newtype
+    wrapper giving `Backprop` instances to vectors using `zeroVecNum` and
+    `oneVecNum` instead of `zeroVec` and `oneVec`.
 
 Version 0.2.3.0
 ---------------

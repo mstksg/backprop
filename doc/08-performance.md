@@ -78,7 +78,7 @@ inefficient nature of GHC Generics in general.
 Optimization Techniques
 -----------------------
 
-### Redundant Updates
+### Dealing with Overhead from Redundant Updates
 
 By far the dominating source of overhead when using *backprop* is the redundant
 update of data type fields when accumulating gradients.
@@ -234,7 +234,7 @@ optimization.  This is because:
 
 However, this option is available as a low-level performance hack.
 
-### Naive Differentiation
+### Dealing with Overhead from Naive Differentiation
 
 [Automatic differentiation][ad] is a mechanical process that is nothing more
 than glorified book-keeping and accumulation.  It essentially "hitches a ride"
