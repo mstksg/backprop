@@ -1,0 +1,842 @@
+<!DOCTYPE HTML><html><head><title>backprop - Performance &amp; Optimizations</title><link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans|Montserrat:500" rel="stylesheet"><link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/tomorrow-night.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css" rel="stylesheet"><link href="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/favicon-darkorange.ico" rel="shortcut icon"><link href="https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.css" rel="stylesheet"><style>
+html
+{
+  height     : 100%;
+  min-height : 100%;
+}
+
+body
+{
+  height      : 100%;
+  min-height  : 100%;
+  font-family : "IBM Plex Sans", sans-serif;
+  font-size   : 1em;
+  overflow-x  : hidden;
+}
+
+h1
+{
+  font-family : "Montserrat", sans-serif;
+  font-weight : bold;
+  font-size   : 1em;
+}
+
+h2
+{
+  font-family : "Montserrat", sans-serif;
+  font-weight : bold;
+  font-size   : 2.44099em;
+}
+
+h3
+{
+  font-family : "Montserrat", sans-serif;
+  font-weight : bold;
+  font-size   : 5.95848em;
+}
+
+h1
+{
+  font-size : 2.44099em;
+}
+
+h2
+{
+  font-size : 1.953em;
+}
+
+h3
+{
+  font-size : 1.56299em;
+}
+
+#header-container
+{
+  margin-top    : 5rem;
+  margin-bottom : 5rem;
+}
+
+.cover-heading
+{
+  font-size     : 800%;
+  max-height    : 6rem;
+  margin-bottom : 1.56299rem;
+}
+
+.cover-container
+{
+  background-color : rgba(255,255,255,0.0);
+}
+
+.watermark
+{
+  position    : absolute;
+  top         : 0px;
+  left        : 0px;
+  max-height  : 1.25039rem;
+  margin-top  : 1.25039rem;
+  margin-left : 1.25039rem;
+}
+
+.cover-heading-subtitle
+{
+  margin-top : 3rem;
+  font-size  : 1.953rem;
+}
+
+.vertical-auto
+{
+  margin-top    : auto;
+  margin-bottom : auto;
+}
+
+.content
+{
+  margin-top    : 5%;
+  margin-bottom : 5%;
+}
+
+#wrapper
+{
+  padding-left       : 0px;
+  -webkit-transition : all 0.5s ease 0.0s;
+  -moz-transition    : all 0.5s ease 0.0s;
+  -ms-transition     : all 0.5s ease 0.0s;
+  -o-transition      : all 0.5s ease 0.0s;
+  transition         : all 0.5s ease 0.0s;
+}
+
+#wrapper.toggled
+{
+  padding-left : 250px;
+}
+
+#wrapper.toggled #sidebar-wrapper
+{
+  width : 250px;
+}
+
+#page-content-wrapper#wrapper.toggled
+{
+  position     : absolute;
+  margin-right : -250px;
+}
+
+#page-content-wrapper
+{
+  width      : 100%;
+  position   : absolute;
+  margin-top : 3rem;
+  padding    : 15px 15px 15px 15px;
+}
+
+#page-content-wrapper img
+{
+  max-width : 100%;
+}
+
+#sidebar-wrapper
+{
+  z-index            : 1000;
+  position           : fixed;
+  left               : 250px;
+  width              : 0px;
+  margin-left        : -250px;
+  overflow-y         : hidden;
+  overflow-x         : hidden;
+  -webkit-transition : all 0.5s ease 0.0s;
+  -moz-transition    : all 0.5s ease 0.0s;
+  -ms-transition     : all 0.5s ease 0.0s;
+  -o-transition      : all 0.5s ease 0.0s;
+  transition         : all 0.5s ease 0.0s;
+}
+
+.sidebar-nav
+{
+  position        : absolute;
+  top             : 0px;
+  width           : 250px;
+  margin          : 0px 0px 0px 0px;
+  padding         : 0px 0px 0px 0px;
+  list-style-type : none;
+}
+
+.sidebar-nav li
+{
+  text-indent : 20px;
+  line-height : 40px;
+}
+
+.sidebar-nav li a
+{
+  display         : block;
+  text-decoration : none;
+  font-weight     : bold;
+}
+
+
+.sidebar-nav li .tintin-fg-disabled:hover
+{
+  mix-blend-mode  : normal;
+  -webkit-filter  : invert(0%);
+  -moz-filter     : invert(0%);
+  -ms-filter      : invert(0%);
+  -o-filter       : invert(0%);
+  filter          : invert(0%);
+  text-decoration : none;
+  color           : #000000;
+}
+
+
+.sidebar-nav li .tintin-fg-active:hover
+{
+  mix-blend-mode  : normal;
+  -webkit-filter  : invert(0%);
+  -moz-filter     : invert(0%);
+  -ms-filter      : invert(0%);
+  -o-filter       : invert(0%);
+  filter          : invert(0%);
+  text-decoration : none;
+  color           : #ffffff;
+}
+
+#menu-toggle
+{
+  position : absolute;
+}
+
+#menu-toggle img
+{
+  position : absolute;
+  left     : 0px;
+}
+
+#menu-toggle .rotateIn
+{
+  z-index : 999;
+}
+
+.tintin-doc-topbar
+{
+  height : 3rem;
+}
+
+.tintin-doc-topbar a
+{
+  margin-left : 1rem;
+  margin-top  : 0rem;
+  width       : 1.5rem;
+}
+
+.tintin-doc-topbar a img
+{
+  -webkit-filter : invert(70%);
+  -moz-filter    : invert(70%);
+  -ms-filter     : invert(70%);
+  -o-filter      : invert(70%);
+  filter         : invert(70%);
+}
+
+.filter-gray
+{
+  position       : relative;
+  bottom         : -3px;
+  margin-left    : 0.25rem;
+  margin-right   : 1rem;
+  height         : 1rem;
+  -webkit-filter : brightness(0.75);
+  -moz-filter    : brightness(0.75);
+  -ms-filter     : brightness(0.75);
+  -o-filter      : brightness(0.75);
+  filter         : brightness(0.75);
+}
+
+.footer-theam
+{
+  position       : relative;
+  bottom         : 1px;
+  margin-left    : -0.25rem;
+  height         : 1.75rem;
+  -webkit-filter : invert(75%);
+  -moz-filter    : invert(75%);
+  -ms-filter     : invert(75%);
+  -o-filter      : invert(75%);
+  filter         : invert(75%);
+}
+
+.tintin-doc-footer
+{
+  bottom : 0px;
+  height : -15rem;
+  width  : 100%;
+  color  : rgba(0,0,0,0.3);
+}
+
+.main-container
+{
+  min-height : 100%;
+  position   : relative;
+}
+
+#content
+{
+  min-height : 95%;
+}
+
+.sidebar-nav > .sidebar-brand
+{
+  height         : 3rem;
+  font-size      : 2rem;
+  font-family    : "Montserrat", sans-serif;
+  font-weight    : bold;
+  padding-top    : 2.5rem;
+  padding-bottom : 2.5rem;
+  margin-bottom  : 1.5rem;
+}
+
+.sidebar-nav > .sidebar-brand img
+{
+  height : 1.5rem;
+}
+
+.tintin-navbar
+{
+  font-weight      : bold;
+  background-color : rgba(255,255,255,0.15);
+}
+
+.tintin-navbar .left-part
+{
+  padding-left : 0px !important;
+}
+
+.tintin-navbar ul
+{
+  margin-top      : 1rem;
+  list-style-type : none;
+}
+
+.tintin-navbar ul li
+{
+  margin-right : 1rem;
+  display      : inline;
+}
+
+.tintin-navbar ul li a
+{
+  color          : #000000;
+  -webkit-filter : invert(35%);
+  -moz-filter    : invert(35%);
+  -ms-filter     : invert(35%);
+  -o-filter      : invert(35%);
+  filter         : invert(35%);
+  mix-blend-mode : difference;
+}
+
+.tintin-navbar ul li a:hover
+{
+  mix-blend-mode  : normal;
+  -webkit-filter  : invert(0%);
+  -moz-filter     : invert(0%);
+  -ms-filter      : invert(0%);
+  -o-filter       : invert(0%);
+  filter          : invert(0%);
+  text-decoration : none;
+  color           : #000000;
+}
+
+
+.tintin-navbar .tintin-navbar-active a
+{
+  mix-blend-mode : normal;
+  -webkit-filter : invert(0%);
+  -moz-filter    : invert(0%);
+  -ms-filter     : invert(0%);
+  -o-filter      : invert(0%);
+  filter         : invert(0%);
+  color          : #ffffff;
+}
+
+.tintin-navbar .tintin-navbar-active a:hover
+{
+  mix-blend-mode  : normal;
+  -webkit-filter  : invert(0%);
+  -moz-filter     : invert(0%);
+  -ms-filter      : invert(0%);
+  -o-filter       : invert(0%);
+  filter          : invert(0%);
+  text-decoration : none;
+  color           : #ffffff;
+}
+
+.tintin-bg-70
+{
+  background-color : rgba(255,255,255,0.15);
+}
+
+.tintin-bg-black
+{
+  background-color : #1d1f21;
+}
+
+.tintin-bg-white
+{
+  background-color : #f5f8f6;
+}
+
+.tintin-bg-grey
+{
+  background-color : #4d4d4d;
+}
+
+.tintin-bg-red
+{
+  background-color : #d30228;
+}
+
+.tintin-bg-darkgreen
+{
+  background-color : #3c8b6a;
+}
+
+.tintin-bg-lightgreen
+{
+  background-color : #a4cb58;
+}
+
+.tintin-bg-darkorange
+{
+  background-color : #ff6602;
+}
+
+.tintin-bg-lightorange
+{
+  background-color : #faa73e;
+}
+
+.tintin-bg-blue
+{
+  background-color : #94c1e8;
+}
+
+.tintin-bg-darkblue
+{
+  background-color : #007c99;
+}
+
+.tintin-bg-purple
+{
+  background-color : #9f76b4;
+}
+
+.tintin-bg-bronze
+{
+  background-color : #a4a27a;
+}
+
+.tintin-bg-darkgrey
+{
+  background-color : #282a2e;
+}
+
+.tintin-fg-black
+{
+  color : #1d1f21;
+}
+
+.tintin-fg-white
+{
+  color : #f5f8f6;
+}
+
+.tintin-fg-grey
+{
+  color : #4d4d4d;
+}
+
+.tintin-fg-red
+{
+  color : #d30228;
+}
+
+.tintin-fg-darkgreen
+{
+  color : #3c8b6a;
+}
+
+.tintin-fg-lightgreen
+{
+  color : #a4cb58;
+}
+
+.tintin-fg-darkorange
+{
+  color : #ff6602;
+}
+
+.tintin-fg-lightorange
+{
+  color : #faa73e;
+}
+
+.tintin-fg-blue
+{
+  color : #94c1e8;
+}
+
+.tintin-fg-darkblue
+{
+  color : #007c99;
+}
+
+.tintin-fg-purple
+{
+  color : #9f76b4;
+}
+
+.tintin-fg-bronze
+{
+  color : #a4a27a;
+}
+
+.tintin-fg-darkgrey
+{
+  color : #282a2e;
+}
+
+.tintin-fg-active
+{
+  color : #ffffff;
+}
+
+.tintin-fg-disabled
+{
+  color          : #000000;
+  -webkit-filter : invert(35%);
+  -moz-filter    : invert(35%);
+  -ms-filter     : invert(35%);
+  -o-filter      : invert(35%);
+  filter         : invert(35%);
+  mix-blend-mode : difference;
+}
+
+footer
+{
+  position       : relative;
+  bottom         : 0px;
+  left           : 0px;
+  width          : 100%;
+  padding-top    : 30px;
+  padding-bottom : 30px;
+}
+
+.container
+{
+  max-width : 50rem;
+}
+
+@media screen and (min-width: 768px)
+{
+
+#wrapper
+{
+  padding-left : 0px;
+}
+
+#wrapper .toggled
+{
+  padding-left : 250px;
+}
+
+#wrapper .toggled #sidebar-wrapper
+{
+  width : 250px;
+}
+
+#wrapper .toggled #page-content-wrapper
+{
+  position     : relative;
+  margin-right : 0px;
+}
+
+#sidebar-wrapper
+{
+  width : 0px;
+}
+
+#page-content-wrapper
+{
+  padding  : 20px 20px 20px 20px;
+  position : relative;
+}
+
+}
+
+/* Generated with Clay, http://fvisser.nl/clay */</style></head><body class="h-100 tintin-fg-black tintin-bg-white"><div id="main-container" class="h-100"><section id="content"><div id="wrapper" class="toggled"><div id="sidebar-wrapper" class="h-100 tintin-bg-darkorange"><div class="h-100 tintin-bg-70"><p></p></div><ul class="sidebar-nav"><li class="sidebar-brand d-flex tintin-bg-darkorange"><a href="index.html" class="align-self-center tintin-fg-white">backprop</a></li><li><a href="01-getting-started.html" class="tintin-fg-disabled">Getting Started</a></li><li><a href="02-a-detailed-look.html" class="tintin-fg-disabled">A Detailed Look</a></li><li><a href="03-manipulating-bvars.html" class="tintin-fg-disabled">Manipulating BVars</a></li><li><a href="04-the-backprop-typeclass.html" class="tintin-fg-disabled">The Backprop Typeclass</a></li><li><a href="05-applications.html" class="tintin-fg-disabled">Applications and Resources</a></li><li><a href="06-equipping-your-library.html" class="tintin-fg-disabled">Equipping your Library</a></li><li><a href="07-comparisons.html" class="tintin-fg-disabled">Comparisons</a></li><li><a href="08-performance.html" class="tintin-fg-active">Performance &amp; Optimizations</a></li></ul></div><nav class="navbar navbar-expand-lg tintin-doc-topbar tintin-fg-white"><a href="#menu-toggle" id="menu-toggle" class><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/menu.png" class="img-fluid animated rotateOut"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/close.png" class="img-fluid animated rotateIn"></a></nav><div id="page-content-wrapper"><div class="container"><div class="col"><div class="animated fadeIn"><h1>Performance and Optimizations</h1>
+<p>We can use the <a href="https://github.com/mstksg/backprop/blob/master/bench/bench.hs">MNIST tutorial</a> as an example to compare automatic
+differentiation with &quot;manual&quot; differentiation:</p>
+<p><img src="https://i.imgur.com/9Ovx1zg.png" alt="benchmarks" /></p>
+<p>In the above, we compare:</p>
+<ol>
+<li>&quot;Manual&quot; differentiation of a 784 x 300 x 100 x 10 fully-connected
+feed-forward ANN.</li>
+<li>Automatic differentiation using <em>backprop</em> and the lens-based accessor
+interface</li>
+<li>Automatic differentiation using <em>backprop</em> and the &quot;higher-kinded
+data&quot;-based pattern matching interface</li>
+<li>A hybrid approach that manually provides gradients for individual layers
+but uses automatic differentiation for chaining the layers together.</li>
+</ol>
+<h2>Sources of Overhead</h2>
+<p>One immediate result is that simply <em>running</em> the network and functions (using
+<code>evalBP</code>) incurs virtually zero overhead. This means that library authors
+could actually export <em>only</em> backprop-lifted functions, and users would be able
+to use them without losing any performance.</p>
+<p>As for computing gradients, there exists some associated overhead. There are
+three main sources:</p>
+<ol>
+<li><p>The construction and traversal of the <a href="https://dl.acm.org/citation.cfm?doid=355586.364791">Wengert tape</a> used to implement
+automatic differentiation. However, this overhead is typically negligible
+for backpropagating any numerical computations of non-trivial complexity.</p></li>
+<li><p>Redundant updates of entire data types during gradient accumulation. This
+will be, <strong>by far</strong>, the <em>dominating</em> source of any overhead compared to manual
+differentiation for any numerical computation of non-trivial complexity.</p></li>
+<li><p>Inefficiencies associated with &quot;naive&quot; differentiation, compared to manual
+symbolic differentiation. However, this inefficiency is typically
+negligible except in edge cases.</p></li>
+</ol>
+<p>In addition, usage of the &quot;Higher-Kinded Data&quot;-based pattern matching interface
+(over the lens-based accessor interface) incurs some penalties from the
+inefficient nature of GHC Generics in general.</p>
+<h2>Optimization Techniques</h2>
+<h3>Redundant Updates</h3>
+<p>By far the dominating source of overhead when using <em>backprop</em> is the redundant
+update of data type fields when accumulating gradients.</p>
+<h4>Example</h4>
+<p>That is, if we had a data type like:</p>
+<pre class="haskell"><code>data MyType = MT { _mtX :: Double
+                 , _mtY :: Double
+                 , _mtZ :: Double
+                 }
+    deriving (Show, Generic)
+
+makeLenses &#39;&#39;MyType
+
+instance Backprop MyType
+</code></pre>
+<p>and we <em>use</em> all three fields somehow:</p>
+<pre class="haskell"><code>myFunc :: Reifies s W =&gt; BVar s MyType -&gt; BVar s Double
+myFunc mt = (mt ^^. mtX) * (mt ^^. mtY) + (mt ^^. mtZ)
+</code></pre>
+<p>and we compute its gradient:</p>
+<pre class="haskell"><code>gradBP myFunc (MT 5 7 2) => 
+MT {_mtX = 7.0, _mtY = 5.0, _mtZ = 1.0}
+</code></pre>
+<p>The library will first compute the derivative of the first field, and embed it
+into <code>MyType</code>:</p>
+<pre class="haskell"><code>MT { _mtX = 7.0, _mtY = 0.0, _mtZ = 0.0 }
+</code></pre>
+<p>Then it&#39;ll compute the derivative of the second field and embed it:</p>
+<pre class="haskell"><code>MT { _mtX = 0.0, _mtY = 5.0, _mtZ = 0.0 }
+</code></pre>
+<p>And finally compute the derivative of the third field and embed it:</p>
+<pre class="haskell"><code>MT { _mtX = 0.0, _mtY = 0.0, _mtZ = 1.0 }
+</code></pre>
+<p>And it&#39;ll compute the final derivative by <code>add</code>-ing all three of those
+together.</p>
+<p>This is not too bad with <code>Double</code>s, but when you have huge matrices, there will
+be <em>six redundant addition of zeroes</em> for a data type with three fields...and
+those additions of zero matrices can incur a huge cost.</p>
+<p>In general, for a data type with \(n\) fields where you use \(m\) of those
+fields, you will have something on the order of \(\mathcal{O}(n m)\)
+redundant additions by zero.</p>
+<h4>Mitigating</h4>
+<p>One way to mitigate these redundant updates is to prefer data types with less
+fields if possible, or re-factor your data types into multiple &quot;levels&quot; of
+nesting, to reduce the amount of redundant additions by zero. That is, instead
+of having a giant ten-field data type, have two five-field data types, and one
+type having a value of each type. This also works well with recursive &quot;linked
+list&quot; data types, as well, as long as you write functions on your linked lists
+inductively.</p>
+<p>You can also be careful in how many times you use <code>^^.</code> (<code>viewVar</code>), because
+each usage site incurs another addition-by-zero in the gradient accumulation.
+If possible, refactor all of your <code>^^.</code> into a single binding, and share it
+within your expression, instead of using it again several times for the same
+field in the same expression.</p>
+<p>You can also use clever lenses too &quot;simulate&quot; having a data type with less
+fields than you actually have. For example, you can have a lens on the first
+two fields:</p>
+<pre class="haskell"><code>mtXY :: Lens&#39; MyType (Double, Double)
+mtXY f (MT x y z) = (\(x&#39;, y&#39;) -&gt; MT x&#39; y&#39; z) &lt;$&gt; f (x, y)
+</code></pre>
+<p>This treats accessing both fields as effectively a single access to a single
+tuple field, and so cuts out an extra addition by zero.</p>
+<p>As a last resort, you can <em>completely eliminate</em> redundant additions by zero by
+providing <em>manual gradients</em> to functions using your data type.</p>
+<pre class="haskell"><code>myFunc&#39; :: Reifies s W =&gt; BVar s MyType -&gt; BVar s Double
+myFunc&#39; = liftOp1 . op1 $ \(MT x y z) -&gt;
+    ( (x * y) + z
+    , \d -&gt; MT (d * y) (x * d) d
+    )
+</code></pre>
+<pre class="haskell"><code>gradBP myFunc' (MT 5 7 2) => 
+MT {_mtX = 7.0, _mtY = 5.0, _mtZ = 1.0}
+</code></pre>
+<p>See the <a href="https://backprop.jle.im/06-equipping-your-library.html">Equipping your Library</a> page for more information on exactly
+how to specify your operations with manual gradients, as well as the
+description of lifting functions in the documentation of
+<em><a href="http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Op.html">Numeric.Backprop.Op</a></em>.</p>
+<p>Once you do this, you can use <code>myFunc&#39;</code> as a part of any larger computation;
+backpropagation will still work the same, and you avoid any redundant additions
+of zero:</p>
+<pre class="haskell"><code>gradBP (negate . sqrt . myFunc) (MT 5 7 2) => 
+MT {_mtX = -0.5753964555687505, _mtY = -0.41099746826339323, _mtZ = -8.219949365267865e-2}
+</code></pre>
+<pre class="haskell"><code>gradBP (negate . sqrt . myFunc') (MT 5 7 2) => 
+MT {_mtX = -0.5753964555687505, _mtY = -0.41099746826339323, _mtZ = -8.219949365267865e-2}
+</code></pre>
+<p>When you <em>use</em> <code>myFunc&#39;</code> in a function, it will be efficiently backpropagated
+by the <em>backprop</em> library.</p>
+<p>This is useful for situations like optimizing artificial neural networks that
+are a composition of multiple &quot;layers&quot;: you can manually specify the derivative
+of each layer, but let the <em>backprop</em> library take care of finding the
+derivative of <em>their composition</em>. This is exactly the &quot;hybrid&quot; mode mentioned
+in the benchmarks above.</p>
+<p>I don&#39;t recommend doing this, however, unless as a last resort for
+optimization. This is because:</p>
+<ol>
+<li>The whole point of the <em>backprop</em> library is to allow you to never have to
+specify manual gradients</li>
+<li>It is <em>very very easy</em> to make a mistake in your gradient computation and
+introduce subtle bugs</li>
+<li>It is difficult to <em>modify</em> your function if you want to tweak what it
+returns. Compare changing the multiplication to division in the original
+<code>myFunc</code> vs. the manual <code>myFunc&#39;</code></li>
+<li>It makes it harder to read and understand (and subsequently refactor) your
+code.</li>
+</ol>
+<p>However, this option is available as a low-level performance hack.</p>
+<h3>Naive Differentiation</h3>
+<p><a href="https://en.wikipedia.org/wiki/Automatic_differentiation">Automatic differentiation</a> is a mechanical process that is nothing more
+than glorified book-keeping and accumulation. It essentially &quot;hitches a ride&quot;
+on your normal computation in order to automatically accumulate its gradient.
+It isn&#39;t aware of the analytical nature of computations, and cannot do any
+symbolic or analytical simplifications like re-associating additions or
+canceling out factors that humans might perform if manually differentiating.</p>
+<p>In most cases, this is &quot;good enough&quot; and will not be any significant source of
+inefficiency in the larger picture. At least, it won&#39;t be worth the cognitive
+overhead in squeezing out a one or two percent increase in performance.
+However, there are some edge cases where this might become a concern worth
+looking at.</p>
+<p>A common example is the composition of the <a href="https://en.wikipedia.org/wiki/Softmax_function">softmax</a> activation function and
+the <a href="https://en.wikipedia.org/wiki/Cross_entropy">cross-entropy</a> error function often used in deep learning. Together,
+their derivatives are somewhat complex, computationally. However, the
+derivative of their <em>composition</em>, <code>crossEntropy x . softMax</code> actually has an
+extremely &quot;simple&quot; form, because of how some factors cancel out. To get around
+this, libraries like <em>tensorflow</em> offer an <a href="https://www.tensorflow.org/api_docs/python/tf/losses/softmax_cross_entropy">optimized version of the
+composition with manually computed gradients</a>.</p>
+<pre class="haskell"><code>-- import Numeric.LinearAlgebra.Static.Backprop
+
+softMax
+    :: (KnownNat n, Reifies s W)
+    =&gt; BVar s (R n)
+    -&gt; BVar s (R n)
+softMax x = konst (1 / totx) * expx
+  where
+    expx = exp x
+    totx = sumElements expx
+
+crossEntropy
+    :: (KnownNat n, Reifies s W)
+    =&gt; R n
+    -&gt; BVar s (R n)
+    -&gt; BVar s Double
+crossEntropy x y = -(log y `dot` auto x)
+</code></pre>
+<p>(Note we <code>auto :: a -&gt; BVar s a</code> to lift a normal value into a <code>BVar</code>)</p>
+<p>Now, you can use <code>crossEntropy x . softMax</code> as a <code>BVar s [a] -&gt; BVar s a</code>
+function, and the result and gradient would be correct. It would backpropagate
+the gradient of <code>crossEntropy</code> into <code>softMax</code>. However, you can take advantage
+of the fact that some factors in the result &quot;cancel out&quot;, and you can
+drastically simplify the computation.</p>
+<p>Their normal composition would naively be:</p>
+<pre class="haskell"><code>softMaxCrossEntropy
+    :: (KnownNat n, Reifies s W)
+    =&gt; R n
+    -&gt; BVar s (R n)
+    -&gt; BVar s Double
+softMaxCrossEntropy x y = -(log softMaxY `dot` auto x)
+  where
+    expy     = exp y
+    toty     = sumElements expy
+    softMaxY = konst (1 / toty) * expy
+</code></pre>
+<p>Which you can probably guess has a decently complex gradient, just from all of
+the chained operations we have going on.</p>
+<p>However, if you work things out on pencil and paper, you&#39;ll find a nice form
+for the gradient of the cross entropy composed with softmax, \(f(x,y)\):</p>
+<p>\[
+\nabla_y f(\mathbf{x}, \mathbf{y}) = \mathrm{softmax}(\mathbf{y}) - \mathbf{x}
+\]</p>
+<p>Basically, the gradient is just the result of <code>softMax</code> vector-subtracted
+from the target.</p>
+<p>After computing the gradient by hand, we can write <code>softMaxCrossEntropyAgainst</code>
+with our manual gradient:</p>
+<pre class="haskell"><code>-- using the non-lifted interfaces
+-- import qualified Numeric.LinearAlgebra        as HU
+-- import qualified Numeric.LinearAlgebra.Statuc as H
+
+softMaxCrossEntropy&#39;
+    :: (KnownNat n, Reifies s W)
+    =&gt; R n
+    -&gt; BVar s (R n)
+    -&gt; BVar s Double
+softMaxCrossEntropy&#39; x = liftOp1 . op1 $ \y -&gt;
+    let expy     = exp y
+        toty     = HU.sumElements (H.extract expy)
+        softMaxY = H.konst (1 / toty) * expy
+        smce     = -(log softMaxY `H.dot` x)
+    in  ( smce
+        , \d -&gt; H.konst d * (softMaxY - x)
+        )
+</code></pre>
+<p>Our gradient is now just <code>softMaxY - x</code>, which I can assure you is much, much
+simpler than the automatic differentiation-derived gradient. This is because a
+lot of factors show up on the top and bottom of functions and cancel out, and
+a lot of positive and negative additions also end up canceling out.</p>
+<p>See the notes in the previous section about defining custom gradients (and the
+links to <a href="https://backprop.jle.im/06-equipping-your-library.html">Equipping your Library</a> and <em><a href="http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Op.html">Numeric.Backprop.Op</a></em>).</p>
+<p>Once you do this, <code>softMaxCrossEntropy&#39;</code> is now a function you can use normally
+and compose with other backpropagatable functions. You won&#39;t be able to
+functionally tell apart <code>crossEntropy x . softMax</code> from <code>softMaxCrossEntropy&#39;</code>,
+and the two will behave identically, propagating gradients with other <code>BVar</code>
+functions:</p>
+<pre class="haskell"><code>gradBP ((**2) . crossEntropy (H.vec3 1 0 0) . softMax) (H.vec3 0.9 0.2 0.3) => 
+[-0.7314742091958236,0.3474654731904,0.38400873600542373]
+</code></pre>
+<pre class="haskell"><code>gradBP ((**2) . softMaxCrossEntropy (H.vec3 1 0 0)) (H.vec3 0.9 0.2 0.3) => 
+[-0.7314742091958236,0.3474654731904,0.38400873600542373]
+</code></pre>
+<pre class="haskell"><code>gradBP ((**2) . softMaxCrossEntropy' (H.vec3 1 0 0)) (H.vec3 0.9 0.2 0.3) => 
+[-0.7314742091958235,0.34746547319040005,0.38400873600542373]
+</code></pre>
+<p><code>softMaxCrossEntropy&#39;</code> will be more efficient in computing gradients.</p>
+<p>Again, I don&#39;t recommend doing this in most cases, and this should always be a
+last resort. To me, this is even less warranted than the situation above
+(mentioning redundant additions) because any losses due to naive AD should be
+negligible. Only doing this <em>after profiling and benchmarking</em>, when you are
+<em>sure</em> that a particular function composition is causing your bottleneck.
+Don&#39;t do this for any ol&#39; composition you write, because:</p>
+<ol>
+<li>Again, the <em>whole point</em> of this library is to allow you to <em>avoid</em>
+computing gradients by hand.</li>
+<li>Computing gradients by hand is very tricky and there are many places where
+you could introduce a bug in a subtle way that might not be apparent even
+through initial testings.</li>
+<li>This is very fragile, and any future changes to your function will require
+you to completely re-compute and re-write your giant lifted function.</li>
+<li>It is again much harder to read and understand your code.</li>
+</ol>
+<p>But, if you profile and benchmark and conclude that a bad composition is
+bottleneck, know that this path is available.</p>
+</div></div></div></div></div></section><div class="tintin-doc-footer clear-fix"><div class="float-right"><div style="float: left" class="d-inline"><p class>Site generated with </p></div><a style="float: left" href="https://theam.github.io/tintin"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/logo.svg" class="filter-gray"></a><div class="clear-fix float-right"><span style="float:left">&mdash; &copy; 2018 </span><a href="http://theam.io" class="float:left"><img src="http://theam.io/logo_theam.png" class="footer-theam"></a></div></div></div></div><script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script><script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/haskell.min.js"></script><script src="https://cdn.rawgit.com/icons8/bower-webicon/v0.10.7/jquery-webicon.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script>$(function () {$("#menu-toggle").click(function(e) {e.preventDefault();$("#wrapper").toggleClass("toggled");$("#menu-toggle img").toggleClass("rotateIn rotateOut");})});</script><script src="https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/contrib/auto-render.min.js"></script><script>renderMathInElement(document.body);</script></body></html>
