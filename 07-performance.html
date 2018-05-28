@@ -572,7 +572,7 @@ footer
 
 }
 
-/* Generated with Clay, http://fvisser.nl/clay */</style></head><body class="h-100 tintin-fg-black tintin-bg-white"><div id="main-container" class="h-100"><section id="content"><div id="wrapper" class="toggled"><div id="sidebar-wrapper" class="h-100 tintin-bg-darkorange"><div class="h-100 tintin-bg-70"><p></p></div><ul class="sidebar-nav"><li class="sidebar-brand d-flex tintin-bg-darkorange"><a href="index.html" class="align-self-center tintin-fg-white">backprop</a></li><li><a href="01-getting-started.html" class="tintin-fg-disabled">Getting Started</a></li><li><a href="02-a-detailed-look.html" class="tintin-fg-disabled">A Detailed Look</a></li><li><a href="03-manipulating-bvars.html" class="tintin-fg-disabled">Manipulating BVars</a></li><li><a href="04-the-backprop-typeclass.html" class="tintin-fg-disabled">The Backprop Typeclass</a></li><li><a href="05-applications.html" class="tintin-fg-disabled">Applications and Resources</a></li><li><a href="06-equipping-your-library.html" class="tintin-fg-disabled">Equipping your Library</a></li><li><a href="07-comparisons.html" class="tintin-fg-disabled">Comparisons</a></li><li><a href="08-performance.html" class="tintin-fg-active">Performance &amp; Optimizations</a></li></ul></div><nav class="navbar navbar-expand-lg tintin-doc-topbar tintin-fg-white"><a href="#menu-toggle" id="menu-toggle" class><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/menu.png" class="img-fluid animated rotateOut"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/close.png" class="img-fluid animated rotateIn"></a></nav><div id="page-content-wrapper"><div class="container"><div class="col"><div class="animated fadeIn"><h1>Performance and Optimizations</h1>
+/* Generated with Clay, http://fvisser.nl/clay */</style></head><body class="h-100 tintin-fg-black tintin-bg-white"><div id="main-container" class="h-100"><section id="content"><div id="wrapper" class="toggled"><div id="sidebar-wrapper" class="h-100 tintin-bg-darkorange"><div class="h-100 tintin-bg-70"><p></p></div><ul class="sidebar-nav"><li class="sidebar-brand d-flex tintin-bg-darkorange"><a href="index.html" class="align-self-center tintin-fg-white">backprop</a></li><li><a href="01-getting-started.html" class="tintin-fg-disabled">Getting Started</a></li><li><a href="02-a-detailed-look.html" class="tintin-fg-disabled">A Detailed Look</a></li><li><a href="03-manipulating-bvars.html" class="tintin-fg-disabled">Manipulating BVars</a></li><li><a href="04-the-backprop-typeclass.html" class="tintin-fg-disabled">The Backprop Typeclass</a></li><li><a href="05-applications.html" class="tintin-fg-disabled">Applications and Resources</a></li><li><a href="06-equipping-your-library.html" class="tintin-fg-disabled">Equipping your Library</a></li><li><a href="07-performance.html" class="tintin-fg-active">Performance &amp; Optimizations</a></li><li><a href="08-comparisons.html" class="tintin-fg-disabled">Comparisons</a></li></ul></div><nav class="navbar navbar-expand-lg tintin-doc-topbar tintin-fg-white"><a href="#menu-toggle" id="menu-toggle" class><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/menu.png" class="img-fluid animated rotateOut"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/close.png" class="img-fluid animated rotateIn"></a></nav><div id="page-content-wrapper"><div class="container"><div class="col"><div class="animated fadeIn"><h1>Performance and Optimizations</h1>
 <p>We can use the <a href="https://github.com/mstksg/backprop/blob/master/bench/bench.hs">MNIST tutorial</a> as an example to compare automatic
 differentiation with &quot;manual&quot; differentiation:</p>
 <p><img src="https://i.imgur.com/7L5NV4P.png" alt="benchmarks" /></p>
@@ -756,8 +756,8 @@ crossEntropy
     -&gt; BVar s Double
 crossEntropy x y = -(log y `dot` auto x)
 </code></pre>
-<p>(Note we <code>auto :: a -&gt; BVar s a</code> to lift a normal value into a <code>BVar</code>)</p>
-<p>Now, you can use <code>crossEntropy x . softMax</code> as a <code>BVar s [a] -&gt; BVar s a</code>
+<p>(Note the usage of <code>auto :: a -&gt; BVar s a</code> to lift a normal value into a <code>BVar</code>)</p>
+<p>Now, you can use <code>crossEntropy x . softMax</code> as a <code>BVar s (R n) -&gt; BVar s Double</code>
 function, and the result and gradient would be correct. It would backpropagate
 the gradient of <code>crossEntropy</code> into <code>softMax</code>. However, you can take advantage
 of the fact that some factors in the result &quot;cancel out&quot;, and you can
@@ -783,7 +783,7 @@ for the gradient of the cross entropy composed with softmax, \(f(x,y)\):</p>
 \]</p>
 <p>Basically, the gradient is just the result of <code>softMax</code> vector-subtracted
 from the target.</p>
-<p>After computing the gradient by hand, we can write <code>softMaxCrossEntropyAgainst</code>
+<p>After computing the gradient by hand, we can write <code>softMaxCrossEntropy</code>
 with our manual gradient:</p>
 <pre class="haskell"><code>-- using the non-lifted interfaces
 -- import qualified Numeric.LinearAlgebra        as HU
