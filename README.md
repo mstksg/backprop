@@ -184,7 +184,7 @@ differentiation process to "manual" differentiation by hand.  When using the
 
 [bench]: https://github.com/mstksg/backprop/blob/master/bench/bench.hs
 
-![benchmarks](https://i.imgur.com/9Ovx1zg.png)
+![benchmarks](https://i.imgur.com/7L5NV4P.png)
 
 Here we compare:
 
@@ -209,6 +209,9 @@ look at performance, overhead, and optimization techniques][performance] in the
 documentation.
 
 [performance]: https://backprop.jle.im/08-performance.html
+
+Note that the manual and hybrid modes almost overlap in the range of their
+random variances.
 
 Comparisons
 -----------

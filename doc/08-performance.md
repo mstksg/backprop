@@ -33,7 +33,7 @@ differentiation with "manual" differentiation:
 
 [bench]: https://github.com/mstksg/backprop/blob/master/bench/bench.hs
 
-![benchmarks](https://i.imgur.com/9Ovx1zg.png)
+![benchmarks](https://i.imgur.com/7L5NV4P.png)
 
 In the above, we compare:
 
@@ -217,9 +217,11 @@ This is useful for situations like optimizing artificial neural networks that
 are a composition of multiple "layers": you can manually specify the derivative
 of each layer, but let the *backprop* library take care of finding the
 derivative of *their composition*.  This is exactly the "hybrid" mode mentioned
-in the benchmarks above.
+in the benchmarks above.  As can be seen by benchmark results, this brings the
+manual and automatic backprop results to almost within range of random variance
+of each other.
 
-I don't recommend doing this, however, unless as a last resort for
+However, I don't recommend doing this, unless as a last resort for
 optimization.  This is because:
 
 1.  The whole point of the *backprop* library is to allow you to never have to
