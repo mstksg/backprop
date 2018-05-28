@@ -609,7 +609,7 @@ negligible except in edge cases.</p></li>
 (over the lens-based accessor interface) incurs some penalties from the
 inefficient nature of GHC Generics in general.</p>
 <h2>Optimization Techniques</h2>
-<h3>Redundant Updates</h3>
+<h3>Dealing with Overhead from Redundant Updates</h3>
 <p>By far the dominating source of overhead when using <em>backprop</em> is the redundant
 update of data type fields when accumulating gradients.</p>
 <h4>Example</h4>
@@ -716,7 +716,7 @@ returns. Compare changing the multiplication to division in the original
 code.</li>
 </ol>
 <p>However, this option is available as a low-level performance hack.</p>
-<h3>Naive Differentiation</h3>
+<h3>Dealing with Overhead from Naive Differentiation</h3>
 <p><a href="https://en.wikipedia.org/wiki/Automatic_differentiation">Automatic differentiation</a> is a mechanical process that is nothing more
 than glorified book-keeping and accumulation. It essentially &quot;hitches a ride&quot;
 on your normal computation in order to automatically accumulate its gradient.
