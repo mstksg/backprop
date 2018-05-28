@@ -62,6 +62,7 @@ import           Data.Type.Option
 import           Data.Type.Product hiding     (toList)
 import           Data.Void
 import           Data.Word
+import           Debug.SimpleReflect.Expr
 import           GHC.Exts
 import           GHC.Generics
 import           Numeric.Natural
@@ -178,7 +179,7 @@ class Backprop a where
     -- all instances provided by this library.
     --
     -- See 'addNum' for a pre-built definition for instances of 'Num' and
-    -- 'addFunctor' for a definition for instances of 'Functor'.  If left
+    -- 'addIsList' for a definition for instances of 'IsList'.  If left
     -- blank, will automatically be 'genericAdd', a pre-built definition
     -- for instances of 'GHC.Generic' with one constructor whose fields are
     -- all themselves instances of 'Backprop'.
@@ -1036,11 +1037,11 @@ instance Backprop (f (g a)) => Backprop (DFC.Compose f g a)
 --
 -- @since 0.2.2.0
 instance Backprop a => Backprop (r -> a) where
-    zero = fmap zero
+    zero = zeroFunctor
     {-# INLINE zero #-}
     add  = liftA2 add
     {-# INLINE add #-}
-    one  = fmap one
+    one  = oneFunctor
     {-# INLINE one #-}
 
 -- | @since 0.2.2.0
@@ -1050,4 +1051,13 @@ instance (Backprop a, Applicative m) => Backprop (Arr.Kleisli m r a) where
     add (Arr.Kleisli f) (Arr.Kleisli g) = Arr.Kleisli $ \x ->
         add <$> f x <*> g x
     one (Arr.Kleisli f) = Arr.Kleisli ((fmap . fmap) one f)
+    {-# INLINE one #-}
+
+-- | @since 0.2.4.0
+instance Backprop Expr where
+    zero = zeroNum
+    {-# INLINE zero #-}
+    add  = addNum
+    {-# INLINE add #-}
+    one  = oneNum
     {-# INLINE one #-}

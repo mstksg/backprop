@@ -329,13 +329,14 @@ softMaxOp = op1 $ \x ->
 
 softMaxCrossEntropyOp
     :: KnownNat n
-    => Op '[R n, R n] Double
-softMaxCrossEntropyOp = op2 $ \targ x ->
+    => R n
+    -> Op '[R n] Double
+softMaxCrossEntropyOp targ = op1 $ \x ->
     let expx   = exp x
         sm     = konst (1 / sumElements expx) * expx
         ce     = negate $ log sm <.> targ
     in  ( ce
-        , \g -> (0, (konst ce - targ) * konst g)    -- TODO: it's not zero
+        , \g -> (sm - targ) * konst g
         )
 {-# INLINE softMaxCrossEntropyOp #-}
 
@@ -359,7 +360,7 @@ netErrHybrid
     -> R o
     -> R i
     -> BVar s Double
-netErrHybrid n t = liftOp2 softMaxCrossEntropyOp (auto t)
+netErrHybrid n t = liftOp1 (softMaxCrossEntropyOp t)
                  . liftOp2 layerOp (n ^^. nLayer3)
                  . liftOp1 logisticOp
                  . liftOp2 layerOp (n ^^. nLayer2)

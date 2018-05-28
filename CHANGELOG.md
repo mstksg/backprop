@@ -31,6 +31,7 @@ Version 0.2.4.0
     = gradBP id`.
 *   Fixity declarations for `^^?`, `^^?!`, and `<$>`.
 *   Added `fmap . const` and `<$` to *Prelude* modules.
+*   `Backprop` instances for `Expr` from *simple-reflect*
 
 Version 0.2.3.0
 ---------------

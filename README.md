@@ -197,51 +197,18 @@ Here we compare:
 4.  A hybrid approach that manually provides gradients for individual layers
     but uses automatic differentiation for chaining the layers together.
 
-One immediate result is that simply *running* the network and functions (using
-`evalBP`) incurs virtually zero overhead.  This means that library authors
-could actually export *only* backprop-lifted functions, and users would be
-able to use them without losing any performance.
+We can see that simply *running* the network and functions (using `evalBP`)
+incurs virtually zero overhead.  This means that library authors could actually
+export *only* backprop-lifted functions, and users would be able to use them
+without losing any performance.
 
-As for computing gradients, there exists some associated overhead.
+As for computing gradients, there exists some associated overhead, from three
+main sources.  Of these, the building of the computational graph and the
+Wengert Tape wind up being negligible.  For more information, see [a detailed
+look at performance, overhead, and optimization techniques][performance] in the
+documentation.
 
-*Some* overhead from the construction and traversal of the Wengert tape --
-usually on the order of one or two percent.  It should be negligible for most
-purposes.
-
-The majority of the overhead from *backprop* comes from the redundant update of
-entire data types when accumulating gradients.  To mitigate this overhead, you
-should try to prefer data types with less fields if possible, or use perhaps
-use lenses that access multiple fields at a time if you never need fields
-individually.  Or, if using data types with multiple fields, provide manual
-gradients if performance becomes a major issue; this cuts out almost all
-overhead for that situation.
-
-To be more precise, updating the gradients for `(a,b,c)` starts by finding the
-gradient of the `a` and having `(gA,0,0)`, then finding the gradient of the `b`
-and adding that to `(0,gB,0)`, then finding the gradient of the `c` and adding
-that to `(0,0,gC)`; a three-field type where you use all fields individually
-would require six additions of `gA + 0`, etc.
-
-Finally, as with all automatic differentiation, there is some overhead
-associated with "naive" differentiation computations.  If you are manually
-computing derivatives symbolically, you might (as a human) perform some
-symbolic simplifications and reductions (re-associating additions, factors
-canceling out, things like that).  Automatic differentiation uses a mechanical
-process and is not aware of any symbolic level of reasoning, so cannot perform
-such high-level refactorings.  Specific situations where naive differentiation
-yields bad algorithms can be mitigated by manually providing gradients.
-
-A common example is the composition of the [softmax][] activation function
-and the [cross-entropy][] error function often used in deep learning.
-Together, their derivatives are straightforward.  However, the derivative of
-their *composition* , `crossEntropy x . softMax` actually has an extremely
-"simple" form, because of how some factors cancel out.  To get around this,
-libraries like *tensorflow* offer an [optimized version of the composition with
-manually computed gradients][smce].
-
-[softmax]: https://en.wikipedia.org/wiki/Softmax_function
-[cross-entropy]: https://en.wikipedia.org/wiki/Cross_entropy
-[smce]: https://www.tensorflow.org/api_docs/python/tf/losses/softmax_cross_entropy
+[performance]: https://backprop.jle.im/08-performance.html
 
 Comparisons
 -----------
