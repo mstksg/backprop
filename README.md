@@ -175,41 +175,73 @@ For a more fleshed out example, see [the documentaiton][docs], my [blog
 post][blog] and the [MNIST tutorial][mnist-lhs] (also [rendered as a
 pdf][mnist-pdf])
 
-Benchmarks
-----------
+Benchmarks and Performance
+--------------------------
 
 Here are some basic benchmarks comparing the library's automatic
 differentiation process to "manual" differentiation by hand.  When using the
 [MNIST tutorial][bench] as an example:
 
-[bench]: https://github.com/mstksg/backprop/blob/master/bench/MNISTBench.hs
+[bench]: https://github.com/mstksg/backprop/blob/master/bench/bench.hs
 
-![benchmarks](https://i.imgur.com/9DXUaOI.png)
+![benchmarks](https://i.imgur.com/9Ovx1zg.png)
 
-*   For computing the gradient, there is about a 2.5ms overhead (or about 3.5x)
-    compared to computing the gradients by hand.  Some more profiling and
-    investigation can be done, since there are two main sources of potential
-    slow-downs:
+Here we compare:
 
-    1.  "Inefficient" gradient computations, because of automated
-        differentiation not being as efficient as what you might get from doing
-        things by hand and simplifying.  This sort of cost is probably not
-        avoidable.
-    2.  Overhead incurred by the book-keeping and actual automatic
-        differentiating system, which involves keeping track of a dependency
-        graph and propagating gradients backwards in memory.  This sort of
-        overhead is what we would be aiming to reduce.
+1.  "Manual" differentiation of a 784 x 300 x 100 x 10 fully-connected
+    feed-forward ANN.
+2.  Automatic differentiation using *backprop* and the lens-based accessor
+    interface
+3.  Automatic differentiation using *backprop* and the "higher-kinded
+    data"-based pattern matching interface
+4.  A hybrid approach that manually provides gradients for individual layers
+    but uses automatic differentiation for chaining the layers together.
 
-    It is unclear which one dominates the current slowdown.
+One immediate result is that simply *running* the network and functions (using
+`evalBP`) incurs virtually zero overhead.  This means that library authors
+could actually export *only* backprop-lifted functions, and users would be
+able to use them without losing any performance.
 
-*   However, it may be worth noting that this isn't necessarily a significant
-    bottleneck.  *Updating* the networks using *hmatrix* actually dominates the
-    runtime of the training.  Manual gradient descent takes 3.2ms, so the extra
-    overhead is about 60%-70%.
+As for computing gradients, there exists some associated overhead.
 
-*   Running the network (and the backprop-aware functions) incurs virtually
-    zero overhead (about 4%), meaning that library authors could actually
-    export backprop-aware functions by default and not lose any performance.
+*Some* overhead from the construction and traversal of the Wengert tape --
+usually on the order of one or two percent.  It should be negligible for most
+purposes.
+
+The majority of the overhead from *backprop* comes from the redundant update of
+entire data types when accumulating gradients.  To mitigate this overhead, you
+should try to prefer data types with less fields if possible, or use perhaps
+use lenses that access multiple fields at a time if you never need fields
+individually.  Or, if using data types with multiple fields, provide manual
+gradients if performance becomes a major issue; this cuts out almost all
+overhead for that situation.
+
+To be more precise, updating the gradients for `(a,b,c)` starts by finding the
+gradient of the `a` and having `(gA,0,0)`, then finding the gradient of the `b`
+and adding that to `(0,gB,0)`, then finding the gradient of the `c` and adding
+that to `(0,0,gC)`; a three-field type where you use all fields individually
+would require six additions of `gA + 0`, etc.
+
+Finally, as with all automatic differentiation, there is some overhead
+associated with "naive" differentiation computations.  If you are manually
+computing derivatives symbolically, you might (as a human) perform some
+symbolic simplifications and reductions (re-associating additions, factors
+canceling out, things like that).  Automatic differentiation uses a mechanical
+process and is not aware of any symbolic level of reasoning, so cannot perform
+such high-level refactorings.  Specific situations where naive differentiation
+yields bad algorithms can be mitigated by manually providing gradients.
+
+A common example is the composition of the *[softmax][]* activation function
+and the *[cross-entropy][]* error function often used in deep learning.
+Together, their derivatives are straightforward.  However, the derivative of
+their *composition* , `crossEntropy x . softMax` actually has an extremely
+"simple" form, because of how some factors cancel out.  To get around this,
+libraries like *tensorflow* offer an [optimized version of the composition with
+manually computed gradients][smce].
+
+[softmax]: https://en.wikipedia.org/wiki/Softmax_function
+[cross-entropy]: https://en.wikipedia.org/wiki/Cross_entropy
+[smce]: https://www.tensorflow.org/api_docs/python/tf/losses/softmax_cross_entropy
 
 Comparisons
 -----------
