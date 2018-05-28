@@ -44,7 +44,8 @@ In the above, we compare:
 3.  Automatic differentiation using *backprop* and the "higher-kinded
     data"-based pattern matching interface
 4.  A hybrid approach that manually provides gradients for individual layers
-    but uses automatic differentiation for chaining the layers together.
+    but uses automatic differentiation for chaining the layers together.  See
+    the section "Dealing with Overhead from Redundant Updates" for details.
 
 Sources of Overhead
 -------------------
