@@ -172,7 +172,7 @@ ofNum = OF (const 1)
 -- using 'Numeric.Backprop.liftOp' and related functions.  This is how you
 -- can create primitive functions that users can use to manipulate your
 -- library's values.  See
--- <https://backprop.jle.im/06-equipping-your-library.html> for a detailed
+-- <https://backprop.jle.im/08-equipping-your-library.html> for a detailed
 -- guide.
 --
 -- For example, the /hmatrix/ library has a matrix-vector multiplication

@@ -46,7 +46,7 @@ library introduction and usage tutorial [is available here][docs].  See also my
 If you want to provide *backprop* for users of your library, see this **[guide
 to equipping your library with backprop][library]**.
 
-[library]: https://backprop.jle.im/06-equipping-your-library.html
+[library]: https://backprop.jle.im/08-equipping-your-library.html
 
 
 MNIST Digit Classifier Example
@@ -256,7 +256,7 @@ some overlap:
 
 See [documentation][comparisons] for a more detailed look.
 
-[comparisons]: https://backprop.jle.im/08-comparisons.html
+[comparisons]: https://backprop.jle.im/09-comparisons.html
 
 Todo
 ----

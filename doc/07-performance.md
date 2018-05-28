@@ -191,13 +191,10 @@ myFunc' = liftOp1 . op1 $ \(MT x y z) ->
 gradBP myFunc' (MT 5 7 2)
 ```
 
-See the [Equipping your Library][equip] page for more information on exactly
-how to specify your operations with manual gradients, as well as the
-description of lifting functions in the documentation of
-*[Numeric.Backprop.Op][op]*.
+See the [writing manual gradients][manual-gradients] page for more information
+on exactly how to specify your operations with manual gradients.
 
-[equip]: https://backprop.jle.im/06-equipping-your-library.html
-[op]: http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Op.html
+[manual-gradients]: https://backprop.jle.im/06-manual-gradients.html
 
 Once you do this, you can use `myFunc'` as a part of any larger computation;
 backpropagation will still work the same, and you avoid any redundant additions
@@ -394,8 +391,8 @@ simpler than the automatic differentiation-derived gradient.  This is because a
 lot of factors show up on the top and bottom of functions and cancel out, and
 a lot of positive and negative additions also end up canceling out.
 
-See the notes in the previous section about defining custom gradients (and the
-links to [Equipping your Library][equip] and *[Numeric.Backprop.Op][op]*).
+Again, refer to the [writing manual gradients][manual-gradients] page for more
+information on exactly how to specify your operations with manual gradients.
 
 Once you do this, `softMaxCrossEntropy'` is now a function you can use normally
 and compose with other backpropagatable functions.  You won't be able to
@@ -433,6 +430,6 @@ Don't do this for any ol' composition you write, because:
     you to completely re-compute and re-write your giant lifted function.
 4.  It is again much harder to read and understand your code.
 
-But, if you profile and benchmark and conclude that a bad composition is 
+But, if you profile and benchmark and conclude that a bad composition is
 bottleneck, know that this path is available.
 

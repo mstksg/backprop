@@ -39,6 +39,9 @@
 -- <https://backprop.jle.im/06-equipping-your-library.html> for a guide for
 -- equipping your library with backpropatable operations using 'Op's.
 --
+-- See also <https://backprop.jle.im/06-manual-gradients.html this guide>
+-- for writing Ops manually on your own numerical functions.
+--
 
 module Numeric.Backprop.Op (
   -- * Implementation
@@ -140,6 +143,9 @@ import           Type.Class.Witness
 -- the other.  If you have an 'Op' for \(f\) and an 'Op' for \(g\), you can
 -- compute the gradient of \(f\) knowing that the result target is
 -- \(g \circ f\).
+--
+-- See <https://backprop.jle.im/06-manual-gradients.html this guide> for
+-- a detailed look on writing ops manually on your own numerical functions.
 --
 -- Note that end users should probably never be required to construct an
 -- 'Op' explicitly this way.  Instead, libraries should provide

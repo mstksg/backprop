@@ -14,7 +14,10 @@ Version 0.2.4.0
 *   However, this restructuring required some reshuffling of constraints on
     `Backprop`/`Num` for most functions.  These are potentially **breaking
     changes** for polymorphic code, but monomorphic code should remain
-    unchanged.
+    unchanged.  However, code using the *Explicit* interfaces is most likely
+    broken unfortunately.  Fixes just include adding or dropping `zeroFunc`s to
+    the appropriate functions.
+*   Added warnings to *Explicit* modules that the API is "semi-stable".
 *   `overVar` and `%~~`, for modifying fields.  Essentially a wrapper over a
     `viewVar` and `setVar`.
 *   Argument order in the `backpropWith` family of functions changed again;
@@ -24,7 +27,6 @@ Version 0.2.4.0
     *Explicit* interfaces now reverted back to previous order, from v0.2.0 and
     before.  Should be an "un-breaking" change, but will break code written in
     v0.2.3 style.
-*   Added warnings to *Explicit* modules that the API is "semi-stable".
 *   Bechmarks now include HKD access and a "hybrid" approach.  Documentation
     updated to reflect results.
 *   Documentation updated to include a new "unital" law for `one`, namely `one
@@ -37,6 +39,7 @@ Version 0.2.4.0
     instances of `Num` and the vectors are larger.  Also added `NumVec` newtype
     wrapper giving `Backprop` instances to vectors using `zeroVecNum` and
     `oneVecNum` instead of `zeroVec` and `oneVec`.
+*   `Build.hs` build script now also builds profiling results
 
 Version 0.2.3.0
 ---------------

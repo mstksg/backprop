@@ -53,7 +53,7 @@
 -- the docs for 'BVar'.
 --
 -- If you are writing a library, see
--- <https://backprop.jle.im/06-equipping-your-library.html> for a guide for
+-- <https://backprop.jle.im/08-equipping-your-library.html> for a guide for
 -- equipping your library with backpropatable operations.
 --
 -- In the original version 0.1, this module required 'Num' instances for
