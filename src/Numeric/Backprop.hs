@@ -359,6 +359,12 @@ gradBP2 = E.gradBP2 E.zeroFunc E.zeroFunc E.oneFunc
 -- 'splitBV', which lets you break out 'BVar's of values into 'BVar's of
 -- their individual fields automatically without requiring lenses.
 --
+-- __NOTE__: Usage of '^^.' on many fields from the same item is usually
+-- the main source of overhead in /backprop/ code, if you are looking to
+-- optimize your code. See <https://backprop.jle.im/07-performance.html
+-- this performance guide> for more information, and details on mitigating
+-- this overhead.
+--
 -- __WARNING__: Do not use with any lenses that operate "numerically" on
 -- the contents (like 'multiplying').
 --
@@ -374,11 +380,7 @@ infixl 8 ^^.
 -- | Using a 'Lens'', extract a value /inside/ a 'BVar'.  Meant to evoke
 -- parallels to 'view' from lens.
 --
--- If you have control of your data type definitions, consider using
--- 'splitBV', which lets you break out 'BVar's of values into 'BVar's of
--- their individual fields automatically without requiring lenses.
---
--- See documentation for '^^.' for more information.
+-- See documentation for '^^.' for more information, caveats, and warnings.
 viewVar
     :: forall b a s. (Backprop a, Backprop b, Reifies s W)
     => Lens' b a
@@ -513,6 +515,9 @@ overVar = E.overVar E.addFunc E.addFunc E.zeroFunc E.zeroFunc
 --
 -- This can be used to "pattern match" on 'BVar's, by using prisms on
 -- constructors.
+--
+-- __NOTE__: Has the same potential of performance overhead issues as
+-- '^^.'; see documentation of '^^.' for more details.
 (^^?)
     :: forall b a s. (Backprop b, Backprop a, Reifies s W)
     => BVar s b
@@ -522,7 +527,8 @@ v ^^? t = previewVar t v
 infixl 8 ^^?
 {-# INLINE (^^?) #-}
 
--- | An *UNSAFE* version of 'previewVar' assuming that it is there.
+-- | An *UNSAFE* version of '^^?' and 'previewVar' assuming that the value
+-- is there.
 --
 -- Is undefined if the 'Traversal' hits no targets.
 --
@@ -545,7 +551,7 @@ infixl 8 ^^?!
 -- Meant to evoke parallels to 'preview' from lens.  Really only intended
 -- to be used wth 'Prism''s, or up-to-one target traversals.
 --
--- See documentation for '^^?' for more information.
+-- See documentation for '^^?' for more information, warnings, and caveats.
 previewVar
     :: forall b a s. (Backprop b, Backprop a, Reifies s W)
     => Traversal' b a
@@ -575,6 +581,9 @@ previewVar = E.previewVar E.addFunc E.zeroFunc
 -- holding a @b@), specified by @myTraversal :: Traversal' b a@.   The result
 -- has type @['BVar' s a]@ (A list of 'BVar's holding @a@s).
 --
+-- __NOTE__: Has all of the performance overhead issues of 'sequenceVar';
+-- see documentation for 'sequenceVar' for more information.
+--
 (^^..)
     :: forall b a s. (Backprop b, Backprop a, Reifies s W)
     => BVar s b
@@ -586,7 +595,8 @@ v ^^.. t = toListOfVar t v
 -- | Using a 'Traversal'', extract all targeted values /inside/ a 'BVar'.
 -- Meant to evoke parallels to 'toListOf' from lens.
 --
--- See documentation for '^^..' for more information.
+-- See documentation for '^^..' for more information, warnings, and
+-- caveats.
 toListOfVar
     :: forall b a s. (Backprop b, Backprop a, Reifies s W)
     => Traversal' b a
@@ -603,6 +613,14 @@ toListOfVar = E.toListOfVar E.addFunc E.zeroFunc
 -- correspond with the second item in the input, etc.; this can cause
 -- unexpected behavior in 'Foldable' instances that don't have a fixed
 -- number of items.
+--
+-- __NOTE__: A potential source of performance overhead.  If there are
+-- \(n\) total elements, and you use \(m\) of them, then there is an
+-- overhead cost on the order of \(\mathcal{O}(m n)\), with a constant
+-- factor dependent on the cost of 'add'.  Should be negligible for types
+-- with cheap 'add' (like 'Double'), but may be costly for things like
+-- large matrices.  See <https://backprop.jle.im/07-performance.html the
+-- performance guide> for for details.
 sequenceVar
     :: (Traversable t, Backprop a, Backprop (t a), Reifies s W)
     => BVar s (t a)
@@ -619,7 +637,11 @@ sequenceVar = E.sequenceVar E.addFunc E.zeroFunc
 -- etc.; this can cause unexpected behavior in 'Foldable' instances that
 -- don't have a fixed number of items.
 --
--- Prior to v0.2.3, required a 'Backprop' constraint on @t a@.
+-- Note that this does __not__ suffer from the same performance overhead
+-- issues as 'sequenceVar'.  'collectVar' is \(\mathcal{O}(n)\), with
+-- a very small constant factor that consistent for all types.  This
+-- reveals a general property of reverse-mode automatic differentiation;
+-- "many to one" is cheap, but "one to many" is expensive.
 collectVar
     :: (Foldable t, Functor t, Backprop a, Reifies s W)
     => t (BVar s a)
@@ -905,6 +927,21 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
 -- See also 'BV', pattern synonym version where the deconstructor is
 -- exactly a view into 'splitBV'.
 --
+-- __NOTE__: Like '^^.' and 'viewVar', 'splitBV' usage could potentially be
+-- the main source of performance overhead in your program.  If your data
+-- type has \(n\) fields, and you use 'splitBV' to later use \(m\) of those
+-- fields, there is an overhead cost on the order of \(\mathcal{O}(m n)\),
+-- with a constant factor dependent on the cost of 'add' for your original
+-- data type.  Should be negligible for types with cheap 'add' (like
+-- 'Double'), but may be costly for things like large matrices.  See
+-- <https://backprop.jle.im/07-performance.html the performance guide> for
+-- for details.
+--
+-- However, there is some potential opportunities to re-write some core
+-- library functionality that would allow 'splitBV' to avoid all of the
+-- significant performance overhead issues of '^^.'.  Contact me if you are
+-- interested in helping out!
+--
 -- @since 0.2.2.0
 splitBV
     :: ( Generic (z f)
@@ -933,8 +970,12 @@ splitBV = E.splitBV E.addFunc E.addFuncs E.zeroFunc E.zeroFuncs
 -- fields are all instances of 'Backprop', where the type itself has an
 -- instance of 'Backprop'.
 --
--- Note that 'BV' is a pattern synonym version where the constructor is
+-- See also 'BV', a pattern synonym version where the constructor is
 -- exactly 'joinBV'.
+--
+-- Note that 'joinBV' does not suffer the major performance overhead issues
+-- of 'splitBV'.  This is a general property of reverse-mode automatic
+-- differentiation: "many to one" is cheap, but "one to many" is expensive.
 --
 -- @since 0.2.2.0
 joinBV

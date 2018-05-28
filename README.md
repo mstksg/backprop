@@ -208,7 +208,7 @@ Wengert Tape wind up being negligible.  For more information, see [a detailed
 look at performance, overhead, and optimization techniques][performance] in the
 documentation.
 
-[performance]: https://backprop.jle.im/08-performance.html
+[performance]: https://backprop.jle.im/07-performance.html
 
 Note that the manual and hybrid modes almost overlap in the range of their
 random variances.
@@ -256,7 +256,7 @@ some overlap:
 
 See [documentation][comparisons] for a more detailed look.
 
-[comparisons]: https://backprop.jle.im/07-comparisons.html
+[comparisons]: https://backprop.jle.im/08-comparisons.html
 
 Todo
 ----

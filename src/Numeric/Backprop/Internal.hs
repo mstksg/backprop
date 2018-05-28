@@ -629,6 +629,7 @@ bumpMaybe
 bumpMaybe x (+*) e = \case
     Nothing -> Just (e x)
     Just y  -> Just (x +* y)
+{-# INLINE bumpMaybe #-}
 
 -- | 'Numeric.Backprop.backpropWithN', but with explicit 'zero' and 'one'.
 --
