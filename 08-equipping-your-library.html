@@ -572,7 +572,7 @@ footer
 
 }
 
-/* Generated with Clay, http://fvisser.nl/clay */</style></head><body class="h-100 tintin-fg-black tintin-bg-white"><div id="main-container" class="h-100"><section id="content"><div id="wrapper" class="toggled"><div id="sidebar-wrapper" class="h-100 tintin-bg-darkorange"><div class="h-100 tintin-bg-70"><p></p></div><ul class="sidebar-nav"><li class="sidebar-brand d-flex tintin-bg-darkorange"><a href="index.html" class="align-self-center tintin-fg-white">backprop</a></li><li><a href="01-getting-started.html" class="tintin-fg-disabled">Getting Started</a></li><li><a href="02-a-detailed-look.html" class="tintin-fg-disabled">A Detailed Look</a></li><li><a href="03-manipulating-bvars.html" class="tintin-fg-disabled">Manipulating BVars</a></li><li><a href="04-the-backprop-typeclass.html" class="tintin-fg-disabled">The Backprop Typeclass</a></li><li><a href="05-applications.html" class="tintin-fg-disabled">Applications and Resources</a></li><li><a href="06-equipping-your-library.html" class="tintin-fg-active">Equipping your Library</a></li><li><a href="07-performance.html" class="tintin-fg-disabled">Performance &amp; Optimizations</a></li><li><a href="08-comparisons.html" class="tintin-fg-disabled">Comparisons</a></li></ul></div><nav class="navbar navbar-expand-lg tintin-doc-topbar tintin-fg-white"><a href="#menu-toggle" id="menu-toggle" class><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/menu.png" class="img-fluid animated rotateOut"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/close.png" class="img-fluid animated rotateIn"></a></nav><div id="page-content-wrapper"><div class="container"><div class="col"><div class="animated fadeIn"><h1>Equipping your Library for Backprop</h1>
+/* Generated with Clay, http://fvisser.nl/clay */</style></head><body class="h-100 tintin-fg-black tintin-bg-white"><div id="main-container" class="h-100"><section id="content"><div id="wrapper" class="toggled"><div id="sidebar-wrapper" class="h-100 tintin-bg-darkorange"><div class="h-100 tintin-bg-70"><p></p></div><ul class="sidebar-nav"><li class="sidebar-brand d-flex tintin-bg-darkorange"><a href="index.html" class="align-self-center tintin-fg-white">backprop</a></li><li><a href="01-getting-started.html" class="tintin-fg-disabled">Getting Started</a></li><li><a href="02-a-detailed-look.html" class="tintin-fg-disabled">A Detailed Look</a></li><li><a href="03-manipulating-bvars.html" class="tintin-fg-disabled">Manipulating BVars</a></li><li><a href="04-the-backprop-typeclass.html" class="tintin-fg-disabled">The Backprop Typeclass</a></li><li><a href="05-applications.html" class="tintin-fg-disabled">Applications and Resources</a></li><li><a href="06-manual-gradients.html" class="tintin-fg-disabled">Manual Gradients</a></li><li><a href="07-performance.html" class="tintin-fg-disabled">Performance &amp; Optimizations</a></li><li><a href="08-equipping-your-library.html" class="tintin-fg-active">Equipping your Library</a></li><li><a href="09-comparisons.html" class="tintin-fg-disabled">Comparisons</a></li></ul></div><nav class="navbar navbar-expand-lg tintin-doc-topbar tintin-fg-white"><a href="#menu-toggle" id="menu-toggle" class><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/menu.png" class="img-fluid animated rotateOut"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/close.png" class="img-fluid animated rotateIn"></a></nav><div id="page-content-wrapper"><div class="container"><div class="col"><div class="animated fadeIn"><h1>Equipping your Library for Backprop</h1>
 <p>So you want your users to be able to use your numerical library with
 <em>backprop</em>, huh?</p>
 <p>This page is specifically for library authors who want to allow their users to
@@ -617,233 +617,20 @@ in terms of those lifted functions. This is also how <em>users</em> are expected
 be able to use your library: just use the lifted functions you provide, in
 order to make their own lifted functions using normal function application and
 composition.</p>
+<h2>Lifting operations manually</h2>
 <p>However, if no lifted primitive functions are available, then you do have to do
 some legwork to provide information on gradient computation for your types.
 Ideally, you would only need to do this for some minimal set of your
 operations, and then define the rest of them in terms of the functions you have
 already lifted.</p>
-<h2>Lifting operations manually</h2>
-<p>A <code>BVar s a -&gt; BVar s b</code> really encodes two things:</p>
-<ol>
-<li>A <code>a -&gt; b</code> (the actual function)</li>
-<li>A <code>a -&gt; b -&gt; a</code> (the &quot;scaled gradient&quot; function)</li>
-</ol>
-<p>The documentation for <a href="http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Op.html">Numeric.Backprop.Op</a> gives detail about what these
-entail, with rendered math and examples.</p>
-<p>The second function requires some elaboration. Let&#39;s say you are writing a
-lifted version of your function \(y = f(x)\) (whose derivative is
-\(\frac{dy}{dx}\)), and that your <em>final result</em> at the end of your computation
-is \(z = g(f(x))\) (whose derivative is \(\frac{dz}{dx}\)). In that case, because of the
-chain rule, \(\frac{dz}{dx} = \frac{dz}{dy} \frac{dy}{dx}\).</p>
-<p>The scaled gradient is the function which, <em>given</em> \(\frac{dy}{dz}\), <em>returns</em>
-\(\frac{dz}{dx}\). (that is, returns \(\frac{dz}{dy} \frac{dy}{dx}\)).</p>
-<p>For example, for the mathematical operation \(y = f(x) = x^2\), then, considering
-\(z = g(f(x))\), \(\frac{dz}{dx} = \frac{dz}{dy} 2x\).
-In fact, for all functions taking and returning scalars (just normal single
-numbers), \(\frac{dz}{dx} = \frac{dz}{dy} f&#39;(x)\).</p>
-<p>With that in mind, let&#39;s write our &quot;squared&quot; op:</p>
-<pre class="haskell"><code>square
-    :: (Num a, Backprop a, Reifies s W)
-    =&gt; BVar s a
-    -&gt; BVar s a
-square = liftOp1 . op1 $ \x -&gt;
-    ( x^2              , \dzdy -&gt; dzdy * 2 * x)
---    ^- actual result   ^- scaled gradient function
-</code></pre>
-<p>Keeping along the same pattern, for \(y = f(x) = \sin(x)\), then, considering \(z
-= g(f(x))\), \(\frac{dz}{dx} = \frac{dz}{dy} \cos(x)\). So, we have:</p>
-<pre class="haskell"><code>liftedSin
-    :: (Floating a, Backprop a, Reifies s W)
-    =&gt; BVar s a
-    -&gt; BVar s a
-liftedSin = liftOp1 . op1 $ \x -&gt;
-    ( sin x, \dzdy -&gt; dzdy * cos x )
-</code></pre>
-<p>In general, for functions that take and return scalars:</p>
-<pre class="haskell"><code>liftedF
-    :: (Reifies s W, Backprop a, Num a)
-    =&gt; BVar s a
-    -&gt; BVar s a
-liftedF = liftOp1 . op1 $ \x -&gt;
-    ( f x, \dzdy -&gt; dzdy * dfdx x )
-</code></pre>
-<p>For an example of every single numeric function in base Haskell, see <a href="https://github.com/mstksg/backprop/blob/a7651b4549048a3aca73c79c6fbe07c3e8ee500e/src/Numeric/Backprop/Op.hs#L646-L787">the
-source of Op.hs</a> for the <code>Op</code> definitions for every method in <code>Num</code>,
-<code>Fractional</code>, and <code>Floating</code>.</p>
-<h3>Non-trivial example</h3>
-<p>A simple non-trivial example is <code>sumElements</code>, which we can define to take the
-<em>hmatrix</em> library&#39;s <code>R n</code> type (an n-vector of <code>Double</code>). In this case, we
-have to think about \(g(\mathrm{sum}(\mathbf{x}))\). In this case, the types
-guide our thinking:</p>
-<pre class="haskell"><code>sumElements           :: R n -&gt; Double
-sumElementsScaledGrad :: R n -&gt; Double -&gt; R n
-</code></pre>
-<p>The simplest way for me to do this personally is to just take it element by
-element.</p>
-<ol>
-<li><p><em>Write out the functions in question, in a simple example</em></p>
-<p>In our case:</p>
-<ul>
-<li>\(y = f(\langle a, b, c \rangle) = a + b + c\)</li>
-<li>\(z = g(y) = g(a + b + c)\)</li>
-</ul></li>
-<li><p><em>Identify the components in your gradient</em></p>
-<p>In our case, we have to return a gradient \(\langle \frac{\partial z}{\partial a},
-\frac{\partial z}{\partial b}, \frac{\partial z}{\partial c} \rangle\).</p></li>
-<li><p><em>Work out each component of the gradient until you start to notice a
-pattern</em></p>
-<p>Let&#39;s start with \(\frac{\partial z}{\partial a}\). We need to find
-\(\frac{\partial z}{\partial a}\) in terms of \(\frac{dz}{dy}\):</p>
-<ul>
-<li>Through the chain rule, \(\frac{\partial z}{\partial a} =
-\frac{dz}{dy} \frac{\partial y}{\partial a}\).</li>
-<li>Because \(y = a + b + c\), we know that \(\frac{\partial y}{\partial
-a} = 1\).</li>
-<li>Because \(\frac{\partial y}{\partial a} = 1\), we know that
-\(\frac{\partial z}{\partial a} = \frac{dz}{dy} \times 1 =
-\frac{dz}{dy}\).</li>
-</ul>
-<p>So, our expression of \(\frac{\partial z}{\partial a}\) in terms of
-\(\frac{dz}{dy}\) is simple -- it&#39;s simply \(\frac{\partial z}{\partial
-a} = \frac{dz}{dy}\).</p>
-<p>Now, let&#39;s look at \(\frac{\partial z}{\partial b}\). We need to find
-\(\frac{\partial z}{\partial b}\) in terms of \(\frac{dz}{dy}\).</p>
-<ul>
-<li>Through the chain rule, \(\frac{\partial z}{\partial b} =
-\frac{dz}{dy} \frac{\partial y}{\partial b}\).</li>
-<li>Because \(y = a + b + c\), we know that \(\frac{\partial y}{\partial
-b} = 1\).</li>
-<li>Because \(\frac{\partial y}{\partial b} = 1\), we know that
-\(\frac{\partial z}{\partial b} = \frac{dz}{dy} \times 1 =
-\frac{dz}{dy}\).</li>
-</ul>
-<p>It looks like \(\frac{\partial z}{\partial b} = \frac{\partial z}{\partial
-y}\), as well.</p>
-<p>At this point, we start to notice a pattern. We can apply the same logic
-to see that \(\frac{\partial z}{\partial c} = \frac{dz}{dy}\).</p></li>
-<li><p><em>Write out the pattern</em></p>
-<p>Extrapolating the pattern, \(\frac{\partial z}{\partial q}\), where
-\(q\) is <em>any</em> component, is always going to be a constant --
-\(\frac{dz}{dy}\).</p></li>
-</ol>
-<p>So in the end:</p>
-<pre class="haskell"><code>liftedSumElements
-    :: (KnownNat n, Reifies s W)
-    =&gt; BVar s (R n)
-    -&gt; BVar s Double
-liftedSumElements = liftOp1 . op1 $ \xs -&gt;
-    ( sumElements xs, \dzdy -&gt; konst dzdy )  -- a constant vector
-</code></pre>
-<h3>Multiple-argument functions</h3>
-<p>Lifting multiple-argument functions is the same thing, except using <code>liftOp2</code>
-and <code>op2</code>, or <code>liftOpN</code> and <code>opN</code>.</p>
-<p>A <code>BVar s a -&gt; BVar s b -&gt; BVar s c</code> encodes two things:</p>
-<ol>
-<li>The actual <code>a -&gt; b -&gt; c</code></li>
-<li>The scaled gradient, <code>a -&gt; b -&gt; c -&gt; (a, b)</code>.</li>
-</ol>
-<p>The <code>c</code> parameter of the scaled gradient is again \(\frac{dz}{dy}\), and the
-final <code>(a,b)</code> is a tuple of \(\frac{\partial z}{\partial x_1}\) and
-\(\frac{\partial z}{\partial x_2}\): how \(\frac{dz}{dy}\) affects both of
-the inputs.</p>
-<p>For a simple example, let&#39;s look at \(x + y\). Working it out:</p>
-<ul>
-<li>\(y = f(x_1, x_2) = x_1 + x_2\)</li>
-<li>\(z = g(f(x_1, x_2)) = g(x_1 + x_2)\)</li>
-<li>Looking first for \(\frac{\partial z}{\partial x_1}\) in terms of
-\(\frac{dz}{dy}\):
-<ul>
-<li>\(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} \frac{\partial
-y}{\partial x_1}\) (chain rule)</li>
-<li>From \(y = x_1 + x_2\), we see that \(\frac{\partial y}{\partial
-x_1} = 1\)</li>
-<li>Therefore, \(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} \times 1
-= \frac{dz}{dy}\).</li>
-</ul></li>
-<li>Looking second for \(\frac{\partial z}{\partial x_2}\) in terms of
-\(\frac{dz}{dy}\):
-<ul>
-<li>\(\frac{\partial z}{\partial x_2} = \frac{dz}{dy} \frac{\partial
-y}{\partial x_2}\) (chain rule)</li>
-<li>From \(y = x_1 + x_2\), we see that \(\frac{\partial y}{\partial
-x_2} = 1\)</li>
-<li>Therefore, \(\frac{\partial z}{\partial x_2} = \frac{dz}{dy} \times 1
-= \frac{dz}{dy}\).</li>
-</ul></li>
-<li>Therefore, \(\frac{\partial z}{\partial x_1} = \frac{dz}{dy}\), and also
-\(\frac{\partial z}{\partial x_2} = \frac{dz}{dy}\).</li>
-</ul>
-<p>Putting it into code:</p>
-<pre class="haskell"><code>add :: (Num a, Backprop a, Reifies s W)
-    =&gt; BVar s a
-    -&gt; BVar s a
-    -&gt; BVar s a
-add = liftOp2 . op2 $ \x1 x2 -&gt;
-    ( x1 + x2, \dzdy -&gt; (dzdy, dzdy) )
-</code></pre>
-<p>Let&#39;s try our hand at multiplication, or \(x * y\):</p>
-<ul>
-<li>\(y = f(x_1, x_2) = x_1 x_2\)</li>
-<li>\(z = g(f(x_1, x_2)) = g(x_1 x_2)\)</li>
-<li>Looking first for \(\frac{d\partial }{d\partial _1}\) in terms of
-\(\frac{dz}{dy}\):
-<ul>
-<li>\(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} \frac{\partial
-y}{\partial x_1}\) (chain rule)</li>
-<li>From \(y = x_1 x_2\), we see that \(\frac{\partial y}{\partial x_1}
-= x_2\)</li>
-<li>Therefore, \(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} x_2\).</li>
-</ul></li>
-<li>Looking second for \(\frac{\partial z}{\partial x_2}\) in terms of
-\(\frac{dz}{dy}\):
-<ul>
-<li>\(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} \frac{\partial
-y}{\partial x_1}\) (chain rule)</li>
-<li>From \(y = x_1 x_2\), we see that \(\frac{\partial y}{\partial x_2}
-= x_1\)</li>
-<li>Therefore, \(\frac{\partial z}{\partial x_2} = \frac{dz}{dy} x_1\).</li>
-</ul></li>
-<li>Therefore, \(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} x_2\), and
-\(\frac{\partial z}{\partial x_2} = x_1 \frac{dz}{dy}\).</li>
-</ul>
-<p>In code:</p>
-<pre class="haskell"><code>mul :: (Num a, Backprop a, Reifies s W)
-    =&gt; BVar s a
-    -&gt; BVar s a
-    -&gt; BVar s a
-mul = liftOp2 . op2 $ \x1 x2 -&gt;
-    ( x1 * x2, \dzdy -&gt; (dzdy * x2, x1 * dzdy) )
-</code></pre>
-<p>For non-trivial examples involving linear algebra, see the source for the <em><a href="http://hackage.haskell.org/package/hmatrix-backprop">hmatrix-backprop</a></em> library.</p>
-<p>Some examples, for the dot product between two vectors and for matrix-vector
-multiplication:</p>
-<pre class="haskell"><code>-- import qualified Numeric.LinearAlgebra.Static as H
-
--- | dot product between two vectors
-dot
-    :: (KnownNat n, Reifies s W)
-    =&gt; BVar s (R n)
-    -&gt; BVar s (R n)
-    -&gt; BVar s Double
-dot = liftOp2 . op2 $ \u v -&gt;
-    ( u `H.dot` v
-    , \dzdy -&gt; (H.konst dzdy * v, u * H.konst dzdy)
-    )
-
-
--- | matrix-vector multiplication
-(#&gt;)
-    :: (KnownNat m, KnownNat n, Reifies s W)
-    =&gt; BVar s (L m n)
-    -&gt; BVar s (R n)
-    -&gt; BVar s (R m)
-(#&gt;) = liftOp2 . op2 $ \mat vec -&gt;
-    ( mat H.#&gt; vec
-    , \dzdy -&gt; (dzdy `H.outer` vec, H.tr mat H.#&gt; dzdy)
-    )
-</code></pre>
+<p>A full tutorial on lifting your library functions <a href="https://backprop.jle.im/06-manual-gradients.html">can be found
+here</a>. It describes the usage of the <code>liftOp</code> and <code>op</code>
+family of functions to fully lift your single-argument single-result and
+multiple-argument single-result functions to be backpropagatable.</p>
 <h3>Returning multiple items</h3>
-<p>You can return tuples inside <code>BVar</code>s:</p>
+<p>As an extension of the <a href="https://backprop.jle.im/06-manual-gradients.html">manual gradient tutorial</a>, we can
+consider functions that return multiple items.</p>
+<p>You can always return tuples inside <code>BVar</code>s:</p>
 <pre class="haskell"><code>splitAt
     :: (Backprop a, Reifies s W)
     =&gt; Int

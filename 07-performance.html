@@ -572,7 +572,7 @@ footer
 
 }
 
-/* Generated with Clay, http://fvisser.nl/clay */</style></head><body class="h-100 tintin-fg-black tintin-bg-white"><div id="main-container" class="h-100"><section id="content"><div id="wrapper" class="toggled"><div id="sidebar-wrapper" class="h-100 tintin-bg-darkorange"><div class="h-100 tintin-bg-70"><p></p></div><ul class="sidebar-nav"><li class="sidebar-brand d-flex tintin-bg-darkorange"><a href="index.html" class="align-self-center tintin-fg-white">backprop</a></li><li><a href="01-getting-started.html" class="tintin-fg-disabled">Getting Started</a></li><li><a href="02-a-detailed-look.html" class="tintin-fg-disabled">A Detailed Look</a></li><li><a href="03-manipulating-bvars.html" class="tintin-fg-disabled">Manipulating BVars</a></li><li><a href="04-the-backprop-typeclass.html" class="tintin-fg-disabled">The Backprop Typeclass</a></li><li><a href="05-applications.html" class="tintin-fg-disabled">Applications and Resources</a></li><li><a href="06-equipping-your-library.html" class="tintin-fg-disabled">Equipping your Library</a></li><li><a href="07-performance.html" class="tintin-fg-active">Performance &amp; Optimizations</a></li><li><a href="08-comparisons.html" class="tintin-fg-disabled">Comparisons</a></li></ul></div><nav class="navbar navbar-expand-lg tintin-doc-topbar tintin-fg-white"><a href="#menu-toggle" id="menu-toggle" class><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/menu.png" class="img-fluid animated rotateOut"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/close.png" class="img-fluid animated rotateIn"></a></nav><div id="page-content-wrapper"><div class="container"><div class="col"><div class="animated fadeIn"><h1>Performance and Optimizations</h1>
+/* Generated with Clay, http://fvisser.nl/clay */</style></head><body class="h-100 tintin-fg-black tintin-bg-white"><div id="main-container" class="h-100"><section id="content"><div id="wrapper" class="toggled"><div id="sidebar-wrapper" class="h-100 tintin-bg-darkorange"><div class="h-100 tintin-bg-70"><p></p></div><ul class="sidebar-nav"><li class="sidebar-brand d-flex tintin-bg-darkorange"><a href="index.html" class="align-self-center tintin-fg-white">backprop</a></li><li><a href="01-getting-started.html" class="tintin-fg-disabled">Getting Started</a></li><li><a href="02-a-detailed-look.html" class="tintin-fg-disabled">A Detailed Look</a></li><li><a href="03-manipulating-bvars.html" class="tintin-fg-disabled">Manipulating BVars</a></li><li><a href="04-the-backprop-typeclass.html" class="tintin-fg-disabled">The Backprop Typeclass</a></li><li><a href="05-applications.html" class="tintin-fg-disabled">Applications and Resources</a></li><li><a href="06-manual-gradients.html" class="tintin-fg-disabled">Manual Gradients</a></li><li><a href="07-performance.html" class="tintin-fg-active">Performance &amp; Optimizations</a></li><li><a href="08-equipping-your-library.html" class="tintin-fg-disabled">Equipping your Library</a></li><li><a href="09-comparisons.html" class="tintin-fg-disabled">Comparisons</a></li></ul></div><nav class="navbar navbar-expand-lg tintin-doc-topbar tintin-fg-white"><a href="#menu-toggle" id="menu-toggle" class><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/menu.png" class="img-fluid animated rotateOut"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/close.png" class="img-fluid animated rotateIn"></a></nav><div id="page-content-wrapper"><div class="container"><div class="col"><div class="animated fadeIn"><h1>Performance and Optimizations</h1>
 <p>We can use the <a href="https://github.com/mstksg/backprop/blob/master/bench/bench.hs">MNIST tutorial</a> as an example to compare automatic
 differentiation with &quot;manual&quot; differentiation:</p>
 <p><img src="https://i.imgur.com/7L5NV4P.png" alt="benchmarks" /></p>
@@ -683,10 +683,8 @@ myFunc&#39; = liftOp1 . op1 $ \(MT x y z) -&gt;
 <pre class="haskell"><code>gradBP myFunc' (MT 5 7 2) => 
 MT {_mtX = 7.0, _mtY = 5.0, _mtZ = 1.0}
 </code></pre>
-<p>See the <a href="https://backprop.jle.im/06-equipping-your-library.html">Equipping your Library</a> page for more information on exactly
-how to specify your operations with manual gradients, as well as the
-description of lifting functions in the documentation of
-<em><a href="http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Op.html">Numeric.Backprop.Op</a></em>.</p>
+<p>See the <a href="https://backprop.jle.im/06-manual-gradients.html">writing manual gradients</a> page for more information
+on exactly how to specify your operations with manual gradients.</p>
 <p>Once you do this, you can use <code>myFunc&#39;</code> as a part of any larger computation;
 backpropagation will still work the same, and you avoid any redundant additions
 of zero:</p>
@@ -807,8 +805,8 @@ softMaxCrossEntropy&#39; x = liftOp1 . op1 $ \y -&gt;
 simpler than the automatic differentiation-derived gradient. This is because a
 lot of factors show up on the top and bottom of functions and cancel out, and
 a lot of positive and negative additions also end up canceling out.</p>
-<p>See the notes in the previous section about defining custom gradients (and the
-links to <a href="https://backprop.jle.im/06-equipping-your-library.html">Equipping your Library</a> and <em><a href="http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Op.html">Numeric.Backprop.Op</a></em>).</p>
+<p>Again, refer to the <a href="https://backprop.jle.im/06-manual-gradients.html">writing manual gradients</a> page for more
+information on exactly how to specify your operations with manual gradients.</p>
 <p>Once you do this, <code>softMaxCrossEntropy&#39;</code> is now a function you can use normally
 and compose with other backpropagatable functions. You won&#39;t be able to
 functionally tell apart <code>crossEntropy x . softMax</code> from <code>softMaxCrossEntropy&#39;</code>,
