@@ -146,6 +146,10 @@ fmap = E.fmap E.addFunc E.addFunc E.zeroFunc E.zeroFunc
 -- @
 -- 'fmapConst' x = 'fmap' ('P.const' x)
 -- @
+--
+-- but much more efficient.
+--
+-- @since 0.2.4.0
 fmapConst
     :: (Functor f, Foldable f, Backprop b, Backprop (f a), Reifies s W)
     => BVar s b
@@ -165,6 +169,8 @@ infixl 4 <$>
 {-# INLINE (<$>) #-}
 
 -- | Alias for 'fmapConst'.
+--
+-- @since 0.2.4.0
 (<$)
     :: (Traversable f, Backprop b, Backprop (f a), Reifies s W)
     => BVar s b
@@ -175,6 +181,8 @@ infixl 4 <$
 {-# INLINE (<$) #-}
 
 -- | Alias for @'flip' 'fmapConst'@.
+--
+-- @since 0.2.4.0
 ($>)
     :: (Traversable f, Backprop b, Backprop (f a), Reifies s W)
     => BVar s (f a)

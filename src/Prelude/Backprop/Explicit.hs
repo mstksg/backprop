@@ -178,6 +178,8 @@ fmap afa afb zfa zfb f = collectVar afb zfb . P.fmap f . sequenceVar afa zfa
 {-# INLINE fmap #-}
 
 -- | 'Prelude.Backprop.fmapConst', but taking explicit 'add' and 'zero'.
+--
+-- @since 0.2.4.0
 fmapConst
     :: (Functor f, Foldable f, Reifies s W)
     => AddFunc (f a)

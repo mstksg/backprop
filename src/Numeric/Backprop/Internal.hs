@@ -45,7 +45,6 @@ module Numeric.Backprop.Internal (
   , debugIR
   ) where
 
--- import           Control.Monad.Primitive
 import           Control.DeepSeq
 import           Control.Exception
 import           Control.Monad
@@ -69,6 +68,7 @@ import           Data.Typeable
 import           GHC.Exts                     (Any)
 import           GHC.Generics                 as G
 import           Lens.Micro
+import           Lens.Micro.Extras
 import           Numeric.Backprop.Class
 import           Numeric.Backprop.Op
 import           System.IO.Unsafe
@@ -550,8 +550,7 @@ previewVar
     -> BVar s b
     -> Maybe (BVar s a)
 previewVar af z t !v = unsafePerformIO $
-    traverseVar' af z (listToMaybe . toListOf t) t v
-    -- TODO: make more efficient by making single-item traversal?
+    traverseVar' af z (preview t) t v
 {-# INLINE previewVar #-}
 
 -- | 'Numeric.Backprop.toListOfVar', but with explicit 'add' and 'zero'.

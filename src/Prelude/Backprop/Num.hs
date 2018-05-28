@@ -139,6 +139,8 @@ fmap = E.fmap E.afNum E.afNum E.zfNum E.zfNum
 
 -- | 'Prelude.Backprop.fmapConst', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
+--
+-- @since 0.2.4.0
 fmapConst
     :: (Functor f, Foldable f, Num b, Num (f a), Reifies s W)
     => BVar s b
@@ -158,6 +160,8 @@ infixl 4 <$>
 {-# INLINE (<$>) #-}
 
 -- | Alias for 'fmapConst'.
+--
+-- @since 0.2.4.0
 (<$)
     :: (Functor f, Foldable f, Num b, Num (f a), Reifies s W)
     => BVar s b
@@ -168,6 +172,8 @@ infixl 4 <$
 {-# INLINE (<$) #-}
 
 -- | Alias for @'flip' 'fmapConst'@.
+--
+-- @since 0.2.4.0
 ($>)
     :: (Functor f, Foldable f, Num b, Num (f a), Reifies s W)
     => BVar s (f a)
