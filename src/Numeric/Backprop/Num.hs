@@ -374,7 +374,7 @@ toListOfVar = E.toListOfVar E.afNum E.zfNum
 --
 -- Since v0.2.4, requires a 'Num' constraint on @t a@.
 sequenceVar
-    :: (Traversable t, Num a, Num (t a), Reifies s W)
+    :: (Traversable t, Num a, Reifies s W)
     => BVar s (t a)
     -> t (BVar s a)
 sequenceVar = E.sequenceVar E.afNum E.zfNum

@@ -622,7 +622,7 @@ toListOfVar = E.toListOfVar E.addFunc E.zeroFunc
 -- large matrices.  See <https://backprop.jle.im/07-performance.html the
 -- performance guide> for for details.
 sequenceVar
-    :: (Traversable t, Backprop a, Backprop (t a), Reifies s W)
+    :: (Traversable t, Backprop a, Reifies s W)
     => BVar s (t a)
     -> t (BVar s a)
 sequenceVar = E.sequenceVar E.addFunc E.zeroFunc

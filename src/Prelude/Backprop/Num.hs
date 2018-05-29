@@ -106,7 +106,7 @@ maximum = E.maximum E.afNum E.zfNum
 --
 -- @since 0.2.3.0
 foldr
-    :: (Traversable t, Num a, Num (t a), Reifies s W)
+    :: (Traversable t, Num a, Reifies s W)
     => (BVar s a -> BVar s b -> BVar s b)
     -> BVar s b
     -> BVar s (t a)
@@ -119,7 +119,7 @@ foldr = E.foldr E.afNum E.zfNum
 --
 -- @since 0.2.3.0
 foldl'
-    :: (Traversable t, Num a, Num (t a), Reifies s W)
+    :: (Traversable t, Num a, Reifies s W)
     => (BVar s b -> BVar s a -> BVar s b)
     -> BVar s b
     -> BVar s (t a)
@@ -130,7 +130,7 @@ foldl' = E.foldl' E.afNum E.zfNum
 -- | 'Prelude.Backprop.fmap', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 fmap
-    :: (Traversable f, Num a, Num b, Num (f a), Reifies s W)
+    :: (Traversable f, Num a, Num b, Reifies s W)
     => (BVar s a -> BVar s b)
     -> BVar s (f a)
     -> BVar s (f b)
@@ -151,7 +151,7 @@ fmapConst = E.fmapConst E.afNum E.afNum E.zfNum E.zfNum
 
 -- | Alias for 'fmap'.
 (<$>)
-    :: (Traversable f, Num a, Num b, Num (f a), Reifies s W)
+    :: (Traversable f, Num a, Num b, Reifies s W)
     => (BVar s a -> BVar s b)
     -> BVar s (f a)
     -> BVar s (f b)
@@ -189,7 +189,7 @@ infixl 4 $>
 -- See <https://hackage.haskell.org/package/vector-sized vector-sized> for
 -- a fixed-length vector type with a very appropriate 'Num' instance!
 traverse
-    :: (Traversable t, Applicative f, Foldable f, Num a, Num b, Num (t a), Num (t b), Reifies s W)
+    :: (Traversable t, Applicative f, Foldable f, Num a, Num b, Num (t b), Reifies s W)
     => (BVar s a -> f (BVar s b))
     -> BVar s (t a)
     -> BVar s (f (t b))
@@ -201,7 +201,7 @@ traverse = E.traverse E.afNum E.afNum E.afNum E.zfNum E.zfNum
 liftA2
     :: ( Traversable f
        , Applicative f
-       , Num a, Num b, Num c, Num (f a), Num (f b)
+       , Num a, Num b, Num c
        , Reifies s W
        )
     => (BVar s a -> BVar s b -> BVar s c)
@@ -216,7 +216,7 @@ liftA2 = E.liftA2 E.afNum E.afNum E.afNum E.zfNum E.zfNum E.zfNum
 liftA3
     :: ( Traversable f
        , Applicative f
-       , Num a, Num b, Num c, Num d, Num (f a), Num (f b), Num (f c)
+       , Num a, Num b, Num c, Num d
        , Reifies s W
        )
     => (BVar s a -> BVar s b -> BVar s c -> BVar s d)
@@ -277,7 +277,7 @@ fromIntegral' = E.fromIntegral' E.afNum
 --
 -- @since 0.2.2.0
 toList
-    :: (Traversable t, Num a, Num (t a), Reifies s W)
+    :: (Traversable t, Num a, Reifies s W)
     => BVar s (t a)
     -> [BVar s a]
 toList = E.toList E.afNum E.zfNum
@@ -290,7 +290,7 @@ toList = E.toList E.afNum E.zfNum
 --
 -- @since 0.2.2.0
 mapAccumL
-    :: (Traversable t, Num b, Num c, Num (t b), Reifies s W)
+    :: (Traversable t, Num b, Num c, Reifies s W)
     => (BVar s a -> BVar s b -> (BVar s a, BVar s c))
     -> BVar s a
     -> BVar s (t b)
@@ -305,7 +305,7 @@ mapAccumL = E.mapAccumL E.afNum E.afNum E.zfNum E.zfNum
 --
 -- @since 0.2.2.0
 mapAccumR
-    :: (Traversable t, Num b, Num c, Num (t b), Reifies s W)
+    :: (Traversable t, Num b, Num c, Reifies s W)
     => (BVar s a -> BVar s b -> (BVar s a, BVar s c))
     -> BVar s a
     -> BVar s (t b)

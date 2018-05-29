@@ -8,10 +8,14 @@ Version 0.2.4.0
 
 <https://github.com/mstksg/backprop/releases/tag/v0.2.4.0>
 
+**NOTE** Major breaking changes to *Explicit* modules, and some re-shuffling of
+typeclass constraints on various non-explicit functions that should only affect
+polymorphic usage.
+
 *   *Huge improvements in performance!*  Around 20-40% reduction in
     runtimes/overheads, with savings higher for large matrix situations or
     situations with expensive `add`.
-*   However, this restructuring required some reshuffling of constraints on
+*   However, this restructuring required *major* reshuffling of constraints on
     `Backprop`/`Num` for most functions.  These are potentially **breaking
     changes** for polymorphic code, but monomorphic code should remain
     unchanged.  However, code using the *Explicit* interfaces is most likely

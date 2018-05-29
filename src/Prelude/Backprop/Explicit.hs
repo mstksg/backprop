@@ -142,7 +142,7 @@ maximum af zf = liftOp1 af . op1 $ \xs ->
 foldr
     :: (Traversable t, Reifies s W)
     => AddFunc a
-    -> ZeroFunc (t a)
+    -> ZeroFunc a
     -> (BVar s a -> BVar s b -> BVar s b)
     -> BVar s b
     -> BVar s (t a)
@@ -156,7 +156,7 @@ foldr af z f x = P.foldr f x . toList af z
 foldl'
     :: (Traversable t, Reifies s W)
     => AddFunc a
-    -> ZeroFunc (t a)
+    -> ZeroFunc a
     -> (BVar s b -> BVar s a -> BVar s b)
     -> BVar s b
     -> BVar s (t a)
@@ -169,7 +169,7 @@ fmap
     :: (Traversable f, Reifies s W)
     => AddFunc a
     -> AddFunc b
-    -> ZeroFunc (f a)
+    -> ZeroFunc a
     -> ZeroFunc b
     -> (BVar s a -> BVar s b)
     -> BVar s (f a)
@@ -205,7 +205,7 @@ traverse
     => AddFunc a
     -> AddFunc b
     -> AddFunc (t b)
-    -> ZeroFunc (t a)
+    -> ZeroFunc a
     -> ZeroFunc b
     -> (BVar s a -> f (BVar s b))
     -> BVar s (t a)
@@ -229,8 +229,8 @@ liftA2
     => AddFunc a
     -> AddFunc b
     -> AddFunc c
-    -> ZeroFunc (f a)
-    -> ZeroFunc (f b)
+    -> ZeroFunc a
+    -> ZeroFunc b
     -> ZeroFunc c
     -> (BVar s a -> BVar s b -> BVar s c)
     -> BVar s (f a)
@@ -252,9 +252,9 @@ liftA3
     -> AddFunc b
     -> AddFunc c
     -> AddFunc d
-    -> ZeroFunc (f a)
-    -> ZeroFunc (f b)
-    -> ZeroFunc (f c)
+    -> ZeroFunc a
+    -> ZeroFunc b
+    -> ZeroFunc c
     -> ZeroFunc d
     -> (BVar s a -> BVar s b -> BVar s c -> BVar s d)
     -> BVar s (f a)
@@ -324,10 +324,10 @@ fromIntegral' af = isoVar af P.fromIntegral P.round
 toList
     :: (Traversable t, Reifies s W)
     => AddFunc a
-    -> ZeroFunc (t a)
+    -> ZeroFunc a
     -> BVar s (t a)
     -> [BVar s a]
-toList af z = toListOfVar af z P.traverse
+toList af z = toListOfVar af (ZF (P.fmap (runZF z))) P.traverse
 {-# INLINE toList #-}
 
 -- | 'Prelude.Backprop.mapAccumL', but taking explicit 'add' and 'zero'.
@@ -337,7 +337,7 @@ mapAccumL
     :: (Traversable t, Reifies s W)
     => AddFunc b
     -> AddFunc c
-    -> ZeroFunc (t b)
+    -> ZeroFunc b
     -> ZeroFunc c
     -> (BVar s a -> BVar s b -> (BVar s a, BVar s c))
     -> BVar s a
@@ -356,7 +356,7 @@ mapAccumR
     :: (Traversable t, Reifies s W)
     => AddFunc b
     -> AddFunc c
-    -> ZeroFunc (t b)
+    -> ZeroFunc b
     -> ZeroFunc c
     -> (BVar s a -> BVar s b -> (BVar s a, BVar s c))
     -> BVar s a
