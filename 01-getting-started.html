@@ -1,4 +1,4 @@
-<!DOCTYPE HTML><html><head><title>backprop - Getting Started</title><link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans|Montserrat:500" rel="stylesheet"><link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/tomorrow-night.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css" rel="stylesheet"><link href="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/favicon-darkorange.ico" rel="shortcut icon"><link href="https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.css" rel="stylesheet"><style>
+<!DOCTYPE HTML><html><head><title>backprop - Getting Started</title><meta content="summary" name="twitter:card"><meta content="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/tintin-darkorange.png" name="twitter:site"><meta content="backprop - Getting Started" name="twitter:title"><meta content="Heterogeneous automatic differentation" name="twitter:description"><meta content="mstksg" name="twitter:creator"><meta content="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/tintin-darkorange.png" name="twitter:image"><meta itemprop="og:type" content="website"><meta itemprop="og:site_name" content="theam"><meta itemprop="og:title" content="backprop - Getting Started"><meta itemprop="og:url" content="mstksg/backprop"><meta itemprop="og:image" content="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/tintin-darkorange.png"><meta itemprop="og:description" content="Heterogeneous automatic differentation"><link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans|Montserrat:500" rel="stylesheet"><link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/tomorrow-night.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css" rel="stylesheet"><link href="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/favicon-darkorange.ico" rel="shortcut icon"><link href="https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.css" rel="stylesheet"><style>
 html
 {
   height     : 100%;
@@ -590,6 +590,13 @@ myFunc x = sqrt (x * 4)
 <pre class="haskell"><code>gradBP myFunc (9 :: Double) => 
 0.3333333333333333
 </code></pre>
+<p>We can even be cute with with the <em><a href="https://hackage.haskell.org/package/simple-reflect">simple-reflect</a></em> library:</p>
+<pre class="haskell"><code>evalBP myFunc (x :: Expr) => 
+sqrt (x * 4)
+</code></pre>
+<pre class="haskell"><code>gradBP myFunc (x :: Expr) => 
+4 * (1 / (2 * sqrt (x * 4)))
+</code></pre>
 <p>And that&#39;s the gist of the entire library: write your functions to compute your
 things, and <code>gradBP</code> will give you the gradients and derivatives of those
 functions.</p>
@@ -659,12 +666,11 @@ network</em>. And, with the backprop library...we now have a way to compute the
 <em>gradient</em> of our network&#39;s error with respect to all of our weights!</p>
 <pre class="haskell"><code>gradBP (netError myTarget myVector) myNet => 
 N {_nWeights1 = (matrix -- ...
- [    4.11263641483051e-4,  1.2452768908611275e-4,   4.945692214073669e-4, -1.8787627939922071e-6,   5.900582032945849e-4,   3.170274532412367e-4,  -2.792900347272729e-4,   5.560510638344298e-4,   4.7 -- ...
- ,   4.456096403579713e-3,  1.3492741188636985e-3,   5.358723472095238e-3, -2.0356645433810056e-5,   6.393359325716294e-3,  3.4350347361852326e-3,  -3.026144773741551e-3,   6.024887434308708e-3,   5.1 -- ...
- ,  -2.363504793989016e-3,  -7.156523466991931e-4,   -2.84225642106488e-3,  1.0797124818415972e-5, -3.3910252488895763e-3, -1.8219356879197192e-3,   1.605061253678736e-3, -3.1955884802657153e-3, -2.72 -- ...
- ,   6.226054129738608e-3,  1.8852046587574407e-3,   7.487203907160475e-3, -2.8442287799021238e-5,   8.932796247586099e-3,   4.799427630838745e-3,  -4.228126920819085e-3,   8.417967632265332e-3,   7.1 -- ...
+ [    4.11263641483051e-4,  1.2452768908611275e-4,   4.945692214073669e-4, -1.8787627939922071e-6,   -- ...
+ ,   4.456096403579713e-3,  1.3492741188636985e-3,   5.358723472095238e-3, -2.0356645433810056e-5,   -- ...
+ ,  -2.363504793989016e-3,  -7.156523466991931e-4,   -2.84225642106488e-3,  1.0797124818415972e-5, - -- ...
+ ,   6.226054129738608e-3,  1.8852046587574407e-3,   7.487203907160475e-3, -2.8442287799021238e-5,   -- ...
 -- ...
-
 </code></pre>
 <p>We can now use the gradient to &quot;<a href="https://blog.jle.im/entry/purely-functional-typed-models-1.html">train</a>&quot; our network to give the correct
 responses given a certain input! This can be done by computing the gradient
