@@ -13,6 +13,8 @@ Getting Started
 {-# LANGUAGE ViewPatterns     #-}
 
 
+import           Data.List
+import           Debug.SimpleReflect
 import           GHC.Generics (Generic)
 import           GHC.TypeNats
 import           Inliterate.Import
@@ -50,6 +52,24 @@ And...the twist?  You can also get the gradient of your functions!
 ```haskell eval
 gradBP myFunc (9 :: Double)
 ```
+
+We can even be cute with with the *[simple-reflect][]* library:
+
+[simple-reflect]: https://hackage.haskell.org/package/simple-reflect
+
+```haskell top hide
+instance AskInliterate Expr
+```
+
+```haskell eval
+evalBP myFunc (x :: Expr)
+```
+
+
+```haskell eval
+gradBP myFunc (x :: Expr)
+```
+
 
 And that's the gist of the entire library: write your functions to compute your
 things, and `gradBP` will give you the gradients and derivatives of those
@@ -159,9 +179,13 @@ myNet = N (H.uniformSample 2394834 (-0.5) 0.5)
 instance KnownNat n => AskInliterate (R n) where
     askInliterate = answerWith (show . H.extract)
 instance AskInliterate Net where
-    askInliterate = answerWith (unlines . ((++ ["-- ..."]) . map lim) . take 5 . lines . show)
+    askInliterate = answerWith $ intercalate "\n"
+                               . ((++ ["-- ..."]) . map lim)
+                               . take 5
+                               . lines
+                               . show
       where
-        lim = (++ " -- ...") . take 200
+        lim = (++ " -- ...") . take 100
 ```
 
 ```haskell eval

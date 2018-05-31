@@ -412,6 +412,9 @@ viewVar = E.viewVar E.addFunc E.zeroFunc
 --
 -- This is the main way to set values inside 'BVar's of container types.
 --
+-- Note that this does not incurr the performance overhead issues of
+-- 'viewVar' and '^^.', and is fairly cheap.
+--
 (.~~)
     :: (Backprop a, Backprop b, Reifies s W)
     => Lens' b a
@@ -435,7 +438,7 @@ setVar
 setVar = E.setVar E.addFunc E.addFunc E.zeroFunc
 {-# INLINE setVar #-}
 
--- | An infix version of 'overVar', meant to evoke parallels to '%~~' from
+-- | An infix version of 'overVar', meant to evoke parallels to '%~' from
 -- lens.
 --
 -- With normal values, you can set modify in a value with a lens:
