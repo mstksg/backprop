@@ -31,20 +31,20 @@ The (extra) packages involved are:
 *   one-liner-instances
 *   split
 
-> {-# LANGUAGE BangPatterns                     #-}
-> {-# LANGUAGE DataKinds                        #-}
-> {-# LANGUAGE DeriveGeneric                    #-}
-> {-# LANGUAGE FlexibleContexts                 #-}
-> {-# LANGUAGE GADTs                            #-}
-> {-# LANGUAGE LambdaCase                       #-}
-> {-# LANGUAGE ScopedTypeVariables              #-}
-> {-# LANGUAGE TemplateHaskell                  #-}
-> {-# LANGUAGE TupleSections                    #-}
-> {-# LANGUAGE TypeApplications                 #-}
-> {-# LANGUAGE ViewPatterns                     #-}
-> {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
-> {-# OPTIONS_GHC -fno-warn-orphans             #-}
-> {-# OPTIONS_GHC -fno-warn-unused-top-binds    #-}
+> {-# LANGUAGE BangPatterns                #-}
+> {-# LANGUAGE DataKinds                   #-}
+> {-# LANGUAGE DeriveGeneric               #-}
+> {-# LANGUAGE FlexibleContexts            #-}
+> {-# LANGUAGE GADTs                       #-}
+> {-# LANGUAGE LambdaCase                  #-}
+> {-# LANGUAGE ScopedTypeVariables         #-}
+> {-# LANGUAGE TemplateHaskell             #-}
+> {-# LANGUAGE TupleSections               #-}
+> {-# LANGUAGE TypeApplications            #-}
+> {-# LANGUAGE ViewPatterns                #-}
+> {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+> {-# OPTIONS_GHC -Wno-orphans             #-}
+> {-# OPTIONS_GHC -Wno-unused-top-binds    #-}
 >
 > import           Control.DeepSeq
 > import           Control.Exception

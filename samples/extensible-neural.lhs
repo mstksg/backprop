@@ -21,22 +21,22 @@ The (extra) packages involved are:
 *   singletons
 *   split
 
-> {-# LANGUAGE BangPatterns         #-}
-> {-# LANGUAGE DataKinds            #-}
-> {-# LANGUAGE DeriveGeneric        #-}
-> {-# LANGUAGE FlexibleContexts     #-}
-> {-# LANGUAGE GADTs                #-}
-> {-# LANGUAGE InstanceSigs         #-}
-> {-# LANGUAGE LambdaCase           #-}
-> {-# LANGUAGE LambdaCase           #-}
-> {-# LANGUAGE RankNTypes           #-}
-> {-# LANGUAGE ScopedTypeVariables  #-}
-> {-# LANGUAGE TemplateHaskell      #-}
-> {-# LANGUAGE TypeApplications     #-}
-> {-# LANGUAGE TypeInType           #-}
-> {-# LANGUAGE TypeOperators        #-}
-> {-# LANGUAGE ViewPatterns         #-}
-> {-# OPTIONS_GHC -fno-warn-orphans #-}
+> {-# LANGUAGE BangPatterns        #-}
+> {-# LANGUAGE DataKinds           #-}
+> {-# LANGUAGE DeriveGeneric       #-}
+> {-# LANGUAGE FlexibleContexts    #-}
+> {-# LANGUAGE GADTs               #-}
+> {-# LANGUAGE InstanceSigs        #-}
+> {-# LANGUAGE LambdaCase          #-}
+> {-# LANGUAGE LambdaCase          #-}
+> {-# LANGUAGE RankNTypes          #-}
+> {-# LANGUAGE ScopedTypeVariables #-}
+> {-# LANGUAGE TemplateHaskell     #-}
+> {-# LANGUAGE TypeApplications    #-}
+> {-# LANGUAGE TypeInType          #-}
+> {-# LANGUAGE TypeOperators       #-}
+> {-# LANGUAGE ViewPatterns        #-}
+> {-# OPTIONS_GHC -Wno-orphans     #-}
 >
 > import           Control.DeepSeq
 > import           Control.Exception
