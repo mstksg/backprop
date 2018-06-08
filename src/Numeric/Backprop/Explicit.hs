@@ -74,6 +74,7 @@ module Numeric.Backprop.Explicit (
     -- ** Creation
   , op0, opConst, idOp
   , opConst'
+  , bpOp
     -- *** Giving gradients directly
   , op1, op2, op3
     -- *** From Isomorphisms
@@ -287,8 +288,7 @@ evalBP2
 evalBP2 f x y = evalBPN (\(x' :< y' :< Ø) -> f x' y') (x ::< y ::< Ø)
 {-# INLINE evalBP2 #-}
 
--- | 'gradBP' for a two-argument function.  See
--- 'Numeric.Backprop.backprop2' for notes.
+-- | 'Numeric.Backprop.gradBP2' with explicit 'zero' and 'one'.
 gradBP2
     :: ZeroFunc a
     -> ZeroFunc b
@@ -299,6 +299,14 @@ gradBP2
     -> (a, b)
 gradBP2 zfa zfb ofc f x = snd . backprop2 zfa zfb ofc f x
 {-# INLINE gradBP2 #-}
+
+-- | 'Numeric.Backprop.bpOp' with explicit 'zero'.
+bpOp
+    :: Prod ZeroFunc as
+    -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
+    -> Op as b
+bpOp zfs f = Op (backpropWithN zfs f)
+{-# INLINE bpOp #-}
 
 -- | 'Numeric.Backprop.overVar' with explicit 'add' and 'zero'.
 --

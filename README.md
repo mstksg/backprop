@@ -42,8 +42,8 @@ library introduction and usage tutorial [is available here][docs].  See also my
 [blog]: https://blog.jle.im/entry/introducing-the-backprop-library.html
 [gitter]: https://gitter.im/haskell-backprop/Lobby
 
-If you want to provide *backprop* for users of your library, see this **[guide
-to equipping your library with backprop][library]**.
+If you want to provide *backprop* for users of your library, see this [guide
+to equipping your library with backprop][library].
 
 [library]: https://backprop.jle.im/08-equipping-your-library.html
 

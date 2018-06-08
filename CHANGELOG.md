@@ -1,6 +1,16 @@
 Changelog
 =========
 
+Version 0.2.5.0
+---------------
+
+*Unreleased*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.2.4.0>
+
+*   `bpOp` added, to allow for non-rank-N storage of backpropagatable
+    functions in containers without impredicative types.
+
 Version 0.2.4.0
 ---------------
 

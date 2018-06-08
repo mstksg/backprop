@@ -72,7 +72,7 @@ module Numeric.Backprop.Num (
   , Op(..)
     -- ** Creation
   , op0, opConst, idOp
-  , opConst'
+  , opConst', bpOp
     -- *** Giving gradients directly
   , op1, op2, op3
     -- *** From Isomorphisms
@@ -219,6 +219,15 @@ gradBP2
     -> (a, b)
 gradBP2 = E.gradBP2 E.zfNum E.zfNum E.ofNum
 {-# INLINE gradBP2 #-}
+
+-- | 'Numeric.Backprop.bpOp', but with 'Num' constraints instead of
+-- 'Backprop' constraints.
+bpOp
+    :: (Every Num as, Known Length as)
+    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
+    -> Op as b
+bpOp = E.bpOp E.zfNums
+{-# INLINE bpOp #-}
 
 -- | 'Numeric.Backprop.^^.', but with 'Num' constraints instead of
 -- 'Backprop' constraints.

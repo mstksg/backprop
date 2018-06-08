@@ -101,6 +101,7 @@ module Numeric.Backprop (
     -- ** Creation
   , op0, opConst, idOp
   , opConst'
+  , bpOp
     -- *** Giving gradients directly
   , op1, op2, op3
     -- *** From Isomorphisms
@@ -331,6 +332,22 @@ gradBP2
     -> (a, b)
 gradBP2 = E.gradBP2 E.zeroFunc E.zeroFunc E.oneFunc
 {-# INLINE gradBP2 #-}
+
+-- | Create an 'Op' from a backpropagatable function.  Can be useful for
+-- "storing" an otherwise Rank-N backpropagatable function in order to
+-- avoid impredicative types.  But this is pretty uncommon, so this is
+-- mostly just used for low-level internal situations.
+--
+-- @
+-- 'liftOp' . 'bpOp' = 'id'
+-- 'bpOp' . 'liftOp' = 'id'
+-- @
+bpOp
+    :: (Every Backprop as, Known Length as)
+    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
+    -> Op as b
+bpOp = E.bpOp E.zeroFuncs
+{-# INLINE bpOp #-}
 
 -- | An infix version of 'viewVar', meant to evoke parallels to '^.' from
 -- lens.
