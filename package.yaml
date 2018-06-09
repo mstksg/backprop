@@ -65,7 +65,8 @@ library:
   - reflection
   - simple-reflect
   - transformers
-  - type-combinators
+  - vinyl
+  # - type-combinators
 
 benchmarks:
   backprop-mnist-bench:

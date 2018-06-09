@@ -79,19 +79,20 @@ module Numeric.Backprop.Op (
   , sinhOp, coshOp, tanhOp, asinhOp, acoshOp, atanhOp
   ) where
 
+-- import           Data.Type.Combinator
+-- import           Data.Type.Conjunction
+-- import           Data.Type.Index
+-- import           Data.Type.Length
+-- import           Data.Type.Product
+-- import           Type.Class.Higher
+-- import           Type.Class.Known
+-- import           Type.Class.Witness
 import           Data.Bifunctor
 import           Data.Coerce
-import           Data.Type.Combinator
-import           Data.Type.Conjunction
-import           Data.Type.Index
-import           Data.Type.Length
-import           Data.Type.Product
 import           Data.Type.Util
+import           Data.Vinyl.TypeLevel
 import           Lens.Micro
 import           Lens.Micro.Extras
-import           Type.Class.Higher
-import           Type.Class.Known
-import           Type.Class.Witness
 
 -- $opdoc
 -- 'Op's contain information on a function as well as its gradient, but
@@ -212,7 +213,7 @@ newtype OpCont as a = OC { runOpCont :: a -> Tuple as }
 -- down @as@ as a list of types, you should be able to just use
 -- 'composeOp'.
 composeOp'
-    :: Every Num as
+    :: AllConstrained Num as
     => Length as
     -> Prod (Op as) bs   -- ^ 'Prod' of 'Op's taking @as@ and returning
                          --     different @b@ in @bs@
@@ -240,7 +241,7 @@ composeOp' l os o = Op $ \xs ->
 -- can compose them with an @'Op' '[b1,b2,b3] c@ to create an @'Op' as
 -- c@.
 composeOp
-    :: (Every Num as, Known Length as)
+    :: (AllConstrained Num as, Known Length as)
     => Prod (Op as) bs   -- ^ 'Prod' of 'Op's taking @as@ and returning
                          --     different @b@ in @bs@
     -> Op bs c           -- ^ 'Op' taking eac of the @bs@ from the
@@ -257,7 +258,7 @@ composeOp = composeOp' known
 -- down @as@ as a list of types, you should be able to just use
 -- 'composeOp1'.
 composeOp1'
-    :: Every Num as
+    :: AllConstrained Num as
     => Length as
     -> Op as b
     -> Op '[b] c
@@ -268,7 +269,7 @@ composeOp1' l = composeOp' l . only
 -- function only takes one input, so the two 'Op's can be directly piped
 -- together, like for '.'.
 composeOp1
-    :: (Every Num as, Known Length as)
+    :: (AllConstrained Num as, Known Length as)
     => Op as b
     -> Op '[b] c
     -> Op as c
@@ -285,7 +286,7 @@ composeOp1 = composeOp1' known
 -- @
 infixr 9 ~.
 (~.)
-    :: (Known Length as, Every Num as)
+    :: (Known Length as, AllConstrained Num as)
     => Op '[b] c
     -> Op as b
     -> Op as c
@@ -456,7 +457,7 @@ opLens l = op1 $ \x -> (view l x, \d -> set l d 0)
 -- the the expected input tuple.  If you ever actually explicitly write
 -- down @as@ as a list of types, you should be able to just use
 -- 'opConst'.
-opConst' :: Every Num as => Length as -> a -> Op as a
+opConst' :: AllConstrained Num as => Length as -> a -> Op as a
 opConst' l x = Op $ const
     (x , const $ map1 ((0 \\) . every @_ @Num) (indices' l))
 {-# INLINE opConst' #-}
@@ -466,7 +467,7 @@ opConst' l x = Op $ const
 --
 -- >>> gradOp' (opConst 10) (1 ::< 2 ::< 3 ::< Ø)
 -- (10, 0 ::< 0 ::< 0 ::< Ø)
-opConst :: (Every Num as, Known Length as) => a -> Op as a
+opConst :: (AllConstrained Num as, Known Length as) => a -> Op as a
 opConst = opConst' known
 {-# INLINE opConst #-}
 
@@ -587,7 +588,7 @@ op3 f = Op $ \case
       in  (q, (\(!dx, !dy, !dz) -> dx ::< dy ::< dz ::< Ø) . dxdydz)
 {-# INLINE op3 #-}
 
-instance (Known Length as, Every Num as, Num a) => Num (Op as a) where
+instance (Known Length as, AllConstrained Num as, Num a) => Num (Op as a) where
     o1 + o2       = composeOp (o1 :< o2 :< Ø) (+.)
     {-# INLINE (+) #-}
     o1 - o2       = composeOp (o1 :< o2 :< Ø) (-.)
@@ -603,14 +604,14 @@ instance (Known Length as, Every Num as, Num a) => Num (Op as a) where
     fromInteger x = opConst (fromInteger x)
     {-# INLINE fromInteger #-}
 
-instance (Known Length as, Every Fractional as, Every Num as, Fractional a) => Fractional (Op as a) where
+instance (Known Length as, AllConstrained Fractional as, AllConstrained Num as, Fractional a) => Fractional (Op as a) where
     o1 / o2        = composeOp (o1 :< o2 :< Ø) (/.)
     recip o        = composeOp (o  :< Ø)       recipOp
     {-# INLINE recip #-}
     fromRational x = opConst (fromRational x)
     {-# INLINE fromRational #-}
 
-instance (Known Length as, Every Floating as, Every Fractional as, Every Num as, Floating a) => Floating (Op as a) where
+instance (Known Length as, AllConstrained Floating as, AllConstrained Fractional as, AllConstrained Num as, Floating a) => Floating (Op as a) where
     pi            = opConst pi
     {-# INLINE pi #-}
     exp   o       = composeOp (o  :< Ø)       expOp

@@ -47,43 +47,43 @@ module Numeric.Backprop.Class (
   , GZero, GAdd, GOne
   ) where
 
+-- import           Data.Type.Combinator hiding  ((:.:), Comp1)
+-- import           Data.Type.Conjunction hiding ((:*:))
+-- import           Data.Type.Option
+-- import           Data.Type.Product hiding     (toList)
+-- import           Type.Family.List
+-- import qualified Data.Type.Combinator         as TC
+-- import qualified Data.Type.Conjunction        as TC
+-- import qualified Type.Family.Maybe            as M
 import           Control.Applicative
 import           Control.DeepSeq
 import           Control.Monad
 import           Data.Coerce
 import           Data.Complex
 import           Data.Data
-import           Data.Foldable hiding         (toList)
+import           Data.Foldable hiding            (toList)
 import           Data.Functor.Identity
-import           Data.List.NonEmpty           (NonEmpty(..))
+import           Data.List.NonEmpty              (NonEmpty(..))
 import           Data.Monoid
 import           Data.Ratio
-import           Data.Type.Combinator hiding  ((:.:), Comp1)
-import           Data.Type.Conjunction hiding ((:*:))
-import           Data.Type.Option
-import           Data.Type.Product hiding     (toList)
 import           Data.Void
 import           Data.Word
 import           Debug.SimpleReflect.Expr
 import           GHC.Exts
 import           GHC.Generics
 import           Numeric.Natural
-import           Type.Family.List
-import qualified Control.Arrow                as Arr
-import qualified Data.Functor.Compose         as DFC
-import qualified Data.Functor.Product         as DFP
-import qualified Data.IntMap                  as IM
-import qualified Data.Map                     as M
-import qualified Data.Semigroup               as SG
-import qualified Data.Sequence                as Seq
-import qualified Data.Type.Combinator         as TC
-import qualified Data.Type.Conjunction        as TC
-import qualified Data.Vector                  as V
-import qualified Data.Vector.Generic          as VG
-import qualified Data.Vector.Primitive        as VP
-import qualified Data.Vector.Storable         as VS
-import qualified Data.Vector.Unboxed          as VU
-import qualified Type.Family.Maybe            as M
+import qualified Control.Arrow                   as Arr
+import qualified Data.Functor.Compose            as DFC
+import qualified Data.Functor.Product            as DFP
+import qualified Data.IntMap                     as IM
+import qualified Data.Map                        as M
+import qualified Data.Semigroup                  as SG
+import qualified Data.Sequence                   as Seq
+import qualified Data.Vector                     as V
+import qualified Data.Vector.Generic             as VG
+import qualified Data.Vector.Primitive           as VP
+import qualified Data.Vector.Storable            as VS
+import qualified Data.Vector.Unboxed             as VU
 
 -- | Class of values that can be backpropagated in general.
 --
@@ -827,13 +827,13 @@ instance Backprop a => Backprop (Identity a) where
     one (Identity x) = Identity (one x)
     {-# INLINE one #-}
 
-instance Backprop a => Backprop (I a) where
-    zero (I x) = I (zero x)
-    {-# INLINE zero #-}
-    add (I x) (I y) = I (add x y)
-    {-# INLINE add #-}
-    one (I x) = I (one x)
-    {-# INLINE one #-}
+-- instance Backprop a => Backprop (I a) where
+--     zero (I x) = I (zero x)
+--     {-# INLINE zero #-}
+--     add (I x) (I y) = I (add x y)
+--     {-# INLINE add #-}
+--     one (I x) = I (one x)
+--     {-# INLINE one #-}
 
 instance Backprop (Proxy a) where
     zero _ = Proxy
@@ -877,163 +877,163 @@ instance (Backprop a) => Backprop (IM.IntMap a) where
     one  = oneFunctor
     {-# INLINE one #-}
 
-instance ListC (Backprop <$> (f <$> as)) => Backprop (Prod f as) where
-    zero = \case
-      Ø -> Ø
-      x :< xs -> zero x :< zero xs
-    {-# INLINE zero #-}
-    add = \case
-      Ø -> \case
-        Ø -> Ø
-      x :< xs -> \case
-        y :< ys -> add x y :< add xs ys
-    {-# INLINE add #-}
-    one = \case
-      Ø       -> Ø
-      x :< xs -> one x :< one xs
-    {-# INLINE one #-}
+-- instance ListC (Backprop <$> (f <$> as)) => Backprop (Prod f as) where
+--     zero = \case
+--       Ø -> Ø
+--       x :< xs -> zero x :< zero xs
+--     {-# INLINE zero #-}
+--     add = \case
+--       Ø -> \case
+--         Ø -> Ø
+--       x :< xs -> \case
+--         y :< ys -> add x y :< add xs ys
+--     {-# INLINE add #-}
+--     one = \case
+--       Ø       -> Ø
+--       x :< xs -> one x :< one xs
+--     {-# INLINE one #-}
 
-instance M.MaybeC (Backprop M.<$> (f M.<$> a)) => Backprop (Option f a) where
-    zero = \case
-      Nothing_ -> Nothing_
-      Just_ x  -> Just_ (zero x)
-    {-# INLINE zero #-}
-    add = \case
-      Nothing_ -> \case
-        Nothing_ -> Nothing_
-      Just_ x -> \case
-        Just_ y -> Just_ (add x y)
-    {-# INLINE add #-}
-    one = \case
-      Nothing_ -> Nothing_
-      Just_ x  -> Just_ (one x)
-    {-# INLINE one #-}
+-- instance M.MaybeC (Backprop M.<$> (f M.<$> a)) => Backprop (Option f a) where
+--     zero = \case
+--       Nothing_ -> Nothing_
+--       Just_ x  -> Just_ (zero x)
+--     {-# INLINE zero #-}
+--     add = \case
+--       Nothing_ -> \case
+--         Nothing_ -> Nothing_
+--       Just_ x -> \case
+--         Just_ y -> Just_ (add x y)
+--     {-# INLINE add #-}
+--     one = \case
+--       Nothing_ -> Nothing_
+--       Just_ x  -> Just_ (one x)
+--     {-# INLINE one #-}
 
--- | @since 0.2.2.0
-instance (Backprop (f a), Backprop (g a)) => Backprop ((f :&: g) a) where
-    zero (x :&: y) = zero x :&: zero y
-    {-# INLINE zero #-}
-    add (x1 :&: y1) (x2 :&: y2) = add x1 x2 :&: add y1 y2
-    {-# INLINE add #-}
-    one (x :&: y) = one x :&: one y
-    {-# INLINE one #-}
+-- -- | @since 0.2.2.0
+-- instance (Backprop (f a), Backprop (g a)) => Backprop ((f :&: g) a) where
+--     zero (x :&: y) = zero x :&: zero y
+--     {-# INLINE zero #-}
+--     add (x1 :&: y1) (x2 :&: y2) = add x1 x2 :&: add y1 y2
+--     {-# INLINE add #-}
+--     one (x :&: y) = one x :&: one y
+--     {-# INLINE one #-}
 
--- | @since 0.2.2.0
-instance (Backprop (f a), Backprop (g b)) => Backprop ((f TC.:*: g) '(a, b)) where
-    zero (x TC.:*: y) = zero x TC.:*: zero y
-    {-# INLINE zero #-}
-    add (x1 TC.:*: y1) (x2 TC.:*: y2) = add x1 x2 TC.:*: add y1 y2
-    {-# INLINE add #-}
-    one (x TC.:*: y) = one x TC.:*: one y
-    {-# INLINE one #-}
+-- -- | @since 0.2.2.0
+-- instance (Backprop (f a), Backprop (g b)) => Backprop ((f TC.:*: g) '(a, b)) where
+--     zero (x TC.:*: y) = zero x TC.:*: zero y
+--     {-# INLINE zero #-}
+--     add (x1 TC.:*: y1) (x2 TC.:*: y2) = add x1 x2 TC.:*: add y1 y2
+--     {-# INLINE add #-}
+--     one (x TC.:*: y) = one x TC.:*: one y
+--     {-# INLINE one #-}
 
--- | @since 0.2.2.0
-instance Backprop (f (g h) a) => Backprop (TC.Comp1 f g h a) where
-    zero (TC.Comp1 x) = TC.Comp1 (zero x)
-    {-# INLINE zero #-}
-    add (TC.Comp1 x) (TC.Comp1 y) = TC.Comp1 (add x y)
-    {-# INLINE add #-}
-    one (TC.Comp1 x) = TC.Comp1 (one x)
-    {-# INLINE one #-}
+-- -- | @since 0.2.2.0
+-- instance Backprop (f (g h) a) => Backprop (TC.Comp1 f g h a) where
+--     zero (TC.Comp1 x) = TC.Comp1 (zero x)
+--     {-# INLINE zero #-}
+--     add (TC.Comp1 x) (TC.Comp1 y) = TC.Comp1 (add x y)
+--     {-# INLINE add #-}
+--     one (TC.Comp1 x) = TC.Comp1 (one x)
+--     {-# INLINE one #-}
 
--- | @since 0.2.2.0
-instance Backprop (f (g a)) => Backprop ((f TC.:.: g) a) where
-    zero (Comp x) = Comp (zero x)
-    {-# INLINE zero #-}
-    add (Comp x) (Comp y) = Comp (add x y)
-    {-# INLINE add #-}
-    one (Comp x) = Comp (one x)
-    {-# INLINE one #-}
+-- -- | @since 0.2.2.0
+-- instance Backprop (f (g a)) => Backprop ((f TC.:.: g) a) where
+--     zero (Comp x) = Comp (zero x)
+--     {-# INLINE zero #-}
+--     add (Comp x) (Comp y) = Comp (add x y)
+--     {-# INLINE add #-}
+--     one (Comp x) = Comp (one x)
+--     {-# INLINE one #-}
 
--- | @since 0.2.2.0
-instance Backprop w => Backprop (TC.C w a) where
-    zero (TC.C x) = TC.C (zero x)
-    {-# INLINE zero #-}
-    add (TC.C x) (TC.C y) = TC.C (add x y)
-    {-# INLINE add #-}
-    one (TC.C x) = TC.C (one x)
-    {-# INLINE one #-}
+-- -- | @since 0.2.2.0
+-- instance Backprop w => Backprop (TC.C w a) where
+--     zero (TC.C x) = TC.C (zero x)
+--     {-# INLINE zero #-}
+--     add (TC.C x) (TC.C y) = TC.C (add x y)
+--     {-# INLINE add #-}
+--     one (TC.C x) = TC.C (one x)
+--     {-# INLINE one #-}
 
--- | @since 0.2.2.0
-instance Backprop (p a b) => Backprop (Flip p b a) where
-    zero (Flip x) = Flip (zero x)
-    {-# INLINE zero #-}
-    add (Flip x) (Flip y) = Flip (add x y)
-    {-# INLINE add #-}
-    one (Flip x) = Flip (one x)
-    {-# INLINE one #-}
+-- -- | @since 0.2.2.0
+-- instance Backprop (p a b) => Backprop (Flip p b a) where
+--     zero (Flip x) = Flip (zero x)
+--     {-# INLINE zero #-}
+--     add (Flip x) (Flip y) = Flip (add x y)
+--     {-# INLINE add #-}
+--     one (Flip x) = Flip (one x)
+--     {-# INLINE one #-}
 
--- | @since 0.2.2.0
-instance Backprop (p '(a, b)) => Backprop (Cur p a b) where
-    zero (Cur x) = Cur (zero x)
-    {-# INLINE zero #-}
-    add (Cur x) (Cur y) = Cur (add x y)
-    {-# INLINE add #-}
-    one (Cur x) = Cur (one x)
-    {-# INLINE one #-}
+-- -- | @since 0.2.2.0
+-- instance Backprop (p '(a, b)) => Backprop (Cur p a b) where
+--     zero (Cur x) = Cur (zero x)
+--     {-# INLINE zero #-}
+--     add (Cur x) (Cur y) = Cur (add x y)
+--     {-# INLINE add #-}
+--     one (Cur x) = Cur (one x)
+--     {-# INLINE one #-}
 
--- | @since 0.2.2.0
-instance Backprop (p a b) => Backprop (Uncur p '(a, b)) where
-    zero (Uncur x) = Uncur (zero x)
-    {-# INLINE zero #-}
-    add (Uncur x) (Uncur y) = Uncur (add x y)
-    {-# INLINE add #-}
-    one (Uncur x) = Uncur (one x)
-    {-# INLINE one #-}
+-- -- | @since 0.2.2.0
+-- instance Backprop (p a b) => Backprop (Uncur p '(a, b)) where
+--     zero (Uncur x) = Uncur (zero x)
+--     {-# INLINE zero #-}
+--     add (Uncur x) (Uncur y) = Uncur (add x y)
+--     {-# INLINE add #-}
+--     one (Uncur x) = Uncur (one x)
+--     {-# INLINE one #-}
 
--- | @since 0.2.2.0
-instance Backprop (p '(a, b, c)) => Backprop (Cur3 p a b c) where
-    zero (Cur3 x) = Cur3 (zero x)
-    {-# INLINE zero #-}
-    add (Cur3 x) (Cur3 y) = Cur3 (add x y)
-    {-# INLINE add #-}
-    one (Cur3 x) = Cur3 (one x)
-    {-# INLINE one #-}
+-- -- | @since 0.2.2.0
+-- instance Backprop (p '(a, b, c)) => Backprop (Cur3 p a b c) where
+--     zero (Cur3 x) = Cur3 (zero x)
+--     {-# INLINE zero #-}
+--     add (Cur3 x) (Cur3 y) = Cur3 (add x y)
+--     {-# INLINE add #-}
+--     one (Cur3 x) = Cur3 (one x)
+--     {-# INLINE one #-}
 
--- | @since 0.2.2.0
-instance Backprop (p a b c) => Backprop (Uncur3 p '(a, b, c)) where
-    zero (Uncur3 x) = Uncur3 (zero x)
-    {-# INLINE zero #-}
-    add (Uncur3 x) (Uncur3 y) = Uncur3 (add x y)
-    {-# INLINE add #-}
-    one (Uncur3 x) = Uncur3 (one x)
-    {-# INLINE one #-}
+-- -- | @since 0.2.2.0
+-- instance Backprop (p a b c) => Backprop (Uncur3 p '(a, b, c)) where
+--     zero (Uncur3 x) = Uncur3 (zero x)
+--     {-# INLINE zero #-}
+--     add (Uncur3 x) (Uncur3 y) = Uncur3 (add x y)
+--     {-# INLINE add #-}
+--     one (Uncur3 x) = Uncur3 (one x)
+--     {-# INLINE one #-}
 
--- | @since 0.2.2.0
-instance Backprop (f a a) => Backprop (Join f a) where
-    zero (Join x) = Join (zero x)
-    {-# INLINE zero #-}
-    add (Join x) (Join y) = Join (add x y)
-    {-# INLINE add #-}
-    one (Join x) = Join (one x)
-    {-# INLINE one #-}
+-- -- | @since 0.2.2.0
+-- instance Backprop (f a a) => Backprop (Join f a) where
+--     zero (Join x) = Join (zero x)
+--     {-# INLINE zero #-}
+--     add (Join x) (Join y) = Join (add x y)
+--     {-# INLINE add #-}
+--     one (Join x) = Join (one x)
+--     {-# INLINE one #-}
 
--- | @since 0.2.2.0
-instance Backprop (t (Flip f b) a) => Backprop (Conj t f a b) where
-    zero (Conj x) = Conj (zero x)
-    {-# INLINE zero #-}
-    add (Conj x) (Conj y) = Conj (add x y)
-    {-# INLINE add #-}
-    one (Conj x) = Conj (one x)
-    {-# INLINE one #-}
+-- -- | @since 0.2.2.0
+-- instance Backprop (t (Flip f b) a) => Backprop (Conj t f a b) where
+--     zero (Conj x) = Conj (zero x)
+--     {-# INLINE zero #-}
+--     add (Conj x) (Conj y) = Conj (add x y)
+--     {-# INLINE add #-}
+--     one (Conj x) = Conj (one x)
+--     {-# INLINE one #-}
 
--- | @since 0.2.2.0
-instance Backprop (c (f a)) => Backprop (LL c a f) where
-    zero (LL x) = LL (zero x)
-    {-# INLINE zero #-}
-    add (LL x) (LL y) = LL (add x y)
-    {-# INLINE add #-}
-    one (LL x) = LL (one x)
-    {-# INLINE one #-}
+-- -- | @since 0.2.2.0
+-- instance Backprop (c (f a)) => Backprop (LL c a f) where
+--     zero (LL x) = LL (zero x)
+--     {-# INLINE zero #-}
+--     add (LL x) (LL y) = LL (add x y)
+--     {-# INLINE add #-}
+--     one (LL x) = LL (one x)
+--     {-# INLINE one #-}
 
--- | @since 0.2.2.0
-instance Backprop (c (f a)) => Backprop (RR c f a) where
-    zero (RR x) = RR (zero x)
-    {-# INLINE zero #-}
-    add (RR x) (RR y) = RR (add x y)
-    {-# INLINE add #-}
-    one (RR x) = RR (one x)
-    {-# INLINE one #-}
+-- -- | @since 0.2.2.0
+-- instance Backprop (c (f a)) => Backprop (RR c f a) where
+--     zero (RR x) = RR (zero x)
+--     {-# INLINE zero #-}
+--     add (RR x) (RR y) = RR (add x y)
+--     {-# INLINE add #-}
+--     one (RR x) = RR (one x)
+--     {-# INLINE one #-}
 
 -- | @since 0.2.2.0
 instance Backprop a => Backprop (K1 i a p)
