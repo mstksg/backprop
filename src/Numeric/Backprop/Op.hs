@@ -5,6 +5,7 @@
 {-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE PatternSynonyms      #-}
 {-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -51,13 +52,14 @@ module Numeric.Backprop.Op (
     Op(..)
   -- ** Tuple Types#prod#
   -- $prod
-  , Prod(..), Tuple, I(..)
+  , Rec(..)
+  -- , Tuple, I(..)
   -- * Running
   -- ** Pure
   , runOp, evalOp, gradOp, gradOpWith
   -- * Creation
   , op0, opConst, idOp
-  , opConst', opLens
+  , opLens
   -- ** Giving gradients directly
   , op1, op2, op3
   -- ** From Isomorphisms
@@ -66,10 +68,9 @@ module Numeric.Backprop.Op (
   , noGrad1, noGrad
   -- * Manipulation
   , composeOp, composeOp1, (~.)
-  , composeOp', composeOp1'
   -- * Utility
-  , pattern (:>), only, head'
-  , pattern (::<), only_
+  -- , pattern (:>), only, head'
+  -- , pattern (::<), only_
   -- ** Numeric Ops#numops#
   -- $numops
   , (+.), (-.), (*.), negateOp, absOp, signumOp
@@ -87,12 +88,20 @@ module Numeric.Backprop.Op (
 -- import           Type.Class.Higher
 -- import           Type.Class.Known
 -- import           Type.Class.Witness
+import           Control.Applicative
 import           Data.Bifunctor
 import           Data.Coerce
+import           Data.Functor.Compose
+import           Data.Functor.Identity
+import           Data.List
+import           Data.Monoid
+import           Data.Proxy
 import           Data.Type.Util
+import           Data.Vinyl.Core
 import           Data.Vinyl.TypeLevel
 import           Lens.Micro
 import           Lens.Micro.Extras
+import           Numeric.Backprop.Class
 
 -- $opdoc
 -- 'Op's contain information on a function as well as its gradient, but
@@ -136,7 +145,7 @@ import           Lens.Micro.Extras
 -- a function that returns a tuple, containing:
 --
 --     1. An @a@: The result of the function
---     2. An @a -> Tuple as@:  A function that, when given
+--     2. An @a -> Rec Identity as@:  A function that, when given
 --     \(\frac{dz}{dy}\), returns the total gradient
 --     \(\nabla_z \mathbf{x}\).
 --
@@ -156,8 +165,8 @@ import           Lens.Micro.Extras
 -- For examples of 'Op's implemented from scratch, see the implementations
 -- of '+.', '-.', 'recipOp', 'sinOp', etc.
 --
--- See "Numeric.Backprop.Op#prod" for a mini-tutorial on using 'Prod' and
--- 'Tuple'.
+-- See "Numeric.Backprop.Op#prod" for a mini-tutorial on using 'Rec' and
+-- 'Rec Identity'.
 
 -- | An @'Op' as a@ describes a differentiable function from @as@ to @a@.
 --
@@ -182,8 +191,8 @@ import           Lens.Micro.Extras
 -- It is simpler to not use this type constructor directly, and instead use
 -- the 'op2', 'op1', 'op2', and 'op3' helper smart constructors.
 --
--- See "Numeric.Backprop.Op#prod" for a mini-tutorial on using 'Prod' and
--- 'Tuple'.
+-- See "Numeric.Backprop.Op#prod" for a mini-tutorial on using 'Rec' and
+-- 'Rec Identity'.
 --
 -- To /use/ an 'Op' with the backprop library, see 'liftOp', 'liftOp1',
 -- 'liftOp2', and 'liftOp3'.
@@ -198,42 +207,11 @@ newtype Op as a =
          -- a continuation to compute the gradient, given the total
          -- derivative of @a@.  See documentation for "Numeric.Backprop.Op"
          -- for more information.
-         runOpWith :: Tuple as -> (a, a -> Tuple as)
+         runOpWith :: Rec Identity as -> (a, a -> Rec Identity as)
        }
 
 -- | Helper wrapper used for the implementation of 'composeOp'.
-newtype OpCont as a = OC { runOpCont :: a -> Tuple as }
-
--- | A version of 'composeOp' taking explicit 'Length', indicating the
--- number of inputs expected and their types.
---
--- Requiring an explicit 'Length' is mostly useful for rare "extremely
--- polymorphic" situations, where GHC can't infer the type and length of
--- the the expected input tuple.  If you ever actually explicitly write
--- down @as@ as a list of types, you should be able to just use
--- 'composeOp'.
-composeOp'
-    :: AllConstrained Num as
-    => Length as
-    -> Prod (Op as) bs   -- ^ 'Prod' of 'Op's taking @as@ and returning
-                         --     different @b@ in @bs@
-    -> Op bs c           -- ^ 'OpM' taking eac of the @bs@ from the
-                         --     input 'Prod'.
-    -> Op as c           -- ^ Composed 'Op'
-composeOp' l os o = Op $ \xs ->
-    let (ys, conts) = unzipP
-                    . map1 ((\(x, c) -> I x :&: OC c) . flip runOpWith xs)
-                    $ os
-        (z, gFz) = runOpWith o ys
-        gFunc g0 =
-          let g1 = gFz g0
-              g2s = toList (\(oc :&: I g) -> runOpCont oc g)
-                  $ conts `zipP` g1
-          in  imap1 (\i gs -> I (sum gs) \\ every @_ @Num i)
-                 . foldr (\x -> map1 (uncurryFan (\(I y) -> (y:))) . zipP x)
-                         (lengthProd [] l)
-                 $ g2s
-    in (z, gFunc)
+newtype OpCont as a = OC { runOpCont :: a -> Rec Identity as }
 
 -- | Compose 'Op's together, like 'sequence' for functions, or @liftAN@.
 --
@@ -241,39 +219,39 @@ composeOp' l os o = Op $ \xs ->
 -- can compose them with an @'Op' '[b1,b2,b3] c@ to create an @'Op' as
 -- c@.
 composeOp
-    :: (AllConstrained Num as, Known Length as)
-    => Prod (Op as) bs   -- ^ 'Prod' of 'Op's taking @as@ and returning
+    :: forall as bs c. (AllConstrained Num as, RecApplicative as)
+    => Rec (Op as) bs   -- ^ 'Rec' of 'Op's taking @as@ and returning
                          --     different @b@ in @bs@
-    -> Op bs c           -- ^ 'Op' taking eac of the @bs@ from the
-                         --     input 'Prod'.
+    -> Op bs c           -- ^ 'OpM' taking eac of the @bs@ from the
+                         --     input 'Rec'.
     -> Op as c           -- ^ Composed 'Op'
-composeOp = composeOp' known
-
--- | A version of 'composeOp1' taking explicit 'Length', indicating the
--- number of inputs expected and their types.
---
--- Requiring an explicit 'Length' is mostly useful for rare "extremely
--- polymorphic" situations, where GHC can't infer the type and length of
--- the the expected input tuple.  If you ever actually explicitly write
--- down @as@ as a list of types, you should be able to just use
--- 'composeOp1'.
-composeOp1'
-    :: AllConstrained Num as
-    => Length as
-    -> Op as b
-    -> Op '[b] c
-    -> Op as c
-composeOp1' l = composeOp' l . only
+composeOp os o = Op $ \xs ->
+    let (ys, conts) = runzipWith (bimap Identity OC . flip runOpWith xs) os
+        (z, gFz) = runOpWith o ys
+        gFunc g0 =
+          let g1 = gFz g0
+              g2s :: Rec (Const (Rec Identity as)) bs
+              g2s = rzipWith (\oc (Identity g) -> Const $ runOpCont oc g)
+                        conts g1
+          in  rmap (\(Dict x) -> Identity x)
+                . foldl' (rzipWith (\(Dict !x) (Identity y) ->
+                                        let z = x + y in z `seq` Dict z
+                                   )
+                         )
+                    (rpureConstrained @Num @(Dict Num) @_ @as Proxy (Dict 0))
+                . rfoldMap ((:[]) . getConst)
+                $ g2s
+    in (z, gFunc)
 
 -- | Convenient wrapper over 'composeOp' for the case where the second
 -- function only takes one input, so the two 'Op's can be directly piped
 -- together, like for '.'.
 composeOp1
-    :: (AllConstrained Num as, Known Length as)
+    :: (AllConstrained Num as, RecApplicative as)
     => Op as b
     -> Op '[b] c
     -> Op as c
-composeOp1 = composeOp1' known
+composeOp1 = composeOp . (:& RNil)
 
 -- | Convenient infix synonym for (flipped) 'composeOp1'.  Meant to be used
 -- just like '.':
@@ -286,7 +264,7 @@ composeOp1 = composeOp1' known
 -- @
 infixr 9 ~.
 (~.)
-    :: (Known Length as, AllConstrained Num as)
+    :: (AllConstrained Num as, RecApplicative as)
     => Op '[b] c
     -> Op as b
     -> Op as c
@@ -296,18 +274,18 @@ infixr 9 ~.
 
 -- | Run the function that an 'Op' encodes, to get the result.
 --
--- >>> runOp (op2 (*)) (3 ::< 5 ::< Ø)
+-- >>> runOp (op2 (*)) (3 :& 5 :& RNil)
 -- 15
-evalOp :: Op as a -> Tuple as -> a
+evalOp :: Op as a -> Rec Identity as -> a
 evalOp o = fst . runOpWith o
 {-# INLINE evalOp #-}
 
 -- | Run the function that an 'Op' encodes, to get the resulting output and
 -- also its gradient with respect to the inputs.
 --
--- >>> gradOp' (op2 (*)) (3 ::< 5 ::< Ø)
--- (15, 5 ::< 3 ::< Ø)
-runOp :: Num a => Op as a -> Tuple as -> (a, Tuple as)
+-- >>> gradOp' (op2 (*)) (3 :& 5 :& RNil)
+-- (15, 5 :& 3 :& RNil)
+runOp :: Num a => Op as a -> Rec Identity as -> (a, Rec Identity as)
 runOp o = second ($ 1) . runOpWith o
 {-# INLINE runOp #-}
 
@@ -318,24 +296,24 @@ runOp o = second ($ 1) . runOpWith o
 -- information.
 gradOpWith
     :: Op as a      -- ^ 'Op' to run
-    -> Tuple as     -- ^ Inputs to run it with
+    -> Rec Identity as     -- ^ Inputs to run it with
     -> a            -- ^ The total derivative of the result.
-    -> Tuple as     -- ^ The gradient
+    -> Rec Identity as     -- ^ The gradient
 gradOpWith o = snd . runOpWith o
 {-# INLINE gradOpWith #-}
 
 -- | Run the function that an 'Op' encodes, and get the gradient of the
 -- output with respect to the inputs.
 --
--- >>> gradOp (op2 (*)) (3 ::< 5 ::< Ø)
--- 5 ::< 3 ::< Ø
+-- >>> gradOp (op2 (*)) (3 :& 5 :& RNil)
+-- 5 :& 3 :& RNil
 -- -- the gradient of x*y is (y, x)
 --
 -- @
 -- 'gradOp' o xs = 'gradOpWith' o xs 1
 -- @
 --
-gradOp :: Num a => Op as a -> Tuple as -> Tuple as
+gradOp :: Num a => Op as a -> Rec Identity as -> Rec Identity as
 gradOp o i = gradOpWith o i 1
 {-# INLINE gradOp #-}
 
@@ -382,7 +360,7 @@ noGrad1 f = op1 (\x -> (f x, \_ -> error "noGrad1: no gradient defined"))
 -- result is used in the final result.
 --
 -- @since 0.1.3.0
-noGrad :: (Tuple as -> b) -> Op as b
+noGrad :: (Rec Identity as -> b) -> Op as b
 noGrad f = Op (\xs -> (f xs, \_ -> error "noGrad: no gradient defined"))
 {-# INLINE noGrad #-}
 
@@ -398,9 +376,9 @@ idOp = op1 $ \x -> (x, id)
 
 -- | An 'Op' that takes @as@ and returns exactly the input tuple.
 --
--- >>> gradOp' opTup (1 ::< 2 ::< 3 ::< Ø)
--- (1 ::< 2 ::< 3 ::< Ø, 1 ::< 1 ::< 1 ::< Ø)
-opTup :: Op as (Tuple as)
+-- >>> gradOp' opTup (1 :& 2 :& 3 :& RNil)
+-- (1 :& 2 :& 3 :& RNil, 1 :& 1 :& 1 :& RNil)
+opTup :: Op as (Rec Identity as)
 opTup = Op $ \xs -> (xs, id)
 {-# INLINE opTup #-}
 
@@ -436,7 +414,7 @@ opIso3 to' from' = op3 $ \x y z -> (to' x y z, from')
 -- "Numeric.Backprop" since version 0.1.3.0.
 --
 -- @since 0.1.2.0
-opIsoN :: (Tuple as -> b) -> (b -> Tuple as) -> Op as b
+opIsoN :: (Rec Identity as -> b) -> (b -> Rec Identity as) -> Op as b
 opIsoN to' from' = Op $ \xs -> (to' xs, from')
 {-# INLINE opIsoN #-}
 
@@ -449,26 +427,17 @@ opLens :: Num a => Lens' a b -> Op '[ a ] b
 opLens l = op1 $ \x -> (view l x, \d -> set l d 0)
 {-# INLINE opLens #-}
 
--- | A version of 'opConst' taking explicit 'Length', indicating the
--- number of inputs and their types.
---
--- Requiring an explicit 'Length' is mostly useful for rare "extremely
--- polymorphic" situations, where GHC can't infer the type and length of
--- the the expected input tuple.  If you ever actually explicitly write
--- down @as@ as a list of types, you should be able to just use
--- 'opConst'.
-opConst' :: AllConstrained Num as => Length as -> a -> Op as a
-opConst' l x = Op $ const
-    (x , const $ map1 ((0 \\) . every @_ @Num) (indices' l))
-{-# INLINE opConst' #-}
-
 -- | An 'Op' that ignores all of its inputs and returns a given constant
 -- value.
 --
--- >>> gradOp' (opConst 10) (1 ::< 2 ::< 3 ::< Ø)
--- (10, 0 ::< 0 ::< 0 ::< Ø)
-opConst :: (AllConstrained Num as, Known Length as) => a -> Op as a
-opConst = opConst' known
+-- >>> gradOp' (opConst 10) (1 :& 2 :& 3 :& RNil)
+-- (10, 0 :& 0 :& 0 :& RNil)
+opConst
+    :: forall as a. (AllConstrained Num as, RecApplicative as)
+    => a
+    -> Op as a
+opConst x = Op $ const
+    (x , const $ rpureConstrained @Num Proxy 0)
 {-# INLINE opConst #-}
 
 -- | Create an 'Op' that takes no inputs and always returns the given
@@ -477,14 +446,14 @@ opConst = opConst' known
 -- There is no gradient, of course (using 'gradOp' will give you an empty
 -- tuple), because there is no input to have a gradient of.
 --
--- >>> runOp (op0 10) Ø
--- (10, Ø)
+-- >>> runOp (op0 10) RNil
+-- (10, RNil)
 --
 -- For a constant 'Op' that takes input and ignores it, see 'opConst' and
 -- 'opConst''.
 op0 :: a -> Op '[] a
 op0 x = Op $ \case
-    Ø -> (x, const Ø)
+    RNil -> (x, const RNil)
 {-# INLINE op0 #-}
 
 -- | Create an 'Op' of a function taking one input, by giving its explicit
@@ -526,9 +495,9 @@ op1
     :: (a -> (b, b -> a))
     -> Op '[a] b
 op1 f = Op $ \case
-    I x :< Ø ->
+    Identity x :& RNil ->
       let (y, dx) = f x
-      in  (y, \(!d) -> only_ . dx $ d)
+      in  (y, \(!d) -> (:& RNil) . Identity . dx $ d)
 {-# INLINE op1 #-}
 
 -- | Create an 'Op' of a function taking two inputs, by giving its explicit
@@ -572,9 +541,9 @@ op2
     :: (a -> b -> (c, c -> (a, b)))
     -> Op '[a,b] c
 op2 f = Op $ \case
-    I x :< I y :< Ø ->
+    Identity x :& Identity y :& RNil ->
       let (z, dxdy) = f x y
-      in  (z, (\(!dx,!dy) -> dx ::< dy ::< Ø) . dxdy)
+      in  (z, (\(!dx,!dy) -> Identity dx :& Identity dy :& RNil) . dxdy)
 {-# INLINE op2 #-}
 
 -- | Create an 'Op' of a function taking three inputs, by giving its explicit
@@ -583,70 +552,70 @@ op3
     :: (a -> b -> c -> (d, d -> (a, b, c)))
     -> Op '[a,b,c] d
 op3 f = Op $ \case
-    I x :< I y :< I z :< Ø ->
+    Identity x :& Identity y :& Identity z :& RNil ->
       let (q, dxdydz) = f x y z
-      in  (q, (\(!dx, !dy, !dz) -> dx ::< dy ::< dz ::< Ø) . dxdydz)
+      in  (q, (\(!dx, !dy, !dz) -> Identity dx :& Identity dy :& Identity dz :& RNil) . dxdydz)
 {-# INLINE op3 #-}
 
-instance (Known Length as, AllConstrained Num as, Num a) => Num (Op as a) where
-    o1 + o2       = composeOp (o1 :< o2 :< Ø) (+.)
+instance (RecApplicative as, AllConstrained Num as, Num a) => Num (Op as a) where
+    o1 + o2       = composeOp (o1 :& o2 :& RNil) (+.)
     {-# INLINE (+) #-}
-    o1 - o2       = composeOp (o1 :< o2 :< Ø) (-.)
+    o1 - o2       = composeOp (o1 :& o2 :& RNil) (-.)
     {-# INLINE (-) #-}
-    o1 * o2       = composeOp (o1 :< o2 :< Ø) (*.)
+    o1 * o2       = composeOp (o1 :& o2 :& RNil) (*.)
     {-# INLINE (*) #-}
-    negate o      = composeOp (o  :< Ø)       negateOp
+    negate o      = composeOp (o  :& RNil)       negateOp
     {-# INLINE negate #-}
-    signum o      = composeOp (o  :< Ø)       signumOp
+    signum o      = composeOp (o  :& RNil)       signumOp
     {-# INLINE signum #-}
-    abs    o      = composeOp (o  :< Ø)       absOp
+    abs    o      = composeOp (o  :& RNil)       absOp
     {-# INLINE abs #-}
     fromInteger x = opConst (fromInteger x)
     {-# INLINE fromInteger #-}
 
-instance (Known Length as, AllConstrained Fractional as, AllConstrained Num as, Fractional a) => Fractional (Op as a) where
-    o1 / o2        = composeOp (o1 :< o2 :< Ø) (/.)
-    recip o        = composeOp (o  :< Ø)       recipOp
+instance (RecApplicative as, AllConstrained Fractional as, AllConstrained Num as, Fractional a) => Fractional (Op as a) where
+    o1 / o2        = composeOp (o1 :& o2 :& RNil) (/.)
+    recip o        = composeOp (o  :& RNil)       recipOp
     {-# INLINE recip #-}
     fromRational x = opConst (fromRational x)
     {-# INLINE fromRational #-}
 
-instance (Known Length as, AllConstrained Floating as, AllConstrained Fractional as, AllConstrained Num as, Floating a) => Floating (Op as a) where
+instance (RecApplicative as, AllConstrained Floating as, AllConstrained Fractional as, AllConstrained Num as, Floating a) => Floating (Op as a) where
     pi            = opConst pi
     {-# INLINE pi #-}
-    exp   o       = composeOp (o  :< Ø)       expOp
+    exp   o       = composeOp (o  :& RNil)       expOp
     {-# INLINE exp #-}
-    log   o       = composeOp (o  :< Ø)       logOp
+    log   o       = composeOp (o  :& RNil)       logOp
     {-# INLINE log #-}
-    sqrt  o       = composeOp (o  :< Ø)       sqrtOp
+    sqrt  o       = composeOp (o  :& RNil)       sqrtOp
     {-# INLINE sqrt #-}
-    o1 ** o2      = composeOp (o1 :< o2 :< Ø) (**.)
+    o1 ** o2      = composeOp (o1 :& o2 :& RNil) (**.)
     {-# INLINE (**) #-}
-    logBase o1 o2 = composeOp (o1 :< o2 :< Ø) logBaseOp
+    logBase o1 o2 = composeOp (o1 :& o2 :& RNil) logBaseOp
     {-# INLINE logBase #-}
-    sin   o       = composeOp (o  :< Ø)       sinOp
+    sin   o       = composeOp (o  :& RNil)       sinOp
     {-# INLINE sin #-}
-    cos   o       = composeOp (o  :< Ø)       cosOp
+    cos   o       = composeOp (o  :& RNil)       cosOp
     {-# INLINE cos #-}
-    tan   o       = composeOp (o  :< Ø)       tanOp
+    tan   o       = composeOp (o  :& RNil)       tanOp
     {-# INLINE tan #-}
-    asin  o       = composeOp (o  :< Ø)       asinOp
+    asin  o       = composeOp (o  :& RNil)       asinOp
     {-# INLINE asin #-}
-    acos  o       = composeOp (o  :< Ø)       acosOp
+    acos  o       = composeOp (o  :& RNil)       acosOp
     {-# INLINE acos #-}
-    atan  o       = composeOp (o  :< Ø)       atanOp
+    atan  o       = composeOp (o  :& RNil)       atanOp
     {-# INLINE atan #-}
-    sinh  o       = composeOp (o  :< Ø)       sinhOp
+    sinh  o       = composeOp (o  :& RNil)       sinhOp
     {-# INLINE sinh #-}
-    cosh  o       = composeOp (o  :< Ø)       coshOp
+    cosh  o       = composeOp (o  :& RNil)       coshOp
     {-# INLINE cosh #-}
-    tanh  o       = composeOp (o  :< Ø)       tanhOp
+    tanh  o       = composeOp (o  :& RNil)       tanhOp
     {-# INLINE tanh #-}
-    asinh o       = composeOp (o  :< Ø)       asinhOp
+    asinh o       = composeOp (o  :& RNil)       asinhOp
     {-# INLINE asinh #-}
-    acosh o       = composeOp (o  :< Ø)       acoshOp
+    acosh o       = composeOp (o  :& RNil)       acoshOp
     {-# INLINE acosh #-}
-    atanh o       = composeOp (o  :< Ø)       atanhOp
+    atanh o       = composeOp (o  :& RNil)       atanhOp
     {-# INLINE atanh #-}
 
 -- $numops
@@ -794,18 +763,18 @@ atanhOp = op1 $ \x -> (atanh x, (/ (1 - x*x)))
 
 -- $prod
 --
--- 'Prod', from the <http://hackage.haskell.org/package/type-combinators
+-- 'Rec', from the <http://hackage.haskell.org/package/type-combinators
 -- type-combinators> library (in "Data.Type.Product") is a heterogeneous
 -- list/tuple type, which allows you to tuple together multiple values of
 -- different types and operate on them generically.
 --
--- A @'Prod' f '[a, b, c]@ contains an @f a@, an @f b@, and an @f c@, and
--- is constructed by consing them together with ':<' (using 'Ø' as nil):
+-- A @'Rec' f '[a, b, c]@ contains an @f a@, an @f b@, and an @f c@, and
+-- is constructed by consing them together with ':&' (using 'RNil' as nil):
 --
 -- @
--- 'I' "hello" ':<' I True :< I 7.8 :< Ø    :: 'Prod' 'I' '[String, Bool, Double]
--- 'C' "hello" :< C "world" :< C "ok" :< Ø  :: 'Prod' ('C' String) '[a, b, c]
--- 'Proxy' :< Proxy :< Proxy :< Ø           :: 'Prod' 'Proxy' '[a, b, c]
+-- 'I' "hello" ':&' Identity True :& Identity 7.8 :& RNil    :: 'Rec' 'I' '[String, Bool, Double]
+-- 'C' "hello" :& C "world" :& C "ok" :& RNil  :: 'Rec' ('C' String) '[a, b, c]
+-- 'Proxy' :& Proxy :& Proxy :& RNil           :: 'Rec' 'Proxy' '[a, b, c]
 -- @
 --
 -- ('I' is the identity functor, and 'C' is the constant functor)
@@ -816,18 +785,18 @@ atanhOp = op1 $ \x -> (atanh x, (/ (1 - x*x)))
 -- x :: f a
 -- y :: f b
 -- z :: f c
--- x :< y :< z :< Ø :: Prod f '[a, b, c]
+-- x :& y :& z :& RNil :: Rec f '[a, b, c]
 -- @
 --
--- If you're having problems typing 'Ø', you can use 'only':
+-- If you're having problems typing 'RNil', you can use 'only':
 --
 -- @
--- only z           :: Prod f '[c]
--- x :< y :< only z :: Prod f '[a, b, c]
+-- only z           :: Rec f '[c]
+-- x :& y :& only z :: Rec f '[a, b, c]
 -- @
 --
--- 'Tuple' is provided as a convenient type synonym for 'Prod' 'I', and has
--- a convenient pattern synonym '::<' (and 'only_'), which can also be used
+-- 'Rec Identity' is provided as a convenient type synonym for 'Rec' 'I', and has
+-- a convenient pattern synonym ':&' (and 'only_'), which can also be used
 -- for pattern matching:
 --
 -- @
@@ -835,9 +804,9 @@ atanhOp = op1 $ \x -> (atanh x, (/ (1 - x*x)))
 -- y :: b
 -- z :: c
 --
--- 'only_' z             :: 'Tuple' '[c]
--- x '::<' y ::< z ::< Ø :: 'Tuple' '[a, b, c]
--- x ::< y ::< only_ z :: 'Tuple' '[a, b, c]
+-- 'only_' z             :: 'Rec Identity' '[c]
+-- x ':&' y :& z :& RNil :: 'Rec Identity' '[a, b, c]
+-- x :& y :& only_ z :: 'Rec Identity' '[a, b, c]
 -- @
 
 

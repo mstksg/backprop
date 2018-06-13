@@ -8,6 +8,8 @@
 {-# LANGUAGE TypeOperators          #-}
 
 module Data.Type.Util (
+    rzipWith3
+  , runzipWith
     -- Replicate
   -- , unzipP
   -- , zipP
@@ -21,22 +23,52 @@ module Data.Type.Util (
   -- , zipVecList
   -- , splitProd
   -- , traverse1_
-    p1, p2, s1, s2
+  , p1, p2, s1, s2
   ) where
 
-import           Data.Bifunctor
-import           Data.Foldable
 -- import           Data.Type.Conjunction hiding ((:*:))
 -- import           Data.Type.Length
 -- import           Data.Type.Nat
 -- import           Data.Type.Product
 -- import           Data.Type.Vector
-import           GHC.Generics
-import           Lens.Micro
 -- import           Type.Class.Higher
 -- import           Type.Class.Witness
 -- import           Type.Family.List
 -- import           Type.Family.Nat
+import           Data.Bifunctor
+import           Data.Foldable
+import           Data.Vinyl.Core
+import           GHC.Generics
+import           Lens.Micro
+
+rzipWith3
+    :: forall f g h j. ()
+    => (forall x. f x -> g x -> h x -> j x)
+    -> (forall xs. Rec f xs -> Rec g xs -> Rec h xs -> Rec j xs)
+rzipWith3 f = go
+  where
+    go :: forall ys. Rec f ys -> Rec g ys -> Rec h ys -> Rec j ys
+    go = \case
+      RNil -> \case
+        RNil -> \case
+          RNil -> RNil
+      x :& xs -> \case
+        y :& ys -> \case
+          z :& zs -> f x y z :& go xs ys zs
+
+runzipWith
+    :: forall f g h. ()
+    => (forall x. f x -> (g x, h x))
+    -> (forall xs. Rec f xs -> (Rec g xs, Rec h xs))
+runzipWith f = go
+  where
+    go :: forall ys. Rec f ys -> (Rec g ys, Rec h ys)
+    go = \case
+      RNil    -> (RNil, RNil)
+      x :& xs -> let (y , z ) = f x
+                     (ys, zs) = go xs
+                 in  (y :& ys, z :& zs)
+
 
 -- | @'Replicate' n a@ is a list of @a@s repeated @n@ times.
 --

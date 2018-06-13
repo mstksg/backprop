@@ -51,6 +51,7 @@ extra-deps:
 - inliterate-0.1.0
 - lucid-extras-0.1.0.0
 - plotlyhs-0.2
+# - vinyl-0.8.1.1
 
 # Override default flag values for local packages and extra-deps
 flags: {}
