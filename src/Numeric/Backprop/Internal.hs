@@ -45,6 +45,10 @@ module Numeric.Backprop.Internal (
   , debugIR
   ) where
 
+-- import           Data.Type.Conjunction hiding ((:*:))
+-- import           Data.Type.Product hiding     (toList)
+-- import           Data.Type.Vector hiding      (itraverse)
+-- import           Type.Class.Higher
 import           Control.DeepSeq
 import           Control.Exception
 import           Control.Monad
@@ -54,28 +58,27 @@ import           Data.Bifunctor
 import           Data.Coerce
 import           Data.Foldable
 import           Data.Function
+import           Data.Functor.Identity
 import           Data.IORef
 import           Data.Kind
 import           Data.Maybe
-import           Data.Monoid hiding           (Any(..))
+import           Data.Monoid hiding              (Any(..))
 import           Data.Proxy
 import           Data.Reflection
-import           Data.Type.Conjunction hiding ((:*:))
-import           Data.Type.Product hiding     (toList)
 import           Data.Type.Util
-import           Data.Type.Vector hiding      (itraverse)
 import           Data.Typeable
-import           GHC.Exts                     (Any)
-import           GHC.Generics                 as G
+import           Data.Vinyl.Core
+import           GHC.Exts                        (Any)
+import           GHC.Generics                    ((:*:)(..))
+import           GHC.Generics                    as G
 import           Lens.Micro
 import           Lens.Micro.Extras
 import           Numeric.Backprop.Class
 import           Numeric.Backprop.Op
 import           System.IO.Unsafe
-import           Type.Class.Higher
 import           Unsafe.Coerce
-import qualified Data.Vector                  as V
-import qualified Data.Vector.Mutable          as MV
+import qualified Data.Vector                     as V
+import qualified Data.Vector.Mutable             as MV
 
 -- | "Zero out" all components of a value.  For scalar values, this should
 -- just be @'const' 0@.  For vectors and matrices, this should set all
@@ -229,8 +232,8 @@ debugIR :: InpRef a -> String
 debugIR IR{..} = show (_bvRef _irIx)
 
 data TapeNode :: Type -> Type where
-    TN :: { _tnInputs :: !(Prod InpRef as)
-          , _tnGrad   :: !(a -> Tuple as)
+    TN :: { _tnInputs :: !(Rec InpRef as)
+          , _tnGrad   :: !(a -> Rec Identity as)
           }
        -> TapeNode a
 
@@ -279,29 +282,29 @@ constVar = BV BRC
 
 liftOp_
     :: forall s as b. Reifies s W
-    => Prod AddFunc as
+    => Rec AddFunc as
     -> Op as b
-    -> Prod (BVar s) as
+    -> Rec (BVar s) as
     -> IO (BVar s b)
-liftOp_ afs o !vs = case traverse1 (fmap I . bvConst) vs of
+liftOp_ afs o !vs = case traverse1 (fmap Identity . bvConst) vs of
     Just xs -> return $ constVar (evalOp o xs)
     Nothing -> insertNode tn y (reflect (Proxy @s))
   where
-    (y,g) = runOpWith o (map1 (I . _bvVal) vs)
+    (y,g) = runOpWith o (map1 (Identity . _bvVal) vs)
     tn = TN { _tnInputs = map1 go (zipP afs vs)
             , _tnGrad   = g
             }
-    go :: forall a. (AddFunc :&: BVar s) a -> InpRef a
-    go (af :&: (!v)) = forceBVar v `seq` IR v (runAF af) id
+    go :: forall a. (AddFunc :*: BVar s) a -> InpRef a
+    go (af :*: (!v)) = forceBVar v `seq` IR v (runAF af) id
     {-# INLINE go #-}
 {-# INLINE liftOp_ #-}
 
 -- | 'Numeric.Backprop.liftOp', but with explicit 'add' and 'zero'.
 liftOp
     :: forall as b s. Reifies s W
-    => Prod AddFunc as
+    => Rec AddFunc as
     -> Op as b
-    -> Prod (BVar s) as
+    -> Rec (BVar s) as
     -> BVar s b
 liftOp afs o !vs = unsafePerformIO $ liftOp_ afs o vs
 {-# INLINE liftOp #-}
@@ -312,11 +315,11 @@ liftOp1_
     -> Op '[a] b
     -> BVar s a
     -> IO (BVar s b)
-liftOp1_ _  o (bvConst->Just x) = return . constVar . evalOp o $ (x ::< Ø)
+liftOp1_ _  o (bvConst->Just x) = return . constVar . evalOp o $ (x ::< RNil)
 liftOp1_ af o v = forceBVar v `seq` insertNode tn y (reflect (Proxy @s))
   where
-    (y,g) = runOpWith o (_bvVal v ::< Ø)
-    tn = TN { _tnInputs = IR v (runAF af) id :< Ø
+    (y,g) = runOpWith o (_bvVal v ::< RNil)
+    tn = TN { _tnInputs = IR v (runAF af) id :< RNil
             , _tnGrad   = g
             }
 {-# INLINE liftOp1_ #-}
@@ -340,13 +343,13 @@ liftOp2_
     -> BVar s b
     -> IO (BVar s c)
 liftOp2_ _ _ o (bvConst->Just x) (bvConst->Just y)
-    = return . constVar . evalOp o $ x ::< y ::< Ø
+    = return . constVar . evalOp o $ x ::< y ::< RNil
 liftOp2_ afa afb o v u = forceBVar v
                    `seq` forceBVar u
                    `seq` insertNode tn y (reflect (Proxy @s))
   where
-    (y,g) = runOpWith o (_bvVal v ::< _bvVal u ::< Ø)
-    tn = TN { _tnInputs = IR v (runAF afa) id :< IR u (runAF afb) id :< Ø
+    (y,g) = runOpWith o (_bvVal v ::< _bvVal u ::< RNil)
+    tn = TN { _tnInputs = IR v (runAF afa) id :< IR u (runAF afb) id :< RNil
             , _tnGrad   = g
             }
 {-# INLINE liftOp2_ #-}
@@ -374,17 +377,17 @@ liftOp3_
     -> BVar s c
     -> IO (BVar s d)
 liftOp3_ _ _ _ o (bvConst->Just x) (bvConst->Just y) (bvConst->Just z)
-    = return . constVar . evalOp o $ x ::< y ::< z ::< Ø
+    = return . constVar . evalOp o $ x ::< y ::< z ::< RNil
 liftOp3_ afa afb afc o v u w = forceBVar v
                          `seq` forceBVar u
                          `seq` forceBVar w
                          `seq` insertNode tn y (reflect (Proxy @s))
   where
-    (y, g) = runOpWith o (_bvVal v ::< _bvVal u ::< _bvVal w ::< Ø)
+    (y, g) = runOpWith o (_bvVal v ::< _bvVal u ::< _bvVal w ::< RNil)
     tn = TN { _tnInputs = IR v (runAF afa) id
                        :< IR u (runAF afb) id
                        :< IR w (runAF afc) id
-                       :< Ø
+                       :< RNil
             , _tnGrad   = g
             }
 {-# INLINE liftOp3_ #-}
@@ -416,8 +419,8 @@ viewVar_ af z l v = forceBVar v `seq` insertNode tn y (reflect (Proxy @s))
     x = _bvVal v
     y = x ^. l
     tn = TN { _tnInputs = IR v (over l . runAF af) (\g -> set l g (runZF z x))
-                       :< Ø
-            , _tnGrad   = only_
+                       :< RNil
+            , _tnGrad   = (:& RNil) . Identity
             }
 {-# INLINE viewVar_ #-}
 
@@ -449,9 +452,9 @@ setVar_ afa afb za l w v = forceBVar v
     y = _bvVal v & l .~ _bvVal w
     tn = TN { _tnInputs = IR w (runAF afa) id
                        :< IR v (runAF afb) id
-                       :< Ø
+                       :< RNil
             , _tnGrad   = \d -> let (dw,dv) = l (\x -> (x, runZF za x)) d
-                                in  dw ::< dv ::< Ø
+                                in  dw ::< dv ::< RNil
             }
 {-# INLINE setVar_ #-}
 
@@ -486,12 +489,12 @@ collectVar_
     -> ZeroFunc a
     -> t (BVar s a)
     -> IO (BVar s (t a))
-collectVar_ af z !vs = withV (toList vs) $ \(vVec :: Vec n (BVar s a)) -> do
+collectVar_ af z !vs = withVec (toList vs) $ \(vVec :: Vec n (BVar s a)) -> do
     let tn :: TapeNode (t a)
         tn = TN
-          { _tnInputs = vecToProd (vmap ((\v -> IR v (runAF af) id) . getI) vVec)
+          { _tnInputs = vecToProd (vmap ((\v -> IR v (runAF af) id) . runIdentity) vVec)
           , _tnGrad   = vecToProd
-                      . zipVecList (\(I v) -> I . fromMaybe (runZF z (_bvVal v))) vVec
+                      . zipVecList (\(Identity v) -> Identity . fromMaybe (runZF z (_bvVal v))) vVec
                       . toList
           }
     traverse_ (evaluate . forceBVar) vs
@@ -525,8 +528,8 @@ traverseVar' af z f t v = forceBVar v
       where
         tn = TN { _tnInputs = IR v (over (ixt t i) . runAF af)
                                    (\g -> set (ixt t i) g (runZF z x))
-                           :< Ø
-                , _tnGrad   = only_
+                           :< RNil
+                , _tnGrad   = (:& RNil) . Identity
                 }
     {-# INLINE go #-}
 {-# INLINE traverseVar' #-}
@@ -598,10 +601,10 @@ gradRunner o R{..} (n,stns) = do
       delt <- MV.read _rDelta i
       forM_ delt $ \d -> do
         let gs = _tnGrad (unsafeCoerce d)
-        zipWithPM_ propagate _tnInputs gs
+        rzipWithM_ propagate _tnInputs gs
     {-# INLINE go #-}
-    propagate :: forall x. InpRef x -> I x -> ST s ()
-    propagate (IR v (+*) e) (I d) = case _bvRef v of
+    propagate :: forall x. InpRef x -> Identity x -> ST s ()
+    propagate (IR v (+*) e) (Identity d) = case _bvRef v of
       BRInp i -> flip (MV.modify _rInputs) i $
         unsafeCoerce . bumpMaybe d (+*) e . unsafeCoerce
       BRIx i -> flip (MV.modify _rDelta) i $
@@ -628,28 +631,26 @@ bumpMaybe x (+*) e = \case
 -- @since 0.2.0.0
 backpropWithN
     :: forall as b. ()
-    => Prod ZeroFunc as
-    -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
-    -> Tuple as
-    -> (b, b -> Tuple as)
+    => Rec ZeroFunc as
+    -> (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
+    -> Rec Identity as
+    -> (b, b -> Rec Identity as)
 backpropWithN zfs f !xs = (y, g)
   where
     !(!tp@(!_,!_),!y) = unsafePerformIO $ fillWengert f xs
-    g :: b -> Tuple as
+    g :: b -> Rec Identity as
     g o = runST $ do
         r <- initRunner tp $ bimap getSum (`appEndo` [])
                            . fst
-                           $ traverse1_ go xs
-                           -- zipWithPM_ go zfs xs
+                           $ rtraverse_ go xs
         gradRunner o r tp
         delts <- toList <$> V.freeze (_rInputs r)
         return . fromMaybe (internalError "backpropN") $
-          fillProd (\(zf :&: I x) d -> I $ maybe (runZF zf x) unsafeCoerce d
-                   )
-            (zipP zfs xs)
+          fillRec (\z -> maybe z (Identity . unsafeCoerce))
+            (rzipWith (fmap . runZF) zfs xs)
             delts
       where
-        go :: forall a. I a -> ((Sum Int, Endo [Maybe Any]),())
+        go :: forall a. Identity a -> ((Sum Int, Endo [Maybe Any]),())
         go _ = ((1, Endo (unsafeCoerce (Nothing @a) :)), ())
         {-# INLINE go #-}
 {-# INLINE backpropWithN #-}
@@ -658,33 +659,33 @@ backpropWithN zfs f !xs = (y, g)
 -- documentation for 'Numeric.Backprop.backpropN' for more details.
 evalBPN
     :: forall as b. ()
-    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
-    -> Tuple as
+    => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
+    -> Rec Identity as
     -> b
 evalBPN f = snd . unsafePerformIO . fillWengert f
 {-# INLINE evalBPN #-}
 
 fillWengert
     :: forall as b. ()
-    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
-    -> Tuple as
+    => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
+    -> Rec Identity as
     -> IO ((Int, [SomeTapeNode]), b)
 fillWengert f xs = do
     w <- initWengert
     o <- reify w $ \(Proxy :: Proxy s) -> do
-      let oVar = f (inpProd @s)
+      let oVar = f (inpRec @s)
       evaluate (forceBVar oVar)
       return (_bvVal oVar)
     t <- readIORef (wRef w)
     return (t, o)
   where
-    inpProd :: forall s. Prod (BVar s) as
-    inpProd = evalState (traverse1 (state . go . getI) xs) 0
+    inpRec :: forall s. Rec (BVar s) as
+    inpRec = evalState (rtraverse (state . go . runIdentity) xs) 0
       where
         go :: a -> Int -> (BVar s a, Int)
         go x i = (BV (BRInp i) x, i + 1)
         {-# INLINE go #-}
-    {-# INLINE inpProd #-}
+    {-# INLINE inpRec #-}
 {-# INLINE fillWengert #-}
 
 

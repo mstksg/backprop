@@ -1,16 +1,24 @@
 {-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE PolyKinds              #-}
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE TupleSections          #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE TypeInType             #-}
 {-# LANGUAGE TypeOperators          #-}
 
 module Data.Type.Util (
     rzipWith3
   , runzipWith
-    -- Replicate
+  , rzipWithM_
+  , Replicate
+  , Vec(..)
+  , withVec
+  , vecToRec
+  , fillRec
+  , rtraverse_
   -- , unzipP
   -- , zipP
   -- , zipWithPM_
@@ -19,7 +27,6 @@ module Data.Type.Util (
   -- , vecLen
   -- , lengthProd
   -- , listToVecDef
-  -- , fillProd
   -- , zipVecList
   -- , splitProd
   -- , traverse1_
@@ -37,6 +44,8 @@ module Data.Type.Util (
 -- import           Type.Family.Nat
 import           Data.Bifunctor
 import           Data.Foldable
+import           Data.Functor.Identity
+import           Data.Kind
 import           Data.Vinyl.Core
 import           GHC.Generics
 import           Lens.Micro
@@ -69,23 +78,72 @@ runzipWith f = go
                      (ys, zs) = go xs
                  in  (y :& ys, z :& zs)
 
+data N = Z | S N
 
--- | @'Replicate' n a@ is a list of @a@s repeated @n@ times.
---
--- >>> :kind! Replicate N3 Int
--- '[Int, Int, Int]
--- >>> :kind! Replicate N5 Double
--- '[Double, Double, Double, Double, Double]
--- type family Replicate (n :: N) (a :: k) = (as :: [k]) | as -> n where
---     Replicate 'Z     a = '[]
---     Replicate ('S n) a = a ': Replicate n a
+data Vec :: N -> Type -> Type where
+    VNil :: Vec 'Z a
+    (:+) :: a -> Vec n a -> Vec ('S n) a
 
--- vecToProd
---     :: VecT n f a
---     -> Prod f (Replicate n a)
--- vecToProd = \case
---     ØV      -> Ø
---     x :* xs -> x :< vecToProd xs
+withVec
+    :: [a]
+    -> (forall n. Vec n a -> r)
+    -> r
+withVec = \case
+    []   -> ($ VNil)
+    x:xs -> \f -> withVec xs (f . (x :+))
+
+type family Replicate (n :: N) (a :: k) = (as :: [k]) | as -> n where
+    Replicate 'Z     a = '[]
+    Replicate ('S n) a = a ': Replicate n a
+
+vecToRec
+    :: Vec n a
+    -> Rec Identity (Replicate n a)
+vecToRec = \case
+    VNil    -> RNil
+    x :+ xs -> Identity x :& vecToRec xs
+
+fillRec
+    :: forall f g as c. ()
+    => (forall a. f a -> c -> g a)
+    -> Rec f as
+    -> [c]
+    -> Maybe (Rec g as)
+fillRec f = go
+  where
+    go :: Rec f bs -> [c] -> Maybe (Rec g bs)
+    go = \case
+      RNil -> \_ -> Just RNil
+      x :& xs -> \case
+        []   -> Nothing
+        y:ys -> (f x y :&) <$> go xs ys
+
+rtraverse_
+    :: forall f g. Applicative g
+    => (forall x. f x -> g ())
+    -> (forall xs. Rec f xs -> g ())
+rtraverse_ f = go
+  where
+    go :: Rec f ys -> g ()
+    go = \case
+      RNil    -> pure ()
+      x :& xs -> f x *> go xs
+
+rzipWithM_
+    :: forall h f g as. Applicative h
+    => (forall a. f a -> g a -> h ())
+    -> Rec f as
+    -> Rec g as
+    -> h ()
+rzipWithM_ f = go
+  where
+    go :: forall bs. Rec f bs -> Rec g bs -> h ()
+    go = \case
+      RNil -> \case
+        RNil -> pure ()
+      x :& xs -> \case
+        y :& ys -> f x y *> go xs ys
+
 
 -- vecLen
 --     :: VecT n f a
@@ -167,21 +225,6 @@ runzipWith f = go
 --       S_ n -> \case
 --         []   -> d :* vrep d \\ n
 --         x:xs -> x :* go n xs
-
--- fillProd
---     :: forall f g as c. ()
---     => (forall a. f a -> c -> g a)
---     -> Prod f as
---     -> [c]
---     -> Maybe (Prod g as)
--- fillProd f = go
---   where
---     go :: Prod f bs -> [c] -> Maybe (Prod g bs)
---     go = \case
---       Ø -> \_ -> Just Ø
---       x :< xs -> \case
---         []   -> Nothing
---         y:ys -> (f x y :<) <$> go xs ys
 
 -- zipVecList
 --     :: forall a b c f g n. ()
