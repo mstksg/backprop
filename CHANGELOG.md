@@ -6,10 +6,22 @@ Version 0.2.5.0
 
 *Unreleased*
 
-<https://github.com/mstksg/backprop/releases/tag/v0.2.4.0>
+<https://github.com/mstksg/backprop/releases/tag/v0.2.5.0>
 
+*   Since *type-combinators* has been unmaintained for over two years, and is
+    no longer compatible with modern GHC, the library internals was rewritten
+    to be built on the type-level combinators in the *vinyl* library instead.
+    The main external API change is basically `Every` is replaced with
+    `AllConstrained`, and `Known Length` is replaced with `RecApplicative`.
+
+    To most users, this should make no difference API-wise.  The only users
+    affected should be those using the "-N" family of functions (`backpropN`),
+    who have to pass in heterogeneous lists.  Heterogeneous lists now must be
+    passed in using *vinyl* syntax and operators instead of the previous
+    *type-combinators* interface.
 *   `bpOp` added, to allow for non-rank-N storage of backpropagatable
     functions in containers without impredicative types.
+*   Benchmarks use *microlens* and *microlens-th* instead of *lens*.
 
 Version 0.2.4.0
 ---------------

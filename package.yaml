@@ -1,5 +1,5 @@
 name:                backprop
-version:             0.2.4.0
+version:             0.2.5.0
 github:              mstksg/backprop
 homepage:            https://backprop.jle.im
 license:             BSD3
@@ -42,6 +42,7 @@ ghc-options:
 dependencies:
 - base >=4.7 && <5
 - deepseq
+- microlens
 - vector
 
 library:
@@ -60,12 +61,11 @@ library:
   - Data.Type.Util
   dependencies:
   - containers
-  - microlens
   - primitive
   - reflection
   - simple-reflect
   - transformers
-  - type-combinators
+  - vinyl
 
 benchmarks:
   backprop-mnist-bench:
@@ -81,6 +81,6 @@ benchmarks:
     - criterion
     - directory
     - hmatrix >=0.18
-    - lens
+    - microlens-th
     - mwc-random
     - time

@@ -28,7 +28,6 @@ The (extra) packages involved are:
 > {-# LANGUAGE GADTs               #-}
 > {-# LANGUAGE InstanceSigs        #-}
 > {-# LANGUAGE LambdaCase          #-}
-> {-# LANGUAGE LambdaCase          #-}
 > {-# LANGUAGE RankNTypes          #-}
 > {-# LANGUAGE ScopedTypeVariables #-}
 > {-# LANGUAGE TemplateHaskell     #-}
@@ -40,7 +39,6 @@ The (extra) packages involved are:
 >
 > import           Control.DeepSeq
 > import           Control.Exception
-> import           Control.Lens hiding             ((<.>))
 > import           Control.Monad
 > import           Control.Monad.IO.Class
 > import           Control.Monad.Primitive
@@ -58,6 +56,8 @@ The (extra) packages involved are:
 > import           Data.Traversable
 > import           Data.Tuple
 > import           GHC.Generics                    (Generic)
+> import           Lens.Micro
+> import           Lens.Micro.TH
 > import           Numeric.Backprop
 > import           Numeric.Backprop.Class
 > import           Numeric.LinearAlgebra.Static
