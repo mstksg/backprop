@@ -80,28 +80,17 @@ module Numeric.Backprop.Op (
   , sinhOp, coshOp, tanhOp, asinhOp, acoshOp, atanhOp
   ) where
 
--- import           Data.Type.Combinator
--- import           Data.Type.Conjunction
--- import           Data.Type.Index
--- import           Data.Type.Length
--- import           Data.Type.Product
--- import           Type.Class.Higher
--- import           Type.Class.Known
--- import           Type.Class.Witness
 import           Control.Applicative
 import           Data.Bifunctor
 import           Data.Coerce
-import           Data.Functor.Compose
 import           Data.Functor.Identity
 import           Data.List
-import           Data.Monoid
 import           Data.Proxy
 import           Data.Type.Util
 import           Data.Vinyl.Core
 import           Data.Vinyl.TypeLevel
 import           Lens.Micro
 import           Lens.Micro.Extras
-import           Numeric.Backprop.Class
 
 -- $opdoc
 -- 'Op's contain information on a function as well as its gradient, but
@@ -235,7 +224,7 @@ composeOp os o = Op $ \xs ->
                         conts g1
           in  rmap (\(Dict x) -> Identity x)
                 . foldl' (rzipWith (\(Dict !x) (Identity y) ->
-                                        let z = x + y in z `seq` Dict z
+                                        let q = x + y in q `seq` Dict q
                                    )
                          )
                     (rpureConstrained @Num @(Dict Num) @_ @as Proxy (Dict 0))
@@ -573,7 +562,7 @@ instance (RecApplicative as, AllConstrained Num as, Num a) => Num (Op as a) wher
     fromInteger x = opConst (fromInteger x)
     {-# INLINE fromInteger #-}
 
-instance (RecApplicative as, AllConstrained Fractional as, AllConstrained Num as, Fractional a) => Fractional (Op as a) where
+instance (RecApplicative as, AllConstrained Num as, Fractional a) => Fractional (Op as a) where
     o1 / o2        = composeOp (o1 :& o2 :& RNil) (/.)
     recip o        = composeOp (o  :& RNil)       recipOp
     {-# INLINE recip #-}

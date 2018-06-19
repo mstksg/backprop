@@ -54,7 +54,7 @@ module Numeric.Backprop.Explicit (
     -- ** Multiple inputs
   , evalBP0
   , backprop2, evalBP2, gradBP2, backpropWith2
-  , backpropN, evalBPN, gradBPN, backpropWithN, Every
+  , backpropN, evalBPN, gradBPN, backpropWithN, RecApplicative, AllConstrained
     -- * Manipulating 'BVar'
   , constVar, auto, coerceVar
   , viewVar, setVar, overVar
@@ -73,7 +73,6 @@ module Numeric.Backprop.Explicit (
   , Op(..)
     -- ** Creation
   , op0, opConst, idOp
-  , opConst'
   , bpOp
     -- *** Giving gradients directly
   , op1, op2, op3
@@ -83,36 +82,33 @@ module Numeric.Backprop.Explicit (
   , noGrad1, noGrad
     -- * Utility
     -- ** Inductive tuples/heterogeneous lists
-  , Prod(..), pattern (:>), only, head'
-  , Tuple, pattern (::<), only_
-  , I(..)
+  -- , Prod(..), pattern (:>), only, head'
+  -- , Tuple, pattern (::<), only_
+  -- , I(..)
     -- ** Misc
   , Reifies
   ) where
 
 import           Data.Bifunctor
+import           Data.Functor.Identity
+import           Data.Proxy
 import           Data.Reflection
-import           Data.Type.Index
-import           Data.Type.Length
-import           Data.Type.Product
 import           Data.Type.Util
+import           Data.Vinyl.Core
+import           Data.Vinyl.TypeLevel
 import           GHC.Generics              as G
 import           Lens.Micro
 import           Numeric.Backprop.Class
 import           Numeric.Backprop.Internal
 import           Numeric.Backprop.Op
-import           Type.Class.Higher
-import           Type.Class.Known
-import           Type.Class.Witness
-import           Type.Family.List
 import           Unsafe.Coerce
 
 -- | 'ZeroFunc's for every item in a type level list based on their
 -- 'Num' instances
 --
 -- @since 0.2.0.0
-zfNums :: (Every Num as, Known Length as) => Prod ZeroFunc as
-zfNums = map1 (\i -> zfNum \\ every @_ @Num i) indices
+zfNums :: (RecApplicative as, AllConstrained Num as) => Rec ZeroFunc as
+zfNums = rpureConstrained @Num Proxy zfNum
 
 -- | 'zeroFunc' for instances of 'Functor'
 --
@@ -125,15 +121,15 @@ zfFunctor = ZF zeroFunctor
 -- 'Num' instances
 --
 -- @since 0.2.0.0
-afNums :: (Every Num as, Known Length as) => Prod AddFunc as
-afNums = map1 (\i -> afNum \\ every @_ @Num i) indices
+afNums :: (RecApplicative as, AllConstrained Num as) => Rec AddFunc as
+afNums = rpureConstrained @Num Proxy afNum
 
 -- | 'ZeroFunc's for every item in a type level list based on their
 -- 'Num' instances
 --
 -- @since 0.2.0.0
-ofNums :: (Every Num as, Known Length as) => Prod OneFunc as
-ofNums = map1 (\i -> ofNum \\ every @_ @Num i) indices
+ofNums :: (RecApplicative as, AllConstrained Num as) => Rec OneFunc as
+ofNums = rpureConstrained @Num Proxy ofNum
 
 -- | 'OneFunc' for instances of 'Functor'
 --
@@ -146,22 +142,22 @@ ofFunctor = OF oneFunctor
 -- type has an instance of 'Backprop'.
 --
 -- @since 0.2.0.0
-zeroFuncs :: (Every Backprop as, Known Length as) => Prod ZeroFunc as
-zeroFuncs = map1 (\i -> zeroFunc \\ every @_ @Backprop i) indices
+zeroFuncs :: (RecApplicative as, AllConstrained Backprop as) => Rec ZeroFunc as
+zeroFuncs = rpureConstrained @Backprop Proxy zeroFunc
 
 -- | Generate an 'AddFunc' for every type in a type-level list, if every
 -- type has an instance of 'Backprop'.
 --
 -- @since 0.2.0.0
-addFuncs :: (Every Backprop as, Known Length as) => Prod AddFunc as
-addFuncs = map1 (\i -> addFunc \\ every @_ @Backprop i) indices
+addFuncs :: (RecApplicative as, AllConstrained Backprop as) => Rec AddFunc as
+addFuncs = rpureConstrained @Backprop Proxy addFunc
 
 -- | Generate an 'OneFunc' for every type in a type-level list, if every
 -- type has an instance of 'Backprop'.
 --
 -- @since 0.2.0.0
-oneFuncs :: (Every Backprop as, Known Length as) => Prod OneFunc as
-oneFuncs = map1 (\i -> oneFunc \\ every @_ @Backprop i) indices
+oneFuncs :: (RecApplicative as, AllConstrained Backprop as) => Rec OneFunc as
+oneFuncs = rpureConstrained @Backprop Proxy oneFunc
 
 -- | Shorter alias for 'constVar', inspired by the /ad/ library.
 --
@@ -173,11 +169,11 @@ auto = constVar
 -- | 'Numeric.Backprop.backpropN', but with explicit 'zero' and 'one'.
 backpropN
     :: forall as b. ()
-    => Prod ZeroFunc as
+    => Rec ZeroFunc as
     -> OneFunc b
-    -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
-    -> Tuple as
-    -> (b, Tuple as)
+    -> (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
+    -> Rec Identity as
+    -> (b, Rec Identity as)
 backpropN zfs ob f xs = case backpropWithN zfs f xs of
     (y, g) -> (y, g (runOF ob y))
 {-# INLINE backpropN #-}
@@ -189,9 +185,10 @@ backprop
     -> (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> (b, a)
-backprop zfa ofb f = second (getI . head')
-                   . backpropN (zfa :< Ø) ofb (f . head')
-                   . only_
+backprop zfa ofb f = second (\case Identity x :& RNil -> x)
+                   . backpropN (zfa :& RNil) ofb (f . (\case x :& RNil -> x))
+                   . (:& RNil)
+                   . Identity
 {-# INLINE backprop #-}
 
 -- | 'Numeric.Backprop.backpropWith', but with explicit 'zero'.
@@ -202,15 +199,16 @@ backpropWith
     -> (forall s. Reifies s W => BVar s a -> BVar s b)
     -> a
     -> (b, b -> a)
-backpropWith zfa f = second ((getI . head') .)
-                   . backpropWithN (zfa :< Ø) (f . head')
-                   . only_
+backpropWith zfa f = second ((\case Identity x :& RNil -> x) .)
+                   . backpropWithN (zfa :& RNil) (f . (\case x :& RNil -> x))
+                   . (:& RNil)
+                   . Identity
 {-# INLINE backpropWith #-}
 
 -- | 'evalBP' but with no arguments.  Useful when everything is just given
 -- through 'constVar'.
 evalBP0 :: (forall s. Reifies s W => BVar s a) -> a
-evalBP0 x = evalBPN (const x) Ø
+evalBP0 x = evalBPN (const x) RNil
 {-# INLINE evalBP0 #-}
 
 -- | Turn a function @'BVar' s a -> 'BVar' s b@ into the function @a -> b@
@@ -222,7 +220,7 @@ evalBP0 x = evalBPN (const x) Ø
 --
 -- See documentation of 'Numeric.Backprop.backprop' for more information.
 evalBP :: (forall s. Reifies s W => BVar s a -> BVar s b) -> a -> b
-evalBP f = evalBPN (f . head') . only_
+evalBP f = evalBPN (f . (\case x :& RNil -> x)) . (:& RNil)  . Identity
 {-# INLINE evalBP #-}
 
 -- | 'Numeric.Backprop.gradBP', but with explicit 'zero' and 'one'.
@@ -237,11 +235,11 @@ gradBP zfa ofb f = snd . backprop zfa ofb f
 
 -- | 'Numeric.Backprop.gradBP', Nbut with explicit 'zero' and 'one'.
 gradBPN
-    :: Prod ZeroFunc as
+    :: Rec ZeroFunc as
     -> OneFunc b
-    -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
-    -> Tuple as
-    -> Tuple as
+    -> (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
+    -> Rec Identity as
+    -> Rec Identity as
 gradBPN zfas ofb f = snd . backpropN zfas ofb f
 {-# INLINE gradBPN #-}
 
@@ -254,10 +252,10 @@ backprop2
     -> a
     -> b
     -> (c, (a, b))
-backprop2 zfa zfb ofc f x y = second (\(dx ::< dy ::< Ø) -> (dx, dy)) $
-    backpropN (zfa :< zfb :< Ø) ofc
-        (\(x' :< y' :< Ø) -> f x' y')
-        (x ::< y ::< Ø)
+backprop2 zfa zfb ofc f x y = second (\(Identity dx :& Identity dy :& RNil) -> (dx, dy)) $
+    backpropN (zfa :& zfb :& RNil) ofc
+        (\(x' :& y' :& RNil) -> f x' y')
+        (Identity x :& Identity y :& RNil)
 {-# INLINE backprop2 #-}
 
 -- | 'Numeric.Backprop.backpropWith2', but with explicit 'zero'.
@@ -272,10 +270,10 @@ backpropWith2
     -> a
     -> b
     -> (c, c -> (a, b))
-backpropWith2 zfa zfb f x y = second ((\(dx ::< dy ::< Ø) -> (dx, dy)) .) $
-    backpropWithN (zfa :< zfb :< Ø)
-        (\(x' :< y' :< Ø) -> f x' y')
-        (x ::< y ::< Ø)
+backpropWith2 zfa zfb f x y = second ((\(Identity dx :& Identity dy :& RNil) -> (dx, dy)) .) $
+    backpropWithN (zfa :& zfb :& RNil)
+        (\(x' :& y' :& RNil) -> f x' y')
+        (Identity x :& Identity y :& RNil)
 {-# INLINE backpropWith2 #-}
 
 -- | 'evalBP' for a two-argument function.  See
@@ -285,7 +283,9 @@ evalBP2
     -> a
     -> b
     -> c
-evalBP2 f x y = evalBPN (\(x' :< y' :< Ø) -> f x' y') (x ::< y ::< Ø)
+evalBP2 f x y = evalBPN (\(x' :& y' :& RNil) -> f x' y') $ Identity x
+                                                        :& Identity y
+                                                        :& RNil
 {-# INLINE evalBP2 #-}
 
 -- | 'Numeric.Backprop.gradBP2' with explicit 'zero' and 'one'.
@@ -302,8 +302,8 @@ gradBP2 zfa zfb ofc f x = snd . backprop2 zfa zfb ofc f x
 
 -- | 'Numeric.Backprop.bpOp' with explicit 'zero'.
 bpOp
-    :: Prod ZeroFunc as
-    -> (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
+    :: Rec ZeroFunc as
+    -> (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
     -> Op as b
 bpOp zfs f = Op (backpropWithN zfs f)
 {-# INLINE bpOp #-}
@@ -366,10 +366,10 @@ isoVar3 afa afb afc f g = liftOp3 afa afb afc (opIso3 f g)
 -- | 'Numeric.Backprop.isoVarN' with explicit 'add' and 'zero'.
 isoVarN
     :: Reifies s W
-    => Prod AddFunc as
-    -> (Tuple as -> b)
-    -> (b -> Tuple as)
-    -> Prod (BVar s) as
+    => Rec AddFunc as
+    -> (Rec Identity as -> b)
+    -> (b -> Rec Identity as)
+    -> Rec (BVar s) as
     -> BVar s b
 isoVarN afs f g = liftOp afs (opIsoN f g)
 {-# INLINE isoVarN #-}
@@ -387,10 +387,10 @@ isoVarN afs f g = liftOp afs (opIsoN f g)
 class BVGroup s as i o | o -> i, i -> as where
     -- | Helper method for generically "splitting" 'BVar's out of
     -- constructors inside a 'BVar'.  See 'splitBV'.
-    gsplitBV :: Prod AddFunc as -> Prod ZeroFunc as -> BVar s (i ()) -> o ()
+    gsplitBV :: Rec AddFunc as -> Rec ZeroFunc as -> BVar s (i ()) -> o ()
     -- | Helper method for generically "joining" 'BVar's inside
     -- a constructor into a 'BVar'.  See 'joinBV'.
-    gjoinBV  :: Prod AddFunc as -> Prod ZeroFunc as -> o () -> BVar s (i ())
+    gjoinBV  :: Rec AddFunc as -> Rec ZeroFunc as -> o () -> BVar s (i ())
 
 instance BVGroup s '[] (K1 i a) (K1 i (BVar s a)) where
     gsplitBV _ _ = K1 . coerceVar
@@ -421,23 +421,23 @@ instance ( Reifies s W
          , BVGroup s as i1 o1
          , BVGroup s bs i2 o2
          , cs ~ (as ++ bs)
-         , Known Length as
+         , RecApplicative as
          ) => BVGroup s (i1 () ': i2 () ': cs) (i1 :*: i2) (o1 :*: o2) where
-    gsplitBV (afa :< afb :< afs) (zfa :< zfb :< zfs) xy = x :*: y
+    gsplitBV (afa :& afb :& afs) (zfa :& zfb :& zfs) xy = x :*: y
       where
-        (afas, afbs) = splitProd known afs
-        (zfas, zfbs) = splitProd known zfs
+        (afas, afbs) = splitRec afs
+        (zfas, zfbs) = splitRec zfs
         zfab = ZF $ \(xx :*: yy) -> runZF zfa xx :*: runZF zfb yy
         x = gsplitBV afas zfas . viewVar afa zfab p1 $ xy
         y = gsplitBV afbs zfbs . viewVar afb zfab p2 $ xy
     {-# INLINE gsplitBV #-}
-    gjoinBV (afa :< afb :< afs) (_ :< _ :< zfs) (x :*: y)
+    gjoinBV (afa :& afb :& afs) (_ :& _ :& zfs) (x :*: y)
         = isoVar2 afa afb (:*:) unP
             (gjoinBV afas zfas x)
             (gjoinBV afbs zfbs y)
       where
-        (afas, afbs) = splitProd known afs
-        (zfas, zfbs) = splitProd known zfs
+        (afas, afbs) = splitRec afs
+        (zfas, zfbs) = splitRec zfs
         unP (xx :*: yy) = (xx, yy)
     {-# INLINE gjoinBV #-}
 
@@ -446,9 +446,9 @@ instance ( Reifies s W
          , BVGroup s as i1 o1
          , BVGroup s bs i2 o2
          , cs ~ (as ++ bs)
-         , Known Length as
+         , RecApplicative as
          ) => BVGroup s (i1 () ': i2 () ': cs) (i1 :+: i2) (o1 :+: o2) where
-    gsplitBV (afa :< afb :< afs) (zfa :< zfb :< zfs) xy =
+    gsplitBV (afa :& afb :& afs) (zfa :& zfb :& zfs) xy =
         case previewVar afa zf s1 xy of
           Just x -> L1 $ gsplitBV afas zfas x
           Nothing -> case previewVar afb zf s2 xy of
@@ -458,17 +458,17 @@ instance ( Reifies s W
         zf = ZF $ \case
             L1 xx -> L1 $ runZF zfa xx
             R1 yy -> R1 $ runZF zfb yy
-        (afas, afbs) = splitProd known afs
-        (zfas, zfbs) = splitProd known zfs
+        (afas, afbs) = splitRec afs
+        (zfas, zfbs) = splitRec zfs
     {-# INLINE gsplitBV #-}
-    gjoinBV (afa :< afb :< afs) (zfa :< zfb :< zfs) = \case
+    gjoinBV (afa :& afb :& afs) (zfa :& zfb :& zfs) = \case
         L1 x -> liftOp1 afa (op1 (\xx -> (L1 xx, \case L1 d -> d; R1 _ -> runZF zfa xx)))
                     (gjoinBV afas zfas x)
         R1 y -> liftOp1 afb (op1 (\yy -> (R1 yy, \case L1 _ -> runZF zfb yy; R1 d -> d)))
                     (gjoinBV afbs zfbs y)
       where
-        (afas, afbs) = splitProd known afs
-        (zfas, zfbs) = splitProd known zfs
+        (afas, afbs) = splitRec afs
+        (zfas, zfbs) = splitRec zfs
     {-# INLINE gjoinBV #-}
 
 -- | 'Numeric.Backprop.splitBV' with explicit 'add' and 'zero'.
@@ -482,9 +482,9 @@ splitBV
        , Reifies s W
        )
     => AddFunc (Rep (z f) ())
-    -> Prod AddFunc as
+    -> Rec AddFunc as
     -> ZeroFunc (z f)
-    -> Prod ZeroFunc as
+    -> Rec ZeroFunc as
     -> BVar s (z f)             -- ^ 'BVar' of value
     -> z (BVar s)               -- ^ 'BVar's of fields
 splitBV af afs zf zfs =
@@ -504,9 +504,9 @@ joinBV
        , Reifies s W
        )
     => AddFunc (z f)
-    -> Prod AddFunc as
+    -> Rec AddFunc as
     -> ZeroFunc (Rep (z f) ())
-    -> Prod ZeroFunc as
+    -> Rec ZeroFunc as
     -> z (BVar s)           -- ^ 'BVar's of fields
     -> BVar s (z f)         -- ^ 'BVar' of combined value
 joinBV af afs zf zfs =

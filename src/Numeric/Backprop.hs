@@ -75,7 +75,7 @@ module Numeric.Backprop (
   , backprop, E.evalBP, gradBP, backpropWith
     -- ** Multiple inputs
   , backprop2, E.evalBP2, gradBP2, backpropWith2
-  , backpropN, E.evalBPN, gradBPN, backpropWithN, Every
+  , backpropN, E.evalBPN, gradBPN, backpropWithN
     -- * Manipulating 'BVar'
   , E.evalBP0
   , E.constVar, E.auto, E.coerceVar
@@ -100,7 +100,6 @@ module Numeric.Backprop (
   , Op(..)
     -- ** Creation
   , op0, opConst, idOp
-  , opConst'
   , bpOp
     -- *** Giving gradients directly
   , op1, op2, op3
@@ -110,23 +109,23 @@ module Numeric.Backprop (
   , noGrad1, noGrad
     -- * Utility
     -- ** Inductive tuples/heterogeneous lists
-  , Prod(..), pattern (:>), only, head'
-  , Tuple, pattern (::<), only_
-  , I(..)
+  -- , Prod(..), pattern (:>), only, head'
+  -- , Tuple, pattern (::<), only_
+  -- , I(..)
     -- ** Misc
   , Reifies
   ) where
 
+import           Data.Functor.Identity
 import           Data.Maybe
 import           Data.Reflection
-import           Data.Type.Index
-import           Data.Type.Length
+import           Data.Vinyl
+import           Data.Vinyl.TypeLevel
 import           GHC.Generics
 import           Lens.Micro
 import           Numeric.Backprop.Class
 import           Numeric.Backprop.Explicit (BVar, W)
 import           Numeric.Backprop.Op
-import           Type.Class.Known
 import qualified Numeric.Backprop.Explicit as E
 
 -- $liftops
@@ -181,26 +180,26 @@ import qualified Numeric.Backprop.Explicit as E
 -- arguments or a giant tuple.  However, this could potentially also be
 -- more performant.
 --
--- A @'Prod' ('BVar' s) '[Double, Float, Double]@, for instance, is a tuple
+-- A @'Rec' ('BVar' s) '[Double, Float, Double]@, for instance, is a tuple
 -- of @'BVar' s 'Double'@, @'BVar' s 'Float'@, and @'BVar' s 'Double'@, and
 -- can be pattern matched on using ':<' (cons) and 'Ø' (nil).
 --
 -- Tuples can be built and pattern matched on using '::<' (cons) and 'Ø'
 -- (nil), as well.
 --
--- The @'Every' 'Backprop' as@ in the constraint says that every value in
+-- The @'AllConstrained' 'Backprop' as@ in the constraint says that every value in
 -- the type-level list @as@ must have a 'Backprop' instance.  This means
 -- you can use, say, @'[Double, Float, Int]@, but not @'[Double, Bool,
 -- String]@.
 --
 -- If you stick to /concerete/, monomorphic usage of this (with specific
--- types, typed into source code, known at compile-time), then @'Every'
+-- types, typed into source code, known at compile-time), then @'AllConstrained'
 -- 'Backprop' as@ should be fulfilled automatically.
 backpropN
-    :: (Every Backprop as, Known Length as, Backprop b)
-    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
-    -> Tuple as
-    -> (b, Tuple as)
+    :: (AllConstrained Backprop as, RecApplicative as, Backprop b)
+    => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
+    -> Rec Identity as
+    -> (b, Rec Identity as)
 backpropN = E.backpropN E.zeroFuncs E.oneFunc
 {-# INLINE backpropN #-}
 
@@ -212,10 +211,10 @@ backpropN = E.backpropN E.zeroFuncs E.oneFunc
 --
 -- @since 0.2.0.0
 backpropWithN
-    :: (Every Backprop as, Known Length as)
-    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
-    -> Tuple as
-    -> (b, b -> Tuple as)
+    :: (AllConstrained Backprop as, RecApplicative as)
+    => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
+    -> Rec Identity as
+    -> (b, b -> Rec Identity as)
 backpropWithN = E.backpropWithN E.zeroFuncs
 {-# INLINE backpropWithN #-}
 
@@ -284,10 +283,10 @@ gradBP = E.gradBP E.zeroFunc E.oneFunc
 -- | 'gradBP' generalized to multiple inputs of different types.  See
 -- documentation for 'backpropN' for more details.
 gradBPN
-    :: (Every Backprop as, Known Length as, Backprop b)
-    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
-    -> Tuple as
-    -> Tuple as
+    :: (AllConstrained Backprop as, RecApplicative as, Backprop b)
+    => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
+    -> Rec Identity as
+    -> Rec Identity as
 gradBPN = E.gradBPN E.zeroFuncs E.oneFunc
 {-# INLINE gradBPN #-}
 
@@ -343,8 +342,8 @@ gradBP2 = E.gradBP2 E.zeroFunc E.zeroFunc E.oneFunc
 -- 'bpOp' . 'liftOp' = 'id'
 -- @
 bpOp
-    :: (Every Backprop as, Known Length as)
-    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
+    :: (AllConstrained Backprop as, RecApplicative as)
+    => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
     -> Op as b
 bpOp = E.bpOp E.zeroFuncs
 {-# INLINE bpOp #-}
@@ -677,11 +676,11 @@ collectVar = E.collectVar E.addFunc E.zeroFunc
 --
 -- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
 -- information, and "Numeric.Backprop.Op#prod" for a mini-tutorial on using
--- 'Prod' and 'Tuple'.
+-- 'Rec'.
 liftOp
-    :: (Every Backprop as, Known Length as, Reifies s W)
+    :: (AllConstrained Backprop as, RecApplicative as, Reifies s W)
     => Op as b
-    -> Prod (BVar s) as
+    -> Rec (BVar s) as
     -> BVar s b
 liftOp = E.liftOp E.addFuncs
 {-# INLINE liftOp #-}
@@ -798,10 +797,10 @@ isoVar3 = E.isoVar3 E.addFunc E.addFunc E.addFunc
 --
 -- @since 0.1.4.0
 isoVarN
-    :: (Every Backprop as, Known Length as, Reifies s W)
-    => (Tuple as -> b)
-    -> (b -> Tuple as)
-    -> Prod (BVar s) as
+    :: (AllConstrained Backprop as, RecApplicative as, Reifies s W)
+    => (Rec Identity as -> b)
+    -> (b -> Rec Identity as)
+    -> Rec (BVar s) as
     -> BVar s b
 isoVarN = E.isoVarN E.addFuncs
 {-# INLINE isoVarN #-}
@@ -969,8 +968,8 @@ splitBV
        , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
        , Backprop (z f)
        , Backprop (Rep (z f) ())
-       , Every Backprop as
-       , Known Length as
+       , AllConstrained Backprop as
+       , RecApplicative as
        , Reifies s W
        )
     => BVar s (z f)             -- ^ 'BVar' of value
@@ -1004,8 +1003,8 @@ joinBV
        , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
        , Backprop (z f)
        , Backprop (Rep (z f) ())
-       , Every Backprop as
-       , Known Length as
+       , AllConstrained Backprop as
+       , RecApplicative as
        , Reifies s W
        )
     => z (BVar s)           -- ^ 'BVar's of fields
@@ -1023,8 +1022,8 @@ pattern BV
        , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
        , Backprop (Rep (z f) ())
        , Backprop (z f)
-       , Every Backprop as
-       , Known Length as
+       , AllConstrained Backprop as
+       , RecApplicative as
        , Reifies s W
        )
 #if MIN_VERSION_base(4,10,0)

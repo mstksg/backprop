@@ -56,7 +56,7 @@ module Numeric.Backprop.Num (
     -- ** Multiple inputs
   , E.evalBP0
   , backprop2, E.evalBP2, gradBP2, backpropWith2
-  , backpropN, E.evalBPN, gradBPN, backpropWithN, Every
+  , backpropN, E.evalBPN, gradBPN, backpropWithN
     -- * Manipulating 'BVar'
   , E.constVar, E.auto, E.coerceVar
   , (^^.), (.~~), (%~~), (^^?), (^^..), (^^?!)
@@ -72,7 +72,7 @@ module Numeric.Backprop.Num (
   , Op(..)
     -- ** Creation
   , op0, opConst, idOp
-  , opConst', bpOp
+  , bpOp
     -- *** Giving gradients directly
   , op1, op2, op3
     -- *** From Isomorphisms
@@ -81,55 +81,55 @@ module Numeric.Backprop.Num (
   , noGrad1, noGrad
     -- * Utility
     -- ** Inductive tuples/heterogeneous lists
-  , Prod(..), pattern (:>), only, head'
-  , Tuple, pattern (::<), only_
-  , I(..)
+  -- , Prod(..), pattern (:>), only, head'
+  -- , Tuple, pattern (::<), only_
+  -- , I(..)
     -- ** Misc
   , Reifies
   ) where
 
+import           Data.Functor.Identity
 import           Data.Maybe
 import           Data.Reflection
-import           Data.Type.Index
-import           Data.Type.Length
+import           Data.Vinyl
+import           Data.Vinyl.TypeLevel
 import           Lens.Micro
 import           Numeric.Backprop.Explicit (BVar, W)
 import           Numeric.Backprop.Op
-import           Type.Class.Known
 import qualified Numeric.Backprop.Explicit as E
 
 -- | 'Numeric.Backprop.backpropN', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 --
--- The @'Every' 'Num' as@ in the constraint says that every value in the
+-- The @'AllConstrained' 'Num' as@ in the constraint says that every value in the
 -- type-level list @as@ must have a 'Num' instance.  This means you can
 -- use, say, @'[Double, Float, Int]@, but not @'[Double, Bool, String]@.
 --
 -- If you stick to /concerete/, monomorphic usage of this (with specific
--- types, typed into source code, known at compile-time), then @'Every'
+-- types, typed into source code, known at compile-time), then @'AllConstrained'
 -- 'Num' as@ should be fulfilled automatically.
 --
 backpropN
-    :: (Every Num as, Known Length as, Num b)
-    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
-    -> Tuple as
-    -> (b, Tuple as)
+    :: (AllConstrained Num as, RecApplicative as, Num b)
+    => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
+    -> Rec Identity as
+    -> (b, Rec Identity as)
 backpropN = E.backpropN E.zfNums E.ofNum
 {-# INLINE backpropN #-}
 
 -- | 'Numeric.Backprop.backpropWithN', but with 'Num' constraints instead
 -- of 'Backprop' constraints.
 --
--- See 'backpropN' for information on the 'Every' constraint.
+-- See 'backpropN' for information on the 'AllConstrained' constraint.
 --
 -- Note that argument order changed in v0.2.4.
 --
 -- @since 0.2.0.0
 backpropWithN
-    :: (Every Num as, Known Length as)
-    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
-    -> Tuple as
-    -> (b, b -> Tuple as)
+    :: (AllConstrained Num as, RecApplicative as)
+    => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
+    -> Rec Identity as
+    -> (b, b -> Rec Identity as)
 backpropWithN = E.backpropWithN E.zfNums
 {-# INLINE backpropWithN #-}
 
@@ -176,10 +176,10 @@ gradBP = E.gradBP E.zfNum E.ofNum
 -- | 'Numeric.Backprop.gradBPN', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 gradBPN
-    :: (Every Num as, Known Length as, Num b)
-    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
-    -> Tuple as
-    -> Tuple as
+    :: (AllConstrained Num as, RecApplicative as, Num b)
+    => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
+    -> Rec Identity as
+    -> Rec Identity as
 gradBPN = E.gradBPN E.zfNums E.ofNum
 {-# INLINE gradBPN #-}
 
@@ -223,8 +223,8 @@ gradBP2 = E.gradBP2 E.zfNum E.zfNum E.ofNum
 -- | 'Numeric.Backprop.bpOp', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 bpOp
-    :: (Every Num as, Known Length as)
-    => (forall s. Reifies s W => Prod (BVar s) as -> BVar s b)
+    :: (AllConstrained Num as, RecApplicative as)
+    => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
     -> Op as b
 bpOp = E.bpOp E.zfNums
 {-# INLINE bpOp #-}
@@ -403,9 +403,9 @@ collectVar = E.collectVar E.afNum E.zfNum
 -- | 'Numeric.Backprop.liftOp', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 liftOp
-    :: (Every Num as, Known Length as, Reifies s W)
+    :: (AllConstrained Num as, RecApplicative as, Reifies s W)
     => Op as b
-    -> Prod (BVar s) as
+    -> Rec (BVar s) as
     -> BVar s b
 liftOp = E.liftOp E.afNums
 {-# INLINE liftOp #-}
@@ -482,10 +482,10 @@ isoVar3 = E.isoVar3 E.afNum E.afNum E.afNum
 -- | 'Numeric.Backprop.isoVarN', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 isoVarN
-    :: (Every Num as, Known Length as, Reifies s W)
-    => (Tuple as -> b)
-    -> (b -> Tuple as)
-    -> Prod (BVar s) as
+    :: (AllConstrained Num as, RecApplicative as, Reifies s W)
+    => (Rec Identity as -> b)
+    -> (b -> Rec Identity as)
+    -> Rec (BVar s) as
     -> BVar s b
 isoVarN = E.isoVarN E.afNums
 {-# INLINE isoVarN #-}

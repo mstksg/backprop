@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds              #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE LambdaCase             #-}
+{-# LANGUAGE PatternSynonyms        #-}
 {-# LANGUAGE PolyKinds              #-}
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
@@ -14,39 +15,23 @@ module Data.Type.Util (
   , runzipWith
   , rzipWithM_
   , Replicate
-  , Vec(..)
+  , VecT(.., (:+)), Vec
+  , vmap
   , withVec
   , vecToRec
   , fillRec
   , rtraverse_
-  -- , unzipP
-  -- , zipP
-  -- , zipWithPM_
-  -- , zipWithPM3_
-  -- , vecToProd
-  -- , vecLen
-  -- , lengthProd
-  -- , listToVecDef
-  -- , zipVecList
-  -- , splitProd
-  -- , traverse1_
+  , zipVecList
+  , splitRec
   , p1, p2, s1, s2
   ) where
 
--- import           Data.Type.Conjunction hiding ((:*:))
--- import           Data.Type.Length
--- import           Data.Type.Nat
--- import           Data.Type.Product
--- import           Data.Type.Vector
--- import           Type.Class.Higher
--- import           Type.Class.Witness
--- import           Type.Family.List
--- import           Type.Family.Nat
 import           Data.Bifunctor
-import           Data.Foldable
 import           Data.Functor.Identity
 import           Data.Kind
+import           Data.Proxy
 import           Data.Vinyl.Core
+import           Data.Vinyl.TypeLevel
 import           GHC.Generics
 import           Lens.Micro
 
@@ -64,6 +49,7 @@ rzipWith3 f = go
       x :& xs -> \case
         y :& ys -> \case
           z :& zs -> f x y z :& go xs ys zs
+{-# INLINE rzipWith3 #-}
 
 runzipWith
     :: forall f g h. ()
@@ -77,31 +63,48 @@ runzipWith f = go
       x :& xs -> let (y , z ) = f x
                      (ys, zs) = go xs
                  in  (y :& ys, z :& zs)
+{-# INLINE runzipWith #-}
 
-data N = Z | S N
+data VecT :: Nat -> (k -> Type) -> k -> Type where
+    VNil :: VecT 'Z f a
+    (:*) :: !(f a) -> VecT n f a -> VecT ('S n) f a
 
-data Vec :: N -> Type -> Type where
-    VNil :: Vec 'Z a
-    (:+) :: a -> Vec n a -> Vec ('S n) a
+type Vec n = VecT n Identity
+
+pattern (:+) :: a -> Vec n a -> Vec ('S n) a
+pattern x :+ xs = Identity x :* xs
+
+vmap
+    :: forall n f g a. ()
+    => (f a -> g a) -> VecT n f a -> VecT n g a
+vmap f = go
+  where
+    go :: VecT m f a -> VecT m g a
+    go = \case
+      VNil -> VNil
+      x :* xs -> f x :* go xs
+{-# INLINE vmap #-}
 
 withVec
-    :: [a]
-    -> (forall n. Vec n a -> r)
+    :: [f a]
+    -> (forall n. VecT n f a -> r)
     -> r
 withVec = \case
     []   -> ($ VNil)
-    x:xs -> \f -> withVec xs (f . (x :+))
+    x:xs -> \f -> withVec xs (f . (x :*))
+{-# INLINE withVec #-}
 
-type family Replicate (n :: N) (a :: k) = (as :: [k]) | as -> n where
+type family Replicate (n :: Nat) (a :: k) = (as :: [k]) | as -> n where
     Replicate 'Z     a = '[]
     Replicate ('S n) a = a ': Replicate n a
 
 vecToRec
-    :: Vec n a
-    -> Rec Identity (Replicate n a)
+    :: VecT n f a
+    -> Rec f (Replicate n a)
 vecToRec = \case
     VNil    -> RNil
-    x :+ xs -> Identity x :& vecToRec xs
+    x :* xs -> x :& vecToRec xs
+{-# INLINE vecToRec #-}
 
 fillRec
     :: forall f g as c. ()
@@ -117,6 +120,7 @@ fillRec f = go
       x :& xs -> \case
         []   -> Nothing
         y:ys -> (f x y :&) <$> go xs ys
+{-# INLINE fillRec #-}
 
 rtraverse_
     :: forall f g. Applicative g
@@ -128,6 +132,7 @@ rtraverse_ f = go
     go = \case
       RNil    -> pure ()
       x :& xs -> f x *> go xs
+{-# INLINE rtraverse_ #-}
 
 rzipWithM_
     :: forall h f g as. Applicative h
@@ -143,120 +148,36 @@ rzipWithM_ f = go
         RNil -> pure ()
       x :& xs -> \case
         y :& ys -> f x y *> go xs ys
+{-# INLINE rzipWithM_ #-}
 
+zipVecList
+    :: forall a b c f g n. ()
+    => (f a -> Maybe b -> g c)
+    -> VecT n f a
+    -> [b]
+    -> VecT n g c
+zipVecList f = go
+  where
+    go :: VecT m f a -> [b] -> VecT m g c
+    go = \case
+      VNil -> const VNil
+      x :* xs -> \case
+        []   -> f x Nothing  :* go xs []
+        y:ys -> f x (Just y) :* go xs ys
+{-# INLINE zipVecList #-}
 
--- vecLen
---     :: VecT n f a
---     -> Nat n
--- vecLen = \case
---     ØV      -> Z_
---     _ :* xs -> S_ (vecLen xs)
-
--- zipWithPM_
---     :: forall h f g as. Applicative h
---     => (forall a. f a -> g a -> h ())
---     -> Prod f as
---     -> Prod g as
---     -> h ()
--- zipWithPM_ f = go
---   where
---     go :: forall bs. Prod f bs -> Prod g bs -> h ()
---     go = \case
---       Ø -> \case
---         Ø -> pure ()
---       x :< xs -> \case
---         y :< ys -> f x y *> go xs ys
-
--- zipWithPM3_
---     :: forall m f g h as. Applicative m
---     => (forall a. f a -> g a -> h a -> m ())
---     -> Prod f as
---     -> Prod g as
---     -> Prod h as
---     -> m ()
--- zipWithPM3_ f = go
---   where
---     go :: forall bs. Prod f bs -> Prod g bs -> Prod h bs -> m ()
---     go = \case
---       Ø -> \case
---         Ø -> \case
---           Ø -> pure ()
---       x :< xs -> \case
---         y :< ys -> \case
---           z :< zs -> f x y z *> go xs ys zs
-
--- zipP
---     :: Prod f as
---     -> Prod g as
---     -> Prod (f :&: g) as
--- zipP = \case
---     Ø -> \case
---       Ø       -> Ø
---     x :< xs -> \case
---       y :< ys -> x :&: y :< zipP xs ys
--- {-# INLINE zipP #-}
-
--- unzipP
---     :: Prod (f :&: g) as
---     -> (Prod f as, Prod g as)
--- unzipP = \case
---     Ø               -> (Ø, Ø)
---     (x :&: y) :< zs -> bimap (x :<) (y :<) (unzipP zs)
-
--- lengthProd
---     :: (forall a. f a)
---     -> Length as
---     -> Prod f as
--- lengthProd x = \case
---     LZ   -> Ø
---     LS l -> x :< lengthProd x l
-
--- listToVecDef
---     :: forall f a n. ()
---     => f a
---     -> Nat n
---     -> [f a]
---     -> VecT n f a
--- listToVecDef d = go
---   where
---     go :: Nat m -> [f a] -> VecT m f a
---     go = \case
---       Z_   -> const ØV
---       S_ n -> \case
---         []   -> d :* vrep d \\ n
---         x:xs -> x :* go n xs
-
--- zipVecList
---     :: forall a b c f g n. ()
---     => (f a -> Maybe b -> g c)
---     -> VecT n f a
---     -> [b]
---     -> VecT n g c
--- zipVecList f = go
---   where
---     go :: VecT m f a -> [b] -> VecT m g c
---     go = \case
---       ØV -> const ØV
---       x :* xs -> \case
---         []   -> f x Nothing  :* go xs []
---         y:ys -> f x (Just y) :* go xs ys
-
--- traverse1_
---     :: (Foldable1 t, Applicative g)
---     => (forall a. f a -> g ())
---     -> t f as
---     -> g ()
--- traverse1_ f = sequenceA_ . foldMap1 ((:[]) . f)
-
--- splitProd
---     :: Length as
---     -> Prod f (as ++ bs)
---     -> (Prod f as, Prod f bs)
--- splitProd = \case
---     LZ   -> (Ø,)
---     LS l -> \case
---       x :< xs -> first (x :<) $ splitProd l xs
--- {-# INLINE splitProd #-}
+splitRec
+    :: forall f as bs. (RecApplicative as)
+    => Rec f (as ++ bs)
+    -> (Rec f as, Rec f bs)
+splitRec = go (rpure Proxy)
+  where
+    go :: Rec Proxy as' -> Rec f (as' ++ bs) -> (Rec f as', Rec f bs)
+    go = \case
+      RNil -> (RNil,)
+      _ :& ps -> \case
+        x :& xs -> first (x :&) $ go ps xs
+{-# INLINE splitRec #-}
 
 p1 :: Lens' ((f :*: g) a) (f a)
 p1 f (x :*: y) = (:*: y) <$> f x

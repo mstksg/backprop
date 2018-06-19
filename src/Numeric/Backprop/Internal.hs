@@ -45,10 +45,6 @@ module Numeric.Backprop.Internal (
   , debugIR
   ) where
 
--- import           Data.Type.Conjunction hiding ((:*:))
--- import           Data.Type.Product hiding     (toList)
--- import           Data.Type.Vector hiding      (itraverse)
--- import           Type.Class.Higher
 import           Control.DeepSeq
 import           Control.Exception
 import           Control.Monad
@@ -69,7 +65,6 @@ import           Data.Type.Util
 import           Data.Typeable
 import           Data.Vinyl.Core
 import           GHC.Exts                        (Any)
-import           GHC.Generics                    ((:*:)(..))
 import           GHC.Generics                    as G
 import           Lens.Micro
 import           Lens.Micro.Extras
@@ -238,7 +233,7 @@ data TapeNode :: Type -> Type where
        -> TapeNode a
 
 forceTapeNode :: TapeNode a -> ()
-forceTapeNode (TN inps !_) = foldMap1 forceInpRef inps `seq` ()
+forceTapeNode (TN inps !_) = rfoldMap forceInpRef inps `seq` ()
 {-# INLINE forceTapeNode #-}
 
 data SomeTapeNode :: Type where
@@ -248,7 +243,7 @@ data SomeTapeNode :: Type where
 
 -- | Debugging string for a 'SomeTapeMode'.
 debugSTN :: SomeTapeNode -> String
-debugSTN (STN TN{..}) = show . foldMap1 ((:[]) . debugIR) $ _tnInputs
+debugSTN (STN TN{..}) = show . rfoldMap ((:[]) . debugIR) $ _tnInputs
 
 -- | An ephemeral Wengert Tape in the environment.  Used internally to
 -- track of the computational graph of variables.
@@ -286,16 +281,16 @@ liftOp_
     -> Op as b
     -> Rec (BVar s) as
     -> IO (BVar s b)
-liftOp_ afs o !vs = case traverse1 (fmap Identity . bvConst) vs of
+liftOp_ afs o !vs = case rtraverse (fmap Identity . bvConst) vs of
     Just xs -> return $ constVar (evalOp o xs)
     Nothing -> insertNode tn y (reflect (Proxy @s))
   where
-    (y,g) = runOpWith o (map1 (Identity . _bvVal) vs)
-    tn = TN { _tnInputs = map1 go (zipP afs vs)
+    (y,g) = runOpWith o (rmap (Identity . _bvVal) vs)
+    tn = TN { _tnInputs = rzipWith go afs vs
             , _tnGrad   = g
             }
-    go :: forall a. (AddFunc :*: BVar s) a -> InpRef a
-    go (af :*: (!v)) = forceBVar v `seq` IR v (runAF af) id
+    go :: forall a. AddFunc a -> BVar s a -> InpRef a
+    go af !v = forceBVar v `seq` IR v (runAF af) id
     {-# INLINE go #-}
 {-# INLINE liftOp_ #-}
 
@@ -315,11 +310,11 @@ liftOp1_
     -> Op '[a] b
     -> BVar s a
     -> IO (BVar s b)
-liftOp1_ _  o (bvConst->Just x) = return . constVar . evalOp o $ (x ::< RNil)
+liftOp1_ _  o (bvConst->Just x) = return . constVar . evalOp o $ (Identity x :& RNil)
 liftOp1_ af o v = forceBVar v `seq` insertNode tn y (reflect (Proxy @s))
   where
-    (y,g) = runOpWith o (_bvVal v ::< RNil)
-    tn = TN { _tnInputs = IR v (runAF af) id :< RNil
+    (y,g) = runOpWith o (Identity (_bvVal v) :& RNil)
+    tn = TN { _tnInputs = IR v (runAF af) id :& RNil
             , _tnGrad   = g
             }
 {-# INLINE liftOp1_ #-}
@@ -343,13 +338,15 @@ liftOp2_
     -> BVar s b
     -> IO (BVar s c)
 liftOp2_ _ _ o (bvConst->Just x) (bvConst->Just y)
-    = return . constVar . evalOp o $ x ::< y ::< RNil
+    = return . constVar . evalOp o $ Identity x :& Identity y :& RNil
 liftOp2_ afa afb o v u = forceBVar v
                    `seq` forceBVar u
                    `seq` insertNode tn y (reflect (Proxy @s))
   where
-    (y,g) = runOpWith o (_bvVal v ::< _bvVal u ::< RNil)
-    tn = TN { _tnInputs = IR v (runAF afa) id :< IR u (runAF afb) id :< RNil
+    (y,g) = runOpWith o $ Identity (_bvVal v)
+                       :& Identity (_bvVal u)
+                       :& RNil
+    tn = TN { _tnInputs = IR v (runAF afa) id :& IR u (runAF afb) id :& RNil
             , _tnGrad   = g
             }
 {-# INLINE liftOp2_ #-}
@@ -377,17 +374,23 @@ liftOp3_
     -> BVar s c
     -> IO (BVar s d)
 liftOp3_ _ _ _ o (bvConst->Just x) (bvConst->Just y) (bvConst->Just z)
-    = return . constVar . evalOp o $ x ::< y ::< z ::< RNil
+    = return . constVar . evalOp o $ Identity x
+                                  :& Identity y
+                                  :& Identity z
+                                  :& RNil
 liftOp3_ afa afb afc o v u w = forceBVar v
                          `seq` forceBVar u
                          `seq` forceBVar w
                          `seq` insertNode tn y (reflect (Proxy @s))
   where
-    (y, g) = runOpWith o (_bvVal v ::< _bvVal u ::< _bvVal w ::< RNil)
+    (y, g) = runOpWith o $ Identity (_bvVal v)
+                        :& Identity (_bvVal u)
+                        :& Identity (_bvVal w)
+                        :& RNil
     tn = TN { _tnInputs = IR v (runAF afa) id
-                       :< IR u (runAF afb) id
-                       :< IR w (runAF afc) id
-                       :< RNil
+                       :& IR u (runAF afb) id
+                       :& IR w (runAF afc) id
+                       :& RNil
             , _tnGrad   = g
             }
 {-# INLINE liftOp3_ #-}
@@ -419,7 +422,7 @@ viewVar_ af z l v = forceBVar v `seq` insertNode tn y (reflect (Proxy @s))
     x = _bvVal v
     y = x ^. l
     tn = TN { _tnInputs = IR v (over l . runAF af) (\g -> set l g (runZF z x))
-                       :< RNil
+                       :& RNil
             , _tnGrad   = (:& RNil) . Identity
             }
 {-# INLINE viewVar_ #-}
@@ -451,10 +454,10 @@ setVar_ afa afb za l w v = forceBVar v
   where
     y = _bvVal v & l .~ _bvVal w
     tn = TN { _tnInputs = IR w (runAF afa) id
-                       :< IR v (runAF afb) id
-                       :< RNil
+                       :& IR v (runAF afb) id
+                       :& RNil
             , _tnGrad   = \d -> let (dw,dv) = l (\x -> (x, runZF za x)) d
-                                in  dw ::< dv ::< RNil
+                                in  Identity dw :& Identity dv :& RNil
             }
 {-# INLINE setVar_ #-}
 
@@ -489,12 +492,12 @@ collectVar_
     -> ZeroFunc a
     -> t (BVar s a)
     -> IO (BVar s (t a))
-collectVar_ af z !vs = withVec (toList vs) $ \(vVec :: Vec n (BVar s a)) -> do
+collectVar_ af z !vs = withVec (toList vs) $ \(vVec :: VecT n (BVar s) a) -> do
     let tn :: TapeNode (t a)
         tn = TN
-          { _tnInputs = vecToProd (vmap ((\v -> IR v (runAF af) id) . runIdentity) vVec)
-          , _tnGrad   = vecToProd
-                      . zipVecList (\(Identity v) -> Identity . fromMaybe (runZF z (_bvVal v))) vVec
+          { _tnInputs = vecToRec (vmap (\v -> IR v (runAF af) id) vVec)
+          , _tnGrad   = vecToRec
+                      . zipVecList (\v -> Identity . fromMaybe (runZF z (_bvVal v))) vVec
                       . toList
           }
     traverse_ (evaluate . forceBVar) vs
@@ -528,7 +531,7 @@ traverseVar' af z f t v = forceBVar v
       where
         tn = TN { _tnInputs = IR v (over (ixt t i) . runAF af)
                                    (\g -> set (ixt t i) g (runZF z x))
-                           :< RNil
+                           :& RNil
                 , _tnGrad   = (:& RNil) . Identity
                 }
     {-# INLINE go #-}
