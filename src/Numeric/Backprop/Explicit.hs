@@ -81,12 +81,7 @@ module Numeric.Backprop.Explicit (
     -- *** No gradients
   , noGrad1, noGrad
     -- * Utility
-    -- ** Inductive tuples/heterogeneous lists
-  -- , Prod(..), pattern (:>), only, head'
-  -- , Tuple, pattern (::<), only_
-  -- , I(..)
-    -- ** Misc
-  , Reifies
+  , Rec(..), Reifies
   ) where
 
 import           Data.Bifunctor
@@ -108,7 +103,7 @@ import           Unsafe.Coerce
 --
 -- @since 0.2.0.0
 zfNums :: (RecApplicative as, AllConstrained Num as) => Rec ZeroFunc as
-zfNums = rpureConstrained @Num Proxy zfNum
+zfNums = rpureConstrained (Proxy @Num) zfNum
 
 -- | 'zeroFunc' for instances of 'Functor'
 --
@@ -122,14 +117,14 @@ zfFunctor = ZF zeroFunctor
 --
 -- @since 0.2.0.0
 afNums :: (RecApplicative as, AllConstrained Num as) => Rec AddFunc as
-afNums = rpureConstrained @Num Proxy afNum
+afNums = rpureConstrained (Proxy @Num) afNum
 
 -- | 'ZeroFunc's for every item in a type level list based on their
 -- 'Num' instances
 --
 -- @since 0.2.0.0
 ofNums :: (RecApplicative as, AllConstrained Num as) => Rec OneFunc as
-ofNums = rpureConstrained @Num Proxy ofNum
+ofNums = rpureConstrained (Proxy @Num) ofNum
 
 -- | 'OneFunc' for instances of 'Functor'
 --
@@ -143,21 +138,21 @@ ofFunctor = OF oneFunctor
 --
 -- @since 0.2.0.0
 zeroFuncs :: (RecApplicative as, AllConstrained Backprop as) => Rec ZeroFunc as
-zeroFuncs = rpureConstrained @Backprop Proxy zeroFunc
+zeroFuncs = rpureConstrained (Proxy @Backprop) zeroFunc
 
 -- | Generate an 'AddFunc' for every type in a type-level list, if every
 -- type has an instance of 'Backprop'.
 --
 -- @since 0.2.0.0
 addFuncs :: (RecApplicative as, AllConstrained Backprop as) => Rec AddFunc as
-addFuncs = rpureConstrained @Backprop Proxy addFunc
+addFuncs = rpureConstrained (Proxy @Backprop) addFunc
 
 -- | Generate an 'OneFunc' for every type in a type-level list, if every
 -- type has an instance of 'Backprop'.
 --
 -- @since 0.2.0.0
 oneFuncs :: (RecApplicative as, AllConstrained Backprop as) => Rec OneFunc as
-oneFuncs = rpureConstrained @Backprop Proxy oneFunc
+oneFuncs = rpureConstrained (Proxy @Backprop) oneFunc
 
 -- | Shorter alias for 'constVar', inspired by the /ad/ library.
 --

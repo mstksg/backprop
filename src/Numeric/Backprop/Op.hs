@@ -53,7 +53,6 @@ module Numeric.Backprop.Op (
   -- ** Tuple Types#prod#
   -- $prod
   , Rec(..)
-  -- , Tuple, I(..)
   -- * Running
   -- ** Pure
   , runOp, evalOp, gradOp, gradOpWith
@@ -69,8 +68,6 @@ module Numeric.Backprop.Op (
   -- * Manipulation
   , composeOp, composeOp1, (~.)
   -- * Utility
-  -- , pattern (:>), only, head'
-  -- , pattern (::<), only_
   -- ** Numeric Ops#numops#
   -- $numops
   , (+.), (-.), (*.), negateOp, absOp, signumOp
@@ -227,7 +224,7 @@ composeOp os o = Op $ \xs ->
                                         let q = x + y in q `seq` Dict q
                                    )
                          )
-                    (rpureConstrained @Num @(Dict Num) @_ @as Proxy (Dict 0))
+                    (rpureConstrained (Proxy @Num) (Dict @Num 0))
                 . rfoldMap ((:[]) . getConst)
                 $ g2s
     in (z, gFunc)
@@ -426,7 +423,7 @@ opConst
     => a
     -> Op as a
 opConst x = Op $ const
-    (x , const $ rpureConstrained @Num Proxy 0)
+    (x , const $ rpureConstrained (Proxy @Num) 0)
 {-# INLINE opConst #-}
 
 -- | Create an 'Op' that takes no inputs and always returns the given
@@ -752,21 +749,19 @@ atanhOp = op1 $ \x -> (atanh x, (/ (1 - x*x)))
 
 -- $prod
 --
--- 'Rec', from the <http://hackage.haskell.org/package/type-combinators
--- type-combinators> library (in "Data.Type.Product") is a heterogeneous
--- list/tuple type, which allows you to tuple together multiple values of
--- different types and operate on them generically.
+-- 'Rec', from the <http://hackage.haskell.org/package/vinyl vinyl> library
+-- (in "Data.Vinyl.Core") is a heterogeneous list/tuple type, which allows
+-- you to tuple together multiple values of different types and operate on
+-- them generically.
 --
 -- A @'Rec' f '[a, b, c]@ contains an @f a@, an @f b@, and an @f c@, and
 -- is constructed by consing them together with ':&' (using 'RNil' as nil):
 --
 -- @
--- 'I' "hello" ':&' Identity True :& Identity 7.8 :& RNil    :: 'Rec' 'I' '[String, Bool, Double]
--- 'C' "hello" :& C "world" :& C "ok" :& RNil  :: 'Rec' ('C' String) '[a, b, c]
+-- 'Identity' "hello" ':&' Identity True :& Identity 7.8 :& RNil    :: 'Rec' 'I' '[String, Bool, Double]
+-- 'Const' "hello" :& Const "world" :& Const "ok" :& RNil  :: 'Rec' ('C' String) '[a, b, c]
 -- 'Proxy' :& Proxy :& Proxy :& RNil           :: 'Rec' 'Proxy' '[a, b, c]
 -- @
---
--- ('I' is the identity functor, and 'C' is the constant functor)
 --
 -- So, in general:
 --
@@ -777,25 +772,3 @@ atanhOp = op1 $ \x -> (atanh x, (/ (1 - x*x)))
 -- x :& y :& z :& RNil :: Rec f '[a, b, c]
 -- @
 --
--- If you're having problems typing 'RNil', you can use 'only':
---
--- @
--- only z           :: Rec f '[c]
--- x :& y :& only z :: Rec f '[a, b, c]
--- @
---
--- 'Rec Identity' is provided as a convenient type synonym for 'Rec' 'I', and has
--- a convenient pattern synonym ':&' (and 'only_'), which can also be used
--- for pattern matching:
---
--- @
--- x :: a
--- y :: b
--- z :: c
---
--- 'only_' z             :: 'Rec Identity' '[c]
--- x ':&' y :& z :& RNil :: 'Rec Identity' '[a, b, c]
--- x :& y :& only_ z :: 'Rec Identity' '[a, b, c]
--- @
-
-

@@ -48,7 +48,6 @@ The (extra) packages involved are:
 >
 > import           Control.DeepSeq
 > import           Control.Exception
-> import           Control.Lens hiding ((<.>))
 > import           Control.Monad
 > import           Control.Monad.IO.Class
 > import           Control.Monad.Trans.Maybe
@@ -62,6 +61,8 @@ The (extra) packages involved are:
 > import           Data.Tuple
 > import           GHC.Generics                        (Generic)
 > import           GHC.TypeLits
+> import           Lens.Micro
+> import           Lens.Micro.TH
 > import           Numeric.Backprop
 > import           Numeric.Backprop.Class
 > import           Numeric.LinearAlgebra.Static

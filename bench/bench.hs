@@ -16,13 +16,15 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 import           Control.DeepSeq
-import           Control.Lens hiding          ((:<), (<.>))
 import           Criterion.Main
 import           Criterion.Types
 import           Data.Char
+import           Data.Functor.Identity
 import           Data.Time
 import           GHC.Generics                 (Generic)
 import           GHC.TypeLits
+import           Lens.Micro
+import           Lens.Micro.TH
 import           Numeric.Backprop
 import           Numeric.Backprop.Class
 import           Numeric.LinearAlgebra.Static

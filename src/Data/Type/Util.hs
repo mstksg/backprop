@@ -11,8 +11,7 @@
 {-# LANGUAGE TypeOperators          #-}
 
 module Data.Type.Util (
-    rzipWith3
-  , runzipWith
+    runzipWith
   , rzipWithM_
   , Replicate
   , VecT(.., (:+)), Vec
@@ -34,22 +33,6 @@ import           Data.Vinyl.Core
 import           Data.Vinyl.TypeLevel
 import           GHC.Generics
 import           Lens.Micro
-
-rzipWith3
-    :: forall f g h j. ()
-    => (forall x. f x -> g x -> h x -> j x)
-    -> (forall xs. Rec f xs -> Rec g xs -> Rec h xs -> Rec j xs)
-rzipWith3 f = go
-  where
-    go :: forall ys. Rec f ys -> Rec g ys -> Rec h ys -> Rec j ys
-    go = \case
-      RNil -> \case
-        RNil -> \case
-          RNil -> RNil
-      x :& xs -> \case
-        y :& ys -> \case
-          z :& zs -> f x y z :& go xs ys zs
-{-# INLINE rzipWith3 #-}
 
 runzipWith
     :: forall f g h. ()

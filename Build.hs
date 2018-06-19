@@ -75,6 +75,9 @@ main = getDirectoryFilesIO "samples" ["/*.lhs", "/*.hs"] >>= \allSamps ->
       removeFilesAfter "samples" ["/*.o"]
       cmd "stack ghc"
         "--stack-yaml stack.yaml"
+        "--package mnist-idx"
+        "--package singletons"
+        "--package one-liner-instances"
         "--"
         ("samples" </> src)
         "-o" f

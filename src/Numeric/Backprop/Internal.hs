@@ -58,22 +58,22 @@ import           Data.Functor.Identity
 import           Data.IORef
 import           Data.Kind
 import           Data.Maybe
-import           Data.Monoid hiding              (Any(..))
+import           Data.Monoid hiding        (Any(..))
 import           Data.Proxy
 import           Data.Reflection
 import           Data.Type.Util
 import           Data.Typeable
 import           Data.Vinyl.Core
-import           GHC.Exts                        (Any)
-import           GHC.Generics                    as G
+import           GHC.Exts                  (Any)
+import           GHC.Generics              as G
 import           Lens.Micro
 import           Lens.Micro.Extras
 import           Numeric.Backprop.Class
 import           Numeric.Backprop.Op
 import           System.IO.Unsafe
 import           Unsafe.Coerce
-import qualified Data.Vector                     as V
-import qualified Data.Vector.Mutable             as MV
+import qualified Data.Vector               as V
+import qualified Data.Vector.Mutable       as MV
 
 -- | "Zero out" all components of a value.  For scalar values, this should
 -- just be @'const' 0@.  For vectors and matrices, this should set all

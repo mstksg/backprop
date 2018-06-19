@@ -108,12 +108,7 @@ module Numeric.Backprop (
     -- *** No gradients
   , noGrad1, noGrad
     -- * Utility
-    -- ** Inductive tuples/heterogeneous lists
-  -- , Prod(..), pattern (:>), only, head'
-  -- , Tuple, pattern (::<), only_
-  -- , I(..)
-    -- ** Misc
-  , Reifies
+  , Rec(..), Reifies
   ) where
 
 import           Data.Functor.Identity
@@ -184,17 +179,14 @@ import qualified Numeric.Backprop.Explicit as E
 -- of @'BVar' s 'Double'@, @'BVar' s 'Float'@, and @'BVar' s 'Double'@, and
 -- can be pattern matched on using ':<' (cons) and 'Ø' (nil).
 --
--- Tuples can be built and pattern matched on using '::<' (cons) and 'Ø'
--- (nil), as well.
---
--- The @'AllConstrained' 'Backprop' as@ in the constraint says that every value in
--- the type-level list @as@ must have a 'Backprop' instance.  This means
--- you can use, say, @'[Double, Float, Int]@, but not @'[Double, Bool,
--- String]@.
+-- The @'AllConstrained' 'Backprop' as@ in the constraint says that every
+-- value in the type-level list @as@ must have a 'Backprop' instance.  This
+-- means you can use, say, @'[Double, Float, Int]@, but not @'[Double,
+-- Bool, String]@.
 --
 -- If you stick to /concerete/, monomorphic usage of this (with specific
--- types, typed into source code, known at compile-time), then @'AllConstrained'
--- 'Backprop' as@ should be fulfilled automatically.
+-- types, typed into source code, known at compile-time), then
+-- @'AllConstrained' 'Backprop' as@ should be fulfilled automatically.
 backpropN
     :: (AllConstrained Backprop as, RecApplicative as, Backprop b)
     => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)

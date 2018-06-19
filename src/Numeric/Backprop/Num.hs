@@ -33,15 +33,11 @@
 -- If you have external types that are not 'Num' instances, consider
 -- instead "Numeric.Backprop.External".
 --
--- If you need a 'Num' instance for tuples, you can use the canonical 2-
--- and 3-tuples for the library in "Numeric.Backprop.Tuple".  If you need
--- one for larger tuples, consider making a custom product type instead
--- (making Num instances with something like
--- <https://hackage.haskell.org/package/one-liner-instances
--- one-liner-instances>).  You can also use the orphan instances in the
--- <https://hackage.haskell.org/package/NumInstances NumInstances> package
--- (in particular, "Data.NumInstances.Tuple") if you are writing an
--- application and do not have to worry about orphan instances.
+-- If you need a 'Num' instance for tuples, you can use the orphan
+-- instances in the <https://hackage.haskell.org/package/NumInstances
+-- NumInstances> package (in particular, "Data.NumInstances.Tuple") if you
+-- are writing an application and do not have to worry about orphan
+-- instances.
 --
 -- See "Numeric.Backprop" for fuller documentation on using these
 -- functions.
@@ -80,12 +76,7 @@ module Numeric.Backprop.Num (
     -- *** No gradients
   , noGrad1, noGrad
     -- * Utility
-    -- ** Inductive tuples/heterogeneous lists
-  -- , Prod(..), pattern (:>), only, head'
-  -- , Tuple, pattern (::<), only_
-  -- , I(..)
-    -- ** Misc
-  , Reifies
+  , Rec(..), Reifies
   ) where
 
 import           Data.Functor.Identity

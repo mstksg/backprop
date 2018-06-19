@@ -47,23 +47,16 @@ module Numeric.Backprop.Class (
   , GZero, GAdd, GOne
   ) where
 
--- import           Data.Type.Combinator hiding  ((:.:), Comp1)
--- import           Data.Type.Conjunction hiding ((:*:))
--- import           Data.Type.Option
--- import           Data.Type.Product hiding     (toList)
--- import           Type.Family.List
--- import qualified Data.Type.Combinator         as TC
--- import qualified Data.Type.Conjunction        as TC
--- import qualified Type.Family.Maybe            as M
 import           Control.Applicative
 import           Control.DeepSeq
 import           Control.Monad
 import           Data.Coerce
 import           Data.Complex
 import           Data.Data
-import           Data.Foldable hiding            (toList)
+import           Data.Foldable hiding     (toList)
+import           Data.Functor.Compose
 import           Data.Functor.Identity
-import           Data.List.NonEmpty              (NonEmpty(..))
+import           Data.List.NonEmpty       (NonEmpty(..))
 import           Data.Monoid
 import           Data.Ratio
 import           Data.Void
@@ -72,18 +65,17 @@ import           Debug.SimpleReflect.Expr
 import           GHC.Exts
 import           GHC.Generics
 import           Numeric.Natural
-import qualified Control.Arrow                   as Arr
-import qualified Data.Functor.Compose            as DFC
-import qualified Data.Functor.Product            as DFP
-import qualified Data.IntMap                     as IM
-import qualified Data.Map                        as M
-import qualified Data.Semigroup                  as SG
-import qualified Data.Sequence                   as Seq
-import qualified Data.Vector                     as V
-import qualified Data.Vector.Generic             as VG
-import qualified Data.Vector.Primitive           as VP
-import qualified Data.Vector.Storable            as VS
-import qualified Data.Vector.Unboxed             as VU
+import qualified Control.Arrow            as Arr
+import qualified Data.Functor.Product     as DFP
+import qualified Data.IntMap              as IM
+import qualified Data.Map                 as M
+import qualified Data.Semigroup           as SG
+import qualified Data.Sequence            as Seq
+import qualified Data.Vector              as V
+import qualified Data.Vector.Generic      as VG
+import qualified Data.Vector.Primitive    as VP
+import qualified Data.Vector.Storable     as VS
+import qualified Data.Vector.Unboxed      as VU
 
 -- | Class of values that can be backpropagated in general.
 --
@@ -1081,7 +1073,7 @@ instance (Backprop a, Backprop b) => Backprop (SG.Arg a b)
 instance (Backprop (f a), Backprop (g a)) => Backprop (DFP.Product f g a)
 
 -- | @since 0.2.2.0
-instance Backprop (f (g a)) => Backprop (DFC.Compose f g a)
+instance Backprop (f (g a)) => Backprop (Compose f g a)
 
 -- | 'add' adds together results; 'zero' and 'one' act on results.
 --
