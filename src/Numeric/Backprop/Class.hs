@@ -61,7 +61,6 @@ import           Data.Monoid
 import           Data.Ratio
 import           Data.Void
 import           Data.Word
-import           Debug.SimpleReflect.Expr
 import           GHC.Exts
 import           GHC.Generics
 import           Numeric.Natural
@@ -1093,13 +1092,4 @@ instance (Backprop a, Applicative m) => Backprop (Arr.Kleisli m r a) where
     add (Arr.Kleisli f) (Arr.Kleisli g) = Arr.Kleisli $ \x ->
         add <$> f x <*> g x
     one (Arr.Kleisli f) = Arr.Kleisli ((fmap . fmap) one f)
-    {-# INLINE one #-}
-
--- | @since 0.2.4.0
-instance Backprop Expr where
-    zero = zeroNum
-    {-# INLINE zero #-}
-    add  = addNum
-    {-# INLINE add #-}
-    one  = oneNum
     {-# INLINE one #-}

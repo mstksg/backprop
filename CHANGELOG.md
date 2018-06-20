@@ -1,6 +1,17 @@
 Changelog
 =========
 
+Version 0.2.6.0
+---------------
+
+*Unreleased*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.2.6.0>
+
+*   Dropped `Expr` instance of `Backprop`. I don't think anyone was actually
+    using this.  If you need this, please use `Numeric.Backprop.Num` instead!
+*   Should we get rid of the Rec re-export?
+
 Version 0.2.5.0
 ---------------
 
