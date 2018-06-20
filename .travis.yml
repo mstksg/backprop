@@ -49,14 +49,6 @@ matrix:
     compiler: ": #stack default"
     addons: {apt: {packages: [ghc-8.2.2,libblas-dev,liblapack-dev], sources: [hvr-ghc]}}
 
-  - env: BUILD=stack ARGS="--resolver lts-8"
-    compiler: ": #stack 8.0.2"
-    addons: {apt: {packages: [ghc-8.0.2,libblas-dev,liblapack-dev], sources: [hvr-ghc]}}
-
-  - env: BUILD=stack ARGS="--resolver lts-9"
-    compiler: ": #stack 8.0.2"
-    addons: {apt: {packages: [ghc-8.0.2,libblas-dev,liblapack-dev], sources: [hvr-ghc]}}
-
   - env: BUILD=stack ARGS="--resolver lts-10"
     compiler: ": #stack 8.2.2"
     addons: {apt: {packages: [ghc-8.2.2,libblas-dev,liblapack-dev], sources: [hvr-ghc]}}
@@ -73,14 +65,6 @@ matrix:
   # Build on OS X in addition to Linux
   - env: BUILD=stack ARGS=""
     compiler: ": #stack default osx"
-    os: osx
-
-  - env: BUILD=stack ARGS="--resolver lts-8"
-    compiler: ": #stack 8.0.2 osx"
-    os: osx
-
-  - env: BUILD=stack ARGS="--resolver lts-9"
-    compiler: ": #stack 8.0.2 osx"
     os: osx
 
   - env: BUILD=stack ARGS="--resolver lts-10"

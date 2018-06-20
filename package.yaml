@@ -65,7 +65,7 @@ library:
   - reflection
   - simple-reflect
   - transformers
-  - vinyl
+  - vinyl >= 0.6
 
 benchmarks:
   backprop-mnist-bench:
