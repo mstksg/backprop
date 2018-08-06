@@ -81,7 +81,7 @@ module Numeric.Backprop.Explicit (
     -- *** No gradients
   , noGrad1, noGrad
     -- * Utility
-  , Rec(..), Reifies
+  , Reifies
   ) where
 
 import           Data.Bifunctor

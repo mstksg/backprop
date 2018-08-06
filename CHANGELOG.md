@@ -4,13 +4,16 @@ Changelog
 Version 0.2.6.0
 ---------------
 
-*Unreleased*
+*August 6, 2018*
 
 <https://github.com/mstksg/backprop/releases/tag/v0.2.6.0>
 
 *   Dropped `Expr` instance of `Backprop`. I don't think anyone was actually
     using this.  If you need this, please use `Numeric.Backprop.Num` instead!
-*   Should we get rid of the Rec re-export?
+*   Removed *Rec* re-exports.
+*   Compatibility with *vinyl-0.9*, using the *Data.Vinyl.Recursive* interface.
+    This requires some minor reshuffling of constraints but should not affect
+    any monomorphic usage.
 
 Version 0.2.5.0
 ---------------

@@ -76,7 +76,7 @@ module Numeric.Backprop.Num (
     -- *** No gradients
   , noGrad1, noGrad
     -- * Utility
-  , Rec(..), Reifies
+  , Reifies
   ) where
 
 import           Data.Functor.Identity
