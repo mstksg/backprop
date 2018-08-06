@@ -87,6 +87,7 @@ import           Data.Vinyl.Core
 import           Data.Vinyl.TypeLevel
 import           Lens.Micro
 import           Lens.Micro.Extras
+import qualified Data.Vinyl.Recursive  as VR
 
 -- $opdoc
 -- 'Op's contain information on a function as well as its gradient, but
@@ -216,15 +217,15 @@ composeOp os o = Op $ \xs ->
         gFunc g0 =
           let g1 = gFz g0
               g2s :: Rec (Const (Rec Identity as)) bs
-              g2s = rzipWith' (\oc (Identity g) -> Const $ runOpCont oc g)
+              g2s = VR.rzipWith (\oc (Identity g) -> Const $ runOpCont oc g)
                         conts g1
-          in  rmap' (\(Dict x) -> Identity x)
-                . foldl' (rzipWith' (\(Dict !x) (Identity y) ->
+          in  VR.rmap (\(Dict x) -> Identity x)
+                . foldl' (VR.rzipWith (\(Dict !x) (Identity y) ->
                                          let q = x + y in q `seq` Dict q
                                     )
                          )
                     (rpureConstrained @Num (Dict @Num 0))
-                . rfoldMap' ((:[]) . getConst)
+                . VR.rfoldMap ((:[]) . getConst)
                 $ g2s
     in (z, gFunc)
 
