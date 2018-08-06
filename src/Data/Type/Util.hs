@@ -194,7 +194,7 @@ rfoldMap' f = go
     go :: Rec f qs -> m
     go = \case
       RNil    -> mempty
-      x :& xs -> f x <> go xs
+      x :& xs -> f x `mappend` go xs
 
 rmap'
     :: forall f g rs. ()
