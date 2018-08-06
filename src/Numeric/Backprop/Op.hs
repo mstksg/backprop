@@ -82,7 +82,6 @@ import           Data.Bifunctor
 import           Data.Coerce
 import           Data.Functor.Identity
 import           Data.List
-import           Data.Proxy
 import           Data.Type.Util
 import           Data.Vinyl.Core
 import           Data.Vinyl.TypeLevel
@@ -205,7 +204,7 @@ newtype OpCont as a = OC { runOpCont :: a -> Rec Identity as }
 -- can compose them with an @'Op' '[b1,b2,b3] c@ to create an @'Op' as
 -- c@.
 composeOp
-    :: forall as bs c. (AllConstrained Num as, RecApplicative as)
+    :: forall as bs c. (RPureConstrained Num as)
     => Rec (Op as) bs   -- ^ 'Rec' of 'Op's taking @as@ and returning
                          --     different @b@ in @bs@
     -> Op bs c           -- ^ 'OpM' taking eac of the @bs@ from the
@@ -217,15 +216,15 @@ composeOp os o = Op $ \xs ->
         gFunc g0 =
           let g1 = gFz g0
               g2s :: Rec (Const (Rec Identity as)) bs
-              g2s = rzipWith (\oc (Identity g) -> Const $ runOpCont oc g)
+              g2s = rzipWith' (\oc (Identity g) -> Const $ runOpCont oc g)
                         conts g1
-          in  rmap (\(Dict x) -> Identity x)
-                . foldl' (rzipWith (\(Dict !x) (Identity y) ->
-                                        let q = x + y in q `seq` Dict q
-                                   )
+          in  rmap' (\(Dict x) -> Identity x)
+                . foldl' (rzipWith' (\(Dict !x) (Identity y) ->
+                                         let q = x + y in q `seq` Dict q
+                                    )
                          )
-                    (rpureConstrained (Proxy @Num) (Dict @Num 0))
-                . rfoldMap ((:[]) . getConst)
+                    (rpureConstrained @Num (Dict @Num 0))
+                . rfoldMap' ((:[]) . getConst)
                 $ g2s
     in (z, gFunc)
 
@@ -233,7 +232,7 @@ composeOp os o = Op $ \xs ->
 -- function only takes one input, so the two 'Op's can be directly piped
 -- together, like for '.'.
 composeOp1
-    :: (AllConstrained Num as, RecApplicative as)
+    :: RPureConstrained Num as
     => Op as b
     -> Op '[b] c
     -> Op as c
@@ -250,7 +249,7 @@ composeOp1 = composeOp . (:& RNil)
 -- @
 infixr 9 ~.
 (~.)
-    :: (AllConstrained Num as, RecApplicative as)
+    :: (RPureConstrained Num as)
     => Op '[b] c
     -> Op as b
     -> Op as c
@@ -419,11 +418,11 @@ opLens l = op1 $ \x -> (view l x, \d -> set l d 0)
 -- >>> gradOp' (opConst 10) (1 :& 2 :& 3 :& RNil)
 -- (10, 0 :& 0 :& 0 :& RNil)
 opConst
-    :: forall as a. (AllConstrained Num as, RecApplicative as)
+    :: forall as a. RPureConstrained Num as
     => a
     -> Op as a
 opConst x = Op $ const
-    (x , const $ rpureConstrained (Proxy @Num) 0)
+    (x , const $ rpureConstrained @Num 0)
 {-# INLINE opConst #-}
 
 -- | Create an 'Op' that takes no inputs and always returns the given
@@ -543,7 +542,7 @@ op3 f = Op $ \case
       in  (q, (\(!dx, !dy, !dz) -> Identity dx :& Identity dy :& Identity dz :& RNil) . dxdydz)
 {-# INLINE op3 #-}
 
-instance (RecApplicative as, AllConstrained Num as, Num a) => Num (Op as a) where
+instance (RPureConstrained Num as, Num a) => Num (Op as a) where
     o1 + o2       = composeOp (o1 :& o2 :& RNil) (+.)
     {-# INLINE (+) #-}
     o1 - o2       = composeOp (o1 :& o2 :& RNil) (-.)
@@ -559,14 +558,14 @@ instance (RecApplicative as, AllConstrained Num as, Num a) => Num (Op as a) wher
     fromInteger x = opConst (fromInteger x)
     {-# INLINE fromInteger #-}
 
-instance (RecApplicative as, AllConstrained Num as, Fractional a) => Fractional (Op as a) where
+instance (RPureConstrained Num as, Fractional a) => Fractional (Op as a) where
     o1 / o2        = composeOp (o1 :& o2 :& RNil) (/.)
     recip o        = composeOp (o  :& RNil)       recipOp
     {-# INLINE recip #-}
     fromRational x = opConst (fromRational x)
     {-# INLINE fromRational #-}
 
-instance (RecApplicative as, AllConstrained Floating as, AllConstrained Fractional as, AllConstrained Num as, Floating a) => Floating (Op as a) where
+instance (RecApplicative as, AllConstrained Floating as, AllConstrained Fractional as, AllConstrained Num as, RPureConstrained Num as, Floating a) => Floating (Op as a) where
     pi            = opConst pi
     {-# INLINE pi #-}
     exp   o       = composeOp (o  :& RNil)       expOp

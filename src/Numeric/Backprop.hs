@@ -115,7 +115,6 @@ import           Data.Functor.Identity
 import           Data.Maybe
 import           Data.Reflection
 import           Data.Vinyl
-import           Data.Vinyl.TypeLevel
 import           GHC.Generics
 import           Lens.Micro
 import           Numeric.Backprop.Class
@@ -179,16 +178,16 @@ import qualified Numeric.Backprop.Explicit as E
 -- of @'BVar' s 'Double'@, @'BVar' s 'Float'@, and @'BVar' s 'Double'@, and
 -- can be pattern matched on using ':<' (cons) and 'Ø' (nil).
 --
--- The @'AllConstrained' 'Backprop' as@ in the constraint says that every
+-- The @'RPureConstrained' 'Backprop' as@ in the constraint says that every
 -- value in the type-level list @as@ must have a 'Backprop' instance.  This
 -- means you can use, say, @'[Double, Float, Int]@, but not @'[Double,
 -- Bool, String]@.
 --
 -- If you stick to /concerete/, monomorphic usage of this (with specific
 -- types, typed into source code, known at compile-time), then
--- @'AllConstrained' 'Backprop' as@ should be fulfilled automatically.
+-- @'RPureConstrained' 'Backprop' as@ should be fulfilled automatically.
 backpropN
-    :: (AllConstrained Backprop as, RecApplicative as, Backprop b)
+    :: (RPureConstrained Backprop as, Backprop b)
     => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
     -> Rec Identity as
     -> (b, Rec Identity as)
@@ -203,7 +202,7 @@ backpropN = E.backpropN E.zeroFuncs E.oneFunc
 --
 -- @since 0.2.0.0
 backpropWithN
-    :: (AllConstrained Backprop as, RecApplicative as)
+    :: RPureConstrained Backprop as
     => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
     -> Rec Identity as
     -> (b, b -> Rec Identity as)
@@ -275,7 +274,7 @@ gradBP = E.gradBP E.zeroFunc E.oneFunc
 -- | 'gradBP' generalized to multiple inputs of different types.  See
 -- documentation for 'backpropN' for more details.
 gradBPN
-    :: (AllConstrained Backprop as, RecApplicative as, Backprop b)
+    :: (RPureConstrained Backprop as, Backprop b)
     => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
     -> Rec Identity as
     -> Rec Identity as
@@ -334,7 +333,7 @@ gradBP2 = E.gradBP2 E.zeroFunc E.zeroFunc E.oneFunc
 -- 'bpOp' . 'liftOp' = 'id'
 -- @
 bpOp
-    :: (AllConstrained Backprop as, RecApplicative as)
+    :: RPureConstrained Backprop as
     => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
     -> Op as b
 bpOp = E.bpOp E.zeroFuncs
@@ -670,7 +669,7 @@ collectVar = E.collectVar E.addFunc E.zeroFunc
 -- information, and "Numeric.Backprop.Op#prod" for a mini-tutorial on using
 -- 'Rec'.
 liftOp
-    :: (AllConstrained Backprop as, RecApplicative as, Reifies s W)
+    :: (RPureConstrained Backprop as, Reifies s W)
     => Op as b
     -> Rec (BVar s) as
     -> BVar s b
@@ -789,7 +788,7 @@ isoVar3 = E.isoVar3 E.addFunc E.addFunc E.addFunc
 --
 -- @since 0.1.4.0
 isoVarN
-    :: (AllConstrained Backprop as, RecApplicative as, Reifies s W)
+    :: (RPureConstrained Backprop as, Reifies s W)
     => (Rec Identity as -> b)
     -> (b -> Rec Identity as)
     -> Rec (BVar s) as
@@ -960,8 +959,7 @@ splitBV
        , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
        , Backprop (z f)
        , Backprop (Rep (z f) ())
-       , AllConstrained Backprop as
-       , RecApplicative as
+       , RPureConstrained Backprop as
        , Reifies s W
        )
     => BVar s (z f)             -- ^ 'BVar' of value
@@ -995,8 +993,7 @@ joinBV
        , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
        , Backprop (z f)
        , Backprop (Rep (z f) ())
-       , AllConstrained Backprop as
-       , RecApplicative as
+       , RPureConstrained Backprop as
        , Reifies s W
        )
     => z (BVar s)           -- ^ 'BVar's of fields
@@ -1014,7 +1011,7 @@ pattern BV
        , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
        , Backprop (Rep (z f) ())
        , Backprop (z f)
-       , AllConstrained Backprop as
+       , RPureConstrained Backprop as
        , RecApplicative as
        , Reifies s W
        )

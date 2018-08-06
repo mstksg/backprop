@@ -233,7 +233,7 @@ data TapeNode :: Type -> Type where
        -> TapeNode a
 
 forceTapeNode :: TapeNode a -> ()
-forceTapeNode (TN inps !_) = rfoldMap forceInpRef inps `seq` ()
+forceTapeNode (TN inps !_) = rfoldMap' forceInpRef inps `seq` ()
 {-# INLINE forceTapeNode #-}
 
 data SomeTapeNode :: Type where
@@ -243,7 +243,7 @@ data SomeTapeNode :: Type where
 
 -- | Debugging string for a 'SomeTapeMode'.
 debugSTN :: SomeTapeNode -> String
-debugSTN (STN TN{..}) = show . rfoldMap ((:[]) . debugIR) $ _tnInputs
+debugSTN (STN TN{..}) = show . rfoldMap' ((:[]) . debugIR) $ _tnInputs
 
 -- | An ephemeral Wengert Tape in the environment.  Used internally to
 -- track of the computational graph of variables.
@@ -285,8 +285,8 @@ liftOp_ afs o !vs = case rtraverse (fmap Identity . bvConst) vs of
     Just xs -> return $ constVar (evalOp o xs)
     Nothing -> insertNode tn y (reflect (Proxy @s))
   where
-    (y,g) = runOpWith o (rmap (Identity . _bvVal) vs)
-    tn = TN { _tnInputs = rzipWith go afs vs
+    (y,g) = runOpWith o (rmap' (Identity . _bvVal) vs)
+    tn = TN { _tnInputs = rzipWith' go afs vs
             , _tnGrad   = g
             }
     go :: forall a. AddFunc a -> BVar s a -> InpRef a
@@ -650,7 +650,7 @@ backpropWithN zfs f !xs = (y, g)
         delts <- toList <$> V.freeze (_rInputs r)
         return . fromMaybe (internalError "backpropN") $
           fillRec (\z -> maybe z (Identity . unsafeCoerce))
-            (rzipWith (fmap . runZF) zfs xs)
+            (rzipWith' (fmap . runZF) zfs xs)
             delts
       where
         go :: forall a. Identity a -> ((Sum Int, Endo [Maybe Any]),())

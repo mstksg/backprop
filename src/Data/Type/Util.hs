@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE PatternSynonyms        #-}
@@ -23,6 +24,9 @@ module Data.Type.Util (
   , zipVecList
   , splitRec
   , p1, p2, s1, s2
+  , rfoldMap'
+  , rmap'
+  , rzipWith'
   ) where
 
 import           Data.Bifunctor
@@ -150,7 +154,7 @@ zipVecList f = go
 {-# INLINE zipVecList #-}
 
 splitRec
-    :: forall f as bs. (RecApplicative as)
+    :: forall f as bs. RecApplicative as
     => Rec f (as ++ bs)
     -> (Rec f as, Rec f bs)
 splitRec = go (rpure Proxy)
@@ -179,3 +183,42 @@ s2 :: Traversal' ((f :+: g) a) (g a)
 s2 _ (L1 x) = pure (L1 x)
 s2 f (R1 y) = R1 <$> f y
 {-# INLINE s2 #-}
+
+rfoldMap'
+    :: forall f rs m. Monoid m
+    => (forall x. f x -> m)
+    -> Rec f rs
+    -> m
+rfoldMap' f = go
+  where
+    go :: Rec f qs -> m
+    go = \case
+      RNil    -> mempty
+      x :& xs -> f x <> go xs
+
+rmap'
+    :: forall f g rs. ()
+    => (forall x. f x -> g x)
+    -> Rec f rs
+    -> Rec g rs
+rmap' f = go
+  where
+    go :: Rec f qs -> Rec g qs
+    go = \case
+      RNil    -> RNil
+      x :& xs -> f x :& go xs
+
+rzipWith'
+    :: forall f g h rs. ()
+    => (forall x. f x -> g x -> h x)
+    -> Rec f rs
+    -> Rec g rs
+    -> Rec h rs
+rzipWith' f = go
+  where
+    go :: Rec f qs -> Rec g qs -> Rec h qs
+    go = \case
+      RNil -> \case
+        RNil -> RNil
+      x :& xs -> \case
+        y :& ys -> f x y :& go xs ys

@@ -38,7 +38,8 @@ ghc-options:
 - -Wcompat
 - -Wincomplete-record-updates
 - -Wredundant-constraints
-# - -fprint-explicit-kinds
+# - -Werror
+
 dependencies:
 - base >=4.7 && <5
 - deepseq
@@ -64,7 +65,7 @@ library:
   - primitive
   - reflection
   - transformers
-  - vinyl >= 0.6
+  - vinyl >= 0.9
 
 benchmarks:
   backprop-mnist-bench:

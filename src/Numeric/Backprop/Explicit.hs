@@ -54,7 +54,7 @@ module Numeric.Backprop.Explicit (
     -- ** Multiple inputs
   , evalBP0
   , backprop2, evalBP2, gradBP2, backpropWith2
-  , backpropN, evalBPN, gradBPN, backpropWithN, RecApplicative, AllConstrained
+  , backpropN, evalBPN, gradBPN, backpropWithN, RPureConstrained
     -- * Manipulating 'BVar'
   , constVar, auto, coerceVar
   , viewVar, setVar, overVar
@@ -86,7 +86,6 @@ module Numeric.Backprop.Explicit (
 
 import           Data.Bifunctor
 import           Data.Functor.Identity
-import           Data.Proxy
 import           Data.Reflection
 import           Data.Type.Util
 import           Data.Vinyl.Core
@@ -102,8 +101,8 @@ import           Unsafe.Coerce
 -- 'Num' instances
 --
 -- @since 0.2.0.0
-zfNums :: (RecApplicative as, AllConstrained Num as) => Rec ZeroFunc as
-zfNums = rpureConstrained (Proxy @Num) zfNum
+zfNums :: RPureConstrained Num as => Rec ZeroFunc as
+zfNums = rpureConstrained @Num zfNum
 
 -- | 'zeroFunc' for instances of 'Functor'
 --
@@ -116,15 +115,15 @@ zfFunctor = ZF zeroFunctor
 -- 'Num' instances
 --
 -- @since 0.2.0.0
-afNums :: (RecApplicative as, AllConstrained Num as) => Rec AddFunc as
-afNums = rpureConstrained (Proxy @Num) afNum
+afNums :: RPureConstrained Num as => Rec AddFunc as
+afNums = rpureConstrained @Num afNum
 
 -- | 'ZeroFunc's for every item in a type level list based on their
 -- 'Num' instances
 --
 -- @since 0.2.0.0
-ofNums :: (RecApplicative as, AllConstrained Num as) => Rec OneFunc as
-ofNums = rpureConstrained (Proxy @Num) ofNum
+ofNums :: RPureConstrained Num as => Rec OneFunc as
+ofNums = rpureConstrained @Num ofNum
 
 -- | 'OneFunc' for instances of 'Functor'
 --
@@ -137,22 +136,22 @@ ofFunctor = OF oneFunctor
 -- type has an instance of 'Backprop'.
 --
 -- @since 0.2.0.0
-zeroFuncs :: (RecApplicative as, AllConstrained Backprop as) => Rec ZeroFunc as
-zeroFuncs = rpureConstrained (Proxy @Backprop) zeroFunc
+zeroFuncs :: RPureConstrained Backprop as => Rec ZeroFunc as
+zeroFuncs = rpureConstrained @Backprop zeroFunc
 
 -- | Generate an 'AddFunc' for every type in a type-level list, if every
 -- type has an instance of 'Backprop'.
 --
 -- @since 0.2.0.0
-addFuncs :: (RecApplicative as, AllConstrained Backprop as) => Rec AddFunc as
-addFuncs = rpureConstrained (Proxy @Backprop) addFunc
+addFuncs :: RPureConstrained Backprop as => Rec AddFunc as
+addFuncs = rpureConstrained @Backprop addFunc
 
 -- | Generate an 'OneFunc' for every type in a type-level list, if every
 -- type has an instance of 'Backprop'.
 --
 -- @since 0.2.0.0
-oneFuncs :: (RecApplicative as, AllConstrained Backprop as) => Rec OneFunc as
-oneFuncs = rpureConstrained (Proxy @Backprop) oneFunc
+oneFuncs :: RPureConstrained Backprop as => Rec OneFunc as
+oneFuncs = rpureConstrained @Backprop oneFunc
 
 -- | Shorter alias for 'constVar', inspired by the /ad/ library.
 --

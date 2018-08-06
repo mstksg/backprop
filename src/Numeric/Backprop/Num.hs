@@ -83,7 +83,6 @@ import           Data.Functor.Identity
 import           Data.Maybe
 import           Data.Reflection
 import           Data.Vinyl
-import           Data.Vinyl.TypeLevel
 import           Lens.Micro
 import           Numeric.Backprop.Explicit (BVar, W)
 import           Numeric.Backprop.Op
@@ -92,16 +91,17 @@ import qualified Numeric.Backprop.Explicit as E
 -- | 'Numeric.Backprop.backpropN', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 --
--- The @'AllConstrained' 'Num' as@ in the constraint says that every value in the
--- type-level list @as@ must have a 'Num' instance.  This means you can
--- use, say, @'[Double, Float, Int]@, but not @'[Double, Bool, String]@.
+-- The @'RPureConstrained' 'Num' as@ in the constraint says that every
+-- value in the type-level list @as@ must have a 'Num' instance.  This
+-- means you can use, say, @'[Double, Float, Int]@, but not @'[Double,
+-- Bool, String]@.
 --
 -- If you stick to /concerete/, monomorphic usage of this (with specific
--- types, typed into source code, known at compile-time), then @'AllConstrained'
--- 'Num' as@ should be fulfilled automatically.
+-- types, typed into source code, known at compile-time), then
+-- @'AllPureConstrained' 'Num' as@ should be fulfilled automatically.
 --
 backpropN
-    :: (AllConstrained Num as, RecApplicative as, Num b)
+    :: (RPureConstrained Num as, Num b)
     => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
     -> Rec Identity as
     -> (b, Rec Identity as)
@@ -117,7 +117,7 @@ backpropN = E.backpropN E.zfNums E.ofNum
 --
 -- @since 0.2.0.0
 backpropWithN
-    :: (AllConstrained Num as, RecApplicative as)
+    :: RPureConstrained Num as
     => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
     -> Rec Identity as
     -> (b, b -> Rec Identity as)
@@ -167,7 +167,7 @@ gradBP = E.gradBP E.zfNum E.ofNum
 -- | 'Numeric.Backprop.gradBPN', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 gradBPN
-    :: (AllConstrained Num as, RecApplicative as, Num b)
+    :: (RPureConstrained Num as, Num b)
     => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
     -> Rec Identity as
     -> Rec Identity as
@@ -214,7 +214,7 @@ gradBP2 = E.gradBP2 E.zfNum E.zfNum E.ofNum
 -- | 'Numeric.Backprop.bpOp', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 bpOp
-    :: (AllConstrained Num as, RecApplicative as)
+    :: RPureConstrained Num as
     => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
     -> Op as b
 bpOp = E.bpOp E.zfNums
@@ -394,7 +394,7 @@ collectVar = E.collectVar E.afNum E.zfNum
 -- | 'Numeric.Backprop.liftOp', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 liftOp
-    :: (AllConstrained Num as, RecApplicative as, Reifies s W)
+    :: (RPureConstrained Num as, Reifies s W)
     => Op as b
     -> Rec (BVar s) as
     -> BVar s b
@@ -473,7 +473,7 @@ isoVar3 = E.isoVar3 E.afNum E.afNum E.afNum
 -- | 'Numeric.Backprop.isoVarN', but with 'Num' constraints instead of
 -- 'Backprop' constraints.
 isoVarN
-    :: (AllConstrained Num as, RecApplicative as, Reifies s W)
+    :: (RPureConstrained Num as, Reifies s W)
     => (Rec Identity as -> b)
     -> (b -> Rec Identity as)
     -> Rec (BVar s) as
