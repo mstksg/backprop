@@ -65,7 +65,7 @@ library:
   - primitive
   - reflection
   - transformers
-  - vinyl >= 0.9
+  - vinyl >= 0.9.1
 
 benchmarks:
   backprop-mnist-bench:
