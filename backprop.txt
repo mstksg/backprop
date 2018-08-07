@@ -879,7 +879,7 @@ acoshOp :: Floating a => Op '[a] a
 atanhOp :: Floating a => Op '[a] a
 instance (Data.Vinyl.Core.RPureConstrained GHC.Num.Num as, GHC.Num.Num a) => GHC.Num.Num (Numeric.Backprop.Op.Op as a)
 instance (Data.Vinyl.Core.RPureConstrained GHC.Num.Num as, GHC.Real.Fractional a) => GHC.Real.Fractional (Numeric.Backprop.Op.Op as a)
-instance (Data.Vinyl.Core.RecApplicative as, Data.Vinyl.TypeLevel.AllConstrained GHC.Float.Floating as, Data.Vinyl.TypeLevel.AllConstrained GHC.Real.Fractional as, Data.Vinyl.TypeLevel.AllConstrained GHC.Num.Num as, Data.Vinyl.Core.RPureConstrained GHC.Num.Num as, GHC.Float.Floating a) => GHC.Float.Floating (Numeric.Backprop.Op.Op as a)
+instance (Data.Vinyl.Core.RPureConstrained GHC.Num.Num as, GHC.Float.Floating a) => GHC.Float.Floating (Numeric.Backprop.Op.Op as a)
 
 
 -- | Provides "explicit" versions of all of the functions in
