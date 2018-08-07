@@ -329,7 +329,10 @@ opCoerce = opIso coerce coerce
 --
 -- @since 0.1.3.0
 noGrad1 :: (a -> b) -> Op '[a] b
-noGrad1 f = op1 (\x -> (f x, \_ -> error "noGrad1: no gradient defined"))
+noGrad1 f = op1 $ \x ->
+    ( f x
+    , \_ -> errorWithoutStackTrace "Numeric.Backprop.Op.noGrad1: no gradient defined"
+    )
 {-# INLINE noGrad1 #-}
 
 -- | Create an 'Op' with no gradient.  Can be evaluated with 'evalOp',  but
@@ -346,7 +349,10 @@ noGrad1 f = op1 (\x -> (f x, \_ -> error "noGrad1: no gradient defined"))
 --
 -- @since 0.1.3.0
 noGrad :: (Rec Identity as -> b) -> Op as b
-noGrad f = Op (\xs -> (f xs, \_ -> error "noGrad: no gradient defined"))
+noGrad f = Op $ \xs ->
+    ( f xs
+    , \_ -> errorWithoutStackTrace "Numeric.Backprop.Op.noGrad: no gradient defined"
+    )
 {-# INLINE noGrad #-}
 
 -- | An 'Op' that just returns whatever it receives.  The identity
@@ -422,7 +428,7 @@ opConst
     => a
     -> Op as a
 opConst x = Op $ const
-    (x , const $ rpureConstrained @Num 0)
+    (x, const $ rpureConstrained @Num 0)
 {-# INLINE opConst #-}
 
 -- | Create an 'Op' that takes no inputs and always returns the given
