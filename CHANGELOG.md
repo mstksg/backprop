@@ -1,14 +1,15 @@
 Changelog
 =========
 
-Version 0.2.7.0
+Version 0.2.6.1
 ---------------
 
-*Unreleased*
+*August 6, 2018*
 
-<https://github.com/mstksg/backprop/releases/tag/v0.2.7.0>
+<https://github.com/mstksg/backprop/releases/tag/v0.2.6.1>
 
 *   Removed redundant constraints from `Floating` instance of `Op`.
+*   Fixed lower bound for *vinyl* dependency.
 
 Version 0.2.6.0
 ---------------
