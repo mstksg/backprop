@@ -1,0 +1,701 @@
+<!DOCTYPE HTML><html><head><title>backprop - Getting Started</title><meta content="summary" name="twitter:card"><meta content="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/tintin-darkorange.png" name="twitter:site"><meta content="backprop - Getting Started" name="twitter:title"><meta content="Heterogeneous automatic differentation" name="twitter:description"><meta content="mstksg" name="twitter:creator"><meta content="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/tintin-darkorange.png" name="twitter:image"><meta itemprop="og:type" content="website"><meta itemprop="og:site_name" content="theam"><meta itemprop="og:title" content="backprop - Getting Started"><meta itemprop="og:url" content="mstksg/backprop"><meta itemprop="og:image" content="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/tintin-darkorange.png"><meta itemprop="og:description" content="Heterogeneous automatic differentation"><link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans|Montserrat:500" rel="stylesheet"><link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/tomorrow-night.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css" rel="stylesheet"><link href="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/favicon-darkorange.ico" rel="shortcut icon"><link href="https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.css" rel="stylesheet"><style>
+html
+{
+  height     : 100%;
+  min-height : 100%;
+}
+
+body
+{
+  height      : 100%;
+  min-height  : 100%;
+  font-family : "IBM Plex Sans", sans-serif;
+  font-size   : 1em;
+  overflow-x  : hidden;
+}
+
+h1
+{
+  font-family : "Montserrat", sans-serif;
+  font-weight : bold;
+  font-size   : 1em;
+}
+
+h2
+{
+  font-family : "Montserrat", sans-serif;
+  font-weight : bold;
+  font-size   : 2.44099em;
+}
+
+h3
+{
+  font-family : "Montserrat", sans-serif;
+  font-weight : bold;
+  font-size   : 5.95848em;
+}
+
+h1
+{
+  font-size : 2.44099em;
+}
+
+h2
+{
+  font-size : 1.953em;
+}
+
+h3
+{
+  font-size : 1.56299em;
+}
+
+.next-prev
+{
+  margin-top    : 5%;
+  margin-bottom : 5%;
+}
+
+#header-container
+{
+  margin-top    : 5rem;
+  margin-bottom : 5rem;
+}
+
+.cover-heading
+{
+  font-size     : 800%;
+  max-height    : 6rem;
+  margin-bottom : 1.56299rem;
+}
+
+.cover-container
+{
+  background-color : rgba(255,255,255,0.0);
+}
+
+.watermark
+{
+  position    : absolute;
+  top         : 0px;
+  left        : 0px;
+  max-height  : 1.25039rem;
+  margin-top  : 1.25039rem;
+  margin-left : 1.25039rem;
+}
+
+.cover-heading-subtitle
+{
+  margin-top : 3rem;
+  font-size  : 1.953rem;
+}
+
+.vertical-auto
+{
+  margin-top    : auto;
+  margin-bottom : auto;
+}
+
+.content
+{
+  margin-top    : 5%;
+  margin-bottom : 5%;
+}
+
+#wrapper
+{
+  padding-left       : 0px;
+  -webkit-transition : all 0.5s ease 0.0s;
+  -moz-transition    : all 0.5s ease 0.0s;
+  -ms-transition     : all 0.5s ease 0.0s;
+  -o-transition      : all 0.5s ease 0.0s;
+  transition         : all 0.5s ease 0.0s;
+}
+
+#wrapper.toggled
+{
+  padding-left : 250px;
+}
+
+#wrapper.toggled #sidebar-wrapper
+{
+  width : 250px;
+}
+
+#page-content-wrapper#wrapper.toggled
+{
+  position     : absolute;
+  margin-right : -250px;
+}
+
+#page-content-wrapper
+{
+  width      : 100%;
+  position   : absolute;
+  margin-top : 3rem;
+  padding    : 15px 15px 15px 15px;
+}
+
+#page-content-wrapper img
+{
+  max-width : 100%;
+}
+
+#sidebar-wrapper
+{
+  z-index            : 1000;
+  position           : fixed;
+  left               : 250px;
+  width              : 0px;
+  margin-left        : -250px;
+  overflow-y         : hidden;
+  overflow-x         : hidden;
+  -webkit-transition : all 0.5s ease 0.0s;
+  -moz-transition    : all 0.5s ease 0.0s;
+  -ms-transition     : all 0.5s ease 0.0s;
+  -o-transition      : all 0.5s ease 0.0s;
+  transition         : all 0.5s ease 0.0s;
+}
+
+.sidebar-nav
+{
+  position        : absolute;
+  top             : 0px;
+  width           : 250px;
+  margin          : 0px 0px 0px 0px;
+  padding         : 0px 0px 0px 0px;
+  list-style-type : none;
+}
+
+.sidebar-nav li
+{
+  text-indent : 20px;
+  line-height : 40px;
+}
+
+.sidebar-nav li a
+{
+  display         : block;
+  text-decoration : none;
+  font-weight     : bold;
+}
+
+
+.sidebar-nav li .tintin-fg-disabled:hover
+{
+  mix-blend-mode  : normal;
+  -webkit-filter  : invert(0%);
+  -moz-filter     : invert(0%);
+  -ms-filter      : invert(0%);
+  -o-filter       : invert(0%);
+  filter          : invert(0%);
+  text-decoration : none;
+  color           : #000000;
+}
+
+
+.sidebar-nav li .tintin-fg-active:hover
+{
+  mix-blend-mode  : normal;
+  -webkit-filter  : invert(0%);
+  -moz-filter     : invert(0%);
+  -ms-filter      : invert(0%);
+  -o-filter       : invert(0%);
+  filter          : invert(0%);
+  text-decoration : none;
+  color           : #ffffff;
+}
+
+#menu-toggle
+{
+  position : absolute;
+}
+
+#menu-toggle img
+{
+  position : absolute;
+  left     : 0px;
+}
+
+#menu-toggle .rotateIn
+{
+  z-index : 999;
+}
+
+.tintin-doc-topbar
+{
+  height : 3rem;
+}
+
+.tintin-doc-topbar a
+{
+  margin-left : 1rem;
+  margin-top  : 0rem;
+  width       : 1.5rem;
+}
+
+.tintin-doc-topbar a img
+{
+  -webkit-filter : invert(70%);
+  -moz-filter    : invert(70%);
+  -ms-filter     : invert(70%);
+  -o-filter      : invert(70%);
+  filter         : invert(70%);
+}
+
+.filter-gray
+{
+  position       : relative;
+  bottom         : 3px;
+  margin-left    : 0.25rem;
+  margin-right   : 1rem;
+  height         : 1rem;
+  -webkit-filter : brightness(0.75);
+  -moz-filter    : brightness(0.75);
+  -ms-filter     : brightness(0.75);
+  -o-filter      : brightness(0.75);
+  filter         : brightness(0.75);
+}
+
+.footer-theam
+{
+  position       : relative;
+  bottom         : 1px;
+  margin-left    : -0.25rem;
+  height         : 1.75rem;
+  -webkit-filter : invert(75%);
+  -moz-filter    : invert(75%);
+  -ms-filter     : invert(75%);
+  -o-filter      : invert(75%);
+  filter         : invert(75%);
+}
+
+.tintin-doc-footer
+{
+  bottom : 0px;
+  height : -15rem;
+  width  : 100%;
+  color  : rgba(0,0,0,0.3);
+}
+
+.main-container
+{
+  min-height : 100%;
+  position   : relative;
+}
+
+#content
+{
+  min-height : 95%;
+}
+
+.sidebar-nav > .sidebar-brand
+{
+  height         : 3rem;
+  font-size      : 2rem;
+  font-family    : "Montserrat", sans-serif;
+  font-weight    : bold;
+  padding-top    : 2.5rem;
+  padding-bottom : 2.5rem;
+  margin-bottom  : 1.5rem;
+}
+
+.sidebar-nav > .sidebar-brand img
+{
+  height : 1.5rem;
+}
+
+.tintin-navbar
+{
+  font-weight      : bold;
+  background-color : rgba(255,255,255,0.15);
+}
+
+.tintin-navbar .left-part
+{
+  padding-left : 0px !important;
+}
+
+.tintin-navbar ul
+{
+  margin-top      : 1rem;
+  list-style-type : none;
+}
+
+.tintin-navbar ul li
+{
+  margin-right : 1rem;
+  display      : inline;
+}
+
+.tintin-navbar ul li a
+{
+  color          : #000000;
+  -webkit-filter : invert(35%);
+  -moz-filter    : invert(35%);
+  -ms-filter     : invert(35%);
+  -o-filter      : invert(35%);
+  filter         : invert(35%);
+  mix-blend-mode : difference;
+}
+
+.tintin-navbar ul li a:hover
+{
+  mix-blend-mode  : normal;
+  -webkit-filter  : invert(0%);
+  -moz-filter     : invert(0%);
+  -ms-filter      : invert(0%);
+  -o-filter       : invert(0%);
+  filter          : invert(0%);
+  text-decoration : none;
+  color           : #000000;
+}
+
+
+.tintin-navbar .tintin-navbar-active a
+{
+  mix-blend-mode : normal;
+  -webkit-filter : invert(0%);
+  -moz-filter    : invert(0%);
+  -ms-filter     : invert(0%);
+  -o-filter      : invert(0%);
+  filter         : invert(0%);
+  color          : #ffffff;
+}
+
+.tintin-navbar .tintin-navbar-active a:hover
+{
+  mix-blend-mode  : normal;
+  -webkit-filter  : invert(0%);
+  -moz-filter     : invert(0%);
+  -ms-filter      : invert(0%);
+  -o-filter       : invert(0%);
+  filter          : invert(0%);
+  text-decoration : none;
+  color           : #ffffff;
+}
+
+.tintin-bg-70
+{
+  background-color : rgba(255,255,255,0.15);
+}
+
+.tintin-bg-black
+{
+  background-color : #1d1f21;
+}
+
+.tintin-bg-white
+{
+  background-color : #f5f8f6;
+}
+
+.tintin-bg-grey
+{
+  background-color : #4d4d4d;
+}
+
+.tintin-bg-red
+{
+  background-color : #d30228;
+}
+
+.tintin-bg-darkgreen
+{
+  background-color : #3c8b6a;
+}
+
+.tintin-bg-lightgreen
+{
+  background-color : #a4cb58;
+}
+
+.tintin-bg-darkorange
+{
+  background-color : #ff6602;
+}
+
+.tintin-bg-lightorange
+{
+  background-color : #faa73e;
+}
+
+.tintin-bg-blue
+{
+  background-color : #94c1e8;
+}
+
+.tintin-bg-darkblue
+{
+  background-color : #007c99;
+}
+
+.tintin-bg-purple
+{
+  background-color : #9f76b4;
+}
+
+.tintin-bg-bronze
+{
+  background-color : #a4a27a;
+}
+
+.tintin-bg-darkgrey
+{
+  background-color : #282a2e;
+}
+
+.tintin-fg-black
+{
+  color : #1d1f21;
+}
+
+.tintin-fg-white
+{
+  color : #f5f8f6;
+}
+
+.tintin-fg-grey
+{
+  color : #4d4d4d;
+}
+
+.tintin-fg-red
+{
+  color : #d30228;
+}
+
+.tintin-fg-darkgreen
+{
+  color : #3c8b6a;
+}
+
+.tintin-fg-lightgreen
+{
+  color : #a4cb58;
+}
+
+.tintin-fg-darkorange
+{
+  color : #ff6602;
+}
+
+.tintin-fg-lightorange
+{
+  color : #faa73e;
+}
+
+.tintin-fg-blue
+{
+  color : #94c1e8;
+}
+
+.tintin-fg-darkblue
+{
+  color : #007c99;
+}
+
+.tintin-fg-purple
+{
+  color : #9f76b4;
+}
+
+.tintin-fg-bronze
+{
+  color : #a4a27a;
+}
+
+.tintin-fg-darkgrey
+{
+  color : #282a2e;
+}
+
+.tintin-fg-active
+{
+  color : #ffffff;
+}
+
+.tintin-fg-disabled
+{
+  color          : #000000;
+  -webkit-filter : invert(35%);
+  -moz-filter    : invert(35%);
+  -ms-filter     : invert(35%);
+  -o-filter      : invert(35%);
+  filter         : invert(35%);
+  mix-blend-mode : difference;
+}
+
+footer
+{
+  position       : relative;
+  bottom         : 0px;
+  left           : 0px;
+  width          : 100%;
+  padding-top    : 30px;
+  padding-bottom : 30px;
+}
+
+.container
+{
+  max-width : 50rem;
+}
+
+@media screen and (min-width: 768px)
+{
+
+#wrapper
+{
+  padding-left : 0px;
+}
+
+#wrapper .toggled
+{
+  padding-left : 250px;
+}
+
+#wrapper .toggled #sidebar-wrapper
+{
+  width : 250px;
+}
+
+#wrapper .toggled #page-content-wrapper
+{
+  position     : relative;
+  margin-right : 0px;
+}
+
+#sidebar-wrapper
+{
+  width : 0px;
+}
+
+#page-content-wrapper
+{
+  padding  : 20px 20px 20px 20px;
+  position : relative;
+}
+
+}
+
+/* Generated with Clay, http://fvisser.nl/clay */</style></head><body class="h-100 tintin-fg-black tintin-bg-white"><div id="main-container" class="h-100"><section id="content"><div id="wrapper" class="toggled"><div id="sidebar-wrapper" class="h-100 tintin-bg-darkorange"><div class="h-100 tintin-bg-70"><p></p></div><ul class="sidebar-nav"><li class="sidebar-brand d-flex tintin-bg-darkorange"><a href="index.html" class="align-self-center tintin-fg-white">backprop</a></li><li><a href="01-getting-started.html" class="tintin-fg-active">Getting Started</a></li><li><a href="02-a-detailed-look.html" class="tintin-fg-disabled">A Detailed Look</a></li><li><a href="03-manipulating-bvars.html" class="tintin-fg-disabled">Manipulating BVars</a></li><li><a href="04-the-backprop-typeclass.html" class="tintin-fg-disabled">The Backprop Typeclass</a></li><li><a href="05-applications.html" class="tintin-fg-disabled">Applications and Resources</a></li><li><a href="06-manual-gradients.html" class="tintin-fg-disabled">Manual Gradients</a></li><li><a href="07-performance.html" class="tintin-fg-disabled">Performance &amp; Optimizations</a></li><li><a href="08-equipping-your-library.html" class="tintin-fg-disabled">Equipping your Library</a></li><li><a href="09-comparisons.html" class="tintin-fg-disabled">Comparisons</a></li></ul></div><nav class="navbar navbar-expand-lg tintin-doc-topbar tintin-fg-white"><a href="#menu-toggle" id="menu-toggle" class><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/menu.png" class="img-fluid animated rotateOut"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/close.png" class="img-fluid animated rotateIn"></a></nav><div id="page-content-wrapper"><div class="container"><div class="col"><div class="animated fadeIn"><h1>Getting Started</h1>
+<p><em>backprop</em> is a Haskell library <strong><a href="https://hackage.haskell.org/package/backprop">available on hackage</a></strong>, so can be
+used in your package however way you like to require libraries. Be sure to add
+it to your cabal file&#39;s (or package.yaml&#39;s) build-depends field.</p>
+<h2>Automatic Backpropagated Functions</h2>
+<p>With <em>backprop</em>, you can write your functions in Haskell as normal functions:</p>
+<pre class="haskell"><code>import Numeric.Backprop
+
+myFunc x = sqrt (x * 4)
+</code></pre>
+<p>They can be run with <code>evalBP</code>:</p>
+<pre class="haskell"><code>evalBP myFunc 9 :: Double => 
+6.0
+</code></pre>
+<p>And...the twist? You can also get the gradient of your functions!</p>
+<pre class="haskell"><code>gradBP myFunc 9 :: Double => 
+0.3333333333333333
+</code></pre>
+<p>We can even be cute with with the <em><a href="https://hackage.haskell.org/package/simple-reflect">simple-reflect</a></em> library:</p>
+<pre class="haskell"><code>evalBP myFunc x :: Expr => 
+sqrt (x * 4)
+</code></pre>
+<pre class="haskell"><code>gradBP myFunc x :: Expr => 
+4 * (1 / (2 * sqrt (x * 4)))
+</code></pre>
+<p>And that&#39;s the gist of the entire library: write your functions to compute your
+things, and <code>gradBP</code> will give you the gradients and derivatives of those
+functions.</p>
+<h3>Multiple Same-Type Inputs</h3>
+<p>Multiple inputs of the same type can be handled with <code>sequenceVar</code>:</p>
+<pre class="haskell"><code>funcOnList (sequenceVar-&gt;[x,y,z]) = sqrt (x / y) * z
+</code></pre>
+<pre class="haskell"><code>evalBP funcOnList [3,5,-2] :: Double => 
+-1.5491933384829668
+</code></pre>
+<pre class="haskell"><code>gradBP funcOnList [3,5,-2] :: [Double] => 
+[ -0.2581988897471611
+, 0.15491933384829668
+, 0.7745966692414834]
+</code></pre>
+<h2>Heterogeneous Backprop</h2>
+<p>But the real magic happens when you mix and match types. Let&#39;s make a simple
+type representing a feed-forward fully connected artificial neural network with
+100 inputs, a single hidden layer of 20 nodes, and 5 outputs:</p>
+<pre class="haskell"><code>data Net = N { _nWeights1 :: L 20 100
+             , _nBias1    :: R 20
+             , _nWeights2 :: L  5  20
+             , _nBias2    :: R  5
+             }
+  deriving (Show, Generic)
+
+instance Backprop Net
+
+makeLenses &#39;&#39;Net
+</code></pre>
+<p>using the <code>L m n</code> type from the <em><a href="http://hackage.haskell.org/package/hmatrix">hmatrix</a></em> library to represent an m-by-n
+matrix, and the <code>R n</code> type to represent an n-vector.</p>
+<p>We can write a function to &quot;run&quot; the network on a <code>R 100</code> and get an <code>R 5</code>
+back, using <code>^^.</code> for lens access and <code>#&gt;</code> from the <em><a href="http://hackage.haskell.org/package/hmatrix-backprop">hmatrix-backprop</a></em> library for
+matrix-vector multiplication:</p>
+<pre class="haskell"><code>runNet net x = z
+  where
+    -- run first layer
+    y = logistic $ (net ^^. nWeights1) #&gt; x + (net ^^. nBias1)
+    -- run second layer
+    z = logistic $ (net ^^. nWeights2) #&gt; y + (net ^^. nBias2)
+
+logistic :: Floating a =&gt; a -&gt; a
+logistic x = 1 / (1 + exp (-x))
+</code></pre>
+<p>We can <em>run</em> this with a network and input vector:</p>
+<pre class="haskell"><code>evalBP2 runNet myNet myVector => 
+[0.7710060782631345,0.3382199144893642,0.4700125359176054,0.45157174197218575,0.5091200271700325]
+</code></pre>
+<p>But --- and here&#39;s the fun part --- if we write a &quot;loss function&quot; to evaluate
+&quot;how badly&quot; our network has done, using <code>dot</code> from the <em>hmatrix-backprop</em>
+library:</p>
+<pre class="haskell"><code>squaredError target output = error `dot` error
+  where
+    error = target - output
+</code></pre>
+<p>we can &quot;test&quot; our networks:</p>
+<pre class="haskell"><code>netError target input net = squaredError (auto target)
+                                         (runNet net (auto input))
+</code></pre>
+<p>(more on <code>auto</code> later)</p>
+<pre class="haskell"><code>evalBP (netError myTarget myVector) myNet => 
+0.4510551183616181
+</code></pre>
+<p>At this point, we&#39;ve <em>written a normal function to compute the error of our
+network</em>. And, with the backprop library...we now have a way to compute the
+<em>gradient</em> of our network&#39;s error with respect to all of our weights!</p>
+<pre class="haskell"><code>gradBP (netError myTarget myVector) myNet => 
+N {_nWeights1 = (matrix -- ...
+ [    4.11263641483051e-4,  1.2452768908611275e-4,   4.945692214073669e-4, -1.8787627939922071e-6,   -- ...
+ ,   4.456096403579713e-3,  1.3492741188636985e-3,   5.358723472095238e-3, -2.0356645433810056e-5,   -- ...
+ ,  -2.363504793989016e-3,  -7.156523466991931e-4,   -2.84225642106488e-3,  1.0797124818415972e-5, - -- ...
+ ,   6.226054129738608e-3,  1.8852046587574407e-3,   7.487203907160475e-3, -2.8442287799021238e-5,   -- ...
+-- ...
+</code></pre>
+<p>We can now use the gradient to &quot;<a href="https://blog.jle.im/entry/purely-functional-typed-models-1.html">train</a>&quot; our network to give the correct
+responses given a certain input! This can be done by computing the gradient
+for every expected input-output pair, and adjusting the network in the opposite
+direction of the gradient every time.</p>
+<h2>Main Idea</h2>
+<p>The main pattern of usage for this library is:</p>
+<ol>
+<li>Write your function normally to compute something (like the loss function)</li>
+<li>Use <code>gradBP</code> to automatically get the gradient of that something with
+respect to your inputs!</li>
+</ol>
+<p>In the case of optimizing models, you:</p>
+<ol>
+<li>Write your function normally to compute the thing you want to minimize</li>
+<li>Use <code>gradBP</code> to automatically get the gradient of the thing you want to
+minimize with respect to your inputs. Then, adjust your inputs according
+to this gradient until you get the perfect minimal result!</li>
+</ol>
+<p>Now that you&#39;ve had a taste, let&#39;s <strong><a href="https://backprop.jle.im/02-a-detailed-look.html">look at the details</a></strong>. You can
+also just go ahead and <strong><a href="https://hackage.haskell.org/package/backprop">jump into the haddock documentation</a></strong>!</p>
+</div></div></div></div></div></section><div class="tintin-doc-footer clear-fix"><div class="row next-prev"><div class="col-md-4 offset-md-4"><a href="index.html">&lt; Previous: Home</a></div><div class="col-md-4 ml-auto"><a href="02-a-detailed-look.html">Next: A Detailed Look &gt;</a></div></div><div class="float-right"><div style="float: left" class="d-inline"><p class>Site generated with </p></div><a style="float: left" href="https://theam.github.io/tintin"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/logo.svg" class="filter-gray"></a><div class="clear-fix float-right"><span style="float:left">&mdash; &copy; 2018 </span><a href="http://theam.io" class="float:left"><img src="http://theam.io/logo_theam.png" class="footer-theam"></a></div></div></div></div><script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script><script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/haskell.min.js"></script><script src="https://cdn.rawgit.com/icons8/bower-webicon/v0.10.7/jquery-webicon.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script>$(function () {$("#menu-toggle").click(function(e) {e.preventDefault();$("#wrapper").toggleClass("toggled");$("#menu-toggle img").toggleClass("rotateIn rotateOut");})});</script><script src="https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/contrib/auto-render.min.js"></script><script>renderMathInElement(document.body);</script></body></html>

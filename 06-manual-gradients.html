@@ -1,0 +1,851 @@
+<!DOCTYPE HTML><html><head><title>backprop - Manual Gradients</title><meta content="summary" name="twitter:card"><meta content="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/tintin-darkorange.png" name="twitter:site"><meta content="backprop - Manual Gradients" name="twitter:title"><meta content="Heterogeneous automatic differentation" name="twitter:description"><meta content="mstksg" name="twitter:creator"><meta content="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/tintin-darkorange.png" name="twitter:image"><meta itemprop="og:type" content="website"><meta itemprop="og:site_name" content="theam"><meta itemprop="og:title" content="backprop - Manual Gradients"><meta itemprop="og:url" content="mstksg/backprop"><meta itemprop="og:image" content="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/tintin-darkorange.png"><meta itemprop="og:description" content="Heterogeneous automatic differentation"><link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans|Montserrat:500" rel="stylesheet"><link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/tomorrow-night.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css" rel="stylesheet"><link href="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/favicon-darkorange.ico" rel="shortcut icon"><link href="https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.css" rel="stylesheet"><style>
+html
+{
+  height     : 100%;
+  min-height : 100%;
+}
+
+body
+{
+  height      : 100%;
+  min-height  : 100%;
+  font-family : "IBM Plex Sans", sans-serif;
+  font-size   : 1em;
+  overflow-x  : hidden;
+}
+
+h1
+{
+  font-family : "Montserrat", sans-serif;
+  font-weight : bold;
+  font-size   : 1em;
+}
+
+h2
+{
+  font-family : "Montserrat", sans-serif;
+  font-weight : bold;
+  font-size   : 2.44099em;
+}
+
+h3
+{
+  font-family : "Montserrat", sans-serif;
+  font-weight : bold;
+  font-size   : 5.95848em;
+}
+
+h1
+{
+  font-size : 2.44099em;
+}
+
+h2
+{
+  font-size : 1.953em;
+}
+
+h3
+{
+  font-size : 1.56299em;
+}
+
+.next-prev
+{
+  margin-top    : 5%;
+  margin-bottom : 5%;
+}
+
+#header-container
+{
+  margin-top    : 5rem;
+  margin-bottom : 5rem;
+}
+
+.cover-heading
+{
+  font-size     : 800%;
+  max-height    : 6rem;
+  margin-bottom : 1.56299rem;
+}
+
+.cover-container
+{
+  background-color : rgba(255,255,255,0.0);
+}
+
+.watermark
+{
+  position    : absolute;
+  top         : 0px;
+  left        : 0px;
+  max-height  : 1.25039rem;
+  margin-top  : 1.25039rem;
+  margin-left : 1.25039rem;
+}
+
+.cover-heading-subtitle
+{
+  margin-top : 3rem;
+  font-size  : 1.953rem;
+}
+
+.vertical-auto
+{
+  margin-top    : auto;
+  margin-bottom : auto;
+}
+
+.content
+{
+  margin-top    : 5%;
+  margin-bottom : 5%;
+}
+
+#wrapper
+{
+  padding-left       : 0px;
+  -webkit-transition : all 0.5s ease 0.0s;
+  -moz-transition    : all 0.5s ease 0.0s;
+  -ms-transition     : all 0.5s ease 0.0s;
+  -o-transition      : all 0.5s ease 0.0s;
+  transition         : all 0.5s ease 0.0s;
+}
+
+#wrapper.toggled
+{
+  padding-left : 250px;
+}
+
+#wrapper.toggled #sidebar-wrapper
+{
+  width : 250px;
+}
+
+#page-content-wrapper#wrapper.toggled
+{
+  position     : absolute;
+  margin-right : -250px;
+}
+
+#page-content-wrapper
+{
+  width      : 100%;
+  position   : absolute;
+  margin-top : 3rem;
+  padding    : 15px 15px 15px 15px;
+}
+
+#page-content-wrapper img
+{
+  max-width : 100%;
+}
+
+#sidebar-wrapper
+{
+  z-index            : 1000;
+  position           : fixed;
+  left               : 250px;
+  width              : 0px;
+  margin-left        : -250px;
+  overflow-y         : hidden;
+  overflow-x         : hidden;
+  -webkit-transition : all 0.5s ease 0.0s;
+  -moz-transition    : all 0.5s ease 0.0s;
+  -ms-transition     : all 0.5s ease 0.0s;
+  -o-transition      : all 0.5s ease 0.0s;
+  transition         : all 0.5s ease 0.0s;
+}
+
+.sidebar-nav
+{
+  position        : absolute;
+  top             : 0px;
+  width           : 250px;
+  margin          : 0px 0px 0px 0px;
+  padding         : 0px 0px 0px 0px;
+  list-style-type : none;
+}
+
+.sidebar-nav li
+{
+  text-indent : 20px;
+  line-height : 40px;
+}
+
+.sidebar-nav li a
+{
+  display         : block;
+  text-decoration : none;
+  font-weight     : bold;
+}
+
+
+.sidebar-nav li .tintin-fg-disabled:hover
+{
+  mix-blend-mode  : normal;
+  -webkit-filter  : invert(0%);
+  -moz-filter     : invert(0%);
+  -ms-filter      : invert(0%);
+  -o-filter       : invert(0%);
+  filter          : invert(0%);
+  text-decoration : none;
+  color           : #000000;
+}
+
+
+.sidebar-nav li .tintin-fg-active:hover
+{
+  mix-blend-mode  : normal;
+  -webkit-filter  : invert(0%);
+  -moz-filter     : invert(0%);
+  -ms-filter      : invert(0%);
+  -o-filter       : invert(0%);
+  filter          : invert(0%);
+  text-decoration : none;
+  color           : #ffffff;
+}
+
+#menu-toggle
+{
+  position : absolute;
+}
+
+#menu-toggle img
+{
+  position : absolute;
+  left     : 0px;
+}
+
+#menu-toggle .rotateIn
+{
+  z-index : 999;
+}
+
+.tintin-doc-topbar
+{
+  height : 3rem;
+}
+
+.tintin-doc-topbar a
+{
+  margin-left : 1rem;
+  margin-top  : 0rem;
+  width       : 1.5rem;
+}
+
+.tintin-doc-topbar a img
+{
+  -webkit-filter : invert(70%);
+  -moz-filter    : invert(70%);
+  -ms-filter     : invert(70%);
+  -o-filter      : invert(70%);
+  filter         : invert(70%);
+}
+
+.filter-gray
+{
+  position       : relative;
+  bottom         : 3px;
+  margin-left    : 0.25rem;
+  margin-right   : 1rem;
+  height         : 1rem;
+  -webkit-filter : brightness(0.75);
+  -moz-filter    : brightness(0.75);
+  -ms-filter     : brightness(0.75);
+  -o-filter      : brightness(0.75);
+  filter         : brightness(0.75);
+}
+
+.footer-theam
+{
+  position       : relative;
+  bottom         : 1px;
+  margin-left    : -0.25rem;
+  height         : 1.75rem;
+  -webkit-filter : invert(75%);
+  -moz-filter    : invert(75%);
+  -ms-filter     : invert(75%);
+  -o-filter      : invert(75%);
+  filter         : invert(75%);
+}
+
+.tintin-doc-footer
+{
+  bottom : 0px;
+  height : -15rem;
+  width  : 100%;
+  color  : rgba(0,0,0,0.3);
+}
+
+.main-container
+{
+  min-height : 100%;
+  position   : relative;
+}
+
+#content
+{
+  min-height : 95%;
+}
+
+.sidebar-nav > .sidebar-brand
+{
+  height         : 3rem;
+  font-size      : 2rem;
+  font-family    : "Montserrat", sans-serif;
+  font-weight    : bold;
+  padding-top    : 2.5rem;
+  padding-bottom : 2.5rem;
+  margin-bottom  : 1.5rem;
+}
+
+.sidebar-nav > .sidebar-brand img
+{
+  height : 1.5rem;
+}
+
+.tintin-navbar
+{
+  font-weight      : bold;
+  background-color : rgba(255,255,255,0.15);
+}
+
+.tintin-navbar .left-part
+{
+  padding-left : 0px !important;
+}
+
+.tintin-navbar ul
+{
+  margin-top      : 1rem;
+  list-style-type : none;
+}
+
+.tintin-navbar ul li
+{
+  margin-right : 1rem;
+  display      : inline;
+}
+
+.tintin-navbar ul li a
+{
+  color          : #000000;
+  -webkit-filter : invert(35%);
+  -moz-filter    : invert(35%);
+  -ms-filter     : invert(35%);
+  -o-filter      : invert(35%);
+  filter         : invert(35%);
+  mix-blend-mode : difference;
+}
+
+.tintin-navbar ul li a:hover
+{
+  mix-blend-mode  : normal;
+  -webkit-filter  : invert(0%);
+  -moz-filter     : invert(0%);
+  -ms-filter      : invert(0%);
+  -o-filter       : invert(0%);
+  filter          : invert(0%);
+  text-decoration : none;
+  color           : #000000;
+}
+
+
+.tintin-navbar .tintin-navbar-active a
+{
+  mix-blend-mode : normal;
+  -webkit-filter : invert(0%);
+  -moz-filter    : invert(0%);
+  -ms-filter     : invert(0%);
+  -o-filter      : invert(0%);
+  filter         : invert(0%);
+  color          : #ffffff;
+}
+
+.tintin-navbar .tintin-navbar-active a:hover
+{
+  mix-blend-mode  : normal;
+  -webkit-filter  : invert(0%);
+  -moz-filter     : invert(0%);
+  -ms-filter      : invert(0%);
+  -o-filter       : invert(0%);
+  filter          : invert(0%);
+  text-decoration : none;
+  color           : #ffffff;
+}
+
+.tintin-bg-70
+{
+  background-color : rgba(255,255,255,0.15);
+}
+
+.tintin-bg-black
+{
+  background-color : #1d1f21;
+}
+
+.tintin-bg-white
+{
+  background-color : #f5f8f6;
+}
+
+.tintin-bg-grey
+{
+  background-color : #4d4d4d;
+}
+
+.tintin-bg-red
+{
+  background-color : #d30228;
+}
+
+.tintin-bg-darkgreen
+{
+  background-color : #3c8b6a;
+}
+
+.tintin-bg-lightgreen
+{
+  background-color : #a4cb58;
+}
+
+.tintin-bg-darkorange
+{
+  background-color : #ff6602;
+}
+
+.tintin-bg-lightorange
+{
+  background-color : #faa73e;
+}
+
+.tintin-bg-blue
+{
+  background-color : #94c1e8;
+}
+
+.tintin-bg-darkblue
+{
+  background-color : #007c99;
+}
+
+.tintin-bg-purple
+{
+  background-color : #9f76b4;
+}
+
+.tintin-bg-bronze
+{
+  background-color : #a4a27a;
+}
+
+.tintin-bg-darkgrey
+{
+  background-color : #282a2e;
+}
+
+.tintin-fg-black
+{
+  color : #1d1f21;
+}
+
+.tintin-fg-white
+{
+  color : #f5f8f6;
+}
+
+.tintin-fg-grey
+{
+  color : #4d4d4d;
+}
+
+.tintin-fg-red
+{
+  color : #d30228;
+}
+
+.tintin-fg-darkgreen
+{
+  color : #3c8b6a;
+}
+
+.tintin-fg-lightgreen
+{
+  color : #a4cb58;
+}
+
+.tintin-fg-darkorange
+{
+  color : #ff6602;
+}
+
+.tintin-fg-lightorange
+{
+  color : #faa73e;
+}
+
+.tintin-fg-blue
+{
+  color : #94c1e8;
+}
+
+.tintin-fg-darkblue
+{
+  color : #007c99;
+}
+
+.tintin-fg-purple
+{
+  color : #9f76b4;
+}
+
+.tintin-fg-bronze
+{
+  color : #a4a27a;
+}
+
+.tintin-fg-darkgrey
+{
+  color : #282a2e;
+}
+
+.tintin-fg-active
+{
+  color : #ffffff;
+}
+
+.tintin-fg-disabled
+{
+  color          : #000000;
+  -webkit-filter : invert(35%);
+  -moz-filter    : invert(35%);
+  -ms-filter     : invert(35%);
+  -o-filter      : invert(35%);
+  filter         : invert(35%);
+  mix-blend-mode : difference;
+}
+
+footer
+{
+  position       : relative;
+  bottom         : 0px;
+  left           : 0px;
+  width          : 100%;
+  padding-top    : 30px;
+  padding-bottom : 30px;
+}
+
+.container
+{
+  max-width : 50rem;
+}
+
+@media screen and (min-width: 768px)
+{
+
+#wrapper
+{
+  padding-left : 0px;
+}
+
+#wrapper .toggled
+{
+  padding-left : 250px;
+}
+
+#wrapper .toggled #sidebar-wrapper
+{
+  width : 250px;
+}
+
+#wrapper .toggled #page-content-wrapper
+{
+  position     : relative;
+  margin-right : 0px;
+}
+
+#sidebar-wrapper
+{
+  width : 0px;
+}
+
+#page-content-wrapper
+{
+  padding  : 20px 20px 20px 20px;
+  position : relative;
+}
+
+}
+
+/* Generated with Clay, http://fvisser.nl/clay */</style></head><body class="h-100 tintin-fg-black tintin-bg-white"><div id="main-container" class="h-100"><section id="content"><div id="wrapper" class="toggled"><div id="sidebar-wrapper" class="h-100 tintin-bg-darkorange"><div class="h-100 tintin-bg-70"><p></p></div><ul class="sidebar-nav"><li class="sidebar-brand d-flex tintin-bg-darkorange"><a href="index.html" class="align-self-center tintin-fg-white">backprop</a></li><li><a href="01-getting-started.html" class="tintin-fg-disabled">Getting Started</a></li><li><a href="02-a-detailed-look.html" class="tintin-fg-disabled">A Detailed Look</a></li><li><a href="03-manipulating-bvars.html" class="tintin-fg-disabled">Manipulating BVars</a></li><li><a href="04-the-backprop-typeclass.html" class="tintin-fg-disabled">The Backprop Typeclass</a></li><li><a href="05-applications.html" class="tintin-fg-disabled">Applications and Resources</a></li><li><a href="06-manual-gradients.html" class="tintin-fg-active">Manual Gradients</a></li><li><a href="07-performance.html" class="tintin-fg-disabled">Performance &amp; Optimizations</a></li><li><a href="08-equipping-your-library.html" class="tintin-fg-disabled">Equipping your Library</a></li><li><a href="09-comparisons.html" class="tintin-fg-disabled">Comparisons</a></li></ul></div><nav class="navbar navbar-expand-lg tintin-doc-topbar tintin-fg-white"><a href="#menu-toggle" id="menu-toggle" class><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/menu.png" class="img-fluid animated rotateOut"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/close.png" class="img-fluid animated rotateIn"></a></nav><div id="page-content-wrapper"><div class="container"><div class="col"><div class="animated fadeIn"><h1>Providing Hand-Written Gradients</h1>
+<p>Providing and writing hand-written gradients for operations can be useful if
+you are <a href="https://backprop.jle.im/07-performance.html">peforming low-level optimizations</a> or <a href="https://backprop.jle.im/08-equipping-your-library.html">equipping your
+library for backprop</a>.</p>
+<p>Ideally, as an <em>end user</em>, you should never have to do this. The whole point
+of the <em>backprop</em> library is to allow you to use backpropagatable functions as
+normal functions, and to let you build complicated functions by simply
+composing normal Haskell functions, where the <em>backprop</em> library automatically
+infers your gradients.</p>
+<p>However, if you are writing a library, you probably need to provide &quot;primitive&quot;
+backpropagatable functions (like matrix-vector multiplication for a linear
+algebra library) for your users, so your users can then use those primitive
+functions to write their own code, without ever having to be aware of any
+gradients.</p>
+<p>If you are writing code and recognize some bottlenecks related to library
+overhead as <a href="https://backprop.jle.im/07-performance.html">described in this post</a>, then you might also want to
+provide manual gradients as a last resort. However, this should always be a
+last resort, as <em>figuring out</em> manual gradients is a tedious and error-prone
+process that can introduce subtle bugs in ways that don&#39;t always appear in
+testing. It also makes your code much more fragile and difficult to refactor
+and shuffle around (since you aren&#39;t using normal function composition and
+application anymore) and much harder to read. Only proceed if you decide that
+the huge cognitive costs are worth it.</p>
+<h2>The Lifted Function</h2>
+<p>A lifted function of type</p>
+<pre class="haskell"><code>myFunc :: Reifies s W =&gt; BVar s a -&gt; BVar s b
+</code></pre>
+<p>represents a backpropagatble function taking an <code>a</code> and returning a <code>b</code>. It is
+represented as a function taking a <code>BVar</code> containing an <code>a</code> and returning a
+<code>BVar</code> containing a <code>b</code>; the <code>BVar s</code> with the <code>Reifies s W</code> is what allows for
+tracking of backpropagation.</p>
+<p>A <code>BVar s a -&gt; BVar s b</code> is really, actually, under the hood:</p>
+<pre class="haskell"><code>type BVar s a -&gt; BVar s b
+    = a -&gt; (b, b -&gt; a)
+</code></pre>
+<p>That is, given an input <code>a</code>, you get:</p>
+<ol>
+<li>A <code>b</code>, the result (the &quot;forward pass&quot;)</li>
+<li>A <code>b -&gt; a</code>, the &quot;scaled gradient&quot; function.</li>
+</ol>
+<p>A full technical description is given in the documentation for <a href="http://hackage.haskell.org/package/backprop/docs/Numeric-Backprop-Op.html">Numeric.Backprop.Op</a>.</p>
+<p>The <code>b</code> result is simple enough; it&#39;s the result of your function. The &quot;scaled
+gradient&quot; function requires some elaboration. Let&#39;s say you are writing a
+lifted version of your function \(y = f(x)\) (whose derivative is
+\(\frac{dy}{dx}\)), and that your <em>final result</em> at the end of your
+computation is \(z = g(f(x))\) (whose derivative is \(\frac{dz}{dx}\)). In
+that case, because of the chain rule, \(\frac{dz}{dx} = \frac{dz}{dy}
+\frac{dy}{dx}\).</p>
+<p>The scaled gradient <code>b -&gt; a</code> is the function which, <em>given</em>
+\(\frac{dy}{dz}\) <code>:: b</code>, <em>returns</em> \(\frac{dz}{dx}\) <code>:: a</code>. (that is,
+returns \(\frac{dz}{dy} \frac{dy}{dx}\) <code>:: a</code>).</p>
+<p>For example, for the mathematical operation \(y = f(x) = x^2\), then,
+considering \(z = g(f(x))\), \(\frac{dz}{dx} = \frac{dz}{dy} 2x\). In fact,
+for all functions taking and returning scalars (just normal single numbers),
+\(\frac{dz}{dx} = \frac{dz}{dy} f&#39;(x)\).</p>
+<h2>Simple Example</h2>
+<p>With that in mind, let&#39;s a lifted &quot;squared&quot; operation, that takes <code>x</code> and
+returns <code>x^2</code>:</p>
+<pre class="haskell"><code>square
+    :: (Num a, Backprop a, Reifies s W)
+    =&gt; BVar s a
+    -&gt; BVar s a
+square = liftOp1 . op1 $ \x -&gt;
+    ( x^2              , \dzdy -&gt; dzdy * 2 * x)
+--    ^- actual result   ^- scaled gradient function
+</code></pre>
+<p>We can write one for <code>sin</code>, as well. For \(y = f(x) = \sin(x)\), we consider
+\(z = g(f(x))\) to see \(\frac{dz}{dx} = \frac{dz}{dy} \cos(x)\). So, we
+have:</p>
+<pre class="haskell"><code>liftedSin
+    :: (Floating a, Backprop a, Reifies s W)
+    =&gt; BVar s a
+    -&gt; BVar s a
+liftedSin = liftOp1 . op1 $ \x -&gt;
+    ( sin x, \dzdy -&gt; dzdy * cos x )
+</code></pre>
+<p>In general, for functions that take and return scalars:</p>
+<pre class="haskell"><code>liftedF
+    :: (Num a, Backprop a, Reifies s W)
+    =&gt; BVar s a
+    -&gt; BVar s a
+liftedF = liftOp1 . op1 $ \x -&gt;
+    ( f x, \dzdy -&gt; dzdy * dfdx x )
+</code></pre>
+<p>For an example of every single numeric function in base Haskell, see <a href="https://github.com/mstksg/backprop/blob/a7651b4549048a3aca73c79c6fbe07c3e8ee500e/src/Numeric/Backprop/Op.hs#L646-L787">the
+source of Op.hs</a> for the <code>Op</code> definitions for every method in <code>Num</code>,
+<code>Fractional</code>, and <code>Floating</code>.</p>
+<h2>Non-trivial example</h2>
+<p>A simple non-trivial example is <code>sumElements</code>, which we can define to take the
+<em>hmatrix</em> library&#39;s <code>R n</code> type (an n-vector of <code>Double</code>). In this case, we
+have to think about \(g(\mathrm{sum}(\mathbf{x}))\). In this case, the types
+guide our thinking:</p>
+<pre class="haskell"><code>sumElements           :: R n -&gt; Double
+sumElementsScaledGrad :: R n -&gt; Double -&gt; R n
+</code></pre>
+<p>The simplest way for me to do this personally is to just take it element by
+element.</p>
+<ol>
+<li><p><em>Write out the functions in question, in a simple example</em></p>
+<p>In our case:</p>
+<ul>
+<li>\(y = f(\langle a, b, c \rangle) = a + b + c\)</li>
+<li>\(z = g(y) = g(a + b + c)\)</li>
+</ul></li>
+<li><p><em>Identify the components in your gradient</em></p>
+<p>In our case, we have to return a gradient \(\langle \frac{\partial z}{\partial a},
+\frac{\partial z}{\partial b}, \frac{\partial z}{\partial c} \rangle\).</p></li>
+<li><p><em>Work out each component of the gradient until you start to notice a
+pattern</em></p>
+<p>Let&#39;s start with \(\frac{\partial z}{\partial a}\). We need to find
+\(\frac{\partial z}{\partial a}\) in terms of \(\frac{dz}{dy}\):</p>
+<ul>
+<li>Through the chain rule, \(\frac{\partial z}{\partial a} =
+\frac{dz}{dy} \frac{\partial y}{\partial a}\).</li>
+<li>Because \(y = a + b + c\), we know that \(\frac{\partial y}{\partial
+a} = 1\).</li>
+<li>Because \(\frac{\partial y}{\partial a} = 1\), we know that
+\(\frac{\partial z}{\partial a} = \frac{dz}{dy} \times 1 =
+\frac{dz}{dy}\).</li>
+</ul>
+<p>So, our expression of \(\frac{\partial z}{\partial a}\) in terms of
+\(\frac{dz}{dy}\) is simple -- it&#39;s simply \(\frac{\partial z}{\partial
+a} = \frac{dz}{dy}\).</p>
+<p>Now, let&#39;s look at \(\frac{\partial z}{\partial b}\). We need to find
+\(\frac{\partial z}{\partial b}\) in terms of \(\frac{dz}{dy}\).</p>
+<ul>
+<li>Through the chain rule, \(\frac{\partial z}{\partial b} =
+\frac{dz}{dy} \frac{\partial y}{\partial b}\).</li>
+<li>Because \(y = a + b + c\), we know that \(\frac{\partial y}{\partial
+b} = 1\).</li>
+<li>Because \(\frac{\partial y}{\partial b} = 1\), we know that
+\(\frac{\partial z}{\partial b} = \frac{dz}{dy} \times 1 =
+\frac{dz}{dy}\).</li>
+</ul>
+<p>It looks like \(\frac{\partial z}{\partial b} = \frac{\partial z}{\partial
+y}\), as well.</p>
+<p>At this point, we start to notice a pattern. We can apply the same logic
+to see that \(\frac{\partial z}{\partial c} = \frac{dz}{dy}\).</p></li>
+<li><p><em>Write out the pattern</em></p>
+<p>Extrapolating the pattern, \(\frac{\partial z}{\partial q}\), where
+\(q\) is <em>any</em> component, is always going to be a constant --
+\(\frac{dz}{dy}\).</p></li>
+</ol>
+<p>So in the end:</p>
+<pre class="haskell"><code>liftedSumElements
+    :: (KnownNat n, Reifies s W)
+    =&gt; BVar s (R n)
+    -&gt; BVar s Double
+liftedSumElements = liftOp1 . op1 $ \xs -&gt;
+    ( sumElements xs, \dzdy -&gt; konst dzdy )  -- a constant vector
+</code></pre>
+<h3>Multiple-argument functions</h3>
+<p>Lifting multiple-argument functions is the same thing, except using <code>liftOp2</code>
+and <code>op2</code>, or <code>liftOpN</code> and <code>opN</code>.</p>
+<p>A <code>BVar s a -&gt; BVar s b -&gt; BVar s c</code> is, really, under the hood:</p>
+<pre class="haskell"><code>type BVar s a -&gt; BVar s b -&gt; BVar s c =
+    a -&gt; b -&gt; (c, c -&gt; (a, b))
+</code></pre>
+<p>That is, given an input <code>a</code> and <code>b</code>, you get:</p>
+<ol>
+<li>A <code>c</code>, the result (the &quot;forward pass&quot;)</li>
+<li>A <code>c -&gt; (a, b)</code>, the &quot;scaled gradient&quot; function returning the gradient of
+both inputs.</li>
+</ol>
+<p>The <code>c</code> parameter of the scaled gradient is again \(\frac{dz}{dy}\), and the
+final <code>(a,b)</code> is a tuple of \(\frac{\partial z}{\partial x_1}\) and
+\(\frac{\partial z}{\partial x_2}\): how \(\frac{dz}{dy}\) affects both of
+the inputs.</p>
+<p>For a simple example, let&#39;s look at \(x + y\). Working it out:</p>
+<ul>
+<li>\(y = f(x_1, x_2) = x_1 + x_2\)</li>
+<li>\(z = g(f(x_1, x_2)) = g(x_1 + x_2)\)</li>
+<li>Looking first for \(\frac{\partial z}{\partial x_1}\) in terms of
+\(\frac{dz}{dy}\):
+<ul>
+<li>\(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} \frac{\partial
+y}{\partial x_1}\) (chain rule)</li>
+<li>From \(y = x_1 + x_2\), we see that \(\frac{\partial y}{\partial
+x_1} = 1\)</li>
+<li>Therefore, \(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} \times 1
+= \frac{dz}{dy}\).</li>
+</ul></li>
+<li>Looking second for \(\frac{\partial z}{\partial x_2}\) in terms of
+\(\frac{dz}{dy}\):
+<ul>
+<li>\(\frac{\partial z}{\partial x_2} = \frac{dz}{dy} \frac{\partial
+y}{\partial x_2}\) (chain rule)</li>
+<li>From \(y = x_1 + x_2\), we see that \(\frac{\partial y}{\partial
+x_2} = 1\)</li>
+<li>Therefore, \(\frac{\partial z}{\partial x_2} = \frac{dz}{dy} \times 1
+= \frac{dz}{dy}\).</li>
+</ul></li>
+<li>Therefore, \(\frac{\partial z}{\partial x_1} = \frac{dz}{dy}\), and also
+\(\frac{\partial z}{\partial x_2} = \frac{dz}{dy}\).</li>
+</ul>
+<p>Putting it into code:</p>
+<pre class="haskell"><code>add :: (Num a, Backprop a, Reifies s W)
+    =&gt; BVar s a
+    -&gt; BVar s a
+    -&gt; BVar s a
+add = liftOp2 . op2 $ \x1 x2 -&gt;
+    ( x1 + x2, \dzdy -&gt; (dzdy, dzdy) )
+</code></pre>
+<p>Let&#39;s try our hand at multiplication, or \(x * y\):</p>
+<ul>
+<li>\(y = f(x_1, x_2) = x_1 x_2\)</li>
+<li>\(z = g(f(x_1, x_2)) = g(x_1 x_2)\)</li>
+<li>Looking first for \(\frac{d\partial }{d\partial _1}\) in terms of
+\(\frac{dz}{dy}\):
+<ul>
+<li>\(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} \frac{\partial
+y}{\partial x_1}\) (chain rule)</li>
+<li>From \(y = x_1 x_2\), we see that \(\frac{\partial y}{\partial x_1}
+= x_2\)</li>
+<li>Therefore, \(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} x_2\).</li>
+</ul></li>
+<li>Looking second for \(\frac{\partial z}{\partial x_2}\) in terms of
+\(\frac{dz}{dy}\):
+<ul>
+<li>\(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} \frac{\partial
+y}{\partial x_1}\) (chain rule)</li>
+<li>From \(y = x_1 x_2\), we see that \(\frac{\partial y}{\partial x_2}
+= x_1\)</li>
+<li>Therefore, \(\frac{\partial z}{\partial x_2} = \frac{dz}{dy} x_1\).</li>
+</ul></li>
+<li>Therefore, \(\frac{\partial z}{\partial x_1} = \frac{dz}{dy} x_2\), and
+\(\frac{\partial z}{\partial x_2} = x_1 \frac{dz}{dy}\).</li>
+</ul>
+<p>In code:</p>
+<pre class="haskell"><code>mul :: (Num a, Backprop a, Reifies s W)
+    =&gt; BVar s a
+    -&gt; BVar s a
+    -&gt; BVar s a
+mul = liftOp2 . op2 $ \x1 x2 -&gt;
+    ( x1 * x2, \dzdy -&gt; (dzdy * x2, x1 * dzdy) )
+</code></pre>
+<p>For non-trivial examples involving linear algebra, see the source for the <em><a href="http://hackage.haskell.org/package/hmatrix-backprop">hmatrix-backprop</a></em> library.</p>
+<p>Some examples, for the dot product between two vectors and for matrix-vector
+multiplication:</p>
+<pre class="haskell"><code>-- import qualified Numeric.LinearAlgebra.Static as H
+
+-- | dot product between two vectors
+dot
+    :: (KnownNat n, Reifies s W)
+    =&gt; BVar s (R n)
+    -&gt; BVar s (R n)
+    -&gt; BVar s Double
+dot = liftOp2 . op2 $ \u v -&gt;
+    ( u `H.dot` v
+    , \dzdy -&gt; (H.konst dzdy * v, u * H.konst dzdy)
+    )
+
+
+-- | matrix-vector multiplication
+(#&gt;)
+    :: (KnownNat m, KnownNat n, Reifies s W)
+    =&gt; BVar s (L m n)
+    -&gt; BVar s (R n)
+    -&gt; BVar s (R m)
+(#&gt;) = liftOp2 . op2 $ \mat vec -&gt;
+    ( mat H.#&gt; vec
+    , \dzdy -&gt; (dzdy `H.outer` vec, H.tr mat H.#&gt; dzdy)
+    )
+</code></pre>
+<h2>Possibilities</h2>
+<p>That&#39;s it for this introductory tutorial on lifting single operations. More
+information on the ways to apply these techniques to fully equip your library
+for backpropagation (including arguments with multiple results, taking
+advantage of isomorphisms, providing non-gradient functions) can be <a href="https://backprop.jle.im/08-equipping-your-library.html">found
+here</a>!</p>
+</div></div></div></div></div></section><div class="tintin-doc-footer clear-fix"><div class="row next-prev"><div class="col-md-4 offset-md-4"><a href="05-applications.html">&lt; Previous: Applications and Resources</a></div><div class="col-md-4 ml-auto"><a href="07-performance.html">Next: Performance &amp; Optimizations &gt;</a></div></div><div class="float-right"><div style="float: left" class="d-inline"><p class>Site generated with </p></div><a style="float: left" href="https://theam.github.io/tintin"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/logo.svg" class="filter-gray"></a><div class="clear-fix float-right"><span style="float:left">&mdash; &copy; 2018 </span><a href="http://theam.io" class="float:left"><img src="http://theam.io/logo_theam.png" class="footer-theam"></a></div></div></div></div><script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script><script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/haskell.min.js"></script><script src="https://cdn.rawgit.com/icons8/bower-webicon/v0.10.7/jquery-webicon.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script>$(function () {$("#menu-toggle").click(function(e) {e.preventDefault();$("#wrapper").toggleClass("toggled");$("#menu-toggle img").toggleClass("rotateIn rotateOut");})});</script><script src="https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/contrib/auto-render.min.js"></script><script>renderMathInElement(document.body);</script></body></html>
