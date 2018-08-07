@@ -589,18 +589,18 @@ it to your cabal file&#39;s (or package.yaml&#39;s) build-depends field.</p>
 myFunc x = sqrt (x * 4)
 </code></pre>
 <p>They can be run with <code>evalBP</code>:</p>
-<pre class="haskell"><code>evalBP myFunc (9 :: Double) => 
+<pre class="haskell"><code>evalBP myFunc 9 :: Double => 
 6.0
 </code></pre>
 <p>And...the twist? You can also get the gradient of your functions!</p>
-<pre class="haskell"><code>gradBP myFunc (9 :: Double) => 
+<pre class="haskell"><code>gradBP myFunc 9 :: Double => 
 0.3333333333333333
 </code></pre>
 <p>We can even be cute with with the <em><a href="https://hackage.haskell.org/package/simple-reflect">simple-reflect</a></em> library:</p>
-<pre class="haskell"><code>evalBP myFunc (x :: Expr) => 
+<pre class="haskell"><code>evalBP myFunc x :: Expr => 
 sqrt (x * 4)
 </code></pre>
-<pre class="haskell"><code>gradBP myFunc (x :: Expr) => 
+<pre class="haskell"><code>gradBP myFunc x :: Expr => 
 4 * (1 / (2 * sqrt (x * 4)))
 </code></pre>
 <p>And that&#39;s the gist of the entire library: write your functions to compute your
