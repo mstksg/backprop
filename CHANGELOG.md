@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Version 0.2.7.0
+---------------
+
+*Unreleased*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.2.7.0>
+
+*   Removed redundant constraints from `Floating` instance of `Op`.
+
 Version 0.2.6.0
 ---------------
 

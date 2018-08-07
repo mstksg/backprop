@@ -84,7 +84,6 @@ import           Data.Functor.Identity
 import           Data.List
 import           Data.Type.Util
 import           Data.Vinyl.Core
-import           Data.Vinyl.TypeLevel
 import           Lens.Micro
 import           Lens.Micro.Extras
 import qualified Data.Vinyl.Recursive  as VR
@@ -566,7 +565,7 @@ instance (RPureConstrained Num as, Fractional a) => Fractional (Op as a) where
     fromRational x = opConst (fromRational x)
     {-# INLINE fromRational #-}
 
-instance (RecApplicative as, AllConstrained Floating as, AllConstrained Fractional as, AllConstrained Num as, RPureConstrained Num as, Floating a) => Floating (Op as a) where
+instance (RPureConstrained Num as, Floating a) => Floating (Op as a) where
     pi            = opConst pi
     {-# INLINE pi #-}
     exp   o       = composeOp (o  :& RNil)       expOp
