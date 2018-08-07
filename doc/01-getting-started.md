@@ -44,13 +44,13 @@ myFunc x = sqrt (x * 4)
 They can be run with `evalBP`:
 
 ```haskell eval
-evalBP myFunc (9 :: Double)
+evalBP myFunc 9 :: Double
 ```
 
 And...the twist?  You can also get the gradient of your functions!
 
 ```haskell eval
-gradBP myFunc (9 :: Double)
+gradBP myFunc 9 :: Double
 ```
 
 We can even be cute with with the *[simple-reflect][]* library:
@@ -58,16 +58,20 @@ We can even be cute with with the *[simple-reflect][]* library:
 [simple-reflect]: https://hackage.haskell.org/package/simple-reflect
 
 ```haskell top hide
+instance Backprop Expr where
+    zero = zeroNum
+    add  = addNum
+    one  = oneNum
 instance AskInliterate Expr
 ```
 
 ```haskell eval
-evalBP myFunc (x :: Expr)
+evalBP myFunc x :: Expr
 ```
 
 
 ```haskell eval
-gradBP myFunc (x :: Expr)
+gradBP myFunc x :: Expr
 ```
 
 
