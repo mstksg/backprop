@@ -24,26 +24,24 @@ The (extra) packages involved are:
 -   split
 
 ``` {.sourceCode .literate .haskell}
-{-# LANGUAGE BangPatterns         #-}
-{-# LANGUAGE DataKinds            #-}
-{-# LANGUAGE DeriveGeneric        #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE GADTs                #-}
-{-# LANGUAGE InstanceSigs         #-}
-{-# LANGUAGE LambdaCase           #-}
-{-# LANGUAGE LambdaCase           #-}
-{-# LANGUAGE RankNTypes           #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE TemplateHaskell      #-}
-{-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE TypeInType           #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE ViewPatterns         #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE BangPatterns        #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE InstanceSigs        #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeInType          #-}
+{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE ViewPatterns        #-}
+{-# OPTIONS_GHC -Wno-orphans     #-}
 
 import           Control.DeepSeq
 import           Control.Exception
-import           Control.Lens hiding             ((<.>))
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.Primitive
@@ -61,6 +59,8 @@ import           Data.Time.Clock
 import           Data.Traversable
 import           Data.Tuple
 import           GHC.Generics                    (Generic)
+import           Lens.Micro
+import           Lens.Micro.TH
 import           Numeric.Backprop
 import           Numeric.Backprop.Class
 import           Numeric.LinearAlgebra.Static

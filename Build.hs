@@ -78,6 +78,14 @@ main = getDirectoryFilesIO "samples" ["/*.lhs", "/*.hs"] >>= \allSamps ->
         "--package mnist-idx"
         "--package singletons"
         "--package one-liner-instances"
+        "--package one-liner"
+        "--package split"
+        "--package hmatrix-backprop"
+        "--package random"
+        "--package mwc-random"
+        "--package hmatrix-vector-sized"
+        "--package vector-sized"
+        "--package finite-typelits"
         "--"
         ("samples" </> src)
         "-o" f

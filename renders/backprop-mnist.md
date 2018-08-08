@@ -35,24 +35,23 @@ The (extra) packages involved are:
 -   split
 
 ``` {.sourceCode .literate .haskell}
-{-# LANGUAGE BangPatterns                     #-}
-{-# LANGUAGE DataKinds                        #-}
-{-# LANGUAGE DeriveGeneric                    #-}
-{-# LANGUAGE FlexibleContexts                 #-}
-{-# LANGUAGE GADTs                            #-}
-{-# LANGUAGE LambdaCase                       #-}
-{-# LANGUAGE ScopedTypeVariables              #-}
-{-# LANGUAGE TemplateHaskell                  #-}
-{-# LANGUAGE TupleSections                    #-}
-{-# LANGUAGE TypeApplications                 #-}
-{-# LANGUAGE ViewPatterns                     #-}
-{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
-{-# OPTIONS_GHC -fno-warn-orphans             #-}
-{-# OPTIONS_GHC -fno-warn-unused-top-binds    #-}
+{-# LANGUAGE BangPatterns                #-}
+{-# LANGUAGE DataKinds                   #-}
+{-# LANGUAGE DeriveGeneric               #-}
+{-# LANGUAGE FlexibleContexts            #-}
+{-# LANGUAGE GADTs                       #-}
+{-# LANGUAGE LambdaCase                  #-}
+{-# LANGUAGE ScopedTypeVariables         #-}
+{-# LANGUAGE TemplateHaskell             #-}
+{-# LANGUAGE TupleSections               #-}
+{-# LANGUAGE TypeApplications            #-}
+{-# LANGUAGE ViewPatterns                #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# OPTIONS_GHC -Wno-orphans             #-}
+{-# OPTIONS_GHC -Wno-unused-top-binds    #-}
 
 import           Control.DeepSeq
 import           Control.Exception
-import           Control.Lens hiding ((<.>))
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Maybe
@@ -66,6 +65,8 @@ import           Data.Traversable
 import           Data.Tuple
 import           GHC.Generics                        (Generic)
 import           GHC.TypeLits
+import           Lens.Micro
+import           Lens.Micro.TH
 import           Numeric.Backprop
 import           Numeric.Backprop.Class
 import           Numeric.LinearAlgebra.Static
