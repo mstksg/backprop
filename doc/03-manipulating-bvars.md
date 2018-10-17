@@ -327,7 +327,7 @@ The `T2` pattern synonym is provided, which allow you to pattern match on a
 `BVar s (a, b)` to get a `BVar s a` and `BVar s b`.  The `T3` pattern is also
 provided, which does the same thing for three-tuples.
 
-Note that `T2` and `T2` are bidirectional pattern synonyms, and can be used to
+Note that `T2` and `T3` are *bidirectional* pattern synonyms, and can be used to
 construct as well as deconstruct.
 
 Combining BVars
