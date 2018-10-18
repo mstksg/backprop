@@ -143,7 +143,7 @@ netError target input net = squaredError (auto target)
 This can be run, again:
 
 ```haskell
-evalBP (netError myTarget myVector) :: Network -> Network
+evalBP (netError myTarget myVector) :: Network -> Double
 ```
 
 Now, we just wrote a *normal function to compute the error of our network*.
