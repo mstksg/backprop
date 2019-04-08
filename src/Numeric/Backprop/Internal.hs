@@ -242,6 +242,9 @@ data SomeTapeNode :: Type where
            }
         -> SomeTapeNode
 
+forceSomeTapeNode :: SomeTapeNode -> ()
+forceSomeTapeNode (STN n) = forceTapeNode n
+
 -- | Debugging string for a 'SomeTapeMode'.
 debugSTN :: SomeTapeNode -> String
 debugSTN (STN TN{..}) = show . VR.rfoldMap ((:[]) . debugIR) $ _tnInputs
@@ -628,9 +631,9 @@ bumpMaybe x (+*) e = \case
     Just y  -> Just (x +* y)
 {-# INLINE bumpMaybe #-}
 
-seqEither :: Either a (b, c) -> Either a (b, c)
-seqEither (Left i)      = i `seq` Left i
-seqEither (Right (x,y)) = x `seq` y `seq` Right (x, y)
+seqEither :: Either a (b, [SomeTapeNode]) -> Either a (b, [SomeTapeNode])
+seqEither e@(Left !_)                                    = e
+seqEither e@(Right (!_,foldMap forceSomeTapeNode->(!_))) = e
 {-# INLINE seqEither #-}
 
 -- | 'Numeric.Backprop.backpropWithN', but with explicit 'zero' and 'one'.

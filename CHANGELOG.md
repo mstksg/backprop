@@ -1,6 +1,18 @@
 Changelog
 =========
 
+Version 0.2.6.2
+---------------
+
+*April 7, 2019*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.2.6.2>
+
+*   Fix a numerical bug that would occur when an input is used directly as the
+    result of a computation. (For example, `gradBP id` or `gradBP2 const`).
+*   Some internal changes to strictness which offers some performance boosts in
+    computation of gradients.
+
 Version 0.2.6.1
 ---------------
 
