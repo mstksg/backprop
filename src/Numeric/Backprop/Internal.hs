@@ -628,6 +628,11 @@ bumpMaybe x (+*) e = \case
     Just y  -> Just (x +* y)
 {-# INLINE bumpMaybe #-}
 
+seqEither :: Either a (b, c) -> Either a (b, c)
+seqEither (Left i)      = i `seq` Left i
+seqEither (Right (x,y)) = x `seq` y `seq` Right (x, y)
+{-# INLINE seqEither #-}
+
 -- | 'Numeric.Backprop.backpropWithN', but with explicit 'zero' and 'one'.
 --
 -- Note that argument order changed in v0.2.4.
@@ -639,14 +644,19 @@ backpropWithN
     -> (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
     -> Rec Identity as
     -> (b, b -> Rec Identity as)
-backpropWithN zfs f !xs = (y, g)
+backpropWithN zfs f !xs = (y, g')
   where
-    !(!tp@(!_,!_),!y) = unsafePerformIO $ fillWengert f xs
-    g :: b -> Rec Identity as
-    g o = runST $ do
-        r <- initRunner tp $ bimap getSum (`appEndo` [])
-                           . fst
-                           $ rtraverse_ go xs
+    !(seqEither->(!tp0),!y) = unsafePerformIO $ fillWengert f xs
+    g' :: b -> Rec Identity as
+    g' = case tp0 of
+      Left i   -> setInput i
+      Right tp -> g tp
+    {-# INLINE g' #-}
+    g :: (Int, [SomeTapeNode]) -> b -> Rec Identity as
+    g tp o = runST $ do
+        r <- initRunner tp . bimap getSum (`appEndo` [])
+                           . VR.rfoldMap go     -- TODO: use strict tuple?
+                           $ xs
         gradRunner o r tp
         delts <- toList <$> V.freeze (_rInputs r)
         return . fromMaybe (internalError "backpropN") $
@@ -654,9 +664,21 @@ backpropWithN zfs f !xs = (y, g)
             (VR.rzipWith (fmap . runZF) zfs xs)
             delts
       where
-        go :: forall a. Identity a -> ((Sum Int, Endo [Maybe Any]),())
-        go _ = ((1, Endo (unsafeCoerce (Nothing @a) :)), ())
+        go :: forall a. Identity a -> (Sum Int, Endo [Maybe Any])
+        go _ = (1, Endo (unsafeCoerce (Nothing @a) :))
         {-# INLINE go #-}
+    setInput :: Int -> b -> Rec Identity as
+    setInput !i !x = go zfs xs 0
+      where
+        go :: Rec ZeroFunc bs -> Rec Identity bs -> Int -> Rec Identity bs
+        go = \case
+          RNil    -> \_ _ -> RNil
+          z :& zs -> \case
+            q :& qs -> \(!j) ->
+              if j == i
+                then Identity (unsafeCoerce x) :& VR.rzipWith coerce zs qs
+                else coerce z q :& go zs qs (j + 1)
+    {-# INLINE setInput #-}
 {-# INLINE backpropWithN #-}
 
 -- | 'evalBP' generalized to multiple inputs of different types.  See
@@ -673,15 +695,20 @@ fillWengert
     :: forall as b. ()
     => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
     -> Rec Identity as
-    -> IO ((Int, [SomeTapeNode]), b)
+    -> IO (Either Int (Int, [SomeTapeNode]), b)
 fillWengert f xs = do
     w <- initWengert
-    o <- reify w $ \(Proxy :: Proxy s) -> do
+    (i, o) <- reify w $ \(Proxy :: Proxy s) -> do
       let oVar = f (inpRec @s)
       evaluate (forceBVar oVar)
-      return (_bvVal oVar)
-    t <- readIORef (wRef w)
-    return (t, o)
+      let isInput = case _bvRef oVar of
+            BRInp i -> Just i
+            _       -> Nothing
+      pure (isInput, _bvVal oVar)
+    t <- case i of
+      Nothing -> Right <$> readIORef (wRef w)
+      Just i' -> pure $ Left i'
+    pure (t, o)
   where
     inpRec :: forall s. Rec (BVar s) as
     inpRec = evalState (rtraverse (state . go . runIdentity) xs) 0

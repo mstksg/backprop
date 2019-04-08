@@ -15,12 +15,11 @@ module Data.Type.Util (
     runzipWith
   , rzipWithM_
   , Replicate
-  , VecT(.., (:+)), Vec
+  , VecT(.., (:+))
   , vmap
   , withVec
   , vecToRec
   , fillRec
-  , rtraverse_
   , zipVecList
   , splitRec
   , p1, p2, s1, s2
@@ -53,9 +52,7 @@ data VecT :: Nat -> (k -> Type) -> k -> Type where
     VNil :: VecT 'Z f a
     (:*) :: !(f a) -> VecT n f a -> VecT ('S n) f a
 
-type Vec n = VecT n Identity
-
-pattern (:+) :: a -> Vec n a -> Vec ('S n) a
+pattern (:+) :: a -> VecT n Identity a -> VecT ('S n) Identity a
 pattern x :+ xs = Identity x :* xs
 
 vmap
@@ -105,18 +102,6 @@ fillRec f = go
         []   -> Nothing
         y:ys -> (f x y :&) <$> go xs ys
 {-# INLINE fillRec #-}
-
-rtraverse_
-    :: forall f g. Applicative g
-    => (forall x. f x -> g ())
-    -> (forall xs. Rec f xs -> g ())
-rtraverse_ f = go
-  where
-    go :: Rec f ys -> g ()
-    go = \case
-      RNil    -> pure ()
-      x :& xs -> f x *> go xs
-{-# INLINE rtraverse_ #-}
 
 rzipWithM_
     :: forall h f g as. Applicative h

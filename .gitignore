@@ -7,6 +7,7 @@
 /data
 /samples-exe
 /*.cabal
+/dist-newstyle
 
 /bench-results
 /prof-results
