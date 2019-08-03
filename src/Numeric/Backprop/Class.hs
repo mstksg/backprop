@@ -53,28 +53,33 @@ import           Control.Monad
 import           Data.Coerce
 import           Data.Complex
 import           Data.Data
-import           Data.Foldable hiding     (toList)
+import           Data.Foldable hiding  (toList)
 import           Data.Functor.Compose
 import           Data.Functor.Identity
-import           Data.List.NonEmpty       (NonEmpty(..))
+import           Data.List.NonEmpty    (NonEmpty(..))
 import           Data.Monoid
 import           Data.Ratio
+import           Data.Vinyl
+import           Data.Vinyl.ARec
+import           Data.Vinyl.TypeLevel
 import           Data.Void
 import           Data.Word
 import           GHC.Exts
 import           GHC.Generics
 import           Numeric.Natural
-import qualified Control.Arrow            as Arr
-import qualified Data.Functor.Product     as DFP
-import qualified Data.IntMap              as IM
-import qualified Data.Map                 as M
-import qualified Data.Semigroup           as SG
-import qualified Data.Sequence            as Seq
-import qualified Data.Vector              as V
-import qualified Data.Vector.Generic      as VG
-import qualified Data.Vector.Primitive    as VP
-import qualified Data.Vector.Storable     as VS
-import qualified Data.Vector.Unboxed      as VU
+import qualified Control.Arrow         as Arr
+import qualified Data.Functor.Product  as DFP
+import qualified Data.IntMap           as IM
+import qualified Data.Map              as M
+import qualified Data.Semigroup        as SG
+import qualified Data.Sequence         as Seq
+import qualified Data.Vector           as V
+import qualified Data.Vector.Generic   as VG
+import qualified Data.Vector.Primitive as VP
+import qualified Data.Vector.Storable  as VS
+import qualified Data.Vector.Unboxed   as VU
+import qualified Data.Vinyl.Functor    as V
+import qualified Data.Vinyl.XRec       as V
 
 -- | Class of values that can be backpropagated in general.
 --
@@ -811,20 +816,9 @@ instance (Backprop a, Backprop b, Backprop c, Backprop d, Backprop e) => Backpro
     {-# INLINE one #-}
 
 instance Backprop a => Backprop (Identity a) where
-    zero (Identity x) = Identity (zero x)
-    {-# INLINE zero #-}
-    add (Identity x) (Identity y) = Identity (add x y)
-    {-# INLINE add #-}
-    one (Identity x) = Identity (one x)
-    {-# INLINE one #-}
-
--- instance Backprop a => Backprop (I a) where
---     zero (I x) = I (zero x)
---     {-# INLINE zero #-}
---     add (I x) (I y) = I (add x y)
---     {-# INLINE add #-}
---     one (I x) = I (one x)
---     {-# INLINE one #-}
+    zero = coerce (zero @a)
+    add = coerce (add @a)
+    one = coerce (one @a)
 
 instance Backprop (Proxy a) where
     zero _ = Proxy
@@ -836,9 +830,9 @@ instance Backprop (Proxy a) where
 
 -- | @since 0.2.2.0
 instance Backprop w => Backprop (Const w a) where
-    zero (Const x) = Const (zero x)
-    add (Const x) (Const y) = Const (add x y)
-    one (Const x) = Const (one x)
+    zero = coerce (zero @w)
+    add = coerce (add @w)
+    one = coerce (one @w)
 
 instance Backprop Void where
     zero = \case {}
@@ -868,172 +862,26 @@ instance (Backprop a) => Backprop (IM.IntMap a) where
     one  = oneFunctor
     {-# INLINE one #-}
 
--- instance ListC (Backprop <$> (f <$> as)) => Backprop (Prod f as) where
---     zero = \case
---       Ø -> Ø
---       x :< xs -> zero x :< zero xs
---     {-# INLINE zero #-}
---     add = \case
---       Ø -> \case
---         Ø -> Ø
---       x :< xs -> \case
---         y :< ys -> add x y :< add xs ys
---     {-# INLINE add #-}
---     one = \case
---       Ø       -> Ø
---       x :< xs -> one x :< one xs
---     {-# INLINE one #-}
-
--- instance M.MaybeC (Backprop M.<$> (f M.<$> a)) => Backprop (Option f a) where
---     zero = \case
---       Nothing_ -> Nothing_
---       Just_ x  -> Just_ (zero x)
---     {-# INLINE zero #-}
---     add = \case
---       Nothing_ -> \case
---         Nothing_ -> Nothing_
---       Just_ x -> \case
---         Just_ y -> Just_ (add x y)
---     {-# INLINE add #-}
---     one = \case
---       Nothing_ -> Nothing_
---       Just_ x  -> Just_ (one x)
---     {-# INLINE one #-}
-
--- -- | @since 0.2.2.0
--- instance (Backprop (f a), Backprop (g a)) => Backprop ((f :&: g) a) where
---     zero (x :&: y) = zero x :&: zero y
---     {-# INLINE zero #-}
---     add (x1 :&: y1) (x2 :&: y2) = add x1 x2 :&: add y1 y2
---     {-# INLINE add #-}
---     one (x :&: y) = one x :&: one y
---     {-# INLINE one #-}
-
--- -- | @since 0.2.2.0
--- instance (Backprop (f a), Backprop (g b)) => Backprop ((f TC.:*: g) '(a, b)) where
---     zero (x TC.:*: y) = zero x TC.:*: zero y
---     {-# INLINE zero #-}
---     add (x1 TC.:*: y1) (x2 TC.:*: y2) = add x1 x2 TC.:*: add y1 y2
---     {-# INLINE add #-}
---     one (x TC.:*: y) = one x TC.:*: one y
---     {-# INLINE one #-}
-
--- -- | @since 0.2.2.0
--- instance Backprop (f (g h) a) => Backprop (TC.Comp1 f g h a) where
---     zero (TC.Comp1 x) = TC.Comp1 (zero x)
---     {-# INLINE zero #-}
---     add (TC.Comp1 x) (TC.Comp1 y) = TC.Comp1 (add x y)
---     {-# INLINE add #-}
---     one (TC.Comp1 x) = TC.Comp1 (one x)
---     {-# INLINE one #-}
-
--- -- | @since 0.2.2.0
--- instance Backprop (f (g a)) => Backprop ((f TC.:.: g) a) where
---     zero (Comp x) = Comp (zero x)
---     {-# INLINE zero #-}
---     add (Comp x) (Comp y) = Comp (add x y)
---     {-# INLINE add #-}
---     one (Comp x) = Comp (one x)
---     {-# INLINE one #-}
-
--- -- | @since 0.2.2.0
--- instance Backprop w => Backprop (TC.C w a) where
---     zero (TC.C x) = TC.C (zero x)
---     {-# INLINE zero #-}
---     add (TC.C x) (TC.C y) = TC.C (add x y)
---     {-# INLINE add #-}
---     one (TC.C x) = TC.C (one x)
---     {-# INLINE one #-}
-
--- -- | @since 0.2.2.0
--- instance Backprop (p a b) => Backprop (Flip p b a) where
---     zero (Flip x) = Flip (zero x)
---     {-# INLINE zero #-}
---     add (Flip x) (Flip y) = Flip (add x y)
---     {-# INLINE add #-}
---     one (Flip x) = Flip (one x)
---     {-# INLINE one #-}
-
--- -- | @since 0.2.2.0
--- instance Backprop (p '(a, b)) => Backprop (Cur p a b) where
---     zero (Cur x) = Cur (zero x)
---     {-# INLINE zero #-}
---     add (Cur x) (Cur y) = Cur (add x y)
---     {-# INLINE add #-}
---     one (Cur x) = Cur (one x)
---     {-# INLINE one #-}
-
--- -- | @since 0.2.2.0
--- instance Backprop (p a b) => Backprop (Uncur p '(a, b)) where
---     zero (Uncur x) = Uncur (zero x)
---     {-# INLINE zero #-}
---     add (Uncur x) (Uncur y) = Uncur (add x y)
---     {-# INLINE add #-}
---     one (Uncur x) = Uncur (one x)
---     {-# INLINE one #-}
-
--- -- | @since 0.2.2.0
--- instance Backprop (p '(a, b, c)) => Backprop (Cur3 p a b c) where
---     zero (Cur3 x) = Cur3 (zero x)
---     {-# INLINE zero #-}
---     add (Cur3 x) (Cur3 y) = Cur3 (add x y)
---     {-# INLINE add #-}
---     one (Cur3 x) = Cur3 (one x)
---     {-# INLINE one #-}
-
--- -- | @since 0.2.2.0
--- instance Backprop (p a b c) => Backprop (Uncur3 p '(a, b, c)) where
---     zero (Uncur3 x) = Uncur3 (zero x)
---     {-# INLINE zero #-}
---     add (Uncur3 x) (Uncur3 y) = Uncur3 (add x y)
---     {-# INLINE add #-}
---     one (Uncur3 x) = Uncur3 (one x)
---     {-# INLINE one #-}
-
--- -- | @since 0.2.2.0
--- instance Backprop (f a a) => Backprop (Join f a) where
---     zero (Join x) = Join (zero x)
---     {-# INLINE zero #-}
---     add (Join x) (Join y) = Join (add x y)
---     {-# INLINE add #-}
---     one (Join x) = Join (one x)
---     {-# INLINE one #-}
-
--- -- | @since 0.2.2.0
--- instance Backprop (t (Flip f b) a) => Backprop (Conj t f a b) where
---     zero (Conj x) = Conj (zero x)
---     {-# INLINE zero #-}
---     add (Conj x) (Conj y) = Conj (add x y)
---     {-# INLINE add #-}
---     one (Conj x) = Conj (one x)
---     {-# INLINE one #-}
-
--- -- | @since 0.2.2.0
--- instance Backprop (c (f a)) => Backprop (LL c a f) where
---     zero (LL x) = LL (zero x)
---     {-# INLINE zero #-}
---     add (LL x) (LL y) = LL (add x y)
---     {-# INLINE add #-}
---     one (LL x) = LL (one x)
---     {-# INLINE one #-}
-
--- -- | @since 0.2.2.0
--- instance Backprop (c (f a)) => Backprop (RR c f a) where
---     zero (RR x) = RR (zero x)
---     {-# INLINE zero #-}
---     add (RR x) (RR y) = RR (add x y)
---     {-# INLINE add #-}
---     one (RR x) = RR (one x)
---     {-# INLINE one #-}
+-- | @since 0.2.2.0
+instance Backprop a => Backprop (K1 i a p) where
+    zero = coerce (zero @a)
+    add  = coerce (add @a)
+    one  = coerce (one @a)
 
 -- | @since 0.2.2.0
-instance Backprop a => Backprop (K1 i a p)
-
--- | @since 0.2.2.0
-instance Backprop (f p) => Backprop (M1 i c f p)
+instance Backprop (f p) => Backprop (M1 i c f p) where
+    zero = coerce (zero @(f p))
+    add  = coerce (add @(f p))
+    one  = coerce (one @(f p))
 
 -- | @since 0.2.2.0
 instance (Backprop (f p), Backprop (g p)) => Backprop ((f :*: g) p)
+
+-- | @since 0.2.6.3
+instance (Backprop (f (g a))) => Backprop ((f :.: g) a) where
+    zero = coerce (zero @(f (g a)))
+    add  = coerce (add @(f (g a)))
+    one  = coerce (one @(f (g a)))
 
 -- | @since 0.2.2.0
 instance Backprop (V1 p)
@@ -1042,28 +890,52 @@ instance Backprop (V1 p)
 instance Backprop (U1 p)
 
 -- | @since 0.2.2.0
-instance Backprop a => Backprop (Sum a)
+instance Backprop a => Backprop (Sum a) where
+    zero = coerce (zero @a)
+    add  = coerce (add @a)
+    one  = coerce (one @a)
 
 -- | @since 0.2.2.0
-instance Backprop a => Backprop (Product a)
+instance Backprop a => Backprop (Product a) where
+    zero = coerce (zero @a)
+    add  = coerce (add @a)
+    one  = coerce (one @a)
 
 -- | @since 0.2.2.0
-instance Backprop a => Backprop (SG.Option a)
+instance Backprop a => Backprop (SG.Option a) where
+    zero = coerce (zero @(Maybe a))
+    add  = coerce (add @(Maybe a))
+    one  = coerce (one @(Maybe a))
 
 -- | @since 0.2.2.0
-instance Backprop a => Backprop (SG.First a)
+instance Backprop a => Backprop (SG.First a) where
+    zero = coerce (zero @a)
+    add  = coerce (add @a)
+    one  = coerce (one @a)
 
 -- | @since 0.2.2.0
-instance Backprop a => Backprop (SG.Last a)
+instance Backprop a => Backprop (SG.Last a) where
+    zero = coerce (zero @a)
+    add  = coerce (add @a)
+    one  = coerce (one @a)
 
 -- | @since 0.2.2.0
-instance Backprop a => Backprop (First a)
+instance Backprop a => Backprop (First a) where
+    zero = coerce (zero @(Maybe a))
+    add  = coerce (add @(Maybe a))
+    one  = coerce (one @(Maybe a))
 
 -- | @since 0.2.2.0
-instance Backprop a => Backprop (Data.Monoid.Last a)
+instance Backprop a => Backprop (Data.Monoid.Last a) where
+    zero = coerce (zero @(Maybe a))
+    add  = coerce (add @(Maybe a))
+    one  = coerce (one @(Maybe a))
 
 -- | @since 0.2.2.0
-instance Backprop a => Backprop (Dual a)
+instance Backprop a => Backprop (Dual a) where
+    zero = coerce (zero @a)
+    add  = coerce (add @a)
+    one  = coerce (one @a)
 
 -- | @since 0.2.2.0
 instance (Backprop a, Backprop b) => Backprop (SG.Arg a b)
@@ -1072,7 +944,10 @@ instance (Backprop a, Backprop b) => Backprop (SG.Arg a b)
 instance (Backprop (f a), Backprop (g a)) => Backprop (DFP.Product f g a)
 
 -- | @since 0.2.2.0
-instance Backprop (f (g a)) => Backprop (Compose f g a)
+instance Backprop (f (g a)) => Backprop (Compose f g a) where
+    zero = coerce (zero @(f (g a)))
+    add  = coerce (add @(f (g a)))
+    one  = coerce (one @(f (g a)))
 
 -- | 'add' adds together results; 'zero' and 'one' act on results.
 --
@@ -1091,5 +966,102 @@ instance (Backprop a, Applicative m) => Backprop (Arr.Kleisli m r a) where
     {-# INLINE zero #-}
     add (Arr.Kleisli f) (Arr.Kleisli g) = Arr.Kleisli $ \x ->
         add <$> f x <*> g x
+    {-# INLINE add #-}
     one (Arr.Kleisli f) = Arr.Kleisli ((fmap . fmap) one f)
     {-# INLINE one #-}
+
+-- | @since 0.2.6.3
+instance (ReifyConstraint Backprop f rs, RMap rs, RApply rs) => Backprop (Rec f rs) where
+    zero = rmap (\case V.Compose (Dict x) -> zero x)
+         . reifyConstraint @Backprop
+    {-# INLINE zero #-}
+    add xs = rzipWith (\x -> \case V.Compose (Dict y) -> add x y) xs
+           . reifyConstraint @Backprop
+    {-# INLINE add #-}
+    one  = rmap (\case V.Compose (Dict x) -> one x)
+         . reifyConstraint @Backprop
+    {-# INLINE one #-}
+
+-- | @since 0.2.6.3
+instance (ReifyConstraint Backprop f rs, RMap rs, RApply rs, RecApplicative rs, NatToInt (RLength rs), RPureConstrained (IndexableField rs) rs)
+      => Backprop (ARec f rs) where
+    zero = toARec . zero . fromARec
+    {-# INLINE zero #-}
+    add xs ys = toARec $ add (fromARec xs) (fromARec ys)
+    {-# INLINE add #-}
+    one  = toARec . zero . fromARec
+    {-# INLINE one #-}
+
+-- | @since 0.2.6.3
+instance (ReifyConstraint Backprop f rs, RMap rs, RApply rs, VS.Storable (Rec f rs))
+      => Backprop (SRec f rs) where
+    zero = toSRec . zero . fromSRec
+    {-# INLINE zero #-}
+    add xs ys = toSRec $ add (fromSRec xs) (fromSRec ys)
+    {-# INLINE add #-}
+    one  = toSRec . zero . fromSRec
+    {-# INLINE one #-}
+
+-- | @since 0.2.6.3
+instance (ReifyConstraint Backprop f rs, RMap rs, RApply rs, IsoXRec f rs)
+      => Backprop (XRec f rs) where
+    zero = toXRec . zero . fromXRec
+    {-# INLINE zero #-}
+    add xs ys = toXRec $ add (fromXRec xs) (fromXRec ys)
+    {-# INLINE add #-}
+    one  = toXRec . zero . fromXRec
+    {-# INLINE one #-}
+
+-- | @since 0.2.6.3
+instance Backprop a => Backprop (V.Identity a) where
+    zero = coerce (zero @a)
+    add  = coerce (add @a)
+    one  = coerce (one @a)
+
+-- | @since 0.2.6.3
+instance Backprop a => Backprop (V.Thunk a) where
+    zero (V.Thunk x) = V.Thunk (zero x)
+    add (V.Thunk x) (V.Thunk y) = V.Thunk (add x y)
+    one (V.Thunk x) = V.Thunk (one x)
+
+-- | @since 0.2.6.3
+instance Backprop (op (f a) (g a)) => Backprop (V.Lift op f g a) where
+    zero = coerce (zero @(op (f a) (g a)))
+    add  = coerce (add @(op (f a) (g a)))
+    one  = coerce (one @(op (f a) (g a)))
+
+-- | @since 0.2.6.3
+instance Backprop t => Backprop (V.ElField '(s, t)) where
+    zero (V.Field x) = V.Field (zero x)
+    add (V.Field x) (V.Field y) = V.Field (add x y)
+    one (V.Field x) = V.Field (one x)
+
+-- | @since 0.2.6.3
+instance Backprop (f (g a)) => Backprop (V.Compose f g a) where
+    zero = coerce (zero @(f (g a)))
+    add  = coerce (add @(f (g a)))
+    one  = coerce (one @(f (g a)))
+
+-- | @since 0.2.6.3
+instance Backprop w => Backprop (V.Const w a) where
+    zero = coerce (zero @w)
+    add  = coerce (add @w)
+    one  = coerce (one @w)
+
+-- | @since 0.2.6.3
+instance Backprop (V.HKD t a) => Backprop (V.XData t a) where
+    zero = coerce (zero @(V.HKD t a))
+    add  = coerce (add @(V.HKD t a))
+    one  = coerce (one @(V.HKD t a))
+
+-- | @since 0.2.6.3
+instance Backprop (SField field) where
+    zero _ = SField
+    add _ _ = SField
+    one _  = SField
+
+-- | @since 0.2.6.3
+instance Backprop (Label field) where
+    zero _ = Label
+    add _ _ = Label
+    one _  = Label

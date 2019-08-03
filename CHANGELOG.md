@@ -1,6 +1,17 @@
 Changelog
 =========
 
+Version 0.2.6.3
+---------------
+
+*August 3, 2019*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.2.6.3>
+
+*   Add `Backprop` instances for the various *vinyl* types.
+*   Rewrite many `Backprop` instances over newtypes to coerce instead of go
+    through Generics
+
 Version 0.2.6.2
 ---------------
 
