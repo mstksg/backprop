@@ -4,7 +4,7 @@ Changelog
 Version 0.2.6.3
 ---------------
 
-*August 3, 2019*
+*August 13, 2019*
 
 <https://github.com/mstksg/backprop/releases/tag/v0.2.6.3>
 

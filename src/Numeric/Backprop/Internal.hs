@@ -1,20 +1,22 @@
-{-# LANGUAGE BangPatterns        #-}
-{-# LANGUAGE DeriveDataTypeable  #-}
-{-# LANGUAGE DeriveGeneric       #-}
-{-# LANGUAGE EmptyCase           #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE LambdaCase          #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving  #-}
-{-# LANGUAGE TupleSections       #-}
-{-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeInType          #-}
-{-# LANGUAGE TypeOperators       #-}
-{-# LANGUAGE ViewPatterns        #-}
-{-# OPTIONS_HADDOCK not-home     #-}
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE EmptyCase             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE TupleSections         #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeInType            #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE ViewPatterns          #-}
+{-# OPTIONS_HADDOCK not-home       #-}
 
 -- |
 -- Module      : Numeric.Backprop.Internal
@@ -75,6 +77,7 @@ import           Unsafe.Coerce
 import qualified Data.Vector               as V
 import qualified Data.Vector.Mutable       as MV
 import qualified Data.Vinyl.Recursive      as VR
+import qualified Data.Vinyl.XRec           as X
 
 -- | "Zero out" all components of a value.  For scalar values, this should
 -- just be @'const' 0@.  For vectors and matrices, this should set all
@@ -190,6 +193,9 @@ data BVar s a = BV { _bvRef :: !(BRef s)
 
 -- | @since 0.1.5.1
 deriving instance Typeable (BVar s a)
+
+-- | @since 0.2.6.3
+instance X.IsoHKD (BVar s) a
 
 data BRef (s :: Type) = BRInp !Int
                       | BRIx !Int
