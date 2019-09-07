@@ -727,6 +727,17 @@ runMet (splitBV -&gt; M w1 b1 w2 b2) x = z
     y = logistic $ w1 #&gt; x + b1
     -- run second layer
     z = logistic $ w2 #&gt; y + b2
+
+runMetPS :: Reifies s W
+       =&gt; BVar s Met
+       -&gt; BVar s (R 100)
+       -&gt; BVar s (R 5)
+runMetPS (BV (M w1 b1 w2 b2)) x = z
+  where
+    -- run first layer
+    y = logistic $ w1 #&gt; x + b1
+    -- run second layer
+    z = logistic $ w2 #&gt; y + b2
 </code></pre>
 <p>Now, the <code>M w1 b1 w2 b2</code> pattern can be used to deconstruct <em>both</em> &quot;normal&quot;
 <code>Met</code>s, as well as a <code>BVar s Met</code> (with <code>splitBV</code> or <code>BV</code>).</p>
