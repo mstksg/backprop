@@ -401,6 +401,7 @@ are `MyType -> Int` (unlifted).  As a library maintainer, you can provide them
 [microlens-th]: http://hackage.haskell.org/package/microlens-th
 
 ```haskell top
+-- requires -XTemplateHaskell
 makeLenses ''MyType
 ```
 

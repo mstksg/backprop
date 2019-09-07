@@ -132,6 +132,7 @@ If we make lenses for `Net` using the *[lens][]* or *[microlens-th][]* packages:
 [microlens-th]: http://hackage.haskell.org/package/microlens-th
 
 ```haskell top
+-- requires -XTemplateHaskell
 makeLenses ''Net
 ```
 
@@ -274,6 +275,17 @@ runMet :: Reifies s W
        -> BVar s (R 100)
        -> BVar s (R 5)
 runMet (splitBV -> M w1 b1 w2 b2) x = z
+  where
+    -- run first layer
+    y = logistic $ w1 #> x + b1
+    -- run second layer
+    z = logistic $ w2 #> y + b2
+
+runMetPS :: Reifies s W
+       => BVar s Met
+       -> BVar s (R 100)
+       -> BVar s (R 5)
+runMetPS (BV (M w1 b1 w2 b2)) x = z
   where
     -- run first layer
     y = logistic $ w1 #> x + b1

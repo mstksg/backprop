@@ -112,6 +112,7 @@ data Net = N { _nWeights1 :: L 20 100
 
 instance Backprop Net
 
+-- requires -XTemplateHaskell
 makeLenses ''Net
 ```
 
