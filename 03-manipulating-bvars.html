@@ -645,7 +645,8 @@ data interface.</p>
 <p>The most straightforward way to do this is the lens-based interface, using
 <code>viewVar</code> or <code>^^.</code>.</p>
 <p>If we make lenses for <code>Net</code> using the <em><a href="http://hackage.haskell.org/package/lens">lens</a></em> or <em><a href="http://hackage.haskell.org/package/microlens-th">microlens-th</a></em> packages:</p>
-<pre class="haskell"><code>makeLenses &#39;&#39;Net
+<pre class="haskell"><code>-- requires -XTemplateHaskell
+makeLenses &#39;&#39;Net
 </code></pre>
 <p>or make them manually:</p>
 <pre class="haskell"><code>nBias1&#39; :: Functor f =&gt; (R 20 -&gt; f (R 20)) -&gt; Net -&gt; f Net

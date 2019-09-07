@@ -837,7 +837,8 @@ because you can&#39;t directly pattern match normally, and the record accessors
 are <code>MyType -&gt; Int</code> (unlifted). As a library maintainer, you can provide them
 <em>lenses</em> to the fields, either generated automatically using the <em><a href="http://hackage.haskell.org/package/lens">lens</a></em> or
 <em><a href="http://hackage.haskell.org/package/microlens-th">microlens-th</a></em> packages:</p>
-<pre class="haskell"><code>makeLenses &#39;&#39;MyType
+<pre class="haskell"><code>-- requires -XTemplateHaskell
+makeLenses &#39;&#39;MyType
 </code></pre>
 <p>or manually by hand:</p>
 <pre class="haskell"><code>mtInt&#39; :: Functor f =&gt; (Int -&gt; f Int) -&gt; MyType -&gt; f MyType
