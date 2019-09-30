@@ -17,9 +17,10 @@ jobs:
     - name: Install dependencies
       run: |
         apt-get install libblas-dev liblapack-dev
+        export PATH=$HOME/.local/bin:$HOME/.cabal/bin:$PATH
         stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
-      env:
-        PATH: $HOME/.local/bin:$HOME/.cabal/bin:$PATH
+      # env:
+      #   PATH: $HOME/.local/bin:$HOME/.cabal/bin:$PATH
       # run: cabal install --only-dependencies --enable-tests
     - name: Build
       run: stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
