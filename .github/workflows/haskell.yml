@@ -13,7 +13,7 @@ jobs:
       run: |
         mkdir -p ~/.local/bin
         # export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$HOME/.local/bin:/opt/alex/$ALEXVER/bin:/opt/happy/$HAPPYVER/bin:$HOME/.cabal/bin:$PATH
-        # export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$HOME/.local/bin:/opt/alex/$ALEXVER/bin:/opt/happy/$HAPPYVER/bin:$HOME/.cabal/bin:$PATH
+        export PATH=$HOME/.local/bin:$HOME/.cabal/bin:$PATH
         curl -L https://get.haskellstack.org/stable/linux-x86_64.tar.gz | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
     - name: Install dependencies
       run: stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
