@@ -16,7 +16,9 @@ jobs:
         export PATH=$HOME/.local/bin:$HOME/.cabal/bin:$PATH
         curl -L https://get.haskellstack.org/stable/linux-x86_64.tar.gz | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
     - name: Install dependencies
-      run: stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
+      run: |
+        export PATH=$HOME/.local/bin:$HOME/.cabal/bin:$PATH
+        stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
       # run: cabal install --only-dependencies --enable-tests
     - name: Build
       run: stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
