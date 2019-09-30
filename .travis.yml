@@ -33,32 +33,6 @@ script:
   set +ex
 matrix:
   include:
-  - env: BUILD=cabal GHCVER=8.0.2 CABALVER=1.24 HAPPYVER=1.19.5 ALEXVER=3.1.7
-    addons:
-      apt:
-        sources:
-        - hvr-ghc
-        packages:
-        - cabal-install-1.24
-        - ghc-8.0.2
-        - happy-1.19.5
-        - alex-3.1.7
-        - libblas-dev
-        - liblapack-dev
-    compiler: ': #GHC 8.0.2'
-  - env: BUILD=cabal GHCVER=8.2.2 CABALVER=2.0 HAPPYVER=1.19.5 ALEXVER=3.1.7
-    addons:
-      apt:
-        sources:
-        - hvr-ghc
-        packages:
-        - cabal-install-2.0
-        - ghc-8.2.2
-        - happy-1.19.5
-        - alex-3.1.7
-        - libblas-dev
-        - liblapack-dev
-    compiler: ': #GHC 8.2.2'
   - env: BUILD=cabal GHCVER=8.4.4 CABALVER=2.2 HAPPYVER=1.19.5 ALEXVER=3.1.7
     addons:
       apt:
@@ -106,22 +80,6 @@ matrix:
         - libblas-dev
         - liblapack-dev
     compiler: ': #stack default'
-  - env: BUILD=stack ARGS="--resolver lts-9"
-    addons:
-      apt:
-        packages:
-        - libgmp-dev
-        - libblas-dev
-        - liblapack-dev
-    compiler: ': #stack 8.0.2'
-  - env: BUILD=stack ARGS="--resolver lts-11"
-    addons:
-      apt:
-        packages:
-        - libgmp-dev
-        - libblas-dev
-        - liblapack-dev
-    compiler: ': #stack 8.2.2'
   - env: BUILD=stack ARGS="--resolver lts-12"
     addons:
       apt:
@@ -149,12 +107,6 @@ matrix:
   - env: BUILD=stack ARGS=""
     os: osx
     compiler: ': #stack default osx'
-  - env: BUILD=stack ARGS="--resolver lts-9"
-    os: osx
-    compiler: ': #stack 8.0.2 osx'
-  - env: BUILD=stack ARGS="--resolver lts-11"
-    os: osx
-    compiler: ': #stack 8.2.2 osx'
   - env: BUILD=stack ARGS="--resolver lts-12"
     os: osx
     compiler: ': #stack 8.4.4 osx'
