@@ -16,7 +16,7 @@ jobs:
         curl -L https://get.haskellstack.org/stable/linux-x86_64.tar.gz | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
     - name: Install dependencies
       run: |
-        apt-get install libblas-dev liblapack-dev
+        sudo apt-get install libblas-dev liblapack-dev
         export PATH=$HOME/.local/bin:$HOME/.cabal/bin:$PATH
         stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
       # env:
