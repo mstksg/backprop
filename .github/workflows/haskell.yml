@@ -20,7 +20,7 @@ jobs:
         mkdir -p ~/.local/bin
         echo `uname`
         echo ${{ matrix.os }}
-        if [ `uname` = "Darwin" ]
+        if [ `uname` = "Darwin" ]; then
         then
           curl --insecure -L https://get.haskellstack.org/stable/osx-x86_64.tar.gz | tar xz --strip-components=1 --include '*/stack' -C ~/.local/bin
         else
@@ -28,7 +28,7 @@ jobs:
         fi
     - name: Install dependencies
       run: |
-        if [ `uname` = "Darwin" ]
+        if [ `uname` = "Darwin" ]; then
           brew update
           # brew install fftw
         then
