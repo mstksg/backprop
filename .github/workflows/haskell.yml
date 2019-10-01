@@ -15,22 +15,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v1
-    - name: Install stack
-      run: |
-        mkdir -p ~/.local/bin
-        case $OS in
-          ubuntu-latest)
-            curl -L https://get.haskellstack.org/stable/linux-x86_64.tar.gz | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
-            ;;
-          macOS-latest)
-            curl --insecure -L https://get.haskellstack.org/stable/osx-x86_64.tar.gz | tar xz --strip-components=1 --include '*/stack' -C ~/.local/bin
-            ;;
-          *)
-            set -e
-            ;;
-        esac
-      env:
-        OS: ${{ matrix.os }}
+    - uses: mstksg/setup-stack@master
+      with:
+        runs-on: ${{ matrix.os }}
     - name: Install dependencies
       run: |
         case $OS in
@@ -38,21 +25,19 @@ jobs:
             sudo apt-get install libblas-dev liblapack-dev
             ;;
           macOS-latest)
-            brew update
+            # brew update
             # brew install fftw
             ;;
           *)
             set -e
             ;;
         esac
-        export PATH=$HOME/.local/bin:$HOME/.cabal/bin:$PATH
         stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
       env:
         ARGS: ${{ matrix.resolver }}
         OS: ${{ matrix.os }}
     - name: Build
       run: |
-        export PATH=$HOME/.local/bin:$HOME/.cabal/bin:$PATH
         stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
       env:
         ARGS: ${{ matrix.resolver }}
