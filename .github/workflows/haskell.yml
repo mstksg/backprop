@@ -18,7 +18,12 @@ jobs:
     - name: Install stack
       run: |
         mkdir -p ~/.local/bin
-        curl -L https://get.haskellstack.org/stable/linux-x86_64.tar.gz | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+        if [ `uname` = "Darwin" ]
+        then
+          curl --insecure -L https://get.haskellstack.org/stable/osx-x86_64.tar.gz | tar xz --strip-components=1 --include '*/stack' -C ~/.local/bin
+        else
+          curl -L https://get.haskellstack.org/stable/linux-x86_64.tar.gz | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+        fi
     - name: Install dependencies
       run: |
         sudo apt-get install libblas-dev liblapack-dev
