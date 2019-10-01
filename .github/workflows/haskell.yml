@@ -18,6 +18,8 @@ jobs:
     - name: Install stack
       run: |
         mkdir -p ~/.local/bin
+        echo `uname`
+        echo ${{ matrix.os }}
         if [ `uname` = "Darwin" ]
         then
           curl --insecure -L https://get.haskellstack.org/stable/osx-x86_64.tar.gz | tar xz --strip-components=1 --include '*/stack' -C ~/.local/bin
