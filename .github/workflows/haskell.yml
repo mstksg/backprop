@@ -26,7 +26,12 @@ jobs:
         fi
     - name: Install dependencies
       run: |
-        sudo apt-get install libblas-dev liblapack-dev
+        if [ `uname` = "Darwin" ]
+          sudo apt-get install libblas-dev liblapack-dev
+        then
+          brew update
+          # brew install fftw
+        fi
         export PATH=$HOME/.local/bin:$HOME/.cabal/bin:$PATH
         stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
       env:
