@@ -4,28 +4,39 @@ on: [push]
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        os: [ubuntu-latest,macOS-latest]
+        resolver:
+          - "--resolver lts-12"
+          - "--resolver lts-13"
+          - "--resolver nightly"
+          - ""
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v1
     - name: Install stack
       run: |
         mkdir -p ~/.local/bin
-        # export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$HOME/.local/bin:/opt/alex/$ALEXVER/bin:/opt/happy/$HAPPYVER/bin:$HOME/.cabal/bin:$PATH
         curl -L https://get.haskellstack.org/stable/linux-x86_64.tar.gz | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
     - name: Install dependencies
       run: |
         sudo apt-get install libblas-dev liblapack-dev
         export PATH=$HOME/.local/bin:$HOME/.cabal/bin:$PATH
         stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
-      # env:
-      #   PATH: $HOME/.local/bin:$HOME/.cabal/bin:$PATH
-      # run: cabal install --only-dependencies --enable-tests
+      env:
+        ARGS: ${{ matrix.resolver }}
     - name: Build
       run: |
         export PATH=$HOME/.local/bin:$HOME/.cabal/bin:$PATH
         stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
+      env:
+        ARGS: ${{ matrix.resolver }}
+
+      # env:
+      #   PATH: $HOME/.local/bin:$HOME/.cabal/bin:$PATH
+      # run: cabal install --only-dependencies --enable-tests
+        # export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$HOME/.local/bin:/opt/alex/$ALEXVER/bin:/opt/happy/$HAPPYVER/bin:$HOME/.cabal/bin:$PATH
       # run: |
       #   cabal configure --enable-tests
       #   cabal build
