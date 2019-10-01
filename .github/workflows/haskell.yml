@@ -20,7 +20,7 @@ jobs:
         runs-on: ${{ matrix.os }}
     - name: Install dependencies
       run: |
-        ls ~/.local/bin
+        ls $HOME/.local/bin
         case $OS in
           ubuntu-latest)
             sudo apt-get install libblas-dev liblapack-dev
