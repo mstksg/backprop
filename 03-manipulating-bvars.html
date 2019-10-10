@@ -1,0 +1,845 @@
+<!DOCTYPE HTML><html><head><title>backprop - Manipulating BVars</title><meta content="summary" name="twitter:card"><meta content="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/tintin-darkorange.png" name="twitter:site"><meta content="backprop - Manipulating BVars" name="twitter:title"><meta content="Heterogeneous automatic differentation" name="twitter:description"><meta content="mstksg" name="twitter:creator"><meta content="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/tintin-darkorange.png" name="twitter:image"><meta itemprop="og:type" content="website"><meta itemprop="og:site_name" content="theam"><meta itemprop="og:title" content="backprop - Manipulating BVars"><meta itemprop="og:url" content="mstksg/backprop"><meta itemprop="og:image" content="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/tintin-darkorange.png"><meta itemprop="og:description" content="Heterogeneous automatic differentation"><link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans|Montserrat:500" rel="stylesheet"><link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/tomorrow-night.min.css" rel="stylesheet"><link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css" rel="stylesheet"><link href="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/favicon-darkorange.ico" rel="shortcut icon"><link href="https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.css" rel="stylesheet"><style>
+html
+{
+  height     : 100%;
+  min-height : 100%;
+}
+
+body
+{
+  height      : 100%;
+  min-height  : 100%;
+  font-family : "IBM Plex Sans", sans-serif;
+  font-size   : 1em;
+  overflow-x  : hidden;
+}
+
+h1
+{
+  font-family : "Montserrat", sans-serif;
+  font-weight : bold;
+  font-size   : 1em;
+}
+
+h2
+{
+  font-family : "Montserrat", sans-serif;
+  font-weight : bold;
+  font-size   : 2.44099em;
+}
+
+h3
+{
+  font-family : "Montserrat", sans-serif;
+  font-weight : bold;
+  font-size   : 5.95848em;
+}
+
+h1
+{
+  font-size : 2.44099em;
+}
+
+h2
+{
+  font-size : 1.953em;
+}
+
+h3
+{
+  font-size : 1.56299em;
+}
+
+.next-prev
+{
+  margin-top    : 5%;
+  margin-bottom : 5%;
+}
+
+#header-container
+{
+  margin-top    : 5rem;
+  margin-bottom : 5rem;
+}
+
+.cover-heading
+{
+  font-size     : 800%;
+  max-height    : 6rem;
+  margin-bottom : 1.56299rem;
+}
+
+.cover-container
+{
+  background-color : rgba(255,255,255,0.0);
+}
+
+.watermark
+{
+  position    : absolute;
+  top         : 0px;
+  left        : 0px;
+  max-height  : 1.25039rem;
+  margin-top  : 1.25039rem;
+  margin-left : 1.25039rem;
+}
+
+.cover-heading-subtitle
+{
+  margin-top : 3rem;
+  font-size  : 1.953rem;
+}
+
+.vertical-auto
+{
+  margin-top    : auto;
+  margin-bottom : auto;
+}
+
+.content
+{
+  margin-top    : 5%;
+  margin-bottom : 5%;
+}
+
+#wrapper
+{
+  padding-left       : 0px;
+  -webkit-transition : all 0.5s ease 0.0s;
+  -moz-transition    : all 0.5s ease 0.0s;
+  -ms-transition     : all 0.5s ease 0.0s;
+  -o-transition      : all 0.5s ease 0.0s;
+  transition         : all 0.5s ease 0.0s;
+}
+
+#wrapper.toggled
+{
+  padding-left : 250px;
+}
+
+#wrapper.toggled #sidebar-wrapper
+{
+  width : 250px;
+}
+
+#page-content-wrapper#wrapper.toggled
+{
+  position     : absolute;
+  margin-right : -250px;
+}
+
+#page-content-wrapper
+{
+  width      : 100%;
+  position   : absolute;
+  margin-top : 3rem;
+  padding    : 15px 15px 15px 15px;
+}
+
+#page-content-wrapper img
+{
+  max-width : 100%;
+}
+
+#sidebar-wrapper
+{
+  z-index            : 1000;
+  position           : fixed;
+  left               : 250px;
+  width              : 0px;
+  margin-left        : -250px;
+  overflow-y         : hidden;
+  overflow-x         : hidden;
+  -webkit-transition : all 0.5s ease 0.0s;
+  -moz-transition    : all 0.5s ease 0.0s;
+  -ms-transition     : all 0.5s ease 0.0s;
+  -o-transition      : all 0.5s ease 0.0s;
+  transition         : all 0.5s ease 0.0s;
+}
+
+.sidebar-nav
+{
+  position        : absolute;
+  top             : 0px;
+  width           : 250px;
+  margin          : 0px 0px 0px 0px;
+  padding         : 0px 0px 0px 0px;
+  list-style-type : none;
+}
+
+.sidebar-nav li
+{
+  text-indent : 20px;
+  line-height : 40px;
+}
+
+.sidebar-nav li a
+{
+  display         : block;
+  text-decoration : none;
+  font-weight     : bold;
+}
+
+
+.sidebar-nav li .tintin-fg-disabled:hover
+{
+  mix-blend-mode  : normal;
+  -webkit-filter  : invert(0%);
+  -moz-filter     : invert(0%);
+  -ms-filter      : invert(0%);
+  -o-filter       : invert(0%);
+  filter          : invert(0%);
+  text-decoration : none;
+  color           : #000000;
+}
+
+
+.sidebar-nav li .tintin-fg-active:hover
+{
+  mix-blend-mode  : normal;
+  -webkit-filter  : invert(0%);
+  -moz-filter     : invert(0%);
+  -ms-filter      : invert(0%);
+  -o-filter       : invert(0%);
+  filter          : invert(0%);
+  text-decoration : none;
+  color           : #ffffff;
+}
+
+#menu-toggle
+{
+  position : absolute;
+}
+
+#menu-toggle img
+{
+  position : absolute;
+  left     : 0px;
+}
+
+#menu-toggle .rotateIn
+{
+  z-index : 999;
+}
+
+.tintin-doc-topbar
+{
+  height : 3rem;
+}
+
+.tintin-doc-topbar a
+{
+  margin-left : 1rem;
+  margin-top  : 0rem;
+  width       : 1.5rem;
+}
+
+.tintin-doc-topbar a img
+{
+  -webkit-filter : invert(70%);
+  -moz-filter    : invert(70%);
+  -ms-filter     : invert(70%);
+  -o-filter      : invert(70%);
+  filter         : invert(70%);
+}
+
+.filter-gray
+{
+  position       : relative;
+  bottom         : 3px;
+  margin-left    : 0.25rem;
+  margin-right   : 1rem;
+  height         : 1rem;
+  -webkit-filter : brightness(0.75);
+  -moz-filter    : brightness(0.75);
+  -ms-filter     : brightness(0.75);
+  -o-filter      : brightness(0.75);
+  filter         : brightness(0.75);
+}
+
+.footer-theam
+{
+  position       : relative;
+  bottom         : 1px;
+  margin-left    : -0.25rem;
+  height         : 1.75rem;
+  -webkit-filter : invert(75%);
+  -moz-filter    : invert(75%);
+  -ms-filter     : invert(75%);
+  -o-filter      : invert(75%);
+  filter         : invert(75%);
+}
+
+.tintin-doc-footer
+{
+  bottom : 0px;
+  height : -15rem;
+  width  : 100%;
+  color  : rgba(0,0,0,0.3);
+}
+
+.main-container
+{
+  min-height : 100%;
+  position   : relative;
+}
+
+#content
+{
+  min-height : 95%;
+}
+
+.sidebar-nav > .sidebar-brand
+{
+  height         : 3rem;
+  font-size      : 2rem;
+  font-family    : "Montserrat", sans-serif;
+  font-weight    : bold;
+  padding-top    : 2.5rem;
+  padding-bottom : 2.5rem;
+  margin-bottom  : 1.5rem;
+}
+
+.sidebar-nav > .sidebar-brand img
+{
+  height : 1.5rem;
+}
+
+.tintin-navbar
+{
+  font-weight      : bold;
+  background-color : rgba(255,255,255,0.15);
+}
+
+.tintin-navbar .left-part
+{
+  padding-left : 0px !important;
+}
+
+.tintin-navbar ul
+{
+  margin-top      : 1rem;
+  list-style-type : none;
+}
+
+.tintin-navbar ul li
+{
+  margin-right : 1rem;
+  display      : inline;
+}
+
+.tintin-navbar ul li a
+{
+  color          : #000000;
+  -webkit-filter : invert(35%);
+  -moz-filter    : invert(35%);
+  -ms-filter     : invert(35%);
+  -o-filter      : invert(35%);
+  filter         : invert(35%);
+  mix-blend-mode : difference;
+}
+
+.tintin-navbar ul li a:hover
+{
+  mix-blend-mode  : normal;
+  -webkit-filter  : invert(0%);
+  -moz-filter     : invert(0%);
+  -ms-filter      : invert(0%);
+  -o-filter       : invert(0%);
+  filter          : invert(0%);
+  text-decoration : none;
+  color           : #000000;
+}
+
+
+.tintin-navbar .tintin-navbar-active a
+{
+  mix-blend-mode : normal;
+  -webkit-filter : invert(0%);
+  -moz-filter    : invert(0%);
+  -ms-filter     : invert(0%);
+  -o-filter      : invert(0%);
+  filter         : invert(0%);
+  color          : #ffffff;
+}
+
+.tintin-navbar .tintin-navbar-active a:hover
+{
+  mix-blend-mode  : normal;
+  -webkit-filter  : invert(0%);
+  -moz-filter     : invert(0%);
+  -ms-filter      : invert(0%);
+  -o-filter       : invert(0%);
+  filter          : invert(0%);
+  text-decoration : none;
+  color           : #ffffff;
+}
+
+.tintin-bg-70
+{
+  background-color : rgba(255,255,255,0.15);
+}
+
+.tintin-bg-black
+{
+  background-color : #1d1f21;
+}
+
+.tintin-bg-white
+{
+  background-color : #f5f8f6;
+}
+
+.tintin-bg-grey
+{
+  background-color : #4d4d4d;
+}
+
+.tintin-bg-red
+{
+  background-color : #d30228;
+}
+
+.tintin-bg-darkgreen
+{
+  background-color : #3c8b6a;
+}
+
+.tintin-bg-lightgreen
+{
+  background-color : #a4cb58;
+}
+
+.tintin-bg-darkorange
+{
+  background-color : #ff6602;
+}
+
+.tintin-bg-lightorange
+{
+  background-color : #faa73e;
+}
+
+.tintin-bg-blue
+{
+  background-color : #94c1e8;
+}
+
+.tintin-bg-darkblue
+{
+  background-color : #007c99;
+}
+
+.tintin-bg-purple
+{
+  background-color : #9f76b4;
+}
+
+.tintin-bg-bronze
+{
+  background-color : #a4a27a;
+}
+
+.tintin-bg-darkgrey
+{
+  background-color : #282a2e;
+}
+
+.tintin-fg-black
+{
+  color : #1d1f21;
+}
+
+.tintin-fg-white
+{
+  color : #f5f8f6;
+}
+
+.tintin-fg-grey
+{
+  color : #4d4d4d;
+}
+
+.tintin-fg-red
+{
+  color : #d30228;
+}
+
+.tintin-fg-darkgreen
+{
+  color : #3c8b6a;
+}
+
+.tintin-fg-lightgreen
+{
+  color : #a4cb58;
+}
+
+.tintin-fg-darkorange
+{
+  color : #ff6602;
+}
+
+.tintin-fg-lightorange
+{
+  color : #faa73e;
+}
+
+.tintin-fg-blue
+{
+  color : #94c1e8;
+}
+
+.tintin-fg-darkblue
+{
+  color : #007c99;
+}
+
+.tintin-fg-purple
+{
+  color : #9f76b4;
+}
+
+.tintin-fg-bronze
+{
+  color : #a4a27a;
+}
+
+.tintin-fg-darkgrey
+{
+  color : #282a2e;
+}
+
+.tintin-fg-active
+{
+  color : #ffffff;
+}
+
+.tintin-fg-disabled
+{
+  color          : #000000;
+  -webkit-filter : invert(35%);
+  -moz-filter    : invert(35%);
+  -ms-filter     : invert(35%);
+  -o-filter      : invert(35%);
+  filter         : invert(35%);
+  mix-blend-mode : difference;
+}
+
+footer
+{
+  position       : relative;
+  bottom         : 0px;
+  left           : 0px;
+  width          : 100%;
+  padding-top    : 30px;
+  padding-bottom : 30px;
+}
+
+.container
+{
+  max-width : 50rem;
+}
+
+@media screen and (min-width: 768px)
+{
+
+#wrapper
+{
+  padding-left : 0px;
+}
+
+#wrapper .toggled
+{
+  padding-left : 250px;
+}
+
+#wrapper .toggled #sidebar-wrapper
+{
+  width : 250px;
+}
+
+#wrapper .toggled #page-content-wrapper
+{
+  position     : relative;
+  margin-right : 0px;
+}
+
+#sidebar-wrapper
+{
+  width : 0px;
+}
+
+#page-content-wrapper
+{
+  padding  : 20px 20px 20px 20px;
+  position : relative;
+}
+
+}
+
+/* Generated with Clay, http://fvisser.nl/clay */</style></head><body class="h-100 tintin-fg-black tintin-bg-white"><div id="main-container" class="h-100"><section id="content"><div id="wrapper" class="toggled"><div id="sidebar-wrapper" class="h-100 tintin-bg-darkorange"><div class="h-100 tintin-bg-70"><p></p></div><ul class="sidebar-nav"><li class="sidebar-brand d-flex tintin-bg-darkorange"><a href="index.html" class="align-self-center tintin-fg-white">backprop</a></li><li><a href="01-getting-started.html" class="tintin-fg-disabled">Getting Started</a></li><li><a href="02-a-detailed-look.html" class="tintin-fg-disabled">A Detailed Look</a></li><li><a href="03-manipulating-bvars.html" class="tintin-fg-active">Manipulating BVars</a></li><li><a href="04-the-backprop-typeclass.html" class="tintin-fg-disabled">The Backprop Typeclass</a></li><li><a href="05-applications.html" class="tintin-fg-disabled">Applications and Resources</a></li><li><a href="06-manual-gradients.html" class="tintin-fg-disabled">Manual Gradients</a></li><li><a href="07-performance.html" class="tintin-fg-disabled">Performance &amp; Optimizations</a></li><li><a href="08-equipping-your-library.html" class="tintin-fg-disabled">Equipping your Library</a></li><li><a href="09-comparisons.html" class="tintin-fg-disabled">Comparisons</a></li></ul></div><nav class="navbar navbar-expand-lg tintin-doc-topbar tintin-fg-white"><a href="#menu-toggle" id="menu-toggle" class><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/menu.png" class="img-fluid animated rotateOut"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/close.png" class="img-fluid animated rotateIn"></a></nav><div id="page-content-wrapper"><div class="container"><div class="col"><div class="animated fadeIn"><h1>Manipulating BVars</h1>
+<p>The most important aspect of the usability of this library is allowing you to
+seamlessly manipulate <code>BVar s a</code>s as if they were just <code>a</code>s, without requiring
+you as the user to be able to recognize or acknowledge the difference. Here
+are some techniques to that end.</p>
+<p>Remember, a <code>BVar s a</code> is a <code>BVar</code> containing an <code>a</code> --- it&#39;s an <code>a</code> that, when
+used, keeps track of and propagates your gradient.</p>
+<h2>Typeclass Interface</h2>
+<p><code>BVar</code>s have <code>Num</code>, <code>Fractional</code>, <code>Floating</code>, <code>Eq</code>, and <code>Ord</code> instances. These
+instances are basically &quot;lifted&quot; to the <code>BVar</code> itself, so if you have a <code>BVar s
+Double</code>, you can use <code>(*)</code>, <code>sqrt</code>, <code>(&gt;)</code>, etc. on it exactly as if it were
+just a <code>Double</code>.</p>
+<h2>Constant Values</h2>
+<p>If we don&#39;t <em>care</em> about a value&#39;s gradient, we can use <code>auto</code>:</p>
+<pre class="haskell"><code>auto :: a -&gt; BVar s a
+</code></pre>
+<p><code>auto x</code> basically gives you a <code>BVar</code> that contains just <code>x</code> alone. Useful for
+using with functions that expect <code>BVar</code>s, but you just have a specific value
+you want to use.</p>
+<h2>Coercible</h2>
+<p>If <code>a</code> and <code>b</code> are <code>Coercible</code>, then so are <code>BVar s a</code> and <code>BVar s b</code>, using
+the <code>coerceVar</code> function. This is useful for &quot;unwrapping&quot; and &quot;wrapping&quot;
+<code>BVar</code>s of newtypes:</p>
+<pre class="haskell"><code>newtype MyInt = MyInt Int
+
+getMyInt :: BVar s MyInt -&gt; BVar s Int
+getMyInt = coerceVar
+</code></pre>
+<h2>Accessing Contents</h2>
+<p>The following techniques can be used to access values inside <code>BVar</code>s:</p>
+<h3>Traversable Containers</h3>
+<p>One that we saw earlier was <code>sequenceVar</code>, which we used to turn a <code>BVar</code>
+containing a list into a list of <code>BVar</code>s:</p>
+<pre class="haskell"><code>sequenceVar :: (Backprop a, Reifies s W)
+            =&gt; BVar s [a]
+            -&gt; [BVar s a]
+</code></pre>
+<p>If you have a <code>BVar</code> containing a list, you can get a list of <code>BVar</code>s of all of
+that list&#39;s elements. (<code>sequenceVar</code> actually works on all <code>Traversable</code>
+instances, not just lists) This is very useful when combined with
+<code>-XViewPatterns</code>, as seen earlier.</p>
+<h3>Records and Fields</h3>
+<p>In practice, a lot of usage involves functions involving contents of records or
+data types containing fields. The previous example, involving a simple ANN,
+demonstrates this:</p>
+<pre class="haskell"><code>data Net = N { _nWeights1 :: L 20 100
+             , _nBias1    :: R 20
+             , _nWeights2 :: L  5  20
+             , _nBias2    :: R  5
+             }
+  deriving (Show, Generic)
+
+instance Backprop Net       -- can be automatically defined
+</code></pre>
+<p>To compute the result of this network (ran on an <code>R 100</code>, a 100-vector) and get
+the output <code>R 5</code>, we need do a matrix multiplication by the <code>_nWeights1</code> field,
+add the result to the <code>_nBias1</code> field...basically, the result is a function of
+linear algebra and related operations on the input and all of the contents of
+the <code>Net</code> data type. However, you can&#39;t directly use <code>_nWeights</code>, since it
+takes a <code>Net</code>, not <code>BVar s Net</code>. And you also can&#39;t directly pattern match on
+the <code>N</code> constructor.</p>
+<p>There are two main options for this: the lens interface, and the higher-kinded
+data interface.</p>
+<h4>Lens Interface</h4>
+<p>The most straightforward way to do this is the lens-based interface, using
+<code>viewVar</code> or <code>^^.</code>.</p>
+<p>If we make lenses for <code>Net</code> using the <em><a href="http://hackage.haskell.org/package/lens">lens</a></em> or <em><a href="http://hackage.haskell.org/package/microlens-th">microlens-th</a></em> packages:</p>
+<pre class="haskell"><code>-- requires -XTemplateHaskell
+makeLenses &#39;&#39;Net
+</code></pre>
+<p>or make them manually:</p>
+<pre class="haskell"><code>nBias1&#39; :: Functor f =&gt; (R 20 -&gt; f (R 20)) -&gt; Net -&gt; f Net
+nBias1&#39; f n = (\b -&gt; n { _nBias1 = b }) &lt;$&gt; f (_nBias1 n)
+</code></pre>
+<p>then <code>^.</code> from the <em>lens</em> or <em><a href="http://hackage.haskell.org/package/microlens">microlens</a></em> packages lets you retrieve a field
+from a <code>Net</code>:</p>
+<pre class="haskell"><code>(^. nWeights1) :: Net -&gt; L 20 100
+(^. nBias1   ) :: Net -&gt; R 20
+(^. nWeights2) :: Net -&gt; L  5  20
+(^. nBias2   ) :: Net -&gt; R  5
+</code></pre>
+<p>And, <code>^^.</code> from <em>backprop</em> (also aliased as <code>viewVar</code>) lets you do the same
+thing from a <code>BVar s Net</code> (a <code>BVar</code> containing your <code>Net</code>):</p>
+<pre class="haskell"><code>(^^. nWeights1) :: BVar s Net -&gt; BVar s (L 20 100)
+(^^. nBias1   ) :: BVar s Net -&gt; BVar s (R 20)
+(^^. nWeights2) :: BVar s Net -&gt; BVar s (L  5  20)
+(^^. nBias2   ) :: BVar s Net -&gt; BVar s (R  5)
+</code></pre>
+<p>With our lenses and <code>^^.</code>, we can write our network running function. This
+time, I&#39;ll include the type!</p>
+<pre class="haskell"><code>runNet :: Reifies s W
+       =&gt; BVar s Net
+       -&gt; BVar s (R 100)
+       -&gt; BVar s (R 5)
+runNet net x = z
+  where
+    -- run first layer
+    y = logistic $ (net ^^. nWeights1) #&gt; x + (net ^^. nBias1)
+    -- run second layer
+    z = logistic $ (net ^^. nWeights2) #&gt; y + (net ^^. nBias2)
+
+logistic :: Floating a =&gt; a -&gt; a
+logistic x = 1 / (1 + exp (-x))
+</code></pre>
+<p>Note that we are using versions of <code>#&gt;</code> lifted for <code>BVar</code>s, from the
+<em><a href="http://hackage.haskell.org/package/hmatrix-backprop">hmatrix-backprop</a></em> library:</p>
+<pre class="haskell"><code>(#&gt;) :: BVar s (L m n) -&gt; BVar s (R n) -&gt; BVar s (R m)
+</code></pre>
+<h4>Higher-Kinded Data Interface</h4>
+<p>Using the lens based interface, you can&#39;t directly pattern match and construct
+fields. To allow for directly pattern matching, there&#39;s another interface
+option involving the &quot;Higher-Kinded Data&quot; techniques described in <a href="http://reasonablypolymorphic.com/blog/higher-kinded-data/">this
+article</a>.</p>
+<p>If we had a type-family (that can be re-used for all of your data types):</p>
+<pre class="haskell"><code>type family HKD f a where
+    HKD Identity a = a
+    HKD f        a = f a
+</code></pre>
+<p>We can define <code>Net</code> instead as:</p>
+<pre class="haskell"><code>data Met&#39; f = M { _mWeights1 :: HKD f (L 20 100)
+                , _mBias1    :: HKD f (R 20)
+                , _mWeights2 :: HKD f (L  5  20)
+                , _mBias2    :: HKD f (R  5)
+                }
+  deriving Generic
+</code></pre>
+<p>Then our <em>original</em> type is:</p>
+<pre class="haskell"><code>type Met = Met&#39; Identity
+
+deriving instance Show Met
+instance Backprop Met
+</code></pre>
+<p><code>Met</code> is the same as <code>Net</code> in every way -- it can be pattern matched on to get
+the <code>L 20 100</code>, etc. (the <code>Identity</code> disappears):</p>
+<pre class="haskell"><code>getMetBias1 :: Met -&gt; R 20
+getMetBias1 (M _ b _ _) = b
+</code></pre>
+<p>The benefit of this is that we can now directly pattern match on a <code>BVar s Met</code>
+to get the internal fields as <code>BVar</code>s using <code>splitBV</code> as a view pattern (or the
+<code>BV</code> pattern synonym):</p>
+<pre class="haskell"><code>runMet :: Reifies s W
+       =&gt; BVar s Met
+       -&gt; BVar s (R 100)
+       -&gt; BVar s (R 5)
+runMet (splitBV -&gt; M w1 b1 w2 b2) x = z
+  where
+    -- run first layer
+    y = logistic $ w1 #&gt; x + b1
+    -- run second layer
+    z = logistic $ w2 #&gt; y + b2
+
+runMetPS :: Reifies s W
+       =&gt; BVar s Met
+       -&gt; BVar s (R 100)
+       -&gt; BVar s (R 5)
+runMetPS (BV (M w1 b1 w2 b2)) x = z
+  where
+    -- run first layer
+    y = logistic $ w1 #&gt; x + b1
+    -- run second layer
+    z = logistic $ w2 #&gt; y + b2
+</code></pre>
+<p>Now, the <code>M w1 b1 w2 b2</code> pattern can be used to deconstruct <em>both</em> &quot;normal&quot;
+<code>Met</code>s, as well as a <code>BVar s Met</code> (with <code>splitBV</code> or <code>BV</code>).</p>
+<p>Note that this HKD access method is potentially less performant than lens
+access (by about 10-20%).</p>
+<h3>Potential or Many Fields</h3>
+<p>Some values &quot;may&quot; or &quot;may not&quot; have values of a given field. An example would
+include the nth item in a list or vector, or the <code>Just</code> of a <code>Maybe</code>.</p>
+<p>For these, the lens-based (prism-based/traversal-based) interface is the main way to access
+partial fields. You can use <code>(^^?)</code> or <code>previewVar</code> with any <code>Traversal</code>:</p>
+<pre class="haskell"><code>(^?)  ::        a -&gt; Traversal&#39; a b -&gt; Maybe         b
+(^^?) :: BVar s a -&gt; Traversal&#39; a b -&gt; Maybe (BVar s b)
+</code></pre>
+<p>If the value in the <code>BVar</code> &quot;has&quot; that field, then you&#39;ll get a <code>Just</code> with the
+<code>BVar</code> of that field&#39;s contents. If it doesn&#39;t, you&#39;ll get a <code>Nothing</code>.</p>
+<p>You can use this with any prism or traversal, like using <code>_head</code> to get the
+first item in a list if it exists.</p>
+<p>If you have a type that might contain <em>many</em> values of a field (like a tree or
+list), you can use <code>(^^..)</code> or <code>toListOfVar</code>, which works on any <code>Traversal</code>:</p>
+<pre class="haskell"><code>(^..)  ::        a -&gt; Traversal&#39; a b -&gt; [       b]
+(^^..) :: BVar s a -&gt; Traversal&#39; a b -&gt; [BVar s b]
+</code></pre>
+<p>This can be used to implement <code>sequenceVar</code>, actually:</p>
+<pre class="haskell"><code>sequenceVar :: BVar s [a] -&gt; [BVar s a]
+sequenceVar xs = xs ^^.. traverse
+</code></pre>
+<h3>Tuples</h3>
+<p>The <code>T2</code> pattern synonym is provided, which allow you to pattern match on a
+<code>BVar s (a, b)</code> to get a <code>BVar s a</code> and <code>BVar s b</code>. The <code>T3</code> pattern is also
+provided, which does the same thing for three-tuples.</p>
+<p>Note that <code>T2</code> and <code>T3</code> are <em>bidirectional</em> pattern synonyms, and can be used to
+construct as well as deconstruct.</p>
+<h2>Combining BVars</h2>
+<p>The following techniques can be used to &quot;combine&quot; <code>BVar</code>s:</p>
+<h3>Foldable Containers</h3>
+<p>The &quot;opposite&quot; of <code>sequenceVar</code> is <code>collectVar</code>, which takes a foldable
+container of <code>BVar</code>s and returns a <code>BVar</code> containing that foldable container of
+contents:</p>
+<pre class="haskell"><code>collectVar :: (Backprop a, Foldable t, Functor t, Reifies s W)
+           =&gt; t (BVar s a)
+           -&gt; BVar s (t a)
+</code></pre>
+<h3>Constructors</h3>
+<p>Sometimes you would like to combine a bunch of <code>BVar</code>s into a <code>BVar</code> of
+specific container or data type.</p>
+<h4>isoVar</h4>
+<p>The simplest way to do this is using the <code>isoVar</code>, <code>isoVar2</code>, etc. family of
+functions:</p>
+<pre class="haskell"><code>isoVar2
+    :: (Backprop a, Backprop b, Backprop c, Reifies s W)
+    =&gt; (a -&gt; b -&gt; c)
+    -&gt; (c -&gt; (a, b))
+    -&gt; BVar s a
+    -&gt; BVar s b
+    -&gt; BVar s c
+</code></pre>
+<p>So if we had a type like:</p>
+<pre class="haskell"><code>data DoubleInt = DI Double Int
+</code></pre>
+<p>We can combine a <code>Double</code> and <code>Int</code> into a <code>DoubleInt</code> using <code>isoVar2</code>:</p>
+<pre class="haskell"><code>isoVar2 DI (\(DI x y) -&gt; (x,y))
+    :: Reifies s W
+    =&gt; BVar s Double
+    -&gt; BVar s Int
+    -&gt; BVar s DoubleInt
+</code></pre>
+<h4>Higher-Kinded Data Interface</h4>
+<p>You can also use the <a href="http://reasonablypolymorphic.com/blog/higher-kinded-data/">&quot;Higher Kinded Data&quot;</a> interface, as well. For our
+<code>Met</code> type above, you can use <code>joinBV</code>, or the <code>BV</code> pattern synonym:</p>
+<pre class="haskell"><code>makeMet :: Reifies s W
+        =&gt; BVar s (L 20 100)
+        -&gt; BVar s (R 20)
+        -&gt; BVar s (L  5  20)
+        -&gt; BVar s (R  5)
+        -&gt; BVar s Met
+makeMet w1 b1 w2 b2 = joinBV (M w1 b1 w2 b2)
+</code></pre>
+<h3>Modifying fields</h3>
+<p>If you just want to &quot;set&quot; a specific field, you can use the lens-based
+interface with <code>(.~~)</code> or <code>setVar</code>. For example, if we wanted to set the
+<code>_nWeights2</code> field of a <code>Net</code> to a new matrix, we can do:</p>
+<pre class="haskell"><code>myNet &amp; nWeights2 .~~ newMatrix
+</code></pre>
+<p>or</p>
+<pre class="haskell"><code>setVar nWeights2
+    :: Reifies s W
+    =&gt; BVar s (L 20 5)
+    -&gt; BVar s Net
+    -&gt; BVar s Net
+</code></pre>
+<p>You can also use <code>(%~~)</code> or <code>overVar</code> to apply a <em>function</em> to a specific
+inside your value.</p>
+<h2>Prelude Modules</h2>
+<p>Finally, the <em>Prelude.Backprop</em> module has a lot of your normal Prelude
+functions &quot;lifted&quot; to work on <code>BVar</code>s of values. For many situations, these
+aren&#39;t necessary, and normal Prelude functions will work just fine on <code>BVar</code>s
+of values (like <code>(.)</code>). However, it does have some convenient functions, like
+<code>minimum</code>, <code>foldl&#39;</code>, <code>fmap</code>, <code>toList</code>, <code>fromIntegral</code>, <code>realToFrac</code>, etc.
+lifted to work on <code>BVar</code>s. This module is meant to be imported qualified.</p>
+<h1>Moving On</h1>
+<p>Now that you know all about <code>BVar</code>s, you really can just <strong><a href="https://hackage.haskell.org/package/backprop">jump into the
+haddocks</a></strong> and start writing programs. The next section of this
+documentation is more details about <strong><a href="https://backprop.jle.im/04-the-backprop-typeclass.html">the <code>Backprop</code> typeclass</a></strong>.</p>
+</div></div></div></div></div></section><div class="tintin-doc-footer clear-fix"><div class="row next-prev"><div class="col-md-4 offset-md-4"><a href="02-a-detailed-look.html">&lt; Previous: A Detailed Look</a></div><div class="col-md-4 ml-auto"><a href="04-the-backprop-typeclass.html">Next: The Backprop Typeclass &gt;</a></div></div><div class="float-right"><div style="float: left" class="d-inline"><p class>Site generated with </p></div><a style="float: left" href="https://theam.github.io/tintin"><img src="https://s3-eu-west-1.amazonaws.com/worldwideapps/assets/logo.svg" class="filter-gray"></a><div class="clear-fix float-right"><span style="float:left">&mdash; &copy; 2018 </span><a href="http://theam.io" class="float:left"><img src="http://theam.io/logo_theam.png" class="footer-theam"></a></div></div></div></div><script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script><script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/haskell.min.js"></script><script src="https://cdn.rawgit.com/icons8/bower-webicon/v0.10.7/jquery-webicon.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script>$(function () {$("#menu-toggle").click(function(e) {e.preventDefault();$("#wrapper").toggleClass("toggled");$("#menu-toggle img").toggleClass("rotateIn rotateOut");})});</script><script src="https://cdn.jsdelivr.net/npm/katex@0.10.0-alpha/dist/katex.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/contrib/auto-render.min.js"></script><script>renderMathInElement(document.body);</script></body></html>
