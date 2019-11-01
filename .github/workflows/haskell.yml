@@ -18,32 +18,14 @@ jobs:
     - uses: mstksg/setup-stack@master
       with:
         runs-on: ${{ matrix.os }}
-    - users: mstksg/get-package@master
+    - uses: mstksg/get-package@master
       with:
         runs-on: ${{ matrix.os }}
         apt-get: libblas-dev liblapack-dev
-
-    # - name: Install dependencies
-    #   run: |
-    #     echo $PATH
-    #     ls ~/.local/bin
-    #     case $OS in
-    #       ubuntu-latest)
-    #         sudo apt-get install libblas-dev liblapack-dev
-    #         ;;
-    #       macOS-latest)
-    #         # brew update
-    #         # brew install fftw
-    #         ;;
-    #       *)
-    #         set -e
-    #         ;;
-    #     esac
-    #     stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
-    #   env:
-    #     ARGS: ${{ matrix.resolver }}
-    #     OS: ${{ matrix.os }}
-
+    - name: Install stack dependencies
+      run: stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
+      env:
+        ARGS: ${{ matrix.resolver }}
     - name: Build
       run: |
         stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
