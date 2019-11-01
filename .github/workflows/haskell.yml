@@ -18,38 +18,34 @@ jobs:
     - uses: mstksg/setup-stack@master
       with:
         runs-on: ${{ matrix.os }}
-    - name: Install dependencies
-      run: |
-        echo $PATH
-        ls ~/.local/bin
-        case $OS in
-          ubuntu-latest)
-            sudo apt-get install libblas-dev liblapack-dev
-            ;;
-          macOS-latest)
-            # brew update
-            # brew install fftw
-            ;;
-          *)
-            set -e
-            ;;
-        esac
-        stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
-      env:
-        ARGS: ${{ matrix.resolver }}
-        OS: ${{ matrix.os }}
+    - users: mstksg/get-package@master
+      with:
+        runs-on: ${{ matrix.os }}
+        apt-get: libblas-dev liblapack-dev
+
+    # - name: Install dependencies
+    #   run: |
+    #     echo $PATH
+    #     ls ~/.local/bin
+    #     case $OS in
+    #       ubuntu-latest)
+    #         sudo apt-get install libblas-dev liblapack-dev
+    #         ;;
+    #       macOS-latest)
+    #         # brew update
+    #         # brew install fftw
+    #         ;;
+    #       *)
+    #         set -e
+    #         ;;
+    #     esac
+    #     stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
+    #   env:
+    #     ARGS: ${{ matrix.resolver }}
+    #     OS: ${{ matrix.os }}
+
     - name: Build
       run: |
         stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
       env:
         ARGS: ${{ matrix.resolver }}
-
-      # env:
-      #   PATH: $HOME/.local/bin:$HOME/.cabal/bin:$PATH
-      # run: cabal install --only-dependencies --enable-tests
-        # export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$HOME/.local/bin:/opt/alex/$ALEXVER/bin:/opt/happy/$HAPPYVER/bin:$HOME/.cabal/bin:$PATH
-      # run: |
-      #   cabal configure --enable-tests
-      #   cabal build
-    # - name: Run tests
-    #   run: cabal test

@@ -13,7 +13,7 @@ packages:
     hackage: vinyl-0.12.0
 snapshots:
 - completed:
-    size: 329710
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2019/9/28.yaml
-    sha256: 5cbbdd3f551866b3b4ed7d953fdbc1786c0cdfcc98e70c06f267f077b4f14c50
-  original: nightly-2019-09-28
+    size: 524789
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/8.yaml
+    sha256: 8af5eb80734f02621d37e82cc0cde614af2ddc9c320610acb0b1b6d9ac162930
+  original: lts-14.8
