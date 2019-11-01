@@ -16,8 +16,6 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - uses: mstksg/setup-stack@master
-      with:
-        runs-on: ${{ matrix.os }}
     - uses: mstksg/get-package@master
       with:
         apt-get: libblas-dev liblapack-dev
