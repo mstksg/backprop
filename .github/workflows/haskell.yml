@@ -31,20 +31,16 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
-    # checkout
     - uses: actions/checkout@v1
     - uses: mstksg/setup-stack@master
-    - uses: actions/setup-haskell@v1
-      with:
-        ghc-version: ${{ matrix.plan.ghc }}
-        cabal-version: '3.0'
+    - name: Setup
+      run: |
+        stack --install-ghc --compiler $GHC setup
+        which ghc
+        which cabal
+      env:
+        GHC: ${{ join('ghc-',matrix.plan.ghc) }}
       if: matrix.plan.build == 'cabal'
-
-
-    # - uses: mstksg/get-package@master
-    #   with:
-    #     apt-get: ${{ join('ghc-',matrix.plan.ghc) }}
-    #   if: matrix.plan.build == 'cabal'
 
     # get OS packages
     - uses: mstksg/get-package@master
