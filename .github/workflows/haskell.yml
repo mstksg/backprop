@@ -20,45 +20,80 @@ jobs:
           plan:
             build: cabal
 
-        # builder: [stack, cabal]
-        # ghc:
-        # - 8.4.4
-        # - 8.6.5
-        # - 8.8.1
-        # - nightly
-        # - default
-      # include:
-        # - { builder: stack, ghc: "8.4.4"  , resolver: "--resolver lts-12"  }
-        # - { builder: stack, ghc: "8.6.5"  , resolver: "--resolver lts-14"  }
-        # - { builder: stack, ghc: "nightly", resolver: "--resolver nightly" }
-        # - { builder: stack, ghc: "default", resolver: ""                   }
-
     runs-on: ${{ matrix.os }}
     steps:
+
     - uses: actions/checkout@v1
-    - uses: mstksg/setup-stack@master
-    - uses: actions/setup-haskell@v1
+
+    - name: Setup stack
+      uses: mstksg/setup-stack@master
+
+    - name: Setup cabal-install
+      uses: actions/setup-haskell@v1
       with:
         ghc-version: ${{ matrix.plan.ghc }}
         cabal-version: "3.0"
       if: matrix.plan.build == 'cabal'
 
-
-    # get OS packages
-    - uses: mstksg/get-package@master
+    - name: Install OS Packages
+      uses: mstksg/get-package@master
       with:
         apt-get: libblas-dev liblapack-dev
 
-    # install deps
     - name: Install stack dependencies
-      run: stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
-      env:
-        ARGS: ${{ matrix.resolver }}
-
-    # build
-    - name: Build with Stack
-      run: stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
+      run: |
+        set -ex
+        case "$BUILD" in
+          stack)
+            stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
+            ;;
+          cabal)
+            cabal --version
+            cabal update
+            PACKAGES=$(stack --install-ghc query locals | grep '^ *path' | sed 's@^ *path:@@')
+            cabal install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
+            ;;
+        esac
+        set +ex
       env:
         ARGS: ${{ matrix.plan.resolver }}
-      if: matrix.plan.build == 'stack'
+        BUILD: ${{ matrix.plan.build }}
+
+    - name: Build
+      run: |
+        set -ex
+        case "$BUILD" in
+          stack)
+            stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
+            ;;
+          cabal)
+            PACKAGES=$(stack --install-ghc query locals | grep '^ *path' | sed 's@^ *path:@@')
+            cabal install --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
+
+            ORIGDIR=$(pwd)
+            for dir in $PACKAGES
+            do
+              cd $dir
+              cabal check || [ "$CABALVER" == "1.16" ]
+              cabal sdist
+              PKGVER=$(cabal info . | awk '{print $2;exit}')
+              SRC_TGZ=$PKGVER.tar.gz
+              cd dist
+              tar zxfv "$SRC_TGZ"
+              cd "$PKGVER"
+              cabal configure --enable-tests --ghc-options -O0
+              cabal build
+              if [ "$CABALVER" = "1.16" ] || [ "$CABALVER" = "1.18" ]; then
+                cabal test
+              else
+                cabal test --show-details=streaming --log=/dev/stdout
+              fi
+              cd $ORIGDIR
+            done
+            ;;
+        esac
+        set +ex
+      env:
+        ARGS: ${{ matrix.plan.resolver }}
+        BUILD: ${{ matrix.plan.build }}
 
