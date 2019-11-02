@@ -35,11 +35,11 @@ jobs:
     - uses: mstksg/setup-stack@master
     - name: Setup
       run: |
-        stack --install-ghc --compiler $GHC setup
+        stack --install-ghc --compiler "ghc-$GHC" setup
         which ghc
         which cabal
       env:
-        GHC: ${{ join('ghc-',matrix.plan.ghc) }}
+        GHC: ${{ matrix.plan.ghc }}
       if: matrix.plan.build == 'cabal'
 
     # get OS packages
