@@ -7,24 +7,59 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest,macOS-latest]
-        resolver:
-          - "--resolver lts-12"
-          - "--resolver lts-13"
-          - "--resolver nightly"
-          - ""
+        plan:
+        - { build: stack, resolver: "--resolver lts-12"  }
+        - { build: stack, resolver: "--resolver lts-14"  }
+        - { build: stack, resolver: "--resolver nightly" }
+        - { build: stack, resolver: ""                   }
+        - { build: cabal, ghc: 8.4.4 }
+        - { build: cabal, ghc: 8.6.5 }
+        - { build: cabal, ghc: 8.8.1 }
+
+        # builder: [stack, cabal]
+        # ghc:
+        # - 8.4.4
+        # - 8.6.5
+        # - 8.8.1
+        # - nightly
+        # - default
+      # include:
+        # - { builder: stack, ghc: "8.4.4"  , resolver: "--resolver lts-12"  }
+        # - { builder: stack, ghc: "8.6.5"  , resolver: "--resolver lts-14"  }
+        # - { builder: stack, ghc: "nightly", resolver: "--resolver nightly" }
+        # - { builder: stack, ghc: "default", resolver: ""                   }
+
     runs-on: ${{ matrix.os }}
     steps:
+    # checkout
     - uses: actions/checkout@v1
     - uses: mstksg/setup-stack@master
     - uses: mstksg/get-package@master
       with:
+        apt-get: ${{ format("ghc-{0}", matrix.plan.ghc) }}
+      if: matrix.plan.build == "cabal"
+
+    # get OS packages
+    - uses: mstksg/get-package@master
+      with:
         apt-get: libblas-dev liblapack-dev
+
+    # install deps
     - name: Install stack dependencies
-      run: stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
       env:
         ARGS: ${{ matrix.resolver }}
-    - name: Build
+
+    # build
+    - name: Build with Stack
       run: |
+        stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
         stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
       env:
-        ARGS: ${{ matrix.resolver }}
+        ARGS: ${{ matrix.plan.resolver }}
+      if: matrix.plan.build == "stack"
+
+    # - uses: actions/setup-haskell@v1
+    #   with:
+    #     ghc-version: matrix.pack.ghc
+    #   if: matrix.plan.build == "cabal"
+
