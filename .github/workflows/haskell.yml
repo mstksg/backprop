@@ -34,10 +34,16 @@ jobs:
     # checkout
     - uses: actions/checkout@v1
     - uses: mstksg/setup-stack@master
-    - uses: mstksg/get-package@master
+    - uses: actions/setup-haskell@v1
       with:
-        apt-get: ${{ join('ghc-',matrix.plan.ghc) }}
+        ghc-version: matrix.plan.ghc
       if: matrix.plan.build == 'cabal'
+
+
+    # - uses: mstksg/get-package@master
+    #   with:
+    #     apt-get: ${{ join('ghc-',matrix.plan.ghc) }}
+    #   if: matrix.plan.build == 'cabal'
 
     # get OS packages
     - uses: mstksg/get-package@master
@@ -56,9 +62,4 @@ jobs:
       env:
         ARGS: ${{ matrix.plan.resolver }}
       if: matrix.plan.build == 'stack'
-
-    # - uses: actions/setup-haskell@v1
-    #   with:
-    #     ghc-version: matrix.pack.ghc
-    #   if: matrix.plan.build == "cabal"
 
