@@ -36,7 +36,7 @@ jobs:
     - uses: mstksg/setup-stack@master
     - uses: actions/setup-haskell@v1
       with:
-        ghc-version: matrix.plan.ghc
+        ghc-version: ${{ matrix.plan.ghc }}
       if: matrix.plan.build == 'cabal'
 
 
