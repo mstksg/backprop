@@ -33,14 +33,12 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - uses: mstksg/setup-stack@master
-    - name: Setup
-      run: |
-        stack --install-ghc --compiler "ghc-$GHC" setup
-        which ghc
-        which cabal
-      env:
-        GHC: ${{ matrix.plan.ghc }}
+    - uses: actions/setup-haskell@v1
+      with:
+        ghc-version: ${{ matrix.plan.ghc }}
+        cabal-version: "3.0"
       if: matrix.plan.build == 'cabal'
+
 
     # get OS packages
     - uses: mstksg/get-package@master
