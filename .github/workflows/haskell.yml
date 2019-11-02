@@ -37,7 +37,7 @@ jobs:
     - uses: mstksg/get-package@master
       with:
         apt-get: ${{ join('ghc-',matrix.plan.ghc) }}
-      if: matrix.plan.build == "cabal"
+      if: matrix.plan.build == 'cabal'
 
     # get OS packages
     - uses: mstksg/get-package@master
@@ -55,7 +55,7 @@ jobs:
       run: stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
       env:
         ARGS: ${{ matrix.plan.resolver }}
-      if: matrix.plan.build == "stack"
+      if: matrix.plan.build == 'stack'
 
     # - uses: actions/setup-haskell@v1
     #   with:
