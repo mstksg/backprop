@@ -17,8 +17,8 @@ jobs:
         - { build: cabal, ghc: 8.8.1 }
         exclude:
         - os: macOS-latest
-          build:
-            plan: cabal
+          plan:
+            build: cabal
 
         # builder: [stack, cabal]
         # ghc:
