@@ -46,14 +46,13 @@ jobs:
 
     # install deps
     - name: Install stack dependencies
+      run: stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
       env:
         ARGS: ${{ matrix.resolver }}
 
     # build
     - name: Build with Stack
-      run: |
-        stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
-        stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
+      run: stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
       env:
         ARGS: ${{ matrix.plan.resolver }}
       if: matrix.plan.build == "stack"
