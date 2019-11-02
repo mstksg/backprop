@@ -19,6 +19,9 @@ jobs:
         - os: macOS-latest
           plan:
             build: cabal
+        # include:
+        # - os: ubuntu-latest
+        #   apt-get:
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -32,7 +35,7 @@ jobs:
       uses: actions/setup-haskell@v1
       with:
         ghc-version: ${{ matrix.plan.ghc }}
-        cabal-version: "3.0"
+        cabal-version: "2.4"
       if: matrix.plan.build == 'cabal'
 
     - name: Install OS Packages
@@ -40,7 +43,7 @@ jobs:
       with:
         apt-get: libblas-dev liblapack-dev
 
-    - name: Install stack dependencies
+    - name: Install dependencies
       run: |
         set -ex
         case "$BUILD" in
