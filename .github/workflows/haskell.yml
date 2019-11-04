@@ -44,6 +44,10 @@ jobs:
     - name: Setup stack
       uses: mstksg/setup-stack@v1
 
+    - name: Setup stack.yaml.lock
+      run: stack --no-terminal --install-ghc $ARGS --lock-file read-write setup 
+      if: matrix.plan.build == 'stack'
+
     - name: Setup cabal-install
       uses: actions/setup-haskell@v1
       with:
@@ -51,9 +55,51 @@ jobs:
         cabal-version: ${{ matrix.plan.cabal-install }}
       if: matrix.plan.build == 'cabal'
 
+
+    - name: Cache GHC
+      uses: actions/cache@preview
+      if: matrix.plan.build == 'cabal'
+      id: cg
+      with:
+        path: .ghc
+        key: ${{ matrix.plan.os }}-ghc-${{ matrix.plan.build.ghc }}-${{ hashFiles('**/package.yaml') }}
+        restore-keys: |
+          ${{ matrix.plan.os }}-ghc-
+
+    - name: Cache Cabal
+      uses: actions/cache@preview
+      if: matrix.plan.build == 'cabal'
+      id: cc
+      with:
+        path: .cabal
+        key: ${{ matrix.plan.os }}-cabal-${{ matrix.plan.build.ghc }}-${{ matrix.plan.build.cabal}}-${{ hashFiles('**/package.yaml') }}
+        restore-keys: |
+          ${{ matrix.plan.os }}-cabal-
+
+    - name: Cache Stack
+      uses: actions/cache@preview
+      if: matrix.plan.build == 'stack'
+      id: cs
+      with:
+        path: .stack
+        key: ${{ matrix.plan.os }}-stack-${{ hashFiles('**/package.yaml', '**/stack.yaml.lock') }}
+        restore-keys: |
+          ${{ matrix.plan.os }}-stack-
+
+    - name: Cache Stack Work
+      uses: actions/cache@preview
+      if: matrix.plan.build == 'stack'
+      id: csw
+      with:
+        path: .stack-work
+        key: ${{ matrix.plan.os }}-stackwork-${{ hashFiles('**/package.yaml', '**/stack.yaml.lock') }}
+        restore-keys: |
+          ${{ matrix.plan.os }}-stackwork-
+
     - name: Install dependencies
       run: |
         set -ex
+        pwd
         case "$BUILD" in
           stack)
             stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
@@ -69,6 +115,10 @@ jobs:
       env:
         ARGS: ${{ matrix.plan.resolver }}
         BUILD: ${{ matrix.plan.build }}
+      if: |
+        (matrix.plan.build == 'cabal' && !(steps.cg.outputs.cache-hit && steps.cg.outputs.cache-hit))
+          || (matrix.plan.build == 'stack' && !(steps.cs.outputs.cache-hit && steps.csw.outputs.cache-hit))
+
 
     - name: Build
       run: |
