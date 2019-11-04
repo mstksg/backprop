@@ -47,6 +47,7 @@ jobs:
     - name: Setup stack.yaml.lock
       run: |
         stack --no-terminal $ARGS --lock-file read-write setup
+        echo $HOME
         cat "stack.yaml.lock"
       if: matrix.plan.build == 'stack'
       env:
@@ -95,7 +96,7 @@ jobs:
       if: matrix.plan.build == 'stack'
       id: csw
       with:
-        path: /home/runner/work/.stack-work
+        path: ${{format('{0}{1}',github.workspace,'/.stack-work')}}
         key: ${{ matrix.plan.os }}-stackwork-${{ hashFiles(format('{0}{1}',github.workspace,'/package.yaml'))}}-${{hashFiles(format('{0}{1}',github.workspace,'/stack.yaml.lock')) }}
         restore-keys: |
           ${{ matrix.plan.os }}-stackwork-
