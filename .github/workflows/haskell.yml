@@ -35,9 +35,6 @@ jobs:
       with:
         apt-get: ${{ matrix.apt-get }}
         brew: ${{ matrix.brew }}
-        testlist:
-        - hello
-        - world
     - uses: actions/checkout@v1
 
     - name: Setup stack
