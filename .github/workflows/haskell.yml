@@ -16,6 +16,7 @@ jobs:
         - { build: cabal, ghc: 8.4.4 }
         - { build: cabal, ghc: 8.6.5 }
         - { build: cabal, ghc: 8.8.1 }
+        - { build: cabal, ghc: head  }
         # use this to include any dependencies from OS package managers
         include:
         # - os: macOS-latest
