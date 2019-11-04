@@ -82,7 +82,7 @@ jobs:
       id: cs
       with:
         path: .stack
-        key: ${{ matrix.plan.os }}-stack-${{ hashFiles('**/package.yaml', '**/stack.yaml.lock') }}
+        key: ${{ matrix.plan.os }}-stack-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml.lock') }}
         restore-keys: |
           ${{ matrix.plan.os }}-stack-
 
@@ -92,7 +92,7 @@ jobs:
       id: csw
       with:
         path: .stack-work
-        key: ${{ matrix.plan.os }}-stackwork-${{ hashFiles('**/package.yaml', '**/stack.yaml.lock') }}
+        key: ${{ matrix.plan.os }}-stackwork-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml.lock') }}
         restore-keys: |
           ${{ matrix.plan.os }}-stackwork-
 
