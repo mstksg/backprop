@@ -15,17 +15,23 @@ jobs:
         - { build: cabal, ghc: 8.4.4 }
         - { build: cabal, ghc: 8.6.5 }
         - { build: cabal, ghc: 8.8.1 }
+        # brew: anybrewdeps
+        include:
+          apt-get: libblas-dev liblapack-dev
+
         exclude:
         - os: macOS-latest
           plan:
             build: cabal
-        # include:
-        # - os: ubuntu-latest
-        #   apt-get:
 
     runs-on: ${{ matrix.os }}
     steps:
-
+    - name: Install OS Packages
+      uses: mstksg/get-package@master
+      with:
+        apt-get: ${{ matrix.apt-get }}
+        brew: ${{ matrix.brew }}
+    # that's it
     - uses: actions/checkout@v1
 
     - name: Setup stack
@@ -37,11 +43,6 @@ jobs:
         ghc-version: ${{ matrix.plan.ghc }}
         cabal-version: "2.4"
       if: matrix.plan.build == 'cabal'
-
-    - name: Install OS Packages
-      uses: mstksg/get-package@master
-      with:
-        apt-get: libblas-dev liblapack-dev
 
     - name: Install dependencies
       run: |
