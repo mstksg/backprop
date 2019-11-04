@@ -71,8 +71,7 @@ jobs:
       if: matrix.plan.build == 'cabal'
 
     - name: Dump matrix context
-      runs:
-        echo "$MATRIX" > gh_matrix.json
+      run: echo "$MATRIX" > gh_matrix.json
       env:
         MATRIX: ${{ toJson(matrix) }}
 
