@@ -49,7 +49,7 @@ jobs:
         stack --no-terminal $ARGS --lock-file read-write setup
         echo $HOME
         cat "stack.yaml.lock"
-        cp stack.yaml.lock "$GITHUB_WORKSPACE/"
+        cp stack.yaml.lock "$GITHUB_WORKSPACE/stack.yaml.lock"
         ls
         ls $GITHUB_WORKSPACE
       env:
