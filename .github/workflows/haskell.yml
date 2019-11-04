@@ -1,6 +1,10 @@
 name: Haskell Stack Project CI
 
-on: [push]
+on:
+  push:
+  schedule:
+  - cron: "0 0 * * 1"
+
 
 jobs:
   build:
