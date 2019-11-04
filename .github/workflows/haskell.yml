@@ -35,10 +35,13 @@ jobs:
       with:
         apt-get: ${{ matrix.apt-get }}
         brew: ${{ matrix.brew }}
+        testlist:
+        - hello
+        - world
     - uses: actions/checkout@v1
 
     - name: Setup stack
-      uses: mstksg/setup-stack@master
+      uses: mstksg/setup-stack@v1
 
     - name: Setup cabal-install
       uses: actions/setup-haskell@v1
