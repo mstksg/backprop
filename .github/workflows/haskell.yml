@@ -49,7 +49,9 @@ jobs:
         stack --no-terminal $ARGS --lock-file read-write setup
         echo $HOME
         cat "stack.yaml.lock"
+        cp stack.yaml.lock "$GITHUB_WORKSPACE/"
         ls
+        ls $GITHUB_WORKSPACE
       env:
         ARGS: ${{ matrix.plan.resolver }}
       if: matrix.plan.build == 'stack'
@@ -68,7 +70,7 @@ jobs:
       id: cg
       with:
         path: /home/runner/.ghc
-        key: ${{ matrix.plan.os }}-ghc-${{ matrix.plan.build.ghc }}-${{ hashFiles(format('{0}{1}',github.workspace,'/package.yaml')) }}
+        key: ${{ matrix.plan.os }}-ghc-${{ matrix.plan.build.ghc }}-${{ hashFiles('package.yaml') }}
         restore-keys: |
           ${{ matrix.plan.os }}-ghc-
 
@@ -78,7 +80,7 @@ jobs:
       id: cc
       with:
         path: /home/runner/.cabal
-        key: ${{ matrix.plan.os }}-cabal-${{ matrix.plan.build.ghc }}-${{ matrix.plan.build.cabal }}-${{ hashFiles(format('{0}{1}',github.workspace,'/package.yaml')) }}
+        key: ${{ matrix.plan.os }}-cabal-${{ matrix.plan.build.ghc }}-${{ matrix.plan.build.cabal }}-${{ hashFiles('package.yaml') }}
         restore-keys: |
           ${{ matrix.plan.os }}-cabal-
 
@@ -88,7 +90,7 @@ jobs:
       id: cs
       with:
         path: /home/runner/.stack
-        key: ${{ matrix.plan.os }}-stack-${{ hashFiles(format('{0}{1}',github.workspace,'/package.yaml'))}}-${{hashFiles('/home/runner/stack.yaml.lock') }}
+        key: ${{ matrix.plan.os }}-stack-${{ hashFiles('package.yaml')}}-${{hashFiles('stack.yaml.lock') }}
         restore-keys: |
           ${{ matrix.plan.os }}-stack-
 
@@ -98,7 +100,7 @@ jobs:
       id: csw
       with:
         path: ${{format('{0}{1}',github.workspace,'/.stack-work')}}
-        key: ${{ matrix.plan.os }}-stackwork-${{ hashFiles(format('{0}{1}',github.workspace,'/package.yaml'))}}-${{hashFiles('/home/runner/stack.yaml.lock') }}
+        key: ${{ matrix.plan.os }}-stackwork-${{ hashFiles('package.yaml')}}-${{hashFiles('/stack.yaml.lock') }}
         restore-keys: |
           ${{ matrix.plan.os }}-stackwork-
 
