@@ -66,7 +66,7 @@ jobs:
       id: cg
       with:
         path: /home/runner/.ghc
-        key: ${{ matrix.plan.os }}-ghc-${{ matrix.plan.build.ghc }}-${{ hashFiles('package.yaml') }}
+        key: ${{ matrix.plan.os }}-ghc-${{ matrix.plan.build.ghc }}-${{ hashFiles(format('{0}{1}',github.workspace,'package.yaml')) }}
         restore-keys: |
           ${{ matrix.plan.os }}-ghc-
 
@@ -76,7 +76,7 @@ jobs:
       id: cc
       with:
         path: /home/runner/.cabal
-        key: ${{ matrix.plan.os }}-cabal-${{ matrix.plan.build.ghc }}-${{ matrix.plan.build.cabal}}-${{ hashFiles('package.yaml') }}
+        key: ${{ matrix.plan.os }}-cabal-${{ matrix.plan.build.ghc }}-${{ matrix.plan.build.cabal}}-${{ hashFiles(format('{0}{1}',github.workspace,'package.yaml')) }}
         restore-keys: |
           ${{ matrix.plan.os }}-cabal-
 
@@ -86,7 +86,7 @@ jobs:
       id: cs
       with:
         path: /home/runner/.stack
-        key: ${{ matrix.plan.os }}-stack-${{ hashFiles('package.yaml')}}-${{hashFiles('stack.yaml.lock') }}
+        key: ${{ matrix.plan.os }}-stack-${{ hashFiles(format('{0}{1}',github.workspace,'package.yaml'))}}-${{hashFiles(format('{0}{1}',github.workspace,'stack.yaml.lock')) }}
         restore-keys: |
           ${{ matrix.plan.os }}-stack-
 
@@ -96,7 +96,7 @@ jobs:
       id: csw
       with:
         path: /home/runner/work/.stack-work
-        key: ${{ matrix.plan.os }}-stackwork-${{ hashFiles('package.yaml')}}-${{hashFiles('stack.yaml.lock') }}
+        key: ${{ matrix.plan.os }}-stackwork-${{ hashFiles(format('{0}{1}',github.workspace,'package.yaml'))}}-${{hashFiles(format('{0}{1}',github.workspace,'stack.yaml.lock')) }}
         restore-keys: |
           ${{ matrix.plan.os }}-stackwork-
 
