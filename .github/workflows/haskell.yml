@@ -76,9 +76,9 @@ jobs:
       id: cg
       with:
         path: /home/runner/.ghc
-        key: ${{ matrix.os }}-ghc-${{ matrix.plan.ghc }}-${{ hashFiles('**/package.yaml') }}
+        key: ${{ toJson(matrix) }}-ghc-${{ hashFiles('**/package.yaml') }}
         restore-keys: |
-          ${{ matrix.os }}-ghc-
+          ${{ toJson(matrix) }}-ghc-
 
     - name: Cache Cabal
       uses: actions/cache@preview
@@ -86,9 +86,9 @@ jobs:
       id: cc
       with:
         path: /home/runner/.cabal
-        key: ${{ matrix.os }}-cabal-${{ matrix.plan.ghc }}-${{ matrix.plan.cabal }}-${{ hashFiles('**/package.yaml') }}
+        key: ${{ toJson(matrix) }}-cabal-${{ hashFiles('**/package.yaml') }}
         restore-keys: |
-          ${{ matrix.os }}-cabal-
+          ${{ toJson(matrix) }}-cabal-
 
     - name: Cache Stack
       uses: actions/cache@preview
@@ -96,9 +96,9 @@ jobs:
       id: cs
       with:
         path: /home/runner/.stack
-        key: ${{ matrix.os }}-stack-${{ matrix.plan.resolver}}-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml') }}
+        key: ${{ toJson(matrix) }}-stack-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml') }}
         restore-keys: |
-          ${{ matrix.os }}-stack-
+          ${{ toJson(matrix) }}-stack-
 
     - name: Cache Stack Work
       uses: actions/cache@preview
@@ -106,9 +106,9 @@ jobs:
       id: csw
       with:
         path: ${{format('{0}{1}',github.workspace,'/.stack-work')}}
-        key: ${{ matrix.os }}-stackwork-${{ matrix.plan.resolver }}-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml') }}
+        key: ${{ toJson(matrix) }}-stackwork-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml') }}
         restore-keys: |
-          ${{ matrix.os }}-stackwork-
+          ${{ toJson(matrix) }}-stackwork-
 
     - name: Install dependencies
       run: |
