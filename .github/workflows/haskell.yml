@@ -17,9 +17,9 @@ jobs:
         - { build: stack, resolver: "--resolver lts-14"  }
         - { build: stack, resolver: "--resolver nightly" }
         - { build: stack, resolver: ""                   }
-        # - { build: cabal, ghc: 8.4.4, cabal-install: "2.2" }
-        # - { build: cabal, ghc: 8.6.5, cabal-install: "2.4" }
-        # - { build: cabal, ghc: 8.8.1, cabal-install: "2.4" }
+        - { build: cabal, ghc: 8.4.4, cabal-install: "2.2" }
+        - { build: cabal, ghc: 8.6.5, cabal-install: "2.4" }
+        - { build: cabal, ghc: 8.8.1, cabal-install: "2.4" }
         # use this to include any dependencies from OS package managers
         include:
         # - os: macOS-latest
@@ -44,23 +44,23 @@ jobs:
     - name: Setup stack
       uses: mstksg/setup-stack@v1
 
-    - name: Setup stack.yaml.lock
-      run: |
-        stack --no-terminal $ARGS --lock-file read-write setup
-        echo $HOME
-        cat "stack.yaml.lock"
-        cat "$GITHUB_WORKSPACE/stack.yaml.lock"
-        ls
-        ls $GITHUB_WORKSPACE
-      env:
-        ARGS: ${{ matrix.plan.resolver }}
-      if: matrix.plan.build == 'stack'
+    # - name: Setup stack.yaml.lock
+    #   run: |
+    #     stack --no-terminal $ARGS --lock-file read-write setup
+    #     # echo $HOME
+    #     # cat "stack.yaml.lock"
+    #     # cat "$GITHUB_WORKSPACE/stack.yaml.lock"
+    #     # ls
+    #     # ls $GITHUB_WORKSPACE
+    #   env:
+    #     ARGS: ${{ matrix.plan.resolver }}
+    #   if: matrix.plan.build == 'stack'
 
-    - name: Why
-      run: |
-        cat "stack.yaml.lock"
-        cat "$GITHUB_WORKSPACE/stack.yaml.lock"
-      if: matrix.plan.build == 'stack'
+    # - name: Why
+    #   run: |
+    #     cat "stack.yaml.lock"
+    #     cat "$GITHUB_WORKSPACE/stack.yaml.lock"
+    #   if: matrix.plan.build == 'stack'
 
     - name: Setup cabal-install
       uses: actions/setup-haskell@v1
@@ -76,7 +76,7 @@ jobs:
       id: cg
       with:
         path: /home/runner/.ghc
-        key: ${{ matrix.os }}-ghc-${{ matrix.plan.build.ghc }}-${{ hashFiles('**/package.yaml') }}
+        key: ${{ matrix.os }}-ghc-${{ matrix.plan.ghc }}-${{ hashFiles('**/package.yaml') }}
         restore-keys: |
           ${{ matrix.os }}-ghc-
 
@@ -86,7 +86,7 @@ jobs:
       id: cc
       with:
         path: /home/runner/.cabal
-        key: ${{ matrix.os }}-cabal-${{ matrix.plan.build.ghc }}-${{ matrix.plan.build.cabal }}-${{ hashFiles('**/package.yaml') }}
+        key: ${{ matrix.os }}-cabal-${{ matrix.plan.ghc }}-${{ matrix.plan.cabal }}-${{ hashFiles('**/package.yaml') }}
         restore-keys: |
           ${{ matrix.os }}-cabal-
 
@@ -96,7 +96,7 @@ jobs:
       id: cs
       with:
         path: /home/runner/.stack
-        key: ${{ matrix.os }}-stack-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml.lock') }}
+        key: ${{ matrix.os }}-stack-${{ matrix.plan.resolver}}-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml') }}
         restore-keys: |
           ${{ matrix.os }}-stack-
 
@@ -106,7 +106,7 @@ jobs:
       id: csw
       with:
         path: ${{format('{0}{1}',github.workspace,'/.stack-work')}}
-        key: ${{ matrix.os }}-stackwork-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml.lock') }}
+        key: ${{ matrix.os }}-stackwork-${{ matrix.plan.resolver }}-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml') }}
         restore-keys: |
           ${{ matrix.os }}-stackwork-
 
@@ -129,10 +129,6 @@ jobs:
       env:
         ARGS: ${{ matrix.plan.resolver }}
         BUILD: ${{ matrix.plan.build }}
-      if: |
-        (matrix.plan.build == 'cabal' && !(steps.cg.outputs.cache-hit && steps.cg.outputs.cache-hit))
-          || (matrix.plan.build == 'stack' && !(steps.cs.outputs.cache-hit && steps.csw.outputs.cache-hit))
-
 
     - name: Build
       run: |
