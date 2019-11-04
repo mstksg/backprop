@@ -44,6 +44,7 @@ jobs:
     - name: Setup stack
       uses: mstksg/setup-stack@v1
 
+
     # - name: Setup stack.yaml.lock
     #   run: |
     #     stack --no-terminal $ARGS --lock-file read-write setup
@@ -69,6 +70,11 @@ jobs:
         cabal-version: ${{ matrix.plan.cabal-install }}
       if: matrix.plan.build == 'cabal'
 
+    - name: Dump matrix context
+      runs:
+        echo "$MATRIX" > gh_matrix.json
+      env:
+        MATRIX: ${{ toJson(matrix) }}
 
     - name: Cache GHC
       uses: actions/cache@preview
@@ -76,9 +82,9 @@ jobs:
       id: cg
       with:
         path: /home/runner/.ghc
-        key: ${{ toJson(matrix) }}-ghc-${{ hashFiles('**/package.yaml') }}
+        key: ${{ hashFiles('**/gh_matrix.json') }}-ghc-${{ hashFiles('**/package.yaml') }}
         restore-keys: |
-          ${{ toJson(matrix) }}-ghc-
+          ${{ hashFiles('**/gh_matrix.json') }}-ghc-
 
     - name: Cache Cabal
       uses: actions/cache@preview
@@ -86,9 +92,9 @@ jobs:
       id: cc
       with:
         path: /home/runner/.cabal
-        key: ${{ toJson(matrix) }}-cabal-${{ hashFiles('**/package.yaml') }}
+        key: ${{ hashFiles('**/gh_matrix.json') }}-cabal-${{ hashFiles('**/package.yaml') }}
         restore-keys: |
-          ${{ toJson(matrix) }}-cabal-
+          ${{ hashFiles('**/gh_matrix.json') }}-cabal-
 
     - name: Cache Stack
       uses: actions/cache@preview
@@ -96,9 +102,9 @@ jobs:
       id: cs
       with:
         path: /home/runner/.stack
-        key: ${{ toJson(matrix) }}-stack-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml') }}
+        key: ${{ hashFiles('**/gh_matrix.json') }}-stack-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml') }}
         restore-keys: |
-          ${{ toJson(matrix) }}-stack-
+          ${{ hashFiles('**/gh_matrix.json') }}-stack-
 
     - name: Cache Stack Work
       uses: actions/cache@preview
@@ -106,9 +112,9 @@ jobs:
       id: csw
       with:
         path: ${{format('{0}{1}',github.workspace,'/.stack-work')}}
-        key: ${{ toJson(matrix) }}-stackwork-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml') }}
+        key: ${{ hashFiles('**/gh_matrix.json') }}-stackwork-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml') }}
         restore-keys: |
-          ${{ toJson(matrix) }}-stackwork-
+          ${{ hashFiles('**/gh_matrix.json') }}-stackwork-
 
     - name: Install dependencies
       run: |
