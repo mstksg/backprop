@@ -17,7 +17,10 @@ jobs:
         - { build: cabal, ghc: 8.8.1 }
         # brew: anybrewdeps
         include:
-        - apt-get: libblas-dev liblapack-dev
+        # - os: macOS-latest
+        #   brew: anybrewdeps
+        - os: ubuntu-latest
+          apt-get: libblas-dev liblapack-dev
 
         exclude:
         - os: macOS-latest
