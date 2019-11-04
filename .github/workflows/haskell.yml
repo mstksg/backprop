@@ -1,4 +1,4 @@
-name: Haskell CI
+name: Haskell Stack Project CI
 
 on: [push]
 
@@ -6,7 +6,8 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest,macOS-latest]
+        os: [ubuntu-latest, macOS-latest]
+        # use this to specify what resolvers and ghc to use
         plan:
         - { build: stack, resolver: "--resolver lts-12"  }
         - { build: stack, resolver: "--resolver lts-14"  }
@@ -15,7 +16,7 @@ jobs:
         - { build: cabal, ghc: 8.4.4 }
         - { build: cabal, ghc: 8.6.5 }
         - { build: cabal, ghc: 8.8.1 }
-        # brew: anybrewdeps
+        # use this to include any dependencies from OS package managers
         include:
         # - os: macOS-latest
         #   brew: anybrewdeps
@@ -34,7 +35,6 @@ jobs:
       with:
         apt-get: ${{ matrix.apt-get }}
         brew: ${{ matrix.brew }}
-    # that's it
     - uses: actions/checkout@v1
 
     - name: Setup stack
