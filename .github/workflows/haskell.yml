@@ -17,9 +17,9 @@ jobs:
         - { build: stack, resolver: "--resolver lts-14"  }
         - { build: stack, resolver: "--resolver nightly" }
         - { build: stack, resolver: ""                   }
-        - { build: cabal, ghc: 8.4.4, cabal-install: "2.2" }
-        - { build: cabal, ghc: 8.6.5, cabal-install: "2.4" }
-        - { build: cabal, ghc: 8.8.1, cabal-install: "2.4" }
+        # - { build: cabal, ghc: 8.4.4, cabal-install: "2.2" }
+        # - { build: cabal, ghc: 8.6.5, cabal-install: "2.4" }
+        # - { build: cabal, ghc: 8.8.1, cabal-install: "2.4" }
         # use this to include any dependencies from OS package managers
         include:
         # - os: macOS-latest
