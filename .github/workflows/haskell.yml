@@ -70,7 +70,7 @@ jobs:
       id: cg
       with:
         path: /home/runner/.ghc
-        key: ${{ matrix.plan.os }}-ghc-${{ matrix.plan.build.ghc }}-${{ hashFiles('package.yaml') }}
+        key: ${{ matrix.plan.os }}-ghc-${{ matrix.plan.build.ghc }}-${{ hashFiles('./package.yaml') }}
         restore-keys: |
           ${{ matrix.plan.os }}-ghc-
 
@@ -80,7 +80,7 @@ jobs:
       id: cc
       with:
         path: /home/runner/.cabal
-        key: ${{ matrix.plan.os }}-cabal-${{ matrix.plan.build.ghc }}-${{ matrix.plan.build.cabal }}-${{ hashFiles('package.yaml') }}
+        key: ${{ matrix.plan.os }}-cabal-${{ matrix.plan.build.ghc }}-${{ matrix.plan.build.cabal }}-${{ hashFiles('./package.yaml') }}
         restore-keys: |
           ${{ matrix.plan.os }}-cabal-
 
