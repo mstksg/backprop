@@ -76,41 +76,45 @@ jobs:
         MATRIX: ${{ toJson(matrix) }}
 
     - name: Cache GHC
-      uses: actions/cache@preview
+      uses: mstksg/cache@adjust-cache
       if: matrix.plan.build == 'cabal'
       id: cg
       with:
         path: /home/runner/.ghc
+        cache-limit: 800
         key: ${{ hashFiles('**/gh_matrix.json') }}-ghc-${{ hashFiles('**/package.yaml') }}
         restore-keys: |
           ${{ hashFiles('**/gh_matrix.json') }}-ghc-
 
     - name: Cache Cabal
-      uses: actions/cache@preview
+      uses: mstksg/cache@adjust-cache
       if: matrix.plan.build == 'cabal'
       id: cc
       with:
         path: /home/runner/.cabal
+        cache-limit: 800
         key: ${{ hashFiles('**/gh_matrix.json') }}-cabal-${{ hashFiles('**/package.yaml') }}
         restore-keys: |
           ${{ hashFiles('**/gh_matrix.json') }}-cabal-
 
     - name: Cache Stack
-      uses: actions/cache@preview
+      uses: mstksg/cache@adjust-cache
       if: matrix.plan.build == 'stack'
       id: cs
       with:
         path: /home/runner/.stack
+        cache-limit: 800
         key: ${{ hashFiles('**/gh_matrix.json') }}-stack-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml') }}
         restore-keys: |
           ${{ hashFiles('**/gh_matrix.json') }}-stack-
 
     - name: Cache Stack Work
-      uses: actions/cache@preview
+      uses: mstksg/cache@adjust-cache
       if: matrix.plan.build == 'stack'
       id: csw
       with:
         path: ${{format('{0}{1}',github.workspace,'/.stack-work')}}
+        cache-limit: 800
         key: ${{ hashFiles('**/gh_matrix.json') }}-stackwork-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml') }}
         restore-keys: |
           ${{ hashFiles('**/gh_matrix.json') }}-stackwork-
@@ -122,6 +126,7 @@ jobs:
         case "$BUILD" in
           stack)
             stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
+            du -sh
             ;;
           cabal)
             cabal --version
