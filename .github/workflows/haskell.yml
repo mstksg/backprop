@@ -76,7 +76,7 @@ jobs:
         MATRIX: ${{ toJson(matrix) }}
 
     - name: Cache GHC
-    uses: mstksg/cache@adjust-cache-dist
+      uses: mstksg/cache@adjust-cache-dist
       if: matrix.plan.build == 'cabal'
       id: cg
       with:
