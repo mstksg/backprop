@@ -77,7 +77,7 @@ jobs:
 
     - name: Cache GHC
       uses: actions/cache@preview
-      if: matrix.plan.build == 'cabal'
+      # if: matrix.plan.build == 'cabal'
       id: cg
       with:
         path: /home/runner/.ghc
@@ -87,7 +87,7 @@ jobs:
 
     - name: Cache Cabal
       uses: actions/cache@preview
-      if: matrix.plan.build == 'cabal'
+      # if: matrix.plan.build == 'cabal'
       id: cc
       with:
         path: /home/runner/.cabal
