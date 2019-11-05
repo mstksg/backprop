@@ -1,10 +1,23 @@
+# Haskell stack project Github Actions template
+# https://gist.github.com/mstksg/11f753d891cee5980326a8ea8c865233
+#
+# To use, mainly change the list in 'plans' and modify 'include' for
+# any OS package manager deps.
+#
+# Currently not working for cabal-install >= 3
+#
+# Based on https://raw.githubusercontent.com/commercialhaskell/stack/stable/doc/travis-complex.yml
+#
+# TODO:
+# * cache (https://github.com/actions/cache)
+# * support for cabal-install >= 3
+
 name: Haskell Stack Project CI
 
 on:
   push:
   schedule:
   - cron: "0 0 * * 1"
-
 
 jobs:
   build:
@@ -13,13 +26,18 @@ jobs:
         os: [ubuntu-latest, macOS-latest]
         # use this to specify what resolvers and ghc to use
         plan:
+        # - { build: stack, resolver: "--resolver lts-9"  }
+        # - { build: stack, resolver: "--resolver lts-11"  }
         - { build: stack, resolver: "--resolver lts-12"  }
+        - { build: stack, resolver: "--resolver lts-13"  }
         - { build: stack, resolver: "--resolver lts-14"  }
         - { build: stack, resolver: "--resolver nightly" }
         - { build: stack, resolver: ""                   }
-        - { build: cabal, ghc: 8.4.4, cabal-install: "2.2" }
-        - { build: cabal, ghc: 8.6.5, cabal-install: "2.4" }
-        - { build: cabal, ghc: 8.8.1, cabal-install: "2.4" }
+        # - { build: cabal, ghc: 8.0.2, cabal-install: "1.24" }
+        # - { build: cabal, ghc: 8.2.2, cabal-install: "2.0"  }
+        - { build: cabal, ghc: 8.4.4, cabal-install: "2.2"  }
+        - { build: cabal, ghc: 8.6.5, cabal-install: "2.4"  }
+        - { build: cabal, ghc: 8.8.1, cabal-install: "2.4"  }   # currently not working for >= 3.0
         # use this to include any dependencies from OS package managers
         include:
         # - os: macOS-latest
@@ -35,7 +53,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - name: Install OS Packages
-      uses: mstksg/get-package@master
+      uses: mstksg/get-package@v1
       with:
         apt-get: ${{ matrix.apt-get }}
         brew: ${{ matrix.brew }}
@@ -44,25 +62,6 @@ jobs:
     - name: Setup stack
       uses: mstksg/setup-stack@v1
 
-
-    # - name: Setup stack.yaml.lock
-    #   run: |
-    #     stack --no-terminal $ARGS --lock-file read-write setup
-    #     # echo $HOME
-    #     # cat "stack.yaml.lock"
-    #     # cat "$GITHUB_WORKSPACE/stack.yaml.lock"
-    #     # ls
-    #     # ls $GITHUB_WORKSPACE
-    #   env:
-    #     ARGS: ${{ matrix.plan.resolver }}
-    #   if: matrix.plan.build == 'stack'
-
-    # - name: Why
-    #   run: |
-    #     cat "stack.yaml.lock"
-    #     cat "$GITHUB_WORKSPACE/stack.yaml.lock"
-    #   if: matrix.plan.build == 'stack'
-
     - name: Setup cabal-install
       uses: actions/setup-haskell@v1
       with:
@@ -70,60 +69,12 @@ jobs:
         cabal-version: ${{ matrix.plan.cabal-install }}
       if: matrix.plan.build == 'cabal'
 
-    - name: Dump matrix context
-      run: echo "$MATRIX" > gh_matrix.json
-      env:
-        MATRIX: ${{ toJson(matrix) }}
-
-    - name: Cache GHC
-      uses: mstksg/cache@adjust-cache-dist
-      if: matrix.plan.build == 'cabal'
-      id: cg
-      with:
-        path: /home/runner/.ghc
-        key: ${{ hashFiles('**/gh_matrix.json') }}-ghc-${{ hashFiles('**/package.yaml') }}
-        restore-keys: |
-          ${{ hashFiles('**/gh_matrix.json') }}-ghc-
-
-    - name: Cache Cabal
-      uses: mstksg/cache@adjust-cache-dist
-      if: matrix.plan.build == 'cabal'
-      id: cc
-      with:
-        path: /home/runner/.cabal
-        key: ${{ hashFiles('**/gh_matrix.json') }}-cabal-${{ hashFiles('**/package.yaml') }}
-        restore-keys: |
-          ${{ hashFiles('**/gh_matrix.json') }}-cabal-
-
-    - name: Cache Stack
-      uses: mstksg/cache@adjust-cache-dist
-      if: matrix.plan.build == 'stack'
-      id: cs
-      with:
-        path: /home/runner/.stack
-        cache-limit: 400
-        key: ${{ hashFiles('**/gh_matrix.json') }}-stack-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml') }}
-        restore-keys: |
-          ${{ hashFiles('**/gh_matrix.json') }}-stack-
-
-    - name: Cache Stack Work
-      uses: mstksg/cache@adjust-cache-dist
-      if: matrix.plan.build == 'stack'
-      id: csw
-      with:
-        path: ${{format('{0}{1}',github.workspace,'/.stack-work')}}
-        key: ${{ hashFiles('**/gh_matrix.json') }}-stackwork-${{ hashFiles('**/package.yaml')}}-${{hashFiles('**/stack.yaml') }}
-        restore-keys: |
-          ${{ hashFiles('**/gh_matrix.json') }}-stackwork-
-
     - name: Install dependencies
       run: |
         set -ex
-        pwd
         case "$BUILD" in
           stack)
             stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
-            du -sh
             ;;
           cabal)
             cabal --version
@@ -174,4 +125,3 @@ jobs:
       env:
         ARGS: ${{ matrix.plan.resolver }}
         BUILD: ${{ matrix.plan.build }}
-
