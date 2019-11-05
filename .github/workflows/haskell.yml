@@ -76,7 +76,7 @@ jobs:
         MATRIX: ${{ toJson(matrix) }}
 
     - name: Cache GHC
-      uses: mstksg/cache@adjust-cache
+    uses: mstksg/cache@adjust-cache-dist
       if: matrix.plan.build == 'cabal'
       id: cg
       with:
@@ -87,7 +87,7 @@ jobs:
           ${{ hashFiles('**/gh_matrix.json') }}-ghc-
 
     - name: Cache Cabal
-      uses: mstksg/cache@adjust-cache
+      uses: mstksg/cache@adjust-cache-dist
       if: matrix.plan.build == 'cabal'
       id: cc
       with:
@@ -98,7 +98,7 @@ jobs:
           ${{ hashFiles('**/gh_matrix.json') }}-cabal-
 
     - name: Cache Stack
-      uses: mstksg/cache@adjust-cache
+      uses: mstksg/cache@adjust-cache-dist
       if: matrix.plan.build == 'stack'
       id: cs
       with:
@@ -109,7 +109,7 @@ jobs:
           ${{ hashFiles('**/gh_matrix.json') }}-stack-
 
     - name: Cache Stack Work
-      uses: mstksg/cache@adjust-cache
+      uses: mstksg/cache@adjust-cache-dist
       if: matrix.plan.build == 'stack'
       id: csw
       with:
