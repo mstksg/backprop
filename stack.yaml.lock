@@ -5,15 +5,15 @@
 
 packages:
 - completed:
-    hackage: vinyl-0.12.0@sha256:6136e2608c2c4be0c112944fb0f5a6a0df56b50adec12eb1b7240258abfcf9b1,3790
+    hackage: vinyl-0.12.2@sha256:cefc269fd137841861c13f28a3f20f5973ef24e9f1e6245b77b688f1cbd979de,3717
     pantry-tree:
       size: 1857
-      sha256: aeb9e0e1a3bbe2b1f048a096430d240964a31c6936a1da89f4b32e931eba9d69
+      sha256: 746367fcc06b7b1ffe5f55cc388df2daa3f5eb0f87b06f4e79582e3d16ef33a9
   original:
-    hackage: vinyl-0.12.0
+    hackage: vinyl-0.12.2
 snapshots:
 - completed:
-    size: 329710
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2019/9/28.yaml
-    sha256: 5cbbdd3f551866b3b4ed7d953fdbc1786c0cdfcc98e70c06f267f077b4f14c50
-  original: nightly-2019-09-28
+    size: 503181
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2020/6/25.yaml
+    sha256: 96e98363790e62f4498da632069a03101cf588b3b47925e707f080cff4b6cfbb
+  original: nightly-2020-06-25
