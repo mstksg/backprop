@@ -10,6 +10,7 @@
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeInType             #-}
 {-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE UndecidableInstances   #-}
 
 module Data.Type.Util (
     runzipWith

@@ -16,7 +16,7 @@
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
 # resolver: nightly-2018-03-25
-resolver: nightly-2019-09-28
+resolver: nightly-2020-06-25
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -42,7 +42,7 @@ packages:
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:
-- vinyl-0.12.0
+- vinyl-0.12.2
 # - criterion-1.5.2.0
 # - js-flot-0.8.3
 # - js-jquery-3.3.1
