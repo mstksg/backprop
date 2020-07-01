@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Version 0.2.6.4
+---------------
+
+*June 30, 2020*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.2.6.4>
+
+*   Compatibility with ghc-8.10.1 (@tonyday567)
+
 Version 0.2.6.3
 ---------------
 
