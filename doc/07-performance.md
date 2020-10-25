@@ -33,7 +33,7 @@ differentiation with "manual" differentiation:
 
 [bench]: https://github.com/mstksg/backprop/blob/master/bench/bench.hs
 
-![benchmarks](https://i.imgur.com/7L5NV4P.png)
+![benchmarks](https://i.imgur.com/rLUx4x4.png)
 
 In the above, we compare:
 
@@ -73,8 +73,8 @@ three main sources:
 [Wengert tape]: https://dl.acm.org/citation.cfm?doid=355586.364791
 
 In addition, usage of the "Higher-Kinded Data"-based pattern matching interface
-(over the lens-based accessor interface) incurs some penalties from the
-inefficient nature of GHC Generics in general.
+(over the lens-based accessor interface) seems to result in more efficient
+compiled code, but not by any significant amount.
 
 Optimization Techniques
 -----------------------

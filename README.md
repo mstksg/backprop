@@ -183,7 +183,7 @@ differentiation process to "manual" differentiation by hand.  When using the
 
 [bench]: https://github.com/mstksg/backprop/blob/master/bench/bench.hs
 
-![benchmarks](https://i.imgur.com/7L5NV4P.png)
+![benchmarks](https://i.imgur.com/rLUx4x4.png)
 
 Here we compare:
 
