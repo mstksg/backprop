@@ -613,8 +613,7 @@ symbolic differentiation. However, this inefficiency is typically
 negligible except in edge cases.</p></li>
 </ol>
 <p>In addition, usage of the &quot;Higher-Kinded Data&quot;-based pattern matching interface
-(over the lens-based accessor interface) incurs some penalties from the
-inefficient nature of GHC Generics in general.</p>
+(over the lens-based accessor interface) seems to result in more efficient compiled code, but not by any significant amount.</p>
 <h2>Optimization Techniques</h2>
 <h3>Dealing with Overhead from Redundant Updates</h3>
 <p>By far the dominating source of overhead when using <em>backprop</em> is the redundant
