@@ -983,7 +983,11 @@ instance (ReifyConstraint Backprop f rs, RMap rs, RApply rs) => Backprop (Rec f 
     {-# INLINE one #-}
 
 -- | @since 0.2.6.3
+#if MIN_VERSION_vinyl(0,14,2)
+instance (ReifyConstraint Backprop f rs, RMap rs, RApply rs, RecApplicative rs, NatToInt (RLength rs), RPureConstrained (IndexableField rs) rs, ToARec rs)
+#else
 instance (ReifyConstraint Backprop f rs, RMap rs, RApply rs, RecApplicative rs, NatToInt (RLength rs), RPureConstrained (IndexableField rs) rs)
+#endif
       => Backprop (ARec f rs) where
     zero = toARec . zero . fromARec
     {-# INLINE zero #-}
