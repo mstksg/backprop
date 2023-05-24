@@ -33,7 +33,7 @@
 -- Then, you can use:
 --
 -- @
--- 'evalBP' :: (forall s. 'Reifies' s 'W'. 'BVar' s a -> BVar s b) -> (a -> b)
+-- 'evalBP' :: (forall s. 'Reifies' s 'W' => 'BVar' s a -> BVar s b) -> (a -> b)
 -- @
 --
 -- to turn a 'BVar' function into the function on actual values @a -> b@.
@@ -43,7 +43,7 @@
 -- Then, there's:
 --
 -- @
--- 'gradBP' :: (forall s. 'Reifies' s 'W'. 'BVar' s a -> BVar s b) -> (a -> a)
+-- 'gradBP' :: (forall s. 'Reifies' s 'W' => 'BVar' s a -> BVar s b) -> (a -> a)
 -- @
 --
 -- to automatically get the /gradient/, as well, for a given input.
