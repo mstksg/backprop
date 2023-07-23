@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns               #-}
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DefaultSignatures          #-}
 {-# LANGUAGE DeriveDataTypeable         #-}
@@ -901,11 +902,13 @@ instance Backprop a => Backprop (Product a) where
     add  = coerce (add @a)
     one  = coerce (one @a)
 
+#if !MIN_VERSION_base(4,16,0)
 -- | @since 0.2.2.0
 instance Backprop a => Backprop (SG.Option a) where
     zero = coerce (zero @(Maybe a))
     add  = coerce (add @(Maybe a))
     one  = coerce (one @(Maybe a))
+#endif
 
 -- | @since 0.2.2.0
 instance Backprop a => Backprop (SG.First a) where
