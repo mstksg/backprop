@@ -33,6 +33,11 @@ description: |
 
     See <https://backprop.jle.im> for official introduction and documentation.
 
+flags:
+  vinyl_0_14:
+    manual: false
+    default: true
+
 ghc-options:
 - -Wall
 - -Wcompat
@@ -66,6 +71,14 @@ library:
   - reflection
   - transformers
   - vinyl >= 0.9.1
+  when:
+    - condition: flag(vinyl_0_14)
+      then:
+        dependencies:
+        - vinyl >= 0.14.2
+      else:
+        dependencies:
+        - vinyl < 0.14
 
 benchmarks:
   backprop-mnist-bench:
