@@ -72,7 +72,7 @@ withVec
     -> (forall n. VecT n f a -> r)
     -> r
 withVec = \case
-    []   -> ($ VNil)
+    []   -> \f -> f VNil
     x:xs -> \f -> withVec xs (f . (x :*))
 {-# INLINE withVec #-}
 
