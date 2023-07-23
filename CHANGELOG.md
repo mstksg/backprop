@@ -1,6 +1,18 @@
 Changelog
 =========
 
+Version 0.2.6.5
+---------------
+
+*July 23, 2023*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.2.6.5>
+
+*   vinyl-0.14 compatibility (@msakai), which can be disabled via cabal flag
+*   GHC 9.0+ compatibility (@msakai)
+
+Thanks to all generous contributors and commenters!
+
 Version 0.2.6.4
 ---------------
 

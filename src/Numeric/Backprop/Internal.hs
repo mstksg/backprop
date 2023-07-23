@@ -20,7 +20,7 @@
 
 -- |
 -- Module      : Numeric.Backprop.Internal
--- Copyright   : (c) Justin Le 2018
+-- Copyright   : (c) Justin Le 2023
 -- License     : BSD3
 --
 -- Maintainer  : justin@jle.im
@@ -590,7 +590,7 @@ initRunner
     -> ST s (Runner s)
 initRunner (n, stns) (nx,xs) = do
     delts <- MV.new n
-    for_ (zip [n-1,n-2..] stns) $ \(i, STN (TN{..} :: TapeNode c)) ->
+    for_ (zip [n-1,n-2..] stns) $ \(i, STN (TN{} :: TapeNode c)) ->
       MV.write delts i $ unsafeCoerce (Nothing @c)
     inps <- MV.new nx
     for_ (zip [0..] xs) . uncurry $ \i z ->

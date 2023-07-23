@@ -7,7 +7,7 @@
 
 -- |
 -- Module      : Numeric.Backprop.Num
--- Copyright   : (c) Justin Le 2018
+-- Copyright   : (c) Justin Le 2023
 -- License     : BSD3
 --
 -- Maintainer  : justin@jle.im
