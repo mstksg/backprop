@@ -235,7 +235,7 @@ some overlap:
 
 3.  There is a link between *backprop* and deep learning/neural network
     libraries like *[tensorflow][]*, *[caffe][]*, and *[theano][]*, which all
-    all support some form of heterogeneous automatic differentiation.  Haskell
+    support some form of heterogeneous automatic differentiation.  Haskell
     libraries doing similar things include *[grenade][]*.
 
     These are all frameworks for working with neural networks or other
