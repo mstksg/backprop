@@ -1,12 +1,12 @@
 /.stack-work
 /.shake
 /.build
+/.direnv
 /wiki
 /tags
 /TAGS
 /data
 /samples-exe
-/*.cabal
 /dist-newstyle
 
 /bench-results
@@ -19,3 +19,4 @@
 *.dyn_o
 *.o
 *.hi
+/result

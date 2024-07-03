@@ -1,0 +1,113 @@
+cabal-version:      1.12
+name:               backprop
+version:            0.2.6.5
+synopsis:           Heterogeneous automatic differentation
+description:
+  Write your functions to compute your result, and the library will
+  automatically generate functions to compute your gradient.
+  .
+  Implements heterogeneous reverse-mode automatic differentiation, commonly
+  known as "backpropagation".
+  .
+  See <https://backprop.jle.im> for official introduction and documentation.
+
+category:           Math
+homepage:           https://backprop.jle.im
+bug-reports:        https://github.com/mstksg/backprop/issues
+author:             Justin Le
+maintainer:         justin@jle.im
+copyright:          (c) Justin Le 2018
+license:            BSD3
+license-file:       LICENSE
+build-type:         Simple
+tested-with:        GHC >=8.4
+extra-source-files:
+  Build.hs
+  CHANGELOG.md
+  doc/01-getting-started.md
+  doc/02-a-detailed-look.md
+  doc/03-manipulating-bvars.md
+  doc/04-the-backprop-typeclass.md
+  doc/05-applications.md
+  doc/06-manual-gradients.md
+  doc/07-performance.md
+  doc/08-equipping-your-library.md
+  doc/09-comparisons.md
+  doc/index.md
+  README.md
+  renders/backprop-mnist.md
+  renders/backprop-mnist.pdf
+  renders/extensible-neural.md
+  renders/extensible-neural.pdf
+  samples/backprop-mnist.lhs
+  samples/extensible-neural.lhs
+
+source-repository head
+  type:     git
+  location: https://github.com/mstksg/backprop
+
+flag vinyl_0_14
+  manual:  False
+  default: True
+
+library
+  exposed-modules:
+    Numeric.Backprop
+    Numeric.Backprop.Class
+    Numeric.Backprop.Explicit
+    Numeric.Backprop.Num
+    Numeric.Backprop.Op
+    Prelude.Backprop
+    Prelude.Backprop.Explicit
+    Prelude.Backprop.Num
+
+  other-modules:
+    Data.Type.Util
+    Numeric.Backprop.Internal
+
+  hs-source-dirs:   src
+  ghc-options:
+    -Wall -Wcompat -Wincomplete-record-updates -Wredundant-constraints
+
+  build-depends:
+      base          >=4.7   && <5
+    , containers
+    , deepseq
+    , microlens
+    , primitive
+    , reflection
+    , transformers
+    , vector
+    , vinyl         >=0.9.1
+
+  default-language: Haskell2010
+
+  if flag(vinyl_0_14)
+    build-depends: vinyl >=0.14.2
+
+  else
+    build-depends: vinyl <0.14
+
+benchmark backprop-mnist-bench
+  type:             exitcode-stdio-1.0
+  main-is:          bench.hs
+  other-modules:    Paths_backprop
+  hs-source-dirs:   bench
+  ghc-options:
+    -Wall -Wcompat -Wincomplete-record-updates -Wredundant-constraints
+    -threaded -rtsopts -with-rtsopts=-N -O2
+
+  build-depends:
+      backprop
+    , base          >=4.7  && <5
+    , criterion
+    , deepseq
+    , directory
+    , hmatrix       >=0.18
+    , microlens
+    , microlens-th
+    , mwc-random
+    , time
+    , vector
+
+  default-language: Haskell2010

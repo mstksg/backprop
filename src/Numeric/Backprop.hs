@@ -1,10 +1,10 @@
-{-# LANGUAGE CPP              #-}
-{-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs            #-}
-{-# LANGUAGE PatternSynonyms  #-}
-{-# LANGUAGE RankNTypes       #-}
-{-# LANGUAGE ViewPatterns     #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ViewPatterns #-}
 
 -- |
 -- Module      : Numeric.Backprop
@@ -66,61 +66,110 @@
 -- 'zero', 'add', and 'one' explicitly, which can be useful when attempting
 -- to avoid orphan instances or when mixing both 'Backprop' and 'Num'
 -- styles.
---
-
 module Numeric.Backprop (
-    -- * Types
-    BVar, W, Backprop(..), ABP(..), NumBP(..)
-    -- * Running
-  , backprop, E.evalBP, gradBP, backpropWith
-    -- ** Multiple inputs
-  , backprop2, E.evalBP2, gradBP2, backpropWith2
-  , backpropN, E.evalBPN, gradBPN, backpropWithN
-    -- * Manipulating 'BVar'
-  , E.evalBP0
-  , E.constVar, E.auto, E.coerceVar
-  , (^^.), (.~~), (%~~), (^^?), (^^..), (^^?!)
-  , viewVar, setVar, overVar
-  , sequenceVar, collectVar
-  , previewVar, toListOfVar
-  , pattern T2, pattern T3
-    -- ** With Isomorphisms
-  , isoVar, isoVar2, isoVar3, isoVarN
-    -- ** With 'Op's#liftops#
-    -- $liftops
-  , liftOp
-  , liftOp1, liftOp2, liftOp3
-    -- ** Generics#hkd#
-    -- $hkd
-  , splitBV
-  , joinBV
-  , pattern BV
-  , E.BVGroup
-    -- * 'Op'
-  , Op(..)
-    -- ** Creation
-  , op0, opConst, idOp
-  , bpOp
-    -- *** Giving gradients directly
-  , op1, op2, op3
-    -- *** From Isomorphisms
-  , opCoerce, opTup, opIso, opIsoN, opLens
-    -- *** No gradients
-  , noGrad1, noGrad
-    -- * Utility
-  , Reifies
-  ) where
+  -- * Types
+  BVar,
+  W,
+  Backprop (..),
+  ABP (..),
+  NumBP (..),
 
-import           Data.Functor.Identity
-import           Data.Maybe
-import           Data.Reflection
-import           Data.Vinyl
-import           GHC.Generics
-import           Lens.Micro
-import           Numeric.Backprop.Class
-import           Numeric.Backprop.Explicit (BVar, W)
-import           Numeric.Backprop.Op
+  -- * Running
+  backprop,
+  E.evalBP,
+  gradBP,
+  backpropWith,
+
+  -- ** Multiple inputs
+  backprop2,
+  E.evalBP2,
+  gradBP2,
+  backpropWith2,
+  backpropN,
+  E.evalBPN,
+  gradBPN,
+  backpropWithN,
+
+  -- * Manipulating 'BVar'
+  E.evalBP0,
+  E.constVar,
+  E.auto,
+  E.coerceVar,
+  (^^.),
+  (.~~),
+  (%~~),
+  (^^?),
+  (^^..),
+  (^^?!),
+  viewVar,
+  setVar,
+  overVar,
+  sequenceVar,
+  collectVar,
+  previewVar,
+  toListOfVar,
+  pattern T2,
+  pattern T3,
+
+  -- ** With Isomorphisms
+  isoVar,
+  isoVar2,
+  isoVar3,
+  isoVarN,
+
+  -- ** With 'Op's#liftops#
+  -- $liftops
+  liftOp,
+  liftOp1,
+  liftOp2,
+  liftOp3,
+
+  -- ** Generics#hkd#
+  -- $hkd
+  splitBV,
+  joinBV,
+  pattern BV,
+  E.BVGroup,
+
+  -- * 'Op'
+  Op (..),
+
+  -- ** Creation
+  op0,
+  opConst,
+  idOp,
+  bpOp,
+
+  -- *** Giving gradients directly
+  op1,
+  op2,
+  op3,
+
+  -- *** From Isomorphisms
+  opCoerce,
+  opTup,
+  opIso,
+  opIsoN,
+  opLens,
+
+  -- *** No gradients
+  noGrad1,
+  noGrad,
+
+  -- * Utility
+  Reifies,
+) where
+
+import Data.Functor.Identity
+import Data.Maybe
+import Data.Reflection
+import Data.Vinyl
+import GHC.Generics
+import Lens.Micro
+import Numeric.Backprop.Class
+import Numeric.Backprop.Explicit (BVar, W)
 import qualified Numeric.Backprop.Explicit as E
+import Numeric.Backprop.Op
 
 -- $liftops
 --
@@ -186,11 +235,11 @@ import qualified Numeric.Backprop.Explicit as E
 -- If you stick to /concerete/, monomorphic usage of this (with specific
 -- types, typed into source code, known at compile-time), then
 -- @'RPureConstrained' 'Backprop' as@ should be fulfilled automatically.
-backpropN
-    :: (RPureConstrained Backprop as, Backprop b)
-    => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
-    -> Rec Identity as
-    -> (b, Rec Identity as)
+backpropN ::
+  (RPureConstrained Backprop as, Backprop b) =>
+  (forall s. Reifies s W => Rec (BVar s) as -> BVar s b) ->
+  Rec Identity as ->
+  (b, Rec Identity as)
 backpropN = E.backpropN E.zeroFuncs E.oneFunc
 {-# INLINE backpropN #-}
 
@@ -201,11 +250,11 @@ backpropN = E.backpropN E.zeroFuncs E.oneFunc
 -- Note that argument order changed in v0.2.4.
 --
 -- @since 0.2.0.0
-backpropWithN
-    :: RPureConstrained Backprop as
-    => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
-    -> Rec Identity as
-    -> (b, b -> Rec Identity as)
+backpropWithN ::
+  RPureConstrained Backprop as =>
+  (forall s. Reifies s W => Rec (BVar s) as -> BVar s b) ->
+  Rec Identity as ->
+  (b, b -> Rec Identity as)
 backpropWithN = E.backpropWithN E.zeroFuncs
 {-# INLINE backpropWithN #-}
 
@@ -216,11 +265,11 @@ backpropWithN = E.backpropWithN E.zeroFuncs
 -- that 'BVar's do not leak out of the context (similar to how it is used
 -- in "Control.Monad.ST"), and also as a reference to an ephemeral Wengert
 -- tape used to track the graph of references.
-backprop
-    :: (Backprop a, Backprop b)
-    => (forall s. Reifies s W => BVar s a -> BVar s b)
-    -> a
-    -> (b, a)
+backprop ::
+  (Backprop a, Backprop b) =>
+  (forall s. Reifies s W => BVar s a -> BVar s b) ->
+  a ->
+  (b, a)
 backprop = E.backprop E.zeroFunc E.oneFunc
 {-# INLINE backprop #-}
 
@@ -241,11 +290,11 @@ backprop = E.backprop E.zeroFunc E.oneFunc
 -- Note that argument order changed in v0.2.4
 --
 -- @since 0.2.0.0
-backpropWith
-    :: Backprop a
-    => (forall s. Reifies s W => BVar s a -> BVar s b)
-    -> a
-    -> (b, b -> a)
+backpropWith ::
+  Backprop a =>
+  (forall s. Reifies s W => BVar s a -> BVar s b) ->
+  a ->
+  (b, b -> a)
 backpropWith = E.backpropWith E.zeroFunc
 {-# INLINE backpropWith #-}
 
@@ -263,21 +312,21 @@ backpropWith = E.backpropWith E.zeroFunc
 --
 -- If you want to provide an explicit "final gradient" for the end, see
 -- 'backpropWith'.
-gradBP
-    :: (Backprop a, Backprop b)
-    => (forall s. Reifies s W => BVar s a -> BVar s b)
-    -> a
-    -> a
+gradBP ::
+  (Backprop a, Backprop b) =>
+  (forall s. Reifies s W => BVar s a -> BVar s b) ->
+  a ->
+  a
 gradBP = E.gradBP E.zeroFunc E.oneFunc
 {-# INLINE gradBP #-}
 
 -- | 'gradBP' generalized to multiple inputs of different types.  See
 -- documentation for 'backpropN' for more details.
-gradBPN
-    :: (RPureConstrained Backprop as, Backprop b)
-    => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
-    -> Rec Identity as
-    -> Rec Identity as
+gradBPN ::
+  (RPureConstrained Backprop as, Backprop b) =>
+  (forall s. Reifies s W => Rec (BVar s) as -> BVar s b) ->
+  Rec Identity as ->
+  Rec Identity as
 gradBPN = E.gradBPN E.zeroFuncs E.oneFunc
 {-# INLINE gradBPN #-}
 
@@ -288,12 +337,12 @@ gradBPN = E.gradBPN E.zeroFuncs E.oneFunc
 -- However, this could potentially be more performant.
 --
 -- For 3 and more arguments, consider using 'backpropN'.
-backprop2
-    :: (Backprop a, Backprop b, Backprop c)
-    => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
-    -> a
-    -> b
-    -> (c, (a, b))
+backprop2 ::
+  (Backprop a, Backprop b, Backprop c) =>
+  (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) ->
+  a ->
+  b ->
+  (c, (a, b))
 backprop2 = E.backprop2 E.zeroFunc E.zeroFunc E.oneFunc
 {-# INLINE backprop2 #-}
 
@@ -304,22 +353,22 @@ backprop2 = E.backprop2 E.zeroFunc E.zeroFunc E.oneFunc
 -- Note that argument order changed in v0.2.4
 --
 -- @since 0.2.0.0
-backpropWith2
-    :: (Backprop a, Backprop b)
-    => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
-    -> a
-    -> b
-    -> (c, c -> (a, b))
+backpropWith2 ::
+  (Backprop a, Backprop b) =>
+  (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) ->
+  a ->
+  b ->
+  (c, c -> (a, b))
 backpropWith2 = E.backpropWith2 E.zeroFunc E.zeroFunc
 {-# INLINE backpropWith2 #-}
 
 -- | 'gradBP' for a two-argument function.  See 'backprop2' for notes.
-gradBP2
-    :: (Backprop a, Backprop b, Backprop c)
-    => (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c)
-    -> a
-    -> b
-    -> (a, b)
+gradBP2 ::
+  (Backprop a, Backprop b, Backprop c) =>
+  (forall s. Reifies s W => BVar s a -> BVar s b -> BVar s c) ->
+  a ->
+  b ->
+  (a, b)
 gradBP2 = E.gradBP2 E.zeroFunc E.zeroFunc E.oneFunc
 {-# INLINE gradBP2 #-}
 
@@ -332,10 +381,10 @@ gradBP2 = E.gradBP2 E.zeroFunc E.zeroFunc E.oneFunc
 -- 'liftOp' . 'bpOp' = 'id'
 -- 'bpOp' . 'liftOp' = 'id'
 -- @
-bpOp
-    :: RPureConstrained Backprop as
-    => (forall s. Reifies s W => Rec (BVar s) as -> BVar s b)
-    -> Op as b
+bpOp ::
+  RPureConstrained Backprop as =>
+  (forall s. Reifies s W => Rec (BVar s) as -> BVar s b) ->
+  Op as b
 bpOp = E.bpOp E.zeroFuncs
 {-# INLINE bpOp #-}
 
@@ -374,13 +423,14 @@ bpOp = E.bpOp E.zeroFuncs
 --
 -- __WARNING__: Do not use with any lenses that operate "numerically" on
 -- the contents (like 'multiplying').
---
-(^^.)
-    :: forall b a s. (Backprop b, Backprop a, Reifies s W)
-    => BVar s b
-    -> Lens' b a
-    -> BVar s a
+(^^.) ::
+  forall b a s.
+  (Backprop b, Backprop a, Reifies s W) =>
+  BVar s b ->
+  Lens' b a ->
+  BVar s a
 x ^^. l = viewVar l x
+
 infixl 8 ^^.
 {-# INLINE (^^.) #-}
 
@@ -388,14 +438,14 @@ infixl 8 ^^.
 -- parallels to 'view' from lens.
 --
 -- See documentation for '^^.' for more information, caveats, and warnings.
-viewVar
-    :: forall b a s. (Backprop a, Backprop b, Reifies s W)
-    => Lens' b a
-    -> BVar s b
-    -> BVar s a
+viewVar ::
+  forall b a s.
+  (Backprop a, Backprop b, Reifies s W) =>
+  Lens' b a ->
+  BVar s b ->
+  BVar s a
 viewVar = E.viewVar E.addFunc E.zeroFunc
 {-# INLINE viewVar #-}
-
 
 -- | An infix version of 'setVar', meant to evoke parallels to '.~' from
 -- lens.
@@ -421,14 +471,14 @@ viewVar = E.viewVar E.addFunc E.zeroFunc
 --
 -- Note that this does not incurr the performance overhead issues of
 -- 'viewVar' and '^^.', and is fairly cheap.
---
-(.~~)
-    :: (Backprop a, Backprop b, Reifies s W)
-    => Lens' b a
-    -> BVar s a
-    -> BVar s b
-    -> BVar s b
+(.~~) ::
+  (Backprop a, Backprop b, Reifies s W) =>
+  Lens' b a ->
+  BVar s a ->
+  BVar s b ->
+  BVar s b
 l .~~ x = setVar l x
+
 infixl 8 .~~
 {-# INLINE (.~~) #-}
 
@@ -436,12 +486,12 @@ infixl 8 .~~
 -- parallels to "set" from lens.
 --
 -- See documentation for '.~~' for more information.
-setVar
-    :: (Backprop a, Backprop b, Reifies s W)
-    => Lens' b a
-    -> BVar s a
-    -> BVar s b
-    -> BVar s b
+setVar ::
+  (Backprop a, Backprop b, Reifies s W) =>
+  Lens' b a ->
+  BVar s a ->
+  BVar s b ->
+  BVar s b
 setVar = E.setVar E.addFunc E.addFunc E.zeroFunc
 {-# INLINE setVar #-}
 
@@ -470,14 +520,14 @@ setVar = E.setVar E.addFunc E.addFunc E.zeroFunc
 -- a 'setVar'.
 --
 -- @since 0.2.4.0
---
-(%~~)
-    :: (Backprop a, Backprop b, Reifies s W)
-    => Lens' b a
-    -> (BVar s a -> BVar s a)
-    -> BVar s b
-    -> BVar s b
+(%~~) ::
+  (Backprop a, Backprop b, Reifies s W) =>
+  Lens' b a ->
+  (BVar s a -> BVar s a) ->
+  BVar s b ->
+  BVar s b
 l %~~ f = overVar l f
+
 infixr 4 %~~
 {-# INLINE (%~~) #-}
 
@@ -486,15 +536,14 @@ infixr 4 %~~
 -- information.
 --
 -- @since 0.2.4.0
-overVar
-    :: (Backprop a, Backprop b, Reifies s W)
-    => Lens' b a
-    -> (BVar s a -> BVar s a)
-    -> BVar s b
-    -> BVar s b
+overVar ::
+  (Backprop a, Backprop b, Reifies s W) =>
+  Lens' b a ->
+  (BVar s a -> BVar s a) ->
+  BVar s b ->
+  BVar s b
 overVar = E.overVar E.addFunc E.addFunc E.zeroFunc E.zeroFunc
 {-# INLINE overVar #-}
-
 
 -- | An infix version of 'previewVar', meant to evoke parallels to '^?'
 -- from lens.
@@ -528,12 +577,14 @@ overVar = E.overVar E.addFunc E.addFunc E.zeroFunc E.zeroFunc
 --
 -- __NOTE__: Has the same potential of performance overhead issues as
 -- '^^.'; see documentation of '^^.' for more details.
-(^^?)
-    :: forall b a s. (Backprop b, Backprop a, Reifies s W)
-    => BVar s b
-    -> Traversal' b a
-    -> Maybe (BVar s a)
+(^^?) ::
+  forall b a s.
+  (Backprop b, Backprop a, Reifies s W) =>
+  BVar s b ->
+  Traversal' b a ->
+  Maybe (BVar s a)
 v ^^? t = previewVar t v
+
 infixl 8 ^^?
 {-# INLINE (^^?) #-}
 
@@ -545,14 +596,16 @@ infixl 8 ^^?
 -- Is essentially '^^?' with 'fromJust', or '^^..' with 'head'.
 --
 -- @since 0.2.1.0
-(^^?!)
-    :: forall b a s. (Backprop b, Backprop a, Reifies s W)
-    => BVar s b
-    -> Traversal' b a
-    -> BVar s a
+(^^?!) ::
+  forall b a s.
+  (Backprop b, Backprop a, Reifies s W) =>
+  BVar s b ->
+  Traversal' b a ->
+  BVar s a
 v ^^?! t = fromMaybe (error e) (previewVar t v)
   where
     e = "Numeric.Backprop.^^?!: Empty traversal"
+
 infixl 8 ^^?!
 {-# INLINE (^^?!) #-}
 
@@ -562,11 +615,12 @@ infixl 8 ^^?!
 -- to be used wth 'Prism''s, or up-to-one target traversals.
 --
 -- See documentation for '^^?' for more information, warnings, and caveats.
-previewVar
-    :: forall b a s. (Backprop b, Backprop a, Reifies s W)
-    => Traversal' b a
-    -> BVar s b
-    -> Maybe (BVar s a)
+previewVar ::
+  forall b a s.
+  (Backprop b, Backprop a, Reifies s W) =>
+  Traversal' b a ->
+  BVar s b ->
+  Maybe (BVar s a)
 previewVar = E.previewVar E.addFunc E.zeroFunc
 {-# INLINE previewVar #-}
 
@@ -593,12 +647,12 @@ previewVar = E.previewVar E.addFunc E.zeroFunc
 --
 -- __NOTE__: Has all of the performance overhead issues of 'sequenceVar';
 -- see documentation for 'sequenceVar' for more information.
---
-(^^..)
-    :: forall b a s. (Backprop b, Backprop a, Reifies s W)
-    => BVar s b
-    -> Traversal' b a
-    -> [BVar s a]
+(^^..) ::
+  forall b a s.
+  (Backprop b, Backprop a, Reifies s W) =>
+  BVar s b ->
+  Traversal' b a ->
+  [BVar s a]
 v ^^.. t = toListOfVar t v
 {-# INLINE (^^..) #-}
 
@@ -607,11 +661,12 @@ v ^^.. t = toListOfVar t v
 --
 -- See documentation for '^^..' for more information, warnings, and
 -- caveats.
-toListOfVar
-    :: forall b a s. (Backprop b, Backprop a, Reifies s W)
-    => Traversal' b a
-    -> BVar s b
-    -> [BVar s a]
+toListOfVar ::
+  forall b a s.
+  (Backprop b, Backprop a, Reifies s W) =>
+  Traversal' b a ->
+  BVar s b ->
+  [BVar s a]
 toListOfVar = E.toListOfVar E.addFunc E.zeroFunc
 {-# INLINE toListOfVar #-}
 
@@ -631,10 +686,10 @@ toListOfVar = E.toListOfVar E.addFunc E.zeroFunc
 -- with cheap 'add' (like 'Double'), but may be costly for things like
 -- large matrices.  See <https://backprop.jle.im/07-performance.html the
 -- performance guide> for for details.
-sequenceVar
-    :: (Traversable t, Backprop a, Reifies s W)
-    => BVar s (t a)
-    -> t (BVar s a)
+sequenceVar ::
+  (Traversable t, Backprop a, Reifies s W) =>
+  BVar s (t a) ->
+  t (BVar s a)
 sequenceVar = E.sequenceVar E.addFunc E.zeroFunc
 {-# INLINE sequenceVar #-}
 
@@ -652,10 +707,10 @@ sequenceVar = E.sequenceVar E.addFunc E.zeroFunc
 -- a very small constant factor that consistent for all types.  This
 -- reveals a general property of reverse-mode automatic differentiation;
 -- "many to one" is cheap, but "one to many" is expensive.
-collectVar
-    :: (Foldable t, Functor t, Backprop a, Reifies s W)
-    => t (BVar s a)
-    -> BVar s (t a)
+collectVar ::
+  (Foldable t, Functor t, Backprop a, Reifies s W) =>
+  t (BVar s a) ->
+  BVar s (t a)
 collectVar = E.collectVar E.addFunc E.zeroFunc
 {-# INLINE collectVar #-}
 
@@ -668,11 +723,11 @@ collectVar = E.collectVar E.addFunc E.zeroFunc
 -- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
 -- information, and "Numeric.Backprop.Op#prod" for a mini-tutorial on using
 -- 'Rec'.
-liftOp
-    :: (RPureConstrained Backprop as, Reifies s W)
-    => Op as b
-    -> Rec (BVar s) as
-    -> BVar s b
+liftOp ::
+  (RPureConstrained Backprop as, Reifies s W) =>
+  Op as b ->
+  Rec (BVar s) as ->
+  BVar s b
 liftOp = E.liftOp E.addFuncs
 {-# INLINE liftOp #-}
 
@@ -683,11 +738,11 @@ liftOp = E.liftOp E.addFuncs
 --
 -- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
 -- information.
-liftOp1
-    :: (Backprop a, Reifies s W)
-    => Op '[a] b
-    -> BVar s a
-    -> BVar s b
+liftOp1 ::
+  (Backprop a, Reifies s W) =>
+  Op '[a] b ->
+  BVar s a ->
+  BVar s b
 liftOp1 = E.liftOp1 E.addFunc
 {-# INLINE liftOp1 #-}
 
@@ -698,12 +753,12 @@ liftOp1 = E.liftOp1 E.addFunc
 --
 -- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
 -- information.
-liftOp2
-    :: (Backprop a, Backprop b, Reifies s W)
-    => Op '[a,b] c
-    -> BVar s a
-    -> BVar s b
-    -> BVar s c
+liftOp2 ::
+  (Backprop a, Backprop b, Reifies s W) =>
+  Op '[a, b] c ->
+  BVar s a ->
+  BVar s b ->
+  BVar s c
 liftOp2 = E.liftOp2 E.addFunc E.addFunc
 {-# INLINE liftOp2 #-}
 
@@ -714,13 +769,13 @@ liftOp2 = E.liftOp2 E.addFunc E.addFunc
 --
 -- See "Numeric.Backprop#liftops" and documentation for 'liftOp' for more
 -- information.
-liftOp3
-    :: (Backprop a, Backprop b, Backprop c, Reifies s W)
-    => Op '[a,b,c] d
-    -> BVar s a
-    -> BVar s b
-    -> BVar s c
-    -> BVar s d
+liftOp3 ::
+  (Backprop a, Backprop b, Backprop c, Reifies s W) =>
+  Op '[a, b, c] d ->
+  BVar s a ->
+  BVar s b ->
+  BVar s c ->
+  BVar s d
 liftOp3 = E.liftOp3 E.addFunc E.addFunc E.addFunc
 {-# INLINE liftOp3 #-}
 
@@ -736,12 +791,12 @@ liftOp3 = E.liftOp3 E.addFunc E.addFunc E.addFunc
 -- Basically, don't use this for any "numeric" isomorphisms.
 --
 -- @since 0.1.4.0
-isoVar
-    :: (Backprop a, Reifies s W)
-    => (a -> b)
-    -> (b -> a)
-    -> BVar s a
-    -> BVar s b
+isoVar ::
+  (Backprop a, Reifies s W) =>
+  (a -> b) ->
+  (b -> a) ->
+  BVar s a ->
+  BVar s b
 isoVar = E.isoVar E.addFunc
 {-# INLINE isoVar #-}
 
@@ -753,13 +808,13 @@ isoVar = E.isoVar E.addFunc
 -- join together 'BVar's as their fields.
 --
 -- @since 0.1.4.0
-isoVar2
-    :: (Backprop a, Backprop b, Reifies s W)
-    => (a -> b -> c)
-    -> (c -> (a, b))
-    -> BVar s a
-    -> BVar s b
-    -> BVar s c
+isoVar2 ::
+  (Backprop a, Backprop b, Reifies s W) =>
+  (a -> b -> c) ->
+  (c -> (a, b)) ->
+  BVar s a ->
+  BVar s b ->
+  BVar s c
 isoVar2 = E.isoVar2 E.addFunc E.addFunc
 {-# INLINE isoVar2 #-}
 
@@ -767,14 +822,14 @@ isoVar2 = E.isoVar2 E.addFunc E.addFunc
 -- Useful for things like constructors.  See 'isoVar' for caveats.
 --
 -- @since 0.1.4.0
-isoVar3
-    :: (Backprop a, Backprop b, Backprop c, Reifies s W)
-    => (a -> b -> c -> d)
-    -> (d -> (a, b, c))
-    -> BVar s a
-    -> BVar s b
-    -> BVar s c
-    -> BVar s d
+isoVar3 ::
+  (Backprop a, Backprop b, Backprop c, Reifies s W) =>
+  (a -> b -> c -> d) ->
+  (d -> (a, b, c)) ->
+  BVar s a ->
+  BVar s b ->
+  BVar s c ->
+  BVar s d
 isoVar3 = E.isoVar3 E.addFunc E.addFunc E.addFunc
 {-# INLINE isoVar3 #-}
 
@@ -787,12 +842,12 @@ isoVar3 = E.isoVar3 E.addFunc E.addFunc E.addFunc
 -- join together 'BVar's as their fields.
 --
 -- @since 0.1.4.0
-isoVarN
-    :: (RPureConstrained Backprop as, Reifies s W)
-    => (Rec Identity as -> b)
-    -> (b -> Rec Identity as)
-    -> Rec (BVar s) as
-    -> BVar s b
+isoVarN ::
+  (RPureConstrained Backprop as, Reifies s W) =>
+  (Rec Identity as -> b) ->
+  (b -> Rec Identity as) ->
+  Rec (BVar s) as ->
+  BVar s b
 isoVarN = E.isoVarN E.addFuncs
 {-# INLINE isoVarN #-}
 
@@ -800,11 +855,11 @@ isoVarN = E.isoVarN E.addFuncs
 -- two-tuples.
 --
 -- @since 0.2.1.0
-pattern T2
-    :: (Backprop a, Backprop b, Reifies s W)
-    => BVar s a
-    -> BVar s b
-    -> BVar s (a, b)
+pattern T2 ::
+  (Backprop a, Backprop b, Reifies s W) =>
+  BVar s a ->
+  BVar s b ->
+  BVar s (a, b)
 pattern T2 x y <- (\xy -> (xy ^^. _1, xy ^^. _2) -> (x, y))
   where
     T2 = isoVar2 (,) id
@@ -816,12 +871,12 @@ pattern T2 x y <- (\xy -> (xy ^^. _1, xy ^^. _2) -> (x, y))
 -- three-tuples.
 --
 -- @since 0.2.1.0
-pattern T3
-    :: (Backprop a, Backprop b, Backprop c, Reifies s W)
-    => BVar s a
-    -> BVar s b
-    -> BVar s c
-    -> BVar s (a, b, c)
+pattern T3 ::
+  (Backprop a, Backprop b, Backprop c, Reifies s W) =>
+  BVar s a ->
+  BVar s b ->
+  BVar s c ->
+  BVar s (a, b, c)
 pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
   where
     T3 = isoVar3 (,,) id
@@ -953,17 +1008,19 @@ pattern T3 x y z <- (\xyz -> (xyz ^^. _1, xyz ^^. _2, xyz ^^. _3) -> (x, y, z))
 -- interested in helping out!
 --
 -- @since 0.2.2.0
-splitBV
-    :: ( Generic (z f)
-       , Generic (z (BVar s))
-       , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
-       , Backprop (z f)
-       , Backprop (Rep (z f) ())
-       , RPureConstrained Backprop as
-       , Reifies s W
-       )
-    => BVar s (z f)             -- ^ 'BVar' of value
-    -> z (BVar s)               -- ^ 'BVar's of fields
+splitBV ::
+  ( Generic (z f)
+  , Generic (z (BVar s))
+  , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
+  , Backprop (z f)
+  , Backprop (Rep (z f) ())
+  , RPureConstrained Backprop as
+  , Reifies s W
+  ) =>
+  -- | 'BVar' of value
+  BVar s (z f) ->
+  -- | 'BVar's of fields
+  z (BVar s)
 splitBV = E.splitBV E.addFunc E.addFuncs E.zeroFunc E.zeroFuncs
 {-# INLINE splitBV #-}
 
@@ -987,17 +1044,19 @@ splitBV = E.splitBV E.addFunc E.addFuncs E.zeroFunc E.zeroFuncs
 -- differentiation: "many to one" is cheap, but "one to many" is expensive.
 --
 -- @since 0.2.2.0
-joinBV
-    :: ( Generic (z f)
-       , Generic (z (BVar s))
-       , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
-       , Backprop (z f)
-       , Backprop (Rep (z f) ())
-       , RPureConstrained Backprop as
-       , Reifies s W
-       )
-    => z (BVar s)           -- ^ 'BVar's of fields
-    -> BVar s (z f)         -- ^ 'BVar' of combined value
+joinBV ::
+  ( Generic (z f)
+  , Generic (z (BVar s))
+  , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
+  , Backprop (z f)
+  , Backprop (Rep (z f) ())
+  , RPureConstrained Backprop as
+  , Reifies s W
+  ) =>
+  -- | 'BVar's of fields
+  z (BVar s) ->
+  -- | 'BVar' of combined value
+  BVar s (z f)
 joinBV = E.joinBV E.addFunc E.addFuncs E.zeroFunc E.zeroFuncs
 {-# INLINE joinBV #-}
 
@@ -1005,16 +1064,16 @@ joinBV = E.joinBV E.addFunc E.addFuncs E.zeroFunc E.zeroFuncs
 -- is a pattern for a @'BVar' s (z f)@ containing a @z ('BVar' s)@
 --
 -- @since 0.2.3.0
-pattern BV
-    :: ( Generic (z f)
-       , Generic (z (BVar s))
-       , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
-       , Backprop (Rep (z f) ())
-       , Backprop (z f)
-       , RPureConstrained Backprop as
-       , RecApplicative as
-       , Reifies s W
-       )
+pattern BV ::
+  ( Generic (z f)
+  , Generic (z (BVar s))
+  , E.BVGroup s as (Rep (z f)) (Rep (z (BVar s)))
+  , Backprop (Rep (z f) ())
+  , Backprop (z f)
+  , RPureConstrained Backprop as
+  , RecApplicative as
+  , Reifies s W
+  )
 #if MIN_VERSION_base(4,10,0)
     => z (BVar s)           -- ^ 'BVar's of fields
     -> BVar s (z f)         -- ^ 'BVar' of combined value
@@ -1022,7 +1081,7 @@ pattern BV
     => z (BVar s)
     -> BVar s (z f)
 #endif
-pattern BV v <- (splitBV->v)
+pattern BV v <- (splitBV -> v)
   where
     BV = joinBV
 #if MIN_VERSION_base(4,10,0)

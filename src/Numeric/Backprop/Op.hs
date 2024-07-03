@@ -1,12 +1,12 @@
-{-# LANGUAGE BangPatterns         #-}
-{-# LANGUAGE DataKinds            #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE GADTs                #-}
-{-# LANGUAGE LambdaCase           #-}
-{-# LANGUAGE PatternSynonyms      #-}
-{-# LANGUAGE RankNTypes           #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 -- |
@@ -42,51 +42,92 @@
 --
 -- See also <https://backprop.jle.im/06-manual-gradients.html this guide>
 -- for writing Ops manually on your own numerical functions.
---
-
 module Numeric.Backprop.Op (
   -- * Implementation
   -- $opdoc
-  -- * Types
-  -- ** Op and Synonyms
-    Op(..)
+  Op (..),
+
   -- ** Tuple Types#prod#
   -- $prod
-  , Rec(..)
+  Rec (..),
+
   -- * Running
+
   -- ** Pure
-  , runOp, evalOp, gradOp, gradOpWith
+  runOp,
+  evalOp,
+  gradOp,
+  gradOpWith,
+
   -- * Creation
-  , op0, opConst, idOp
-  , opLens
+  op0,
+  opConst,
+  idOp,
+  opLens,
+
   -- ** Giving gradients directly
-  , op1, op2, op3
+  op1,
+  op2,
+  op3,
+
   -- ** From Isomorphisms
-  , opCoerce, opTup, opIso, opIso2, opIso3, opIsoN
+  opCoerce,
+  opTup,
+  opIso,
+  opIso2,
+  opIso3,
+  opIsoN,
+
   -- ** No gradient
-  , noGrad1, noGrad
+  noGrad1,
+  noGrad,
+
   -- * Manipulation
-  , composeOp, composeOp1, (~.)
+  composeOp,
+  composeOp1,
+  (~.),
+
   -- * Utility
+
   -- ** Numeric Ops#numops#
   -- $numops
-  , (+.), (-.), (*.), negateOp, absOp, signumOp
-  , (/.), recipOp
-  , expOp, logOp, sqrtOp, (**.), logBaseOp
-  , sinOp, cosOp, tanOp, asinOp, acosOp, atanOp
-  , sinhOp, coshOp, tanhOp, asinhOp, acoshOp, atanhOp
-  ) where
+  (+.),
+  (-.),
+  (*.),
+  negateOp,
+  absOp,
+  signumOp,
+  (/.),
+  recipOp,
+  expOp,
+  logOp,
+  sqrtOp,
+  (**.),
+  logBaseOp,
+  sinOp,
+  cosOp,
+  tanOp,
+  asinOp,
+  acosOp,
+  atanOp,
+  sinhOp,
+  coshOp,
+  tanhOp,
+  asinhOp,
+  acoshOp,
+  atanhOp,
+) where
 
-import           Control.Applicative
-import           Data.Bifunctor
-import           Data.Coerce
-import           Data.Functor.Identity
-import           Data.List
-import           Data.Type.Util
-import           Data.Vinyl.Core
-import           Lens.Micro
-import           Lens.Micro.Extras
-import qualified Data.Vinyl.Recursive  as VR
+import Control.Applicative
+import Data.Bifunctor
+import Data.Coerce
+import Data.Functor.Identity
+import Data.List
+import Data.Type.Util
+import Data.Vinyl.Core
+import qualified Data.Vinyl.Recursive as VR
+import Lens.Micro
+import Lens.Micro.Extras
 
 -- $opdoc
 -- 'Op's contain information on a function as well as its gradient, but
@@ -181,61 +222,71 @@ import qualified Data.Vinyl.Recursive  as VR
 --
 -- To /use/ an 'Op' with the backprop library, see 'liftOp', 'liftOp1',
 -- 'liftOp2', and 'liftOp3'.
-newtype Op as a =
-    -- | Construct an 'Op' by giving a function creating the
+newtype Op as a
+  = -- | Construct an 'Op' by giving a function creating the
     -- result, and also a continuation on how to create the gradient, given
     -- the total derivative of @a@.
     --
     -- See the module documentation for "Numeric.Backprop.Op" for more
     -- details on the function that this constructor and 'Op' expect.
-    Op { -- | Run the function that the 'Op' encodes, returning
-         -- a continuation to compute the gradient, given the total
-         -- derivative of @a@.  See documentation for "Numeric.Backprop.Op"
-         -- for more information.
-         runOpWith :: Rec Identity as -> (a, a -> Rec Identity as)
-       }
+    Op
+    { runOpWith :: Rec Identity as -> (a, a -> Rec Identity as)
+    -- ^ Run the function that the 'Op' encodes, returning
+    -- a continuation to compute the gradient, given the total
+    -- derivative of @a@.  See documentation for "Numeric.Backprop.Op"
+    -- for more information.
+    }
 
 -- | Helper wrapper used for the implementation of 'composeOp'.
-newtype OpCont as a = OC { runOpCont :: a -> Rec Identity as }
+newtype OpCont as a = OC {runOpCont :: a -> Rec Identity as}
 
 -- | Compose 'Op's together, like 'sequence' for functions, or @liftAN@.
 --
 -- That is, given an @'Op' as b1@, an @'Op' as b2@, and an @'Op' as b3@, it
 -- can compose them with an @'Op' '[b1,b2,b3] c@ to create an @'Op' as
 -- c@.
-composeOp
-    :: forall as bs c. (RPureConstrained Num as)
-    => Rec (Op as) bs   -- ^ 'Rec' of 'Op's taking @as@ and returning
-                         --     different @b@ in @bs@
-    -> Op bs c           -- ^ 'OpM' taking eac of the @bs@ from the
-                         --     input 'Rec'.
-    -> Op as c           -- ^ Composed 'Op'
+composeOp ::
+  forall as bs c.
+  RPureConstrained Num as =>
+  -- | 'Rec' of 'Op's taking @as@ and returning
+  --     different @b@ in @bs@
+  Rec (Op as) bs ->
+  -- | 'OpM' taking eac of the @bs@ from the
+  --     input 'Rec'.
+  Op bs c ->
+  -- | Composed 'Op'
+  Op as c
 composeOp os o = Op $ \xs ->
-    let (ys, conts) = runzipWith (bimap Identity OC . flip runOpWith xs) os
-        (z, gFz) = runOpWith o ys
-        gFunc g0 =
-          let g1 = gFz g0
-              g2s :: Rec (Const (Rec Identity as)) bs
-              g2s = VR.rzipWith (\oc (Identity g) -> Const $ runOpCont oc g)
-                        conts g1
-          in  VR.rmap (\(Dict x) -> Identity x)
-                . foldl' (VR.rzipWith (\(Dict !x) (Identity y) ->
-                                         let q = x + y in q `seq` Dict q
-                                    )
-                         )
-                    (rpureConstrained @Num (Dict @Num 0))
-                . VR.rfoldMap ((:[]) . getConst)
-                $ g2s
-    in (z, gFunc)
+  let (ys, conts) = runzipWith (bimap Identity OC . flip runOpWith xs) os
+      (z, gFz) = runOpWith o ys
+      gFunc g0 =
+        let g1 = gFz g0
+            g2s :: Rec (Const (Rec Identity as)) bs
+            g2s =
+              VR.rzipWith
+                (\oc (Identity g) -> Const $ runOpCont oc g)
+                conts
+                g1
+         in VR.rmap (\(Dict x) -> Identity x)
+              . foldl'
+                ( VR.rzipWith
+                    ( \(Dict !x) (Identity y) ->
+                        let q = x + y in q `seq` Dict q
+                    )
+                )
+                (rpureConstrained @Num (Dict @Num 0))
+              . VR.rfoldMap ((: []) . getConst)
+              $ g2s
+   in (z, gFunc)
 
 -- | Convenient wrapper over 'composeOp' for the case where the second
 -- function only takes one input, so the two 'Op's can be directly piped
 -- together, like for '.'.
-composeOp1
-    :: RPureConstrained Num as
-    => Op as b
-    -> Op '[b] c
-    -> Op as c
+composeOp1 ::
+  RPureConstrained Num as =>
+  Op as b ->
+  Op '[b] c ->
+  Op as c
 composeOp1 = composeOp . (:& RNil)
 
 -- | Convenient infix synonym for (flipped) 'composeOp1'.  Meant to be used
@@ -248,14 +299,14 @@ composeOp1 = composeOp . (:& RNil)
 -- f '~.' g :: Op '[a, a] c
 -- @
 infixr 9 ~.
-(~.)
-    :: (RPureConstrained Num as)
-    => Op '[b] c
-    -> Op as b
-    -> Op as c
+
+(~.) ::
+  RPureConstrained Num as =>
+  Op '[b] c ->
+  Op as b ->
+  Op as c
 (~.) = flip composeOp1
 {-# INLINE (~.) #-}
-
 
 -- | Run the function that an 'Op' encodes, to get the result.
 --
@@ -279,11 +330,15 @@ runOp o = second ($ 1) . runOpWith o
 --
 -- See the module documentaiton for "Numeric.Backprop.Op" for more
 -- information.
-gradOpWith
-    :: Op as a      -- ^ 'Op' to run
-    -> Rec Identity as     -- ^ Inputs to run it with
-    -> a            -- ^ The total derivative of the result.
-    -> Rec Identity as     -- ^ The gradient
+gradOpWith ::
+  -- | 'Op' to run
+  Op as a ->
+  -- | Inputs to run it with
+  Rec Identity as ->
+  -- | The total derivative of the result.
+  a ->
+  -- | The gradient
+  Rec Identity as
 gradOpWith o = snd . runOpWith o
 {-# INLINE gradOpWith #-}
 
@@ -297,7 +352,6 @@ gradOpWith o = snd . runOpWith o
 -- @
 -- 'gradOp' o xs = 'gradOpWith' o xs 1
 -- @
---
 gradOp :: Num a => Op as a -> Rec Identity as -> Rec Identity as
 gradOp o i = gradOpWith o i 1
 {-# INLINE gradOp #-}
@@ -330,9 +384,9 @@ opCoerce = opIso coerce coerce
 -- @since 0.1.3.0
 noGrad1 :: (a -> b) -> Op '[a] b
 noGrad1 f = op1 $ \x ->
-    ( f x
-    , \_ -> errorWithoutStackTrace "Numeric.Backprop.Op.noGrad1: no gradient defined"
-    )
+  ( f x
+  , \_ -> errorWithoutStackTrace "Numeric.Backprop.Op.noGrad1: no gradient defined"
+  )
 {-# INLINE noGrad1 #-}
 
 -- | Create an 'Op' with no gradient.  Can be evaluated with 'evalOp',  but
@@ -350,9 +404,9 @@ noGrad1 f = op1 $ \x ->
 -- @since 0.1.3.0
 noGrad :: (Rec Identity as -> b) -> Op as b
 noGrad f = Op $ \xs ->
-    ( f xs
-    , \_ -> errorWithoutStackTrace "Numeric.Backprop.Op.noGrad: no gradient defined"
-    )
+  ( f xs
+  , \_ -> errorWithoutStackTrace "Numeric.Backprop.Op.noGrad: no gradient defined"
+  )
 {-# INLINE noGrad #-}
 
 -- | An 'Op' that just returns whatever it receives.  The identity
@@ -378,7 +432,7 @@ opTup = Op $ \xs -> (xs, id)
 -- Warning: This is unsafe!  It assumes that the isomorphisms themselves
 -- have derivative 1, so will break for things like 'exp' & 'log'.
 -- Basically, don't use this for any "numeric" isomorphisms.
-opIso :: (a -> b) -> (b -> a) -> Op '[ a ] b
+opIso :: (a -> b) -> (b -> a) -> Op '[a] b
 opIso to' from' = op1 $ \x -> (to' x, from')
 {-# INLINE opIso #-}
 
@@ -414,7 +468,7 @@ opIsoN to' from' = Op $ \xs -> (to' xs, from')
 -- Warning: This is unsafe!  It assumes that it extracts a specific value
 -- unchanged, with derivative 1, so will break for things that numerically
 -- manipulate things before returning them.
-opLens :: Num a => Lens' a b -> Op '[ a ] b
+opLens :: Num a => Lens' a b -> Op '[a] b
 opLens l = op1 $ \x -> (view l x, \d -> set l d 0)
 {-# INLINE opLens #-}
 
@@ -423,12 +477,15 @@ opLens l = op1 $ \x -> (view l x, \d -> set l d 0)
 --
 -- >>> gradOp' (opConst 10) (1 :& 2 :& 3 :& RNil)
 -- (10, 0 :& 0 :& 0 :& RNil)
-opConst
-    :: forall as a. RPureConstrained Num as
-    => a
-    -> Op as a
-opConst x = Op $ const
-    (x, const $ rpureConstrained @Num 0)
+opConst ::
+  forall as a.
+  RPureConstrained Num as =>
+  a ->
+  Op as a
+opConst x =
+  Op $
+    const
+      (x, const $ rpureConstrained @Num 0)
 {-# INLINE opConst #-}
 
 -- | Create an 'Op' that takes no inputs and always returns the given
@@ -444,7 +501,7 @@ opConst x = Op $ const
 -- 'opConst''.
 op0 :: a -> Op '[] a
 op0 x = Op $ \case
-    RNil -> (x, const RNil)
+  RNil -> (x, const RNil)
 {-# INLINE op0 #-}
 
 -- | Create an 'Op' of a function taking one input, by giving its explicit
@@ -482,13 +539,13 @@ op0 x = Op $ \case
 --
 -- Remember that, generally, end users shouldn't directly construct 'Op's;
 -- they should be provided by libraries or generated automatically.
-op1
-    :: (a -> (b, b -> a))
-    -> Op '[a] b
+op1 ::
+  (a -> (b, b -> a)) ->
+  Op '[a] b
 op1 f = Op $ \case
-    Identity x :& RNil ->
-      let (y, dx) = f x
-      in  (y, \(!d) -> (:& RNil) . Identity . dx $ d)
+  Identity x :& RNil ->
+    let (y, dx) = f x
+     in (y, \(!d) -> (:& RNil) . Identity . dx $ d)
 {-# INLINE op1 #-}
 
 -- | Create an 'Op' of a function taking two inputs, by giving its explicit
@@ -528,86 +585,86 @@ op1 f = Op $ \case
 --
 -- Remember that, generally, end users shouldn't directly construct 'Op's;
 -- they should be provided by libraries or generated automatically.
-op2
-    :: (a -> b -> (c, c -> (a, b)))
-    -> Op '[a,b] c
+op2 ::
+  (a -> b -> (c, c -> (a, b))) ->
+  Op '[a, b] c
 op2 f = Op $ \case
-    Identity x :& Identity y :& RNil ->
-      let (z, dxdy) = f x y
-      in  (z, (\(!dx,!dy) -> Identity dx :& Identity dy :& RNil) . dxdy)
+  Identity x :& Identity y :& RNil ->
+    let (z, dxdy) = f x y
+     in (z, (\(!dx, !dy) -> Identity dx :& Identity dy :& RNil) . dxdy)
 {-# INLINE op2 #-}
 
 -- | Create an 'Op' of a function taking three inputs, by giving its explicit
 -- gradient.  See documentation for 'op2' for more details.
-op3
-    :: (a -> b -> c -> (d, d -> (a, b, c)))
-    -> Op '[a,b,c] d
+op3 ::
+  (a -> b -> c -> (d, d -> (a, b, c))) ->
+  Op '[a, b, c] d
 op3 f = Op $ \case
-    Identity x :& Identity y :& Identity z :& RNil ->
-      let (q, dxdydz) = f x y z
-      in  (q, (\(!dx, !dy, !dz) -> Identity dx :& Identity dy :& Identity dz :& RNil) . dxdydz)
+  Identity x :& Identity y :& Identity z :& RNil ->
+    let (q, dxdydz) = f x y z
+     in (q, (\(!dx, !dy, !dz) -> Identity dx :& Identity dy :& Identity dz :& RNil) . dxdydz)
 {-# INLINE op3 #-}
 
 instance (RPureConstrained Num as, Num a) => Num (Op as a) where
-    o1 + o2       = composeOp (o1 :& o2 :& RNil) (+.)
-    {-# INLINE (+) #-}
-    o1 - o2       = composeOp (o1 :& o2 :& RNil) (-.)
-    {-# INLINE (-) #-}
-    o1 * o2       = composeOp (o1 :& o2 :& RNil) (*.)
-    {-# INLINE (*) #-}
-    negate o      = composeOp (o  :& RNil)       negateOp
-    {-# INLINE negate #-}
-    signum o      = composeOp (o  :& RNil)       signumOp
-    {-# INLINE signum #-}
-    abs    o      = composeOp (o  :& RNil)       absOp
-    {-# INLINE abs #-}
-    fromInteger x = opConst (fromInteger x)
-    {-# INLINE fromInteger #-}
+  o1 + o2 = composeOp (o1 :& o2 :& RNil) (+.)
+  {-# INLINE (+) #-}
+  o1 - o2 = composeOp (o1 :& o2 :& RNil) (-.)
+  {-# INLINE (-) #-}
+  o1 * o2 = composeOp (o1 :& o2 :& RNil) (*.)
+  {-# INLINE (*) #-}
+  negate o = composeOp (o :& RNil) negateOp
+  {-# INLINE negate #-}
+  signum o = composeOp (o :& RNil) signumOp
+  {-# INLINE signum #-}
+  abs o = composeOp (o :& RNil) absOp
+  {-# INLINE abs #-}
+  fromInteger x = opConst (fromInteger x)
+  {-# INLINE fromInteger #-}
 
 instance (RPureConstrained Num as, Fractional a) => Fractional (Op as a) where
-    o1 / o2        = composeOp (o1 :& o2 :& RNil) (/.)
-    recip o        = composeOp (o  :& RNil)       recipOp
-    {-# INLINE recip #-}
-    fromRational x = opConst (fromRational x)
-    {-# INLINE fromRational #-}
+  o1 / o2 = composeOp (o1 :& o2 :& RNil) (/.)
+  recip o = composeOp (o :& RNil) recipOp
+  {-# INLINE recip #-}
+  fromRational x = opConst (fromRational x)
+  {-# INLINE fromRational #-}
 
 instance (RPureConstrained Num as, Floating a) => Floating (Op as a) where
-    pi            = opConst pi
-    {-# INLINE pi #-}
-    exp   o       = composeOp (o  :& RNil)       expOp
-    {-# INLINE exp #-}
-    log   o       = composeOp (o  :& RNil)       logOp
-    {-# INLINE log #-}
-    sqrt  o       = composeOp (o  :& RNil)       sqrtOp
-    {-# INLINE sqrt #-}
-    o1 ** o2      = composeOp (o1 :& o2 :& RNil) (**.)
-    {-# INLINE (**) #-}
-    logBase o1 o2 = composeOp (o1 :& o2 :& RNil) logBaseOp
-    {-# INLINE logBase #-}
-    sin   o       = composeOp (o  :& RNil)       sinOp
-    {-# INLINE sin #-}
-    cos   o       = composeOp (o  :& RNil)       cosOp
-    {-# INLINE cos #-}
-    tan   o       = composeOp (o  :& RNil)       tanOp
-    {-# INLINE tan #-}
-    asin  o       = composeOp (o  :& RNil)       asinOp
-    {-# INLINE asin #-}
-    acos  o       = composeOp (o  :& RNil)       acosOp
-    {-# INLINE acos #-}
-    atan  o       = composeOp (o  :& RNil)       atanOp
-    {-# INLINE atan #-}
-    sinh  o       = composeOp (o  :& RNil)       sinhOp
-    {-# INLINE sinh #-}
-    cosh  o       = composeOp (o  :& RNil)       coshOp
-    {-# INLINE cosh #-}
-    tanh  o       = composeOp (o  :& RNil)       tanhOp
-    {-# INLINE tanh #-}
-    asinh o       = composeOp (o  :& RNil)       asinhOp
-    {-# INLINE asinh #-}
-    acosh o       = composeOp (o  :& RNil)       acoshOp
-    {-# INLINE acosh #-}
-    atanh o       = composeOp (o  :& RNil)       atanhOp
-    {-# INLINE atanh #-}
+  pi = opConst pi
+  {-# INLINE pi #-}
+  exp o = composeOp (o :& RNil) expOp
+  {-# INLINE exp #-}
+  log o = composeOp (o :& RNil) logOp
+  {-# INLINE log #-}
+  sqrt o = composeOp (o :& RNil) sqrtOp
+  {-# INLINE sqrt #-}
+  o1 ** o2 = composeOp (o1 :& o2 :& RNil) (**.)
+  {-# INLINE (**) #-}
+  logBase o1 o2 = composeOp (o1 :& o2 :& RNil) logBaseOp
+  {-# INLINE logBase #-}
+  sin o = composeOp (o :& RNil) sinOp
+  {-# INLINE sin #-}
+  cos o = composeOp (o :& RNil) cosOp
+  {-# INLINE cos #-}
+  tan o = composeOp (o :& RNil) tanOp
+  {-# INLINE tan #-}
+  asin o = composeOp (o :& RNil) asinOp
+  {-# INLINE asin #-}
+  acos o = composeOp (o :& RNil) acosOp
+  {-# INLINE acos #-}
+  atan o = composeOp (o :& RNil) atanOp
+  {-# INLINE atan #-}
+  sinh o = composeOp (o :& RNil) sinhOp
+  {-# INLINE sinh #-}
+  cosh o = composeOp (o :& RNil) coshOp
+  {-# INLINE cosh #-}
+  tanh o = composeOp (o :& RNil) tanhOp
+  {-# INLINE tanh #-}
+  asinh o = composeOp (o :& RNil) asinhOp
+  {-# INLINE asinh #-}
+  acosh o = composeOp (o :& RNil) acoshOp
+  {-# INLINE acosh #-}
+  atanh o = composeOp (o :& RNil) atanhOp
+  {-# INLINE atanh #-}
 
 -- $numops
 --
@@ -632,32 +689,33 @@ instance (RPureConstrained Num as, Floating a) => Floating (Op as a) where
 
 -- | 'Op' for multiplication
 (*.) :: Num a => Op '[a, a] a
-(*.) = op2 $ \x y -> (x * y, \g -> (y*g, x*g))
+(*.) = op2 $ \x y -> (x * y, \g -> (y * g, x * g))
 {-# INLINE (*.) #-}
 
 -- | 'Op' for division
 (/.) :: Fractional a => Op '[a, a] a
-(/.) = op2 $ \x y -> (x / y, \g -> (g/y, -g*x/(y*y)))
+(/.) = op2 $ \x y -> (x / y, \g -> (g / y, -g * x / (y * y)))
 {-# INLINE (/.) #-}
 
 -- | 'Op' for exponentiation
 (**.) :: Floating a => Op '[a, a] a
-(**.) = op2 $ \x y -> ( x ** y
-                      , let dx = y*x**(y-1)
-                            dy = x**y*log x
-                        in  \g -> (g*dx, g*dy)
-                      )
+(**.) = op2 $ \x y ->
+  ( x ** y
+  , let dx = y * x ** (y - 1)
+        dy = x ** y * log x
+     in \g -> (g * dx, g * dy)
+  )
 {-# INLINE (**.) #-}
 
 -- | 'Op' for negation
 negateOp :: Num a => Op '[a] a
 negateOp = op1 $ \x -> (negate x, negate)
-{-# INLINE negateOp  #-}
+{-# INLINE negateOp #-}
 
 -- | 'Op' for 'signum'
 signumOp :: Num a => Op '[a] a
 signumOp = op1 $ \x -> (signum x, const 0)
-{-# INLINE signumOp  #-}
+{-# INLINE signumOp #-}
 
 -- | 'Op' for absolute value
 absOp :: Num a => Op '[a] a
@@ -666,7 +724,7 @@ absOp = op1 $ \x -> (abs x, (* signum x))
 
 -- | 'Op' for multiplicative inverse
 recipOp :: Fractional a => Op '[a] a
-recipOp = op1 $ \x -> (recip x, (/(x*x)) . negate)
+recipOp = op1 $ \x -> (recip x, (/ (x * x)) . negate)
 {-# INLINE recipOp #-}
 
 -- | 'Op' for 'exp'
@@ -676,7 +734,7 @@ expOp = op1 $ \x -> (exp x, (exp x *))
 
 -- | 'Op' for the natural logarithm
 logOp :: Floating a => Op '[a] a
-logOp = op1 $ \x -> (log x, (/x))
+logOp = op1 $ \x -> (log x, (/ x))
 {-# INLINE logOp #-}
 
 -- | 'Op' for square root
@@ -686,10 +744,11 @@ sqrtOp = op1 $ \x -> (sqrt x, (/ (2 * sqrt x)))
 
 -- | 'Op' for 'logBase'
 logBaseOp :: Floating a => Op '[a, a] a
-logBaseOp = op2 $ \x y -> ( logBase x y
-                          , let dx = - logBase x y / (log x * x)
-                            in  \g -> (g*dx, g/(y * log x))
-                          )
+logBaseOp = op2 $ \x y ->
+  ( logBase x y
+  , let dx = -logBase x y / (log x * x)
+     in \g -> (g * dx, g / (y * log x))
+  )
 {-# INLINE logBaseOp #-}
 
 -- | 'Op' for sine
@@ -704,22 +763,22 @@ cosOp = op1 $ \x -> (cos x, (* (-sin x)))
 
 -- | 'Op' for tangent
 tanOp :: Floating a => Op '[a] a
-tanOp = op1 $ \x -> (tan x, (/ cos x^(2::Int)))
+tanOp = op1 $ \x -> (tan x, (/ cos x ^ (2 :: Int)))
 {-# INLINE tanOp #-}
 
 -- | 'Op' for arcsine
 asinOp :: Floating a => Op '[a] a
-asinOp = op1 $ \x -> (asin x, (/ sqrt(1 - x*x)))
+asinOp = op1 $ \x -> (asin x, (/ sqrt (1 - x * x)))
 {-# INLINE asinOp #-}
 
 -- | 'Op' for arccosine
 acosOp :: Floating a => Op '[a] a
-acosOp = op1 $ \x -> (acos x, (/ sqrt (1 - x*x)) . negate)
+acosOp = op1 $ \x -> (acos x, (/ sqrt (1 - x * x)) . negate)
 {-# INLINE acosOp #-}
 
 -- | 'Op' for arctangent
 atanOp :: Floating a => Op '[a] a
-atanOp = op1 $ \x -> (atan x, (/ (x*x + 1)))
+atanOp = op1 $ \x -> (atan x, (/ (x * x + 1)))
 {-# INLINE atanOp #-}
 
 -- | 'Op' for hyperbolic sine
@@ -734,22 +793,22 @@ coshOp = op1 $ \x -> (cosh x, (* sinh x))
 
 -- | 'Op' for hyperbolic tangent
 tanhOp :: Floating a => Op '[a] a
-tanhOp = op1 $ \x -> (tanh x, (/ cosh x^(2::Int)))
+tanhOp = op1 $ \x -> (tanh x, (/ cosh x ^ (2 :: Int)))
 {-# INLINE tanhOp #-}
 
 -- | 'Op' for hyperbolic arcsine
 asinhOp :: Floating a => Op '[a] a
-asinhOp = op1 $ \x -> (asinh x, (/ sqrt (x*x + 1)))
+asinhOp = op1 $ \x -> (asinh x, (/ sqrt (x * x + 1)))
 {-# INLINE asinhOp #-}
 
 -- | 'Op' for hyperbolic arccosine
 acoshOp :: Floating a => Op '[a] a
-acoshOp = op1 $ \x -> (acosh x, (/ sqrt (x*x - 1)))
+acoshOp = op1 $ \x -> (acosh x, (/ sqrt (x * x - 1)))
 {-# INLINE acoshOp #-}
 
 -- | 'Op' for hyperbolic arctangent
 atanhOp :: Floating a => Op '[a] a
-atanhOp = op1 $ \x -> (atanh x, (/ (1 - x*x)))
+atanhOp = op1 $ \x -> (atanh x, (/ (1 - x * x)))
 {-# INLINE atanhOp #-}
 
 -- $prod
@@ -776,4 +835,3 @@ atanhOp = op1 $ \x -> (atanh x, (/ (1 - x*x)))
 -- z :: f c
 -- x :& y :& z :& RNil :: Rec f '[a, b, c]
 -- @
---
