@@ -809,12 +809,7 @@ instance Backprop a => Backprop (Seq.Seq a) where
 instance Backprop a => Backprop (Maybe a) where
   zero = zeroFunctor
   {-# INLINE zero #-}
-  add x y =
-    asum
-      [ add <$> x <*> y
-      , x
-      , y
-      ]
+  add x y = (add <$> x <*> y) <|> x <|> y
   {-# INLINE add #-}
   one = oneFunctor
   {-# INLINE one #-}

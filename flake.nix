@@ -21,7 +21,9 @@
         {
           inherit name;
           src = ./.;
-          excludeCompilerMajors = [];
+          # lapack seems to link badly on almost all versions so CI is
+          # screwed until we figure out what's going on
+          excludeCompilerMajors = [ "ghc94" "ghc913" ];
           defaultCompiler = "ghc982";
         };
     in
