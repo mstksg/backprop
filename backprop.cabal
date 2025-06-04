@@ -1,6 +1,6 @@
 cabal-version:      1.12
 name:               backprop
-version:            0.2.6.5
+version:            0.2.7.0
 synopsis:           Heterogeneous automatic differentation
 description:
   Write your functions to compute your result, and the library will
@@ -55,6 +55,7 @@ library
     Numeric.Backprop
     Numeric.Backprop.Class
     Numeric.Backprop.Explicit
+    Numeric.Backprop.Internal
     Numeric.Backprop.Num
     Numeric.Backprop.Op
     Prelude.Backprop

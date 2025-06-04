@@ -29,6 +29,10 @@
 --
 -- Provides the types and instances used for the graph
 -- building/back-propagation for the library.
+--
+-- Do not import this unless you want to mess with the internals and know what
+-- you're doing. Otherwise, use "Numeric.Backprop", "Numeric.Backprop.Op",
+-- etc.
 module Numeric.Backprop.Internal (
   BVar,
   W,

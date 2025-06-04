@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Version 0.2.7.0
+---------------
+
+*June 3, 2025*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.2.7.0>
+
+*   Export `Numeric.Backprop.Internal`.
+
 Version 0.2.6.5
 ---------------
 
