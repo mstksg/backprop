@@ -32,6 +32,8 @@
 -- Do not import this unless you want to mess with the internals and know what
 -- you're doing. Otherwise, use "Numeric.Backprop", "Numeric.Backprop.Op",
 -- etc.
+--
+-- @since 0.2.7.0
 module Numeric.Backprop.Internal (
   BVar,
   W,
