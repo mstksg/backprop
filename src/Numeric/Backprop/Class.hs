@@ -3,8 +3,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE EmptyCase #-}
@@ -72,7 +70,6 @@ import Control.Monad
 import Data.Coerce
 import Data.Complex
 import Data.Data
-import Data.Foldable hiding (toList)
 import Data.Functor.Compose
 import Data.Functor.Identity
 import qualified Data.Functor.Product as DFP
@@ -386,12 +383,10 @@ instance NFData a => NFData (NumBP a)
 instance Applicative NumBP where
   pure = NumBP
   {-# INLINE pure #-}
-  f <*> x = NumBP $ (runNumBP f) (runNumBP x)
+  f <*> x = NumBP $ runNumBP f (runNumBP x)
   {-# INLINE (<*>) #-}
 
 instance Monad NumBP where
-  return = NumBP
-  {-# INLINE return #-}
   x >>= f = f (runNumBP x)
   {-# INLINE (>>=) #-}
 

@@ -62,20 +62,17 @@ library
     Prelude.Backprop.Explicit
     Prelude.Backprop.Num
 
-  other-modules:
-    Data.Type.Util
-    Numeric.Backprop.Internal
-
+  other-modules:    Data.Type.Util
   hs-source-dirs:   src
   ghc-options:
     -Wall -Wcompat -Wincomplete-record-updates -Wredundant-constraints
+    -Wunused-packages
 
   build-depends:
       base          >=4.7   && <5
     , containers
     , deepseq
     , microlens
-    , primitive
     , reflection
     , transformers
     , vector
@@ -96,7 +93,7 @@ benchmark backprop-mnist-bench
   hs-source-dirs:   bench
   ghc-options:
     -Wall -Wcompat -Wincomplete-record-updates -Wredundant-constraints
-    -threaded -rtsopts -with-rtsopts=-N -O2
+    -threaded -rtsopts -with-rtsopts=-N -O2 -Wunused-packages
 
   build-depends:
       backprop

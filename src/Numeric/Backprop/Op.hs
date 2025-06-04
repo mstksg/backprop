@@ -3,9 +3,9 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -122,7 +122,7 @@ import Control.Applicative
 import Data.Bifunctor
 import Data.Coerce
 import Data.Functor.Identity
-import Data.List
+import Data.List (foldl')
 import Data.Type.Util
 import Data.Vinyl.Core
 import qualified Data.Vinyl.Recursive as VR
@@ -416,7 +416,7 @@ noGrad f = Op $ \xs ->
 -- 'idOp' = 'opIso' 'id' 'id'
 -- @
 idOp :: Op '[a] a
-idOp = op1 $ \x -> (x, id)
+idOp = op1 (,id)
 {-# INLINE idOp #-}
 
 -- | An 'Op' that takes @as@ and returns exactly the input tuple.
@@ -424,7 +424,7 @@ idOp = op1 $ \x -> (x, id)
 -- >>> gradOp' opTup (1 :& 2 :& 3 :& RNil)
 -- (1 :& 2 :& 3 :& RNil, 1 :& 1 :& 1 :& RNil)
 opTup :: Op as (Rec Identity as)
-opTup = Op $ \xs -> (xs, id)
+opTup = Op (,id)
 {-# INLINE opTup #-}
 
 -- | An 'Op' that runs the input value through an isomorphism.
@@ -694,7 +694,7 @@ instance (RPureConstrained Num as, Floating a) => Floating (Op as a) where
 
 -- | 'Op' for division
 (/.) :: Fractional a => Op '[a, a] a
-(/.) = op2 $ \x y -> (x / y, \g -> (g / y, -g * x / (y * y)))
+(/.) = op2 $ \x y -> (x / y, \g -> (g / y, -(g * x / (y * y))))
 {-# INLINE (/.) #-}
 
 -- | 'Op' for exponentiation
@@ -746,7 +746,7 @@ sqrtOp = op1 $ \x -> (sqrt x, (/ (2 * sqrt x)))
 logBaseOp :: Floating a => Op '[a, a] a
 logBaseOp = op2 $ \x y ->
   ( logBase x y
-  , let dx = -logBase x y / (log x * x)
+  , let dx = -(logBase x y / (log x * x))
      in \g -> (g * dx, g / (y * log x))
   )
 {-# INLINE logBaseOp #-}

@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -14,7 +14,6 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeInType #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_HADDOCK not-home #-}
 
@@ -672,8 +671,7 @@ initRunner (n, stns) (nx, xs) = do
   for_ (zip [n - 1, n - 2 ..] stns) $ \(i, STN (TN{} :: TapeNode c)) ->
     MV.write delts i $ unsafeCoerce (Nothing @c)
   inps <- MV.new nx
-  for_ (zip [0 ..] xs) . uncurry $ \i z ->
-    MV.write inps i z
+  itraverse_ (MV.write inps) xs
   return $ R delts inps
 {-# INLINE initRunner #-}
 
@@ -909,6 +907,14 @@ itraverse f xs = evalStateT (traverse (StateT . go) xs) 0
     go :: a -> Int -> f (b, Int)
     go x i = (,i + 1) <$> f i x
 {-# INLINE itraverse #-}
+
+-- Some utility functions to get around a lens dependency
+itraverse_ ::
+  forall t a b f.
+  (Foldable t, Monad f) =>
+  (Int -> a -> f b) -> t a -> f ()
+itraverse_ f xs = traverse_ (uncurry f) (zip [0 ..] (toList xs))
+{-# INLINE itraverse_ #-}
 
 ixi :: Int -> Lens' [a] a
 ixi _ _ [] = internalError "ixi"

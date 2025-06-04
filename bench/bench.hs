@@ -11,7 +11,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
@@ -279,8 +278,8 @@ gradNetManual x t (Net (Layer w1 b1) (Layer w2 b2) (Layer w3 b3)) =
       o2 = o0 / konst o1
       -- o3 = - (log o2 <.> t)
       dEdO3 = 1
-      dEdO2 = dEdO3 * (-t / o2)
-      dEdO1 = -(dEdO2 <.> o0) / (o1 ** 2)
+      dEdO2 = - (dEdO3 * t / o2)
+      dEdO1 = -((dEdO2 <.> o0) / (o1 ** 2))
       dEdO0 = konst dEdO1 + dEdO2 / konst o1
       dEdZ3 = dEdO0 * o0
       dEdY3 = dEdZ3
