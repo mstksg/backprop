@@ -4,7 +4,16 @@ Changelog
 Version 0.2.7.1
 ---------------
 
-*June 1, 2025*
+*June 4, 2025*
+
+<https://github.com/mstksg/backprop/releases/tag/v0.2.7.2>
+
+*   Export `Numeric.Backprop.Internal.InpRef`
+
+Version 0.2.7.1
+---------------
+
+*June 4, 2025*
 
 <https://github.com/mstksg/backprop/releases/tag/v0.2.7.1>
 

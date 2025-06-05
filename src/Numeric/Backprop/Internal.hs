@@ -68,11 +68,12 @@ module Numeric.Backprop.Internal (
   debugSTN,
   debugIR,
 
-  -- * Only used internally
+  -- * Only used internally within this module
   TapeNode (..),
   SomeTapeNode (..),
   BRef (..),
   Runner (..),
+  InpRef (..),
   initWengert,
   insertNode,
   bvConst,
@@ -261,7 +262,7 @@ forceBVar :: BVar s a -> ()
 forceBVar (BV r !_) = force r `seq` ()
 {-# INLINE forceBVar #-}
 
--- | @since 0.2.7.1
+-- | @since 0.2.7.2
 data InpRef :: Type -> Type where
   IR ::
     { _irIx :: !(BVar s b)
