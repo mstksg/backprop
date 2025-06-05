@@ -35,8 +35,9 @@
 --
 -- @since 0.2.7.0
 module Numeric.Backprop.Internal (
-  BVar,
-  W,
+  -- * Exported for re-use
+  BVar (..),
+  W (..),
   backpropWithN,
   evalBPN,
   constVar,
@@ -66,6 +67,23 @@ module Numeric.Backprop.Internal (
   -- * Debug
   debugSTN,
   debugIR,
+
+  -- * Only used internally
+  TapeNode (..),
+  SomeTapeNode (..),
+  BRef (..),
+  Runner (..),
+  initWengert,
+  insertNode,
+  bvConst,
+  forceBVar,
+  forceInpRef,
+  forceSomeTapeNode,
+  forceTapeNode,
+  fillWengert,
+  bumpMaybe,
+  initRunner,
+  gradRunner,
 ) where
 
 import Control.DeepSeq
@@ -207,10 +225,12 @@ ofNum = OF (const 1)
 --
 -- See "Numeric.Backprop#liftops" and documentation for
 -- 'Numeric.Backprop.liftOp' for more information.
-data BVar s a = BV
-  { _bvRef :: !(BRef s)
-  , _bvVal :: !a
-  }
+data BVar s a
+  = -- | @since 0.2.7.1
+    BV
+    { _bvRef :: !(BRef s)
+    , _bvVal :: !a
+    }
 
 -- | @since 0.1.5.1
 deriving instance Typeable (BVar s a)
@@ -218,6 +238,7 @@ deriving instance Typeable (BVar s a)
 -- | @since 0.2.6.3
 instance X.IsoHKD (BVar s) a
 
+-- | @since 0.2.7.1
 data BRef (s :: Type)
   = BRInp !Int
   | BRIx !Int
@@ -240,6 +261,7 @@ forceBVar :: BVar s a -> ()
 forceBVar (BV r !_) = force r `seq` ()
 {-# INLINE forceBVar #-}
 
+-- | @since 0.2.7.1
 data InpRef :: Type -> Type where
   IR ::
     { _irIx :: !(BVar s b)
@@ -248,6 +270,7 @@ data InpRef :: Type -> Type where
     } ->
     InpRef a
 
+-- | @since 0.2.7.1
 forceInpRef :: InpRef a -> ()
 forceInpRef (IR v !_ !_) = forceBVar v `seq` ()
 {-# INLINE forceInpRef #-}
@@ -256,6 +279,7 @@ forceInpRef (IR v !_ !_) = forceBVar v `seq` ()
 debugIR :: InpRef a -> String
 debugIR IR{..} = show (_bvRef _irIx)
 
+-- | @since 0.2.7.1
 data TapeNode :: Type -> Type where
   TN ::
     { _tnInputs :: !(Rec InpRef as)
@@ -263,16 +287,19 @@ data TapeNode :: Type -> Type where
     } ->
     TapeNode a
 
+-- | @since 0.2.7.1
 forceTapeNode :: TapeNode a -> ()
 forceTapeNode (TN inps !_) = VR.rfoldMap forceInpRef inps `seq` ()
 {-# INLINE forceTapeNode #-}
 
+-- | @since 0.2.7.1
 data SomeTapeNode :: Type where
   STN ::
     { _stnNode :: !(TapeNode a)
     } ->
     SomeTapeNode
 
+-- | @since 0.2.7.1
 forceSomeTapeNode :: SomeTapeNode -> ()
 forceSomeTapeNode (STN n) = forceTapeNode n
 
@@ -285,12 +312,16 @@ debugSTN (STN TN{..}) = show . VR.rfoldMap ((: []) . debugIR) $ _tnInputs
 --
 -- For the end user, one can just imagine @'Reifies' s 'W'@ as a required
 -- constraint on @s@ that allows backpropagation to work.
-newtype W = W {wRef :: IORef (Int, [SomeTapeNode])}
+newtype W
+  = -- | @since 0.2.7.1
+    W {wRef :: IORef (Int, [SomeTapeNode])}
 
+-- | @since 0.2.7.1
 initWengert :: IO W
 initWengert = W <$> newIORef (0, [])
 {-# INLINE initWengert #-}
 
+-- | @since 0.2.7.1
 insertNode ::
   TapeNode a ->
   -- | val
@@ -659,11 +690,13 @@ coerceVar ::
   BVar s b
 coerceVar v@(BV r x) = forceBVar v `seq` BV r (coerce x)
 
+-- | @since 0.2.7.1
 data Runner s = R
   { _rDelta :: !(MV.MVector s (Maybe Any))
   , _rInputs :: !(MV.MVector s (Maybe Any))
   }
 
+-- | @since 0.2.7.1
 initRunner ::
   (Int, [SomeTapeNode]) ->
   (Int, [Maybe Any]) ->
@@ -677,6 +710,7 @@ initRunner (n, stns) (nx, xs) = do
   return $ R delts inps
 {-# INLINE initRunner #-}
 
+-- | @since 0.2.7.1
 gradRunner ::
   forall b s.
   () =>
@@ -709,6 +743,7 @@ gradRunner o R{..} (n, stns) = do
     {-# INLINE propagate #-}
 {-# INLINE gradRunner #-}
 
+-- | @since 0.2.7.1
 bumpMaybe ::
   -- | val
   a ->
